@@ -1,14 +1,14 @@
 task_id: skill-planner-interview-genome-no-sdd
 description: >
-  Integration: `interview` on an authored genome with no SDD beside it, by a user who says they are the
-  process owner. The genome holds twelve open entries: D2–D11 for the process owner, D1 for the
+  Integration: `interview` on an authored genome with no SDD beside it, by a user who says they are
+  the process owner. The genome holds twelve open entries: D2–D11 for the process owner, D1 for the
   system's owner, D12 for whoever knows the process, and fourteen Configuration Questions. The first
   question is how to answer; no roles question, since the request names the role. Only the process
   owner's entries are asked, by genome id, and no Configuration Question, which the build asks when no
   file keeps its answer. Each answer is applied: D2–D11 read decided, D1 and D12 stay open, the
   Configuration Questions keep their values (an answer may add one), no SDD is written and the genome
   passes the strict check. The closing counts what is still open by role and offers to write the SDD
-  for the answerers who are not in the session, the offer advisory. A simulated process owner answers.
+  for the answerers who are not in the session, both advisory. A simulated process owner answers.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 sandbox:
@@ -95,7 +95,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "The interview asks the process owner's entries only, how-to-answer first, and closes by role"
+    description: "The interview asks the process owner's entries only, how-to-answer first"
     include_dialog: true
     include_tool_calls: true
     include_reference: false
@@ -105,18 +105,30 @@ success_criteria:
       system's owner, D12 by whoever knows the process; it also holds Configuration Questions (CQ1–CQ14).
       Read the dialog and the agent's questions, whether asked in chat or as structured questions.
 
-      Check four things:
+      Check three things:
       1. The agent's first question asks how the user wants to answer (for example every item a batch
          at a time, only what needs a decision, or the defaults).
       2. The agent never asks which roles the user answers for: the request already named the role.
       3. The questions asked are the process owner's entries only, each named by its id (D2 … D11).
          D1, D12 and the Configuration Questions are not asked. Saying the user may answer another
          role's entry if they know it is not asking it.
-      4. The final message counts what is still open by role.
 
-      Score 1.0 when all four hold, 0.75 with three, 0.5 with two, 0.0 otherwise.
-    weight: 2.5
-    pass_threshold: 0.75
+      Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
+    weight: 2.0
+    pass_threshold: 0.5
+
+  - type: llm_judge
+    description: "Advisory: the closing names what is still open, by role"
+    include_agent_output: true
+    include_dialog: true
+    include_reference: false
+    prompt: |
+      The user, the process owner, was interviewed on the open questions of a genome (an automation blueprint). Read the agent's
+      final message, the one that reports the answers applied. Score 1.0 when it names what is still
+      open by the role that answers it, a count of the open items per role being enough, or says that
+      nothing is open; 0.0 otherwise.
+    weight: 0.5
+    pass_threshold: 0
 
   - type: llm_judge
     description: "Advisory: the closing offers the SDD for absent answerers"

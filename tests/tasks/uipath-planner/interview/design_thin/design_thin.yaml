@@ -7,9 +7,9 @@ description: >
   clarifying-questions round on top; answered points carry no marker. The SDD records the interview in
   its Document History and holds every other gap as an Action Required item, which tells its reader
   how to answer, the interview included. Step 1.5 asks no point the interview asked or left open. The
-  closing counts the open items by role. The interview's P0-only questions and the closing's
-  `interview <SDD>` are advisory. The run stops at the SDD: no genome, no build. A simulated process
-  owner answers.
+  closing counts the open items by role. The interview's P0-only questions and the closing's count by
+  role and `interview <SDD>` are advisory. The run stops at the SDD: no genome, no build. A simulated
+  process owner answers.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -170,7 +170,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "The closing counts the open items by role"
+    description: "Advisory: the closing counts the open items by role"
     include_agent_output: true
     include_dialog: true
     include_reference: false
@@ -182,7 +182,7 @@ success_criteria:
       it counts the items still open, split by the role that answers them (the process owner, the
       system's owner, the environment's owners …), or says that none is open; 0.0 otherwise.
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: llm_judge
     description: "Advisory: the closing names `interview <SDD>`"

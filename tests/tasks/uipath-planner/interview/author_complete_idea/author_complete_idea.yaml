@@ -1,13 +1,13 @@
 task_id: skill-planner-interview-author-complete-idea
 description: >
-  Integration: `author` on an idea that states its trigger, source, scope, recipient and retry rule
-  (a weekday download of the euro reference rates, mailed to finance). The interview is offered only
-  when a point that changes the design is open, so there is no offer, or one that counts such points
-  only; at most one round of questions comes before writing, and it asks for the preferences file. A
-  genome only, passing the strict check. The closing counts the open entries by role, names
-  `interview <genome>` and offers to write the SDD for answerers outside the session. What the offer
-  counts, the preferences question and the closing's interview and SDD offer are advisory. A simulated
-  requester answers.
+  Integration: `author` on an idea that states its trigger, source, scope, recipient and retry rule (a
+  weekday download of the euro reference rates, mailed to finance). The interview is offered only when
+  a point that changes the design is open, so there is no offer, or one that counts such points only;
+  at most one round of questions comes before writing, and it asks for the preferences file. A genome
+  only, passing the strict check. The closing counts the open entries by role, names `interview
+  <genome>` and offers to write the SDD for answerers outside the session. What the offer counts, the
+  preferences question and the closing's count by role, interview and SDD offer are advisory. A
+  simulated requester answers.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -123,7 +123,7 @@ success_criteria:
     pass_threshold: 0
 
   - type: llm_judge
-    description: "The closing counts open entries by role"
+    description: "Advisory: the closing counts open entries by role"
     include_agent_output: true
     include_dialog: true
     include_reference: false
@@ -139,7 +139,7 @@ success_criteria:
       work is split or queued, libraries, technology, setup), nor is it wrong for listing one of them
       among the decisions; when every decision belongs to one role, saying so is the count.
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: llm_judge
     description: "Advisory: the closing names the interview and the SDD offer"

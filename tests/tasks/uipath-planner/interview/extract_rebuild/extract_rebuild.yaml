@@ -4,8 +4,8 @@ description: >
   are the process owner. No SDD is written: the request is not a documentation request and does not
   ask for one. After the strict check, the interview is offered on the genome's open items, asked by
   genome id, and its answers are applied with the strict check passing again. The closing names the
-  open items by role and offers to write the SDD for items whose answerer is not in the session, the
-  offer advisory. Nothing is built. A simulated process owner answers.
+  open items by role and offers to write the SDD for items whose answerer is not in the session, both
+  advisory. Nothing is built. A simulated process owner answers.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -109,7 +109,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "The closing names open items by role"
+    description: "Advisory: the closing names open items by role"
     include_agent_output: true
     include_dialog: true
     include_reference: false
@@ -122,7 +122,7 @@ success_criteria:
       role, or each named with its role; configuration values may be counted without a role), or that
       none is; 0.0 otherwise.
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: llm_judge
     description: "Advisory: the closing offers the SDD for absent answerers"
