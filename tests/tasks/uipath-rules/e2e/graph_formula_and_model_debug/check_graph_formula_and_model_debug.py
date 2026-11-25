@@ -14,7 +14,9 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "_shared"))
@@ -31,6 +33,10 @@ from rules_check import NS, fail, find_project, load_graph  # noqa: E402
 
 PROJECT = "FeeRules"
 # Either side of the 50000 band edge, and one large loan.
+# What the model is made to answer while probing. Not a rate any band uses, so a hardcoded rate
+# cannot match it by accident.
+PROBE_RATE = 0.5
+
 CASES = [
     ({"loanAmount": 20000}, {"band": "Small", "fee": 400.0}),
     ({"loanAmount": 50000}, {"band": "Large", "fee": 750.0}),
@@ -64,46 +70,43 @@ def main() -> None:
 
 
 def _fee_follows_the_model(project: Path) -> None:
-    """Change the model's rates and the fee has to change with them.
+    """The fee has to follow what the model answers, not merely call it somewhere.
 
-    A call in a branch the inputs never reach, with the correct rates inlined in the branch they
-    do, satisfies both the call check above and all three cases — the model is declared, wired,
-    called somewhere, and the fee is still right. Nothing static distinguishes that from a fee
-    the model actually computes.
-
-    Doubling every number in the model's body doubles the rate it answers with, so a fee that
-    comes from the model doubles too and one that does not stays where it was. The body holds
-    nothing but the rates: the model takes the band and answers a rate, and the band is a
-    separate decision this never touches. Restored in `finally`, so a failure here leaves the
-    agent's file as it was.
+    The model's body becomes a constant while its signature stays, so a fee the model computes
+    becomes `loanAmount * PROBE_RATE` for every band and a fee with the rates inlined does not
+    move. Run in a copy of the solution, so a grader killed mid-run leaves the agent's project
+    as it was.
     """
-    dmn_file = load_graph(project)[0]
-    before = dmn_file.read_text(encoding="utf-8")
-    body = re.search(r"<(\w+:)?businessKnowledgeModel\b.*?</(\w+:)?businessKnowledgeModel>", before, re.S)
-    if body is None:
-        fail("the rule declares no businessKnowledgeModel to vary; check_knowledge_models should have said so")
-    # Only inside `<text>`, which is where FEEL lives: an id, a label or a typeRef is not a rate,
-    # and rewriting a numeric id would break the references to it.
-    def double(cell: re.Match[str]) -> str:
-        return re.sub(r"(?<![\w.])\d+(\.\d+)?(?![\w.])",
-                      lambda number: repr(float(number.group(0)) * 2), cell.group(0))
-
-    doubled = re.sub(r"<(\w+:)?text>.*?</(\w+:)?text>", double, body.group(0), flags=re.S)
-    if doubled == body.group(0):
-        fail("the knowledge model's body holds no number to vary, so its rates are not in it")
-    # One case, not all three: each `rules debug` uploads the whole solution, and one band is
-    # enough to show the fee tracks the model.
-    inputs, expected = CASES[-1]
+    probe = Path(tempfile.mkdtemp(prefix=".mutation-probe-", dir=project.parent.parent)) / project.parent.name
     try:
-        dmn_file.write_text(before.replace(body.group(0), doubled, 1), encoding="utf-8")
-        actual = engine_outputs(project, inputs)
-        if not same_value(actual.get("fee"), expected["fee"] * 2):
-            fail(f"with the model's rates doubled the engine returned fee={actual.get('fee')!r} for "
-                 f"{inputs}, expected {expected['fee'] * 2}; the fee does not come from the model, so "
-                 f"the call the file carries is not what computes it")
+        shutil.copytree(project.parent, probe)
+        copied = probe / project.name
+        dmn_file = load_graph(copied)[0]
+        before = dmn_file.read_text(encoding="utf-8")
+        mutated = _model_answers(before, PROBE_RATE)
+        dmn_file.write_text(mutated, encoding="utf-8")
+        # One input from each band: a fee that calls the model for Large and hardcodes Small's
+        # rate passes every case above and a probe that only exercises Large.
+        for inputs in ({"loanAmount": 20000}, {"loanAmount": 200000}):
+            actual = engine_outputs(copied, inputs)
+            expected = inputs["loanAmount"] * PROBE_RATE
+            if not same_value(actual.get("fee"), expected):
+                fail(f"with the model answering a flat {PROBE_RATE} the engine returned "
+                     f"fee={actual.get('fee')!r} for {inputs}, expected {expected}; the fee for that "
+                     f"band does not come from the model, so the call the file carries is not what "
+                     f"computes it")
     finally:
-        dmn_file.write_text(before, encoding="utf-8")
+        shutil.rmtree(probe.parent, ignore_errors=True)
 
 
-if __name__ == "__main__":
-    main()
+def _model_answers(xml: str, rate: float) -> str:
+    """`xml` with the knowledge model's body replaced by a constant, its parameters untouched."""
+    body = re.search(r"(<(\w+:)?encapsulatedLogic\b[^>]*>)(.*?)(</(\w+:)?encapsulatedLogic>)", xml, re.S)
+    if body is None:
+        fail("the knowledge model declares no <encapsulatedLogic>; check_knowledge_models should have said so")
+    parameters = "".join(re.findall(r"<(?:\w+:)?formalParameter\b[^>]*/>", body.group(3)))
+    if not parameters:
+        fail("the knowledge model declares no <formalParameter>, so its callers pass nothing")
+    constant = (f'<literalExpression id="literalExpression_probe" typeRef="number">'
+                f"<text>{rate}</text></literalExpression>")
+    return xml.replace(body.group(0), body.group(1) + parameters + constant + body.group(4), 1)

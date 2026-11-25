@@ -24,6 +24,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "_shared"))
 
 from graph_check import (  # noqa: E402
+    answering_cell,
     check_annotations_attached,
     check_entry_points_kept,
     check_graph_cases,
@@ -36,7 +37,7 @@ from graph_check import (  # noqa: E402
     model_calls,
     reference_name,
     required,
-    sole_call,
+    sole_call_arguments,
 )
 from rules_check import NS, fail, find_project, load_graph  # noqa: E402
 
@@ -130,41 +131,43 @@ def wired() -> None:
     if not model_calls(freight, "discounted"):
         fail(f"decision {freight.get('name')!r} requires 'discounted' but its logic never calls it; "
              f"a mention in an annotation is not a call")
-    arguments = [argument.strip() for argument in sole_call(freight, "discounted").split(",")]
-    if len(arguments) != 2:
-        fail(f"the freight decision calls discounted({', '.join(arguments)}); 'discounted' takes an "
-             f"amount and a percentage")
-    # The tier decision has one output, so its result is that value and a reader addresses the
-    # decision itself. `tier.tierPct` reads a field of a number and is what Critical Rule 3
-    # exists to prevent; allowing it here would have graded an invalid call as correct, and this
-    # task never runs the engine to catch it.
-    tier = reference_name(decision_for_output(root, "tierPct"))
-    if arguments[1] != tier:
-        fail(f"the freight discount is taken at {arguments[1]!r}, not at {tier!r}, "
-             f"the tier percentage the rule already computes; {tier!r} has one output, so a "
-             f"reader names the decision and never a field of it")
-    _freight_values(arguments[0])
+    _freight_values(root, freight)
     print(f"OK: {len(callers)} decisions call 'discounted', and the freight comes out right for every tier")
 
 
-def _freight_values(amount: str) -> None:
-    """What the freight decision returns for each tier, worked out rather than pattern-matched.
+def _freight_values(root: ET.Element, freight: ET.Element) -> None:
+    """What the freight decision answers for each tier, taken from the row that actually fires.
 
-    Two things are already pinned by the time this runs: the call is the whole expression, and
-    `kept()` has compared the model's body with the fixture's `amount * (1 - pct / 100)`. So the
-    returned value follows from the base amount alone, and checking the amount's text was never
-    enough — `discounted(50, tier) + 100` answered 142.5 for Gold and passed, while the correct
-    `discounted(50.0, tier)` was refused for spelling 50 differently.
+    Reading the first cell that held a call graded one tier and let every other row say anything
+    — `discounted(50, tier)` for Gold and 0 for the rest passed. The answering row is resolved
+    per tier instead, and `kept()` has already pinned the model's body to the fixture's
+    `amount * (1 - pct / 100)`, so the cell's arguments are enough to say what it returns.
     """
-    try:
-        base = float(amount)
-    except ValueError:
-        fail(f"the freight discount is taken on {amount!r}; the prompt asks for a flat 50 before discount")
-    expected = {inputs["customerTier"]: 50 * (1 - answer["tierPct"] / 100) for inputs, answer in TIER_CASES}
-    actual = {inputs["customerTier"]: base * (1 - answer["tierPct"] / 100) for inputs, answer in TIER_CASES}
-    if actual != expected:
-        fail(f"a flat freight of {base} discounted by the tier returns {actual}; the prompt asks for 50 "
-             f"before discount, which returns {expected}")
+    # The tier decision has one output, so its result is that value and a reader addresses the
+    # decision itself. `tier.tierPct` reads a field of a number and is what Critical Rule 3
+    # exists to prevent; allowing it would grade an invalid call as correct, and this task never
+    # runs the engine to catch it.
+    tier_name = reference_name(decision_for_output(root, "tierPct"))
+    for inputs, answer in TIER_CASES:
+        percentage = answer["tierPct"]
+        cell = answering_cell(freight, {**inputs, tier_name: percentage})
+        arguments = [argument.strip() for argument in sole_call_arguments(cell, "discounted").split(",")]
+        if len(arguments) != 2:
+            fail(f"for {inputs} the freight answers discounted({', '.join(arguments)}); 'discounted' "
+                 f"takes an amount and a percentage")
+        if arguments[1] != tier_name:
+            fail(f"for {inputs} the freight discount is taken at {arguments[1]!r}, not at {tier_name!r}, "
+                 f"the tier percentage the rule already computes; {tier_name!r} has one output, so a "
+                 f"reader names the decision and never a field of it")
+        try:
+            base = float(arguments[0])
+        except ValueError:
+            fail(f"for {inputs} the freight discount is taken on {arguments[0]!r}; the prompt asks for "
+                 f"a flat 50 before discount")
+        returned, expected = base * (1 - percentage / 100), 50 * (1 - percentage / 100)
+        if returned != expected:
+            fail(f"for {inputs} the freight returns {returned}, expected {expected}; the prompt asks "
+                 f"for a flat 50 discounted by the tier")
 
 
 def diagram() -> None:

@@ -33,6 +33,7 @@ from rules_check import (
     output_names,
     output_properties,
     read_entry_points,
+    unary_test,
 )
 
 DMNDI_NS = "https://www.omg.org/spec/DMN/20230324/DMNDI/"
@@ -179,22 +180,53 @@ def executable_cells(decision: ET.Element) -> list[str]:
     return [cell.strip() for cell in cells if cell.strip()]
 
 
-def sole_call(decision: ET.Element, model: str) -> str:
-    """The arguments of a call that is the whole of the cell it sits in.
+def sole_call_arguments(cell: str, model: str) -> str:
+    """The arguments of `model(...)` when that call is the whole of `cell`.
 
     `discounted(50, tier) + 100` answers a different number from `discounted(50, tier)`, and a
-    check that only looked for a call accepted both. Requiring the call to be the entire
-    expression is what makes the arguments enough to say what the decision returns.
+    check that only looked for a call anywhere in the cell accepted both. Requiring the call to
+    be the entire expression is what makes its arguments enough to say what the cell returns.
     """
-    for cell in executable_cells(decision):
-        calls = model_calls_in(cell, model)
-        if not calls:
-            continue
-        if cell != f"{model}({calls[0]})" and cell != f"{model} ({calls[0]})":
-            fail(f"decision {decision.get('name')!r} answers with {cell!r}; the prompt asks for the "
-                 f"result of {model}(...) and nothing added to it")
-        return calls[0]
-    fail(f"no cell of decision {decision.get('name')!r} calls {model}(...)")
+    calls = model_calls_in(cell, model)
+    if not calls:
+        fail(f"the cell {cell!r} does not call {model}(...)")
+    if cell.strip() not in (f"{model}({calls[0]})", f"{model} ({calls[0]})"):
+        fail(f"the cell {cell!r} is not just the result of {model}(...); the prompt asks for that "
+             f"result and nothing added to it")
+    return calls[0]
+
+
+def answering_cell(decision: ET.Element, inputs: dict) -> str:
+    """The FEEL text the decision's logic actually answers with for `inputs`.
+
+    A literal expression has one. A table has one per row, and only the row that fires counts:
+    grading the first cell that happened to hold a call let the other rows say anything at all.
+    """
+    literal = decision.find("dmn:literalExpression", NS)
+    table = decision.find("dmn:decisionTable", NS)
+    if literal is not None and table is not None:
+        fail(f"decision {decision.get('name')!r} carries both a table and a literal expression; DMN "
+             f"gives a decision one expression, and the engine would not know which answers")
+    if literal is not None:
+        return (literal.findtext("dmn:text", default="", namespaces=NS) or "").strip()
+    if table is None:
+        fail(f"decision {decision.get('name')!r} carries neither a table nor a literal expression")
+    columns = input_columns(table)
+    # Without a column the caller supplies, `all(...)` is vacuously true and the first row always
+    # "fires" — so a table keyed on something else entirely would be graded on row one.
+    if not any(column in inputs for column in columns):
+        fail(f"decision {decision.get('name')!r} reads {columns}, none of which this check supplies "
+             f"({sorted(inputs)}), so which row answers cannot be told")
+    for rule in table.findall("dmn:rule", NS):
+        cells = [(e.findtext("dmn:text", default="", namespaces=NS) or "") for e in rule.findall("dmn:inputEntry", NS)]
+        if all(unary_test(cell, inputs[column]) for cell, column in zip(cells, columns) if column in inputs):
+            answers = [(e.findtext("dmn:text", default="", namespaces=NS) or "").strip()
+                       for e in rule.findall("dmn:outputEntry", NS)]
+            if len(answers) != 1:
+                fail(f"decision {decision.get('name')!r} answers with {len(answers)} outputs; this check "
+                     f"grades a decision that answers with one")
+            return answers[0]
+    fail(f"decision {decision.get('name')!r} matches no rule for {inputs}, so it answers nothing")
     raise AssertionError  # unreachable; `fail` exits
 
 
@@ -268,12 +300,15 @@ def evaluate_graph(root: ET.Element, inputs: dict) -> dict:
             found, value = resolve(context, column)
             if not found:
                 fail(f"decision {decision.get('name')!r} reads {column!r}, which is not an input or decision it requires")
+            if value is UNEVALUABLE:
+                hits[decision_id] = UNEVALUATED
+                return
             values[column] = value
-        hit = evaluate(table, values, context)
-        # A matched cell holding a call or a formula makes this decision unevaluable, not the
-        # whole grade. Aborting here killed a case that asked only for an independent table's
-        # output, because `evaluate_graph` visits every decision in the file.
-        hits[decision_id] = UNEVALUATED if hit and any(v is UNEVALUABLE for v in hit.values()) else hit
+        # Unsupported values are kept per output, not raised to the whole decision: a matched row
+        # can answer a literal band beside a model-computed fee, and marking both unknown failed a
+        # case that asked only for the band. They reach a consumer through `values` above, which
+        # is what makes a decision that reads one unevaluable in turn.
+        hits[decision_id] = evaluate(table, values, context)
 
     for decision_id in by_id:
         run(decision_id, ())
@@ -287,14 +322,20 @@ def evaluate_graph(root: ET.Element, inputs: dict) -> dict:
         # An unevaluated decision publishes no output, so a case that names one fails on the
         # "no decision table returns an output named ..." branch rather than on a value the
         # evaluator never worked out.
-        if table is None or hits[decision_id] is UNEVALUATED:
+        if table is None:
             continue
+        hit = hits[decision_id]
         for name in output_names(table):
             if name in owner:
                 fail(f"decisions {owner[name]!r} and {decision.get('name')!r} both answer with an output "
                      f"named {name!r}; a reader cannot tell them apart")
             owner[name] = decision.get("name") or decision_id
-            outputs[name] = (hits[decision_id] or {}).get(name)
+            value = None if hit in (None, UNEVALUATED) else hit.get(name)
+            # An output only the engine can work out publishes nothing, so a case naming it fails
+            # on the "no decision table returns ..." branch instead of on a value never computed.
+            if hit is UNEVALUATED or value is UNEVALUABLE:
+                continue
+            outputs[name] = value
     return outputs
 
 

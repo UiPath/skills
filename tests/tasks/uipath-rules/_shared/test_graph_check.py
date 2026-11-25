@@ -515,25 +515,103 @@ class TestAnUnsupportedCellIsLocal:
             gc.check_graph_cases(self.graph(), [({"a": 60}, {"fee": 120.0})])
 
 
-class TestSoleCall:
-    """A call that is the whole expression is what makes its arguments say what it returns."""
+class TestUnsupportedIsPerOutput:
+    """One output only the engine can work out does not take its siblings down with it."""
 
-    def test_a_bare_call_gives_its_arguments(self):
+    @staticmethod
+    def graph() -> ET.Element:
+        model = 'xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"'
+        return ET.fromstring(f'''<definitions {model}>
+          <inputData id="in_a" name="a"><variable name="a" typeRef="number"/></inputData>
+          <businessKnowledgeModel id="bkm_rate" name="rate"><variable name="rate"/>
+            <encapsulatedLogic><formalParameter name="x" typeRef="number"/>
+              <literalExpression typeRef="number"><text>x * 2</text></literalExpression>
+            </encapsulatedLogic></businessKnowledgeModel>
+          <decision id="d_both" name="both"><variable name="both"/>
+            <informationRequirement><requiredInput href="#in_a"/></informationRequirement>
+            <knowledgeRequirement><requiredKnowledge href="#bkm_rate"/></knowledgeRequirement>
+            <decisionTable hitPolicy="FIRST">
+              <input><inputExpression typeRef="number"><text>a</text></inputExpression></input>
+              <output name="band" typeRef="string"/>
+              <output name="fee" typeRef="number"/>
+              <rule><inputEntry><text>-</text></inputEntry>
+                <outputEntry><text>"Large"</text></outputEntry>
+                <outputEntry><text>rate(a)</text></outputEntry></rule>
+            </decisionTable></decision>
+        </definitions>''')
+
+    def test_the_literal_output_of_a_mixed_row_is_still_graded(self):
+        # Raising the unsupported `fee` to the whole decision marked `band` unknown too, so a
+        # case asking only for the band failed on a value the evaluator had in hand.
+        gc.check_graph_cases(self.graph(), [({"a": 10}, {"band": "Large"})])
+
+    def test_the_model_computed_output_of_the_same_row_publishes_nothing(self):
+        assert "fee" not in gc.evaluate_graph(self.graph(), {"a": 10})
+
+
+class TestAnsweringCell:
+    """The row that fires is the one graded; the others are free to say anything."""
+
+    @staticmethod
+    def freight(gold_cell: str, rest_cell: str) -> ET.Element:
+        model = 'xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"'
+        return ET.fromstring(f'''<decision {model} name="freight">
+          <decisionTable hitPolicy="FIRST">
+            <input><inputExpression typeRef="number"><text>tier</text></inputExpression></input>
+            <output name="freight" typeRef="number"/>
+            <rule><inputEntry><text>15</text></inputEntry><outputEntry><text>{gold_cell}</text></outputEntry></rule>
+            <rule><inputEntry><text>-</text></inputEntry><outputEntry><text>{rest_cell}</text></outputEntry></rule>
+          </decisionTable></decision>''')
+
+    def test_each_tier_reads_the_row_that_fires(self):
+        decision = self.freight("discounted(50, tier)", "discounted(50, tier)")
+        assert gc.answering_cell(decision, {"tier": 15}) == "discounted(50, tier)"
+        assert gc.answering_cell(decision, {"tier": 10}) == "discounted(50, tier)"
+
+    def test_a_row_no_earlier_row_shadows_is_not_skipped(self):
+        # One correct row and the rest returning 0 used to pass: the check read the first cell
+        # that held a call and never looked at the others.
+        decision = self.freight("discounted(50, tier)", "0")
+        assert gc.answering_cell(decision, {"tier": 10}) == "0"
+
+    def test_a_literal_expression_decision_answers_with_its_text(self):
         probe = decision_xml('<literalExpression><text>discounted(50, tier)</text></literalExpression>')
-        assert gc.sole_call(probe, "discounted") == "50, tier"
+        assert gc.answering_cell(probe, {"tier": 15}) == "discounted(50, tier)"
+
+    def test_a_table_keyed_on_nothing_the_check_supplies_is_refused(self):
+        # `all(...)` over no column is vacuously true, so the first row would always "fire" and
+        # a table keyed on something else entirely would be graded on row one.
+        model = 'xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"'
+        decision = ET.fromstring(f'''<decision {model} name="freight">
+          <decisionTable hitPolicy="FIRST">
+            <input><inputExpression typeRef="number"><text>listPrice</text></inputExpression></input>
+            <output name="freight" typeRef="number"/>
+            <rule><inputEntry><text>-</text></inputEntry><outputEntry><text>discounted(50, tier)</text></outputEntry></rule>
+          </decisionTable></decision>''')
+        with pytest.raises(SystemExit):
+            gc.answering_cell(decision, {"tier": 10})
+
+    def test_a_decision_carrying_both_kinds_of_logic_is_refused(self):
+        model = 'xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"'
+        decision = ET.fromstring(f'''<decision {model} name="freight">
+          <literalExpression><text>discounted(50, tier)</text></literalExpression>
+          <decisionTable hitPolicy="FIRST">
+            <input><inputExpression typeRef="number"><text>tier</text></inputExpression></input>
+            <output name="freight" typeRef="number"/>
+            <rule><inputEntry><text>-</text></inputEntry><outputEntry><text>0</text></outputEntry></rule>
+          </decisionTable></decision>''')
+        with pytest.raises(SystemExit):
+            gc.answering_cell(decision, {"tier": 10})
+
+
+class TestSoleCallArguments:
+    def test_a_bare_call_gives_its_arguments(self):
+        assert gc.sole_call_arguments("discounted(50, tier)", "discounted") == "50, tier"
 
     def test_arithmetic_around_the_call_is_refused(self):
-        # `discounted(50, tier) + 100` returns a different number, and a check that only looked
-        # for a call anywhere in the cell accepted it.
-        probe = decision_xml('<literalExpression><text>discounted(50, tier) + 100</text></literalExpression>')
         with pytest.raises(SystemExit):
-            gc.sole_call(probe, "discounted")
+            gc.sole_call_arguments("discounted(50, tier) + 100", "discounted")
 
-    def test_whitespace_before_the_parenthesis_is_still_the_whole_cell(self):
-        probe = decision_xml('<literalExpression><text>discounted (50, tier)</text></literalExpression>')
-        assert gc.sole_call(probe, "discounted") == "50, tier"
-
-    def test_an_output_cell_holding_only_the_call_gives_its_arguments(self):
-        probe = decision_xml('<decisionTable><rule><outputEntry><text>discounted(50, tier)</text>'
-                             '</outputEntry></rule></decisionTable>')
-        assert gc.sole_call(probe, "discounted") == "50, tier"
+    def test_a_cell_that_does_not_call_the_model_is_refused(self):
+        with pytest.raises(SystemExit):
+            gc.sole_call_arguments("0", "discounted")
