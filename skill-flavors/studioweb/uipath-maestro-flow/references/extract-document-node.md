@@ -7,7 +7,7 @@
 <!--skill-flavor:extract-sdk-mixing:end-->
 
 <!--skill-flavor:extract-processor-sync:start-->
-At run time the extraction service resolves which processor to use from `inputs.processorKey`, a solution resource holding its own copy of the taxonomy. This host has no `.uipx`, so `compile` and `merge` add the processor of each Extract document node they write to the open solution instead of writing a file under `resources/`. Nothing else creates it: the designer provisions only nodes without a key. So a `ResourcePending` list in the compile or merge output (`Data.ResourcePending`: the host could not add the processor) means the node has no processor. When the message names a retry ("Compile again to retry"), run it once; otherwise, or if it reports `ResourcePending` again, report the message and stop.
+At run time the extraction service resolves which processor to use from `inputs.processorKey`, a solution resource holding its own copy of the taxonomy. This host has no `.uipx`, so `compile` and `merge` add the processor of each Extract document node they write to the open solution instead of writing a file under `resources/`. Nothing else creates it: the designer provisions only nodes without a key. A `ResourcePending` list in the compile or merge output (`Data.ResourcePending`) means a step of that work did not finish, and each entry names which one. Not every entry means the node has no processor. For example, `Failed to regenerate bindings_v2.json after merge: …` comes after the processor was added and its key written into the node. So do not infer the cause: report each entry's message as written, and follow the recovery instruction it gives. When it names a retry ("Compile again to retry", "Merge again to write them"), run that command once. When it names another step ("remove it from the solution's resources if it is not needed"), tell the user that step. When it names none, or the retry reports `ResourcePending` again, report the message and stop.
 <!--skill-flavor:extract-processor-sync:end-->
 
 <!--skill-flavor:extract-after-save:start-->
@@ -15,7 +15,7 @@ Re-read the target `.flow` at the start of each turn rather than reusing an earl
 <!--skill-flavor:extract-after-save:end-->
 
 <!--skill-flavor:extract-report:start-->
-8. **Report** what was added, where it reads its file from, which fields it extracts, and its processor: the `processorKey` the node carries, which compile and merge add to the open solution. A `ResourcePending` list in their output means the host could not add it ([Making it actually extract](#making-it-actually-extract)). Taking the flow live is the user's step.
+8. **Report** what was added, where it reads its file from, which fields it extracts, and its processor: the `processorKey` the node carries, which compile and merge add to the open solution. A `ResourcePending` list in their output: report each entry's message and what its recovery instruction did ([Making it actually extract](#making-it-actually-extract)). Taking the flow live is the user's step.
 <!--skill-flavor:extract-report:end-->
 
 <!--skill-flavor:extract-sdk-version:start-->
@@ -23,5 +23,5 @@ Studio Web bundles the SDK, so neither you nor the user can upgrade it from the 
 <!--skill-flavor:extract-sdk-version:end-->
 
 <!--skill-flavor:extract-keyless-repair:start-->
-A node from before processors were provisioned, or written by hand, arrives without a processor; `validate` reports an error at `inputs.processorKey`. Repair it with the decompile round trip and no edit: decompile, then `merge`. Merge gives every Extract document node that authors a processor but names none the key compile minted for it, printing `named no IDP processor … gave it <key>`, and adds its processor to the open solution; a `ResourcePending` list means the host could not add it (see above). If the node is still keyless after the merge, tell the user the repair needs Studio Web with SDK 6.124.17 or later, and stop until Studio Web deploys it. If `validate`'s message suggests another command, do not run it: the round trip is the repair.
+A node from before processors were provisioned, or written by hand, arrives without a processor; `validate` reports an error at `inputs.processorKey`. Repair it with the decompile round trip and no edit: decompile, then `merge`. Merge gives every Extract document node that authors a processor but names none the key compile minted for it, printing `named no IDP processor … gave it <key>`, and adds its processor to the open solution; a `ResourcePending` list means a step did not finish: report its message and follow its recovery instruction (see above). If the node is still keyless after the merge, tell the user the repair needs Studio Web with SDK 6.124.17 or later, and stop until Studio Web deploys it. If `validate`'s message suggests another command, do not run it: the round trip is the repair.
 <!--skill-flavor:extract-keyless-repair:end-->
