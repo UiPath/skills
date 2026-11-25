@@ -93,7 +93,8 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 | Debug / run a low-code agent end-to-end | [debug.md](debug.md) | |
 | Discover solution resources (processes/apps/indexes/buckets/connections) | [project-lifecycle.md](project-lifecycle.md) § Resource Discovery | |
 | Add a tool — pick the right kind | [capabilities/process/process.md](capabilities/process/process.md) | applicable sibling |
-| Add a process tool (RPA / agent / API / agentic) — local or external | [capabilities/process/process.md](capabilities/process/process.md) | [capabilities/process/solution-files.md](capabilities/process/solution-files.md) |
+| Add a process tool (RPA / agent / API / agentic / Maestro Flow) — local or external | [capabilities/process/process.md](capabilities/process/process.md) | [capabilities/process/solution-files.md](capabilities/process/solution-files.md) |
+| Use a Maestro Flow as a tool (`type: "flow"`) | [capabilities/process/process.md](capabilities/process/process.md) § Maestro Flow as a Tool | |
 | Wire a multi-agent solution (parent + tool agents) | [capabilities/process/process.md](capabilities/process/process.md) § Multi-Agent Solution Example | |
 | Add an Integration Service tool | [capabilities/integration-service/integration-service.md](capabilities/integration-service/integration-service.md) | |
 | Add a client-side tool (conversational only — executes on the client surface, not the server) | [capabilities/client-side-tools/client-side-tools.md](capabilities/client-side-tools/client-side-tools.md) | |

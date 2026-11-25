@@ -36,12 +36,20 @@ When a design was handed over by `uipath-maestro-case` ([sdd-writing-guide.md](s
 
 ## Finalizing a Case Draft
 
-A case draft resumed by [sdd-writing-guide.md](sdd-writing-guide.md) Step 2 item 6 keeps every business element; these repairs are the only changes it makes on the way to the final SDD, beside the template's § Validation footer:
+A case draft resumed by [sdd-writing-guide.md](sdd-writing-guide.md) Step 2 item 6 keeps every business element; these repairs are the only changes it makes on the way to the final SDD, beside the template's § Validation footer.
+
+Start the final as a copy of the draft (`cp <NAME>.draft.md <NAME>.md`, the draft kept), then upgrade it in place, block by block, with file edits. Never rebuild it by writing ranges of draft lines in chunks: a chunk boundary inside a table silently drops the rows after it. After every scripted rewrite, and before the checklist walk, run
+
+```bash
+node "<SKILL_DIR>/scripts/case-draft-parity.mjs" "<NAME>.draft.md" "<NAME>.md"
+```
+
+(`<SKILL_DIR>` is the folder holding planner's `SKILL.md`). It compares the stages in order with their kinds, the tasks under each stage, the Case Variables rows and every `=js:` expression, finds every comparator + amount policy (repair 3) without its `=js:` cell, and checks each Tasks table row's cell count and each `Role:` Recipient against its task's Persona; each `FAIL:` line is a defect your edits introduced — repair it in place from the draft and run it again until it prints `OK`. Repairs:
 
 1. `user-selected-stage` repair per [case-product-guide.md](case-product-guide.md) § Repairing a `user-selected-stage` lane; wording such as "any active case" means every primary stage.
 2. Every `=js:` expression in the draft appears verbatim in the output, inside the same owning task or stage block, with its field names, variable references, and output mapping intact — an equivalent-looking shorthand that drops an input, predicate, or intermediate field is a failure, not a simplification.
 3. Threshold-policy conversion — MANDATORY scan, not optional polish. Scan the draft (descriptions, personas table, rationale) for comparator + amount phrases: `>`, `<`, `≥`, `≤`, `over`, `above`, `under`, `below`, `at least`, `more/less than` next to an amount (`$5M`, `100000`, `L4`). EVERY such policy must also appear in an executable cell of the owning task or stage in the final — prose-only is a render failure:
-    - A personas row whose draft scope reads `StageX (amount > $N only)` renders in the final as Stages `StageX` and Notes `amount > $N only` — the Stages cell holds exact stage names only, since convert turns it into the role's stage ids — and REQUIRES a matching guarded expression inside a StageX task block, phrased on the HIGH side and assigning the exception role: an owner/recipient cell or entry-condition IF cell containing `=js:vars.amount > N000000 ? "Role:SomeRole" : "Role:DefaultRole"` — the numeral written out (`5000000`, not `$5M`), the role and attribute on the same line. The expression lives in a table cell (Inputs/owner/recipient/WHEN/IF); an `=js:` fragment inside `**Design Rationale:**` or `**Description:**` prose is NOT an encoding and fails the gate.
+    - A personas row whose draft scope reads `StageX (amount > $N only)` renders in the final as Stages `StageX` and Notes `amount > $N only` — the Stages cell holds exact stage names only, since convert turns it into the role's stage ids — and REQUIRES a matching guarded expression inside a StageX task block, phrased on the HIGH side and assigning the exception role: the task's `**Recipient:**` cell (the policy picks WHO does the task, so never an entry-condition IF, which skips the task on the other side) containing `=js:vars.amount > N000000 ? "Role:SomeRole" : "Role:DefaultRole"` — the numeral written out (`5000000`, not `$5M`), the role and attribute on the same line. The expression lives in a table cell (Inputs/owner/recipient/WHEN/IF); an `=js:` fragment inside `**Design Rationale:**` or `**Description:**` prose is NOT an encoding and fails the gate.
     - Reuse an existing variable that carries the attribute; the conversion never adds or renames a task or variable.
     - Persona prose and Design Rationale alone are not final.
 4. Secondary-stage task headings normalize to `##### Task S{secondaryStageIndex}.{taskIndex}: {Task Name}`; never keep draft letter prefixes (`R.1`, `W.1`, `CC.1`, `ESC.1`).
@@ -85,6 +93,12 @@ names only what to LOOK AT.
      `**Connector:**` / `**Trigger / Event:**`; execute-connector-activity / external-agent / external-workflow:
      `**Connector:**` / `**Operation:**`; wait-for-timer: `**Timer:**` / `**Duration:**`; case-management:
      `**Child Case:**`; http-request: `**Method:**` / `**URL:**`; script: a ```` ```js ```` fenced function body; document-extraction: `**IXP Deployment:**` / `**Model Name:**`; process / agent / rpa / api-workflow / function / business-rule / flow-process: `**Resolved Resource:**`.
+     The `**Activation Mode:**` value, and the Tasks table's Activation Mode cell, is one template literal
+     written verbatim — `sequential`, `parallel`, `parallel-after-predecessor`, `event-triggered`, `adhoc`,
+     `fan-in`, `conditional-gate`; `Parallel after predecessor` or `Sequential: stage start` is a FAIL. A task that
+     starts after another task is never `parallel` — siblings after one task are `parallel-after-predecessor`. The
+     Tasks table keeps the template's nine columns. `runs-sequentially` is written bare, never with an
+     argument (`runs-sequentially("Collect Fees")` is a FAIL).
   7. No literal `\n` escape inside block content; `<UNRESOLVED>` is never backtick-wrapped; none of the
      skill-internal terms (groupOperator, savedFilterTrees, io-binding, auto-mint, originalVar,
      inputOutputs[]) appears anywhere in the body.
@@ -103,6 +117,10 @@ names only what to LOOK AT.
      display name; arg 2 is an SLA Title that target declares (the `SLA Title` row of Case Metadata for
      root; `**SLA Title:**` under the stage's `#### Stage SLA`); every SLA Response Map row whose response is not
      `notify-only` has its `sla-status-change` row, and every `sla-status-change` row has its Map row.
+     A breach entry is the 2-arg form; arg 3, when present, is a display name from that target's SLA table
+     (its At-Risk or Breach Escalation Display Name) — a status word (`Breached`, `At-Risk`) is a FAIL. Each
+     `#### Stage SLA` holds the template's `**SLA Title:**` line and its `| SLA | Unit | At-Risk | … |` table,
+     never `**Duration:**` / `**Breach Response:**` bullet lines.
  14. Every `selected-stage-completed("X")` / `selected-stage-exited("X")` names a declared stage; every
      `selected-tasks-completed("T")` names a declared, non-`adhoc` task in the SAME stage.
  15. No stage's entry row references its own stage.
@@ -115,7 +133,11 @@ names only what to LOOK AT.
      outside the Buttons tables.
  Recipients, entry tables
  20. Every `**Recipient:**` is `—`, `<UNRESOLVED>`, an `=` expression, or carries a typed prefix
-     (`Role:` / `User:` / `UserGroup:` / `Email:` / `Expression:`).
+     (`Role:` / `User:` / `UserGroup:` / `Email:` / `Expression:`), and a `Role:` names the task's own
+     Persona from its Tasks-table row. Answer it as a list, one line per action task: `<task> — Persona
+     <cell> — Recipient <value>`; any line where the two differ is a FAIL. Recipients written by a script
+     are read back this way before the item can PASS — a script that read the wrong column writes one
+     role, or a cell value such as `Role:Yes`, into every task.
  21. Every task `**Entry Condition:**` table, every `#### Stage Entry Conditions` table and every
      `#### Stage Exit Conditions` table has at least one body row.
  Structure
@@ -123,7 +145,8 @@ names only what to LOOK AT.
  23. Case Triggers has at least one row.
  24. Case Exit Conditions has at least one row with Marks Case Complete `Yes`, and no two rows identical in
      (WHEN, IF, THEN, Marks).
- 25. A `wait-for-user` exit exists if and only if a `user-selected-stage` entry exists.
+ 25. An exit row with Exit Type `wait-for-user` exists if and only if a `user-selected-stage` entry exists;
+     no WHEN cell holds `wait-for-user`.
  26. `required-stages-completed` used → some stage declares `**Required for Case Completion:** Yes`;
      `required-tasks-completed` on a stage → some task envelope in that stage has Required `Yes`.
  Precedence & liveness
@@ -133,13 +156,22 @@ names only what to LOOK AT.
      row (Marks `Yes`, IF set) — the exit always wins and the stage never completes.
  29. The Case-Level SLA and every stage SLA expressed in minutes lie within 15–1000, and no stage SLA
      exceeds the case-level SLA.
- Draft parity (finalizing a draft only)
- 30. The ordered stage and task inventory equals the draft's — names verbatim, only letter prefixes renumbered.
+ Draft parity (finalizing a draft only) — items 20, 30, 31 and 32 PASS only after `case-draft-parity.mjs` prints `OK`; quote that line
+ 30. The ordered stage and task inventory equals the draft's — names verbatim, only letter prefixes renumbered —
+     and every Case Variables row of the draft is in the final with its name and type; count the rows in both.
+     Every stage keeps its draft kind: a draft primary stage (`### Stage <N>:`) stays `**Stage Kind:** primary`
+     with its completion exit, a secondary stays secondary; list `<stage> — draft kind — final kind`.
+     Every task keeps its draft start point: a draft task gated on `selected-tasks-completed("X")` still starts
+     after X — siblings after X become `parallel-after-predecessor` with `runs-sequentially`, a lone follower
+     `sequential` — never `parallel` / `current-stage-entered`; list `<task> — draft WHEN — final WHEN`.
  31. Every `=js:` expression in the draft appears verbatim in the final, inside the same owning block.
  32. Every comparator + amount policy in the draft (`>`, `<`, `≥`, `≤`, or the draft language's words for
      over / under / at least / more than / less than, next to an amount) is encoded in an executable cell
-     (owner / recipient / WHEN / IF / Inputs) of the owning task or stage, on the same side of the
-     comparison — prose in Design Rationale or Description does not count.
+     (owner / recipient / WHEN / IF / Inputs) of the owning task or stage — a policy that picks a role goes in
+     the `**Recipient:**`, never an entry IF that skips the task — the same policy, with a role that
+     applies on one side only written on the high side (`=js:vars.amount > 5000000 ? "Role:<EXCEPTION_ROLE>"
+     : "Role:<DEFAULT_ROLE>"`) — prose in Design Rationale, Description, Personas or Notes does not count. The
+     PASS quote is the `=js:` cell itself; a quote without `=js:` is a FAIL, whatever it says.
  33. The draft file still exists beside the final, unrenamed.
  Modelling completeness
  34. Every task's `Persona` cell names exactly ONE role — never an either/or (`Underwriter or Credit
@@ -164,3 +196,6 @@ names only what to LOOK AT.
      declared event is quoted by ≥1 cell. `api-event` stands only in Stage Entry, Stage Exit, Task Entry
      and Case Exit tables — never in Case Triggers, and never in a task's Entry Conditions that also hold
      `runs-sequentially`. A Payload cell is a JSON Schema object in one code span, or `—`.
+     An event that enters an interrupting secondary stage from any point ("at any point", "any active case")
+     is that lane's ONE entry row and no primary stage's exit row: the same `api-event` WHEN in two or more
+     primary-stage Stage Exit tables is a FAIL — delete those rows; the interrupting entry leaves the stage.

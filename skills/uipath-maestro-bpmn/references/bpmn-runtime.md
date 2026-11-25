@@ -135,6 +135,10 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 ## Script tasks
 
+<!-- RULE:bpmn.script.compute-step -->
+- A new step whose job is computation (totalling or counting over a collection, filtering, combining several values, deciding) is a `.scriptTask()`, in any pattern or composition outside a draft skeleton (bare `.task()` only there).
+  `.task()` with `set` assigns or copies values (a per-item append, a status flag, one simple expression). The designer shows a `set` task as an Assign step, so a computation hidden in it is not visible as a Script step. Leave existing `.task()`/`set` steps in an imported file as they are.
+
 <!-- RULE:bpmn.script.result-response -->
 - A script task (`scriptVersion` v3, what `.scriptTask()` writes) returns its value and the runtime wraps it as `result.response`.
   Read it as `=result.response` for a scalar, or `=result.response.<field>` for one field of a returned object; never `=result.<field>`, which reads nothing.
@@ -304,6 +308,8 @@ make from syntax alone. Exact signatures remain in the generated API.
   These builders take no `outputRows`, and only `.startAgenticProcess()` / `.startCaseProcess()` take `async`: an older SDK drops either silently, a newer one refuses it (`BPMN_UNKNOWN_OPTION`).
   `outputVar` (default `<id>_processResponse`) holds the job envelope, not the arguments; do not read an argument out of it with a `=js:` chain.
   The argument name is the workflow's own output argument, as the deployed process declares it; when no live run has shown it, say the mapping is unverified.
+  The source is an expression, not a key: a name that is not an identifier (`test-123`, a space, unicode) is read with brackets, `outputs: { test123: '=this["test-123"]' }`, which writes `source="=this[&quot;test-123&quot;]"`.
+  The expression holds the name exactly as declared, with no escaping (a TypeScript string literal still needs its own escapes); an empty name or one containing `"` or `]` cannot be mapped, so report it as unsupported. A bare `=result.test-123` is subtraction: it stores a wrong number (`27` when `result.test` is `150`) or leaves the variable empty, with no error.
 
 <!-- RULE:bpmn.http.manual -->
 - A plain HTTP call with no connection is `.http(id, { url, method, parameters, headers, body })` with no `connection`.

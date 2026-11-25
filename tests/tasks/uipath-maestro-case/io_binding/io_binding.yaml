@@ -18,7 +18,7 @@ description: >
 tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, resource, feature:registry, path-to-ga, outcome-graded]
 run_limits:
   expected_turns: 220
-  task_timeout: 8100  # turn 3600 + criteria 4380 + margin
+  task_timeout: 8280  # turn 3600 + criteria 4560 + margin
   max_turns: 280
   turn_timeout: 3600
 
@@ -84,12 +84,12 @@ success_criteria:
 
   # run_debug's worst case: two debug starts (the retry after a Cancelled run),
   # each with one transient-fault retry (4 x 900 s), plus refresh (2 x 120 s),
-  # the retry sleeps (3 x 15 s) and the instance list and variables-all reads
-  # (2 x 180 s).
+  # the retry sleeps (3 x 15 s) and the instance list, variables-all and
+  # instance get reads (3 x 180 s).
   - type: run_command
     description: "Effects: one debug run in which the eight SDD tasks completed in order, each received the value its binding resolves to, and renamedResult, literalResult, copiedResult, computedResult, metadataResult and customReferenceCopy hold the expected values"
     command: "python3 $REFERENCE_DIR/io_binding/check_io_binding_run.py"
-    timeout: 4290
+    timeout: 4470
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0

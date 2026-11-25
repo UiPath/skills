@@ -66,7 +66,7 @@ uip maestro flow registry get '<node-type>' \
 
 Scalar results are `ExtractionResult.ResultsDocument.Fields[]`; table results are `ExtractionResult.ResultsDocument.Tables[]`. In both, `FieldName` identifies the model field and `Values` carries extracted values.
 
-If no suitable published extractor exists: for a runtime or published-model requirement, report the missing capability and ask whether to build one with `uipath-ixp`; for a validate-only topology showing where extraction belongs, put `mock()` in the extraction position, complete and validate the surrounding flow, and report the placeholder as the capability gap. Do not block validate-only topology on unavailable extractors or downstream endpoints when placeholders preserve the requested graph. `pageRange` is a product string; `1-5` is illustrative because no local grammar is published.
+If no suitable published extractor exists: for a runtime or published-model requirement, report the missing capability and ask whether to build one with `uipath-ixp`; headless, with no one to ask, invoke `uipath-ixp` yourself, and use the Extract document node only when the request names it; for a validate-only topology showing where extraction belongs, put `mock()` in the extraction position, complete and validate the surrounding flow, and report the placeholder as the capability gap. Do not block validate-only topology on unavailable extractors or downstream endpoints when placeholders preserve the requested graph. `pageRange` is a product string; `1-5` is illustrative because no local grammar is published.
 
 ## File input from a connector event
 
