@@ -891,13 +891,9 @@ Implementation steps **do not live in this SDD** — the genome carries them, wi
 
 The build is not finished when the project folder compiles — a bare `MyProject/` folder is not the deliverable. The terminal artefact follows the **Packaging** column of §11 Project Mode Decision:
 
-<!--skill-flavor:packaging-solution:start-->
 **Packaging = Solution (`.uipx`)** — required for multi-project (Master Project) builds and cross-product compositions. After the implementation specialist reports its tasks complete, `uipath-solution` packs every project of the unified list into one `.uipx`.
-<!--skill-flavor:packaging-solution:end-->
 
-<!--skill-flavor:packaging-solution-promote:start-->
 Publishing and deploying the `.uipx` is `uipath-solution`'s too.
-<!--skill-flavor:packaging-solution-promote:end-->
 
 **Packaging = Standalone package** — a single independently-published RPA project (`.nupkg` to an Orchestrator feed) is a valid terminal artefact; UiPath supports development with and without Solutions. Package/publish routes to `uipath-rpa` (build) + `uipath-platform` (feed publish, process creation). `[DEFAULT]` for a single-project scope — pick Solution instead only when cross-product composition or team standardization on Solutions applies.
 

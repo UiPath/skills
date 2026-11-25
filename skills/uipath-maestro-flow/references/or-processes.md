@@ -38,9 +38,7 @@ Write the step with `name` and `folderPath` only, and leave `key` and `returns` 
 
 Needs `@uipath/maestro-builder-sdk` 6.109.0 or later: `prepare --kind Process` then prints `Type`, `Inputs` and `Outputs` lines.
 An older SDK records only the catalogue row (no `Type` line), and its `compile` refuses a step with no `key` (`*_NO_KEY`).
-<!--skill-flavor:or-processes-prepare-sdk:start-->
 Upgrade the copy in use: `npm install @uipath/maestro-builder-sdk@latest` in a workspace that has its own `node_modules` copy, else `npm install -g @uipath/maestro-builder-sdk@latest`.
-<!--skill-flavor:or-processes-prepare-sdk:end-->
 
 ```ts
 .step('intake',

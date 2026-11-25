@@ -1,6 +1,0 @@
-{
-  "Name": "invoices_processing_coded",
-  "ProjectType": "Process",
-  "Description": "Reads entries from an Excel file and adds each entry as a queue item in Orchestrator.",
-  "MainFile": "Main.cs"
-}

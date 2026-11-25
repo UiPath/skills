@@ -15,9 +15,7 @@ Read per-user license consumption and grant, track or request consumable top-ups
 
 ## Prerequisites
 
-<!--skill-flavor:host-availability-extra:start-->
 
-<!--skill-flavor:host-availability-extra:end-->
 
 1. Authenticated — verify with `uip login status`; if not, ask the user to run `uip login` (interactive browser flow)
 2. `usage list`, `usage get <user>`, `top-ups create` and `top-ups get` are admin-scoped (View/Manage on licensing data). `usage get` with no user and `top-ups request` work for any logged-in user and always act on the logged-in user

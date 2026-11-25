@@ -57,9 +57,7 @@ Sets the value of **one** workflow variable. Output merges into `$context.variab
 
 **Critical:** Each Assign MUST set exactly ONE variable. StudioWeb's designer collapses multi-key `set` blocks to one key on save, silently dropping the rest — see SKILL.md critical rule 6 and the StudioWeb roundtrip section in [troubleshooting.md](troubleshooting.md). To update N variables, use N sequential Assigns.
 
-<!--skill-flavor:assign-literal-roundtrip:start-->
 **String literals MUST be wrapped:** `"${'literal'}"` (a JS string inside an expression). Plain `"literal"` runs locally but StudioWeb rewrites it to `${literal}` on save → ReferenceError at runtime. See SKILL.md critical rule 5.
-<!--skill-flavor:assign-literal-roundtrip:end-->
 
 **Export pattern:**
 ```
@@ -88,9 +86,7 @@ Sets the value of **one** workflow variable. Output merges into `$context.variab
 Numbers, booleans, and already-wrapped expressions (`"${$context.variables.X + 1}"`) need no extra wrapping — only bare string literals do.
 
 **Common mistakes:**
-<!--skill-flavor:assign-roundtrip-runtime-comparison:start-->
 - Multi-key `set` (e.g. `"set": { "userName": "...", "count": 0 }`) — survives `uip api-workflow run`, but StudioWeb's designer drops all but one key on save
-<!--skill-flavor:assign-roundtrip-runtime-comparison:end-->
 - Bare string literals (e.g. `"set": { "tier": "GOLD" }`) — StudioWeb rewrites to `${GOLD}` on save → ReferenceError
 - Setting `isTransparent: true` (only `WorkflowStart` uses `true`)
 - Using outputs export pattern instead of variables pattern
@@ -541,9 +537,7 @@ or
 The simple single-expression form is fine; the designer corruption only affects object payloads.
 
 **Common mistakes:**
-<!--skill-flavor:response-object-roundtrip:start-->
 - **Object payload with `${...}` fields** (`"response": { "tier": "${$context.variables.tier}" }`) — runs locally, corrupted by StudioWeb on save. Use single-expression `${{ ... }}` instead.
-<!--skill-flavor:response-object-roundtrip:end-->
 - **Doubled braces** (`"response": "${{ { status: 'ok' } }}"`) — `validate` passes, the run fails with `Unexpected token '{'`. `${{ ... }}` already supplies the object's braces: write `"${{ status: 'ok' }}"`.
 - Missing `then: "end"` — workflow does not terminate
 - Nesting `markJobAsFailed` inside `response` — it MUST be a sibling

@@ -8,15 +8,11 @@ These supplement the Critical Rules in [SKILL.md](../../SKILL.md).
 
 1. **Select scope before architecture and gate every product by platform constraints.** Select one product (RPA Process/Library/Test Auto, Maestro Flow, Maestro BPMN, Case, Agents, Coded Apps, API Workflows) or a multi-project Solution. Run [Product Selection Guide](../shared/product-selection-guide.md): Constraint Gate → Level 1 → 1.5 (RPA sub-type) → 1.75 (Solution composition) → 2.5 (project decomposition), with 1.75 and 2.5 in [solution-composition-guide.md](solution-composition-guide.md). Ask delivery model (Cloud / Automation Suite / standalone) at entry; [platform-availability-guide.md](../shared/platform-availability-guide.md) blocks unavailable products; user-excluded products are never re-offered.
 2. **The SDD is architecture only, never task lists.** Include Project Structure, Data Definitions, Testing Strategy, etc. The implementation input is the genome `author` writes from the SDD.
-<!--skill-flavor:sdd-no-task-lists:start-->
 Never put Task 1 / Task N templates or *implementation* tasks created with the task-list tool in the SDD. End it with `## Next Steps`. Progress-tracking tasks created with the task-list tool are allowed separately.
-<!--skill-flavor:sdd-no-task-lists:end-->
 3. **Write both `## Planner Handoff` and `<!-- planner-handoff:v1 -->` into every SDD.** They are the load-bearing detection contract — § Choosing the Verb detects either signal, so keep both. Fields and rules are in [sdd-writing-guide.md](sdd-writing-guide.md) Step 2 item 2.
 4. **Treat template structure as a hard superset.** Single-product output is `<PROCESS_NAME_KEBAB>-sdd.md`; Solution output is `<SOLUTION_NAME_KEBAB>-solution-sdd.md` plus `<PROJECT_NAME_KEBAB>-sdd.md` per project; if the user specifies an output path for the SDD, use it instead of these defaults. Read every selected template end to end before generating — never a head slice or a heading list; column contracts sit deep in the file. Copy every template table's column headers verbatim, and after writing, diff generated H2/H3 headings against the template TOC: the generated set MUST be a superset. Missing required H2/H3 is an SDD defect, not `[SME REVIEW]`; regenerate it.
 5. **Testing is mandatory and thorough — never offer "happy path only".** Cover happy path, edge cases, errors, and e2e for Master Projects. Implementation specialists may scope down during execution; the SDD may not.
-<!--skill-flavor:solution-terminal-artifact:start-->
 6. **The terminal artefact of a Solution build is a packed `.uipx`.** Point `## Next Steps` to `uipath-solution`, which packs it; a bare project folder is not the deliverable.
-<!--skill-flavor:solution-terminal-artifact:end-->
 Exception: when the Constraint Gate blocks Solutions for standalone, Automation Suite older than 2.2510, or a user exclusion, rewrite Next Steps to per-package Orchestrator publish routed through `uipath-platform`.
 7. **Design resolves identities only.** A resource the design names is looked up (the Level 0 estate sweep; for RPA, the tenant library search per Step 2.5) and adopted when one match is confident. For ambiguous or missing resources, use the intended name and an `[SME REVIEW]` item. Schema discovery, scaffolding, and create-on-missing are build concerns recorded as build decisions; `design` never runs them.
 8. **Every `ready` SDD gets its genome on the next turn, including design-only requests**, except a build skill handoff, which returns to that skill. Follow [sdd-writing-guide.md](sdd-writing-guide.md) § Step 3; when revising an SDD whose genome is already on disk, update and check the genome in the same run per [sdd-writing-guide.md](sdd-writing-guide.md) § Keeping the Genome Current.
@@ -82,7 +78,6 @@ In **Interactive** mode, present and await every checkpoint below.
 
 ### Step 0.5: Create Progress Tasks
 
-<!--skill-flavor:progress-tasks:start-->
 Create progress-tracking tasks with the task-list tool; a host without it skips this step:
 
 ```
@@ -97,7 +92,6 @@ title="Write genome (next turn)"                  in-progress label="Writing gen
 ```
 
 The genome task remains `pending` when SDD writing ends the turn; the genome turn marks it `in_progress`, then `completed`. Omit it for a build-skill handoff (Verb Rule 8). Mark each task `in_progress` at start and `completed` at end. Creation/update are best-effort and never block the SDD: on task-list failure, warn once, continue without tasks, and never retry. Skeleton writing is task 4, never last ([sdd-writing-guide.md](sdd-writing-guide.md#step-0-write-the-sdd-skeleton-to-disk--hard-gate) Step 0). These tasks track SDD generation.
-<!--skill-flavor:progress-tasks:end-->
 The genome `author` writes after the SDD is the implementation input; do NOT create implementation tasks here.
 
 ### Step 1: Read the PDD

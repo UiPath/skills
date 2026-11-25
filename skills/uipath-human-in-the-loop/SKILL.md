@@ -1,7 +1,7 @@
 ---
 name: uipath-human-in-the-loop
 description: "UiPath Human-in-the-Loop / HITL node authoring — building approval gates, escalations, write-back validation, and data enrichment checkpoints in Flow, Maestro, Case Management, or Coded Agents, plus a guided decision experience that captures reviewer corrections as decisions. NOT for managing, reassigning, or monitoring tasks at runtime (use uipath-tasks for that)."
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep
+allowed-tools: Read, Grep, Glob
 ---
 
 # UiPath Human-in-the-Loop Assistant
@@ -83,40 +83,25 @@ find . -maxdepth 4 \( -iname "*.json" -o -iname "*.case" \) -print0 2>/dev/null 
 # Check for agent.json (Low-Code Agent project)
 find . -name "agent.json" -maxdepth 4 | head -3
 
-<!--skill-flavor:bpmn-sdk-surface-detect:start-->
 # Check for Maestro .bpmn or .bpmn.ts source (Maestro process)
 find . -maxdepth 4 \( -name "*.bpmn" -o -name "*.bpmn.ts" \) | head -3
-<!--skill-flavor:bpmn-sdk-surface-detect:end-->
 ```
 
 | Found | Surface | How HITL is added |
 |---|---|---|
-<!--skill-flavor:flow-sdk-surface-row:start-->
 | `.flow.ts` or `.flow` file | **Flow** | Author with `hitl(...)` in `<Name>.flow.ts` through the `uipath-maestro-flow` skill ([hitl.md](../uipath-maestro-flow/references/hitl.md)); never write node JSON into the compiled `.flow` — `compile` overwrites it |
-<!--skill-flavor:flow-sdk-surface-row:end-->
-<!--skill-flavor:case-sdk-surface-row:start-->
 | `<Name>.case.ts`, or `caseplan.case` (any `*.json` or `*.case` whose `nodes[]` carry `data.parentElement.type: "case-management:root"` — the marker is per-node; there is no `root` node on disk) | **Case** | Author an `action(...)` task in `<Name>.case.ts` through the `uipath-maestro-case` skill ([capability router](../uipath-maestro-case/SKILL.md#capability-router)); never write task JSON into the compiled plan — `compile` overwrites it |
-<!--skill-flavor:case-sdk-surface-row:end-->
 | `agent.json` | **Low Code Agent** | Escalation CLI in-flight — guide manually for now |
-<!--skill-flavor:bpmn-sdk-surface-row:start-->
 | `<Name>.bpmn.ts` or `.bpmn` (Maestro) | **Maestro** | Author a `.humanTask(...)` in `<Name>.bpmn.ts` through the `uipath-maestro-bpmn` skill (its *Human task outcomes* section in `references/bpmn-runtime.md`); never write task XML into the compiled `.bpmn` — `compile` overwrites it |
-<!--skill-flavor:bpmn-sdk-surface-row:end-->
 
-<!--skill-flavor:flow-sdk-hitl-stop:start-->
 **Flow surface (a `.flow.ts`, a `.flow`, or a new flow) — the default: stop here.** Hand the HITL request to the `uipath-maestro-flow` skill: it authors `hitl(...)` in `<Name>.flow.ts` — decompiling an existing `.flow` first — and compiles ([hitl.md](../uipath-maestro-flow/references/hitl.md)). Never read or hand-edit the compiled `.flow`; the next `compile` overwrites it. Steps 2–6 below cover the Low-Code Agent surface; Case and Maestro have their own stops below.
 
-<!--skill-flavor:flow-sdk-hitl-stop:end-->
-<!--skill-flavor:case-sdk-hitl-stop:start-->
 **Case surface (a `<Name>.case.ts`, a `caseplan.case`, a `caseplan.json`, or a new case) — the default: stop here too.** Hand the HITL request to the `uipath-maestro-case` skill: it authors `action(...)` in `<Name>.case.ts` — decompiling an existing plan first — and compiles ([Case runtime decisions](../uipath-maestro-case/references/case-runtime.md#human-and-on-demand-work)). Never hand-edit the compiled plan; the next `compile` overwrites it. **A Case human task is an Action App task, not a QuickForm, so the QuickForm default below does not apply here.** The SDK cannot write a Case quick form: its `hitlType` context and `inputSchema` are only carried over from a plan saved in the Studio Web Case designer (`@uipath/maestro-builder-sdk` `dist/case/preserve.d.ts`). Name a deployed Action App with `action({ app: { name, folder } })`; if none exists, build and deploy a Coded Action App first (the `uipath-coded-apps` skill), then name it. When the user wants a quick form anyway, they add it in the Studio Web designer, and a later decompile and compile keep it. In this package, Steps 2–6 below cover only the Low-Code Agent surface.
 
-<!--skill-flavor:case-sdk-hitl-stop:end-->
-<!--skill-flavor:bpmn-sdk-hitl-stop:start-->
 **Maestro surface (a `<Name>.bpmn.ts`, a `.bpmn`, or a new Maestro process) — the default: stop here too.** Hand the HITL request to the `uipath-maestro-bpmn` skill: it authors `.humanTask(...)` in `<Name>.bpmn.ts` — decompiling an existing `.bpmn` first — and compiles (that skill's *Human task outcomes* section in `references/bpmn-runtime.md`). It writes every task as an inline form: the SDK cannot yet bind a deployed Action App, so when the request names one, it says so and points the user to the Studio Web designer. Never hand-edit the compiled `.bpmn`; the next `compile` overwrites it. In this package, the Maestro sections of Steps 2–6 below do not apply.
 
-<!--skill-flavor:bpmn-sdk-hitl-stop:end-->
 **If the user mentioned a specific file path**, use that directly.
 
-<!--skill-flavor:flow-project-creation:start-->
 **If no `.flow` file exists and surface is Flow**, scaffold solution-first — Flow projects MUST live inside a solution:
 
 ```bash
@@ -131,7 +116,6 @@ cd <SolutionName> && uip maestro flow init <ProjectName>
 ```
 
 The flow file path is `<SolutionName>/<ProjectName>/<ProjectName>.flow` (double-nested). `<SolutionName>/` is the solution directory (contains the `.uipx` file); `<ProjectName>/` inside it is the flow project. By convention `<SolutionName>` and `<ProjectName>` are often the same string, but they are two distinct scaffolding arguments. Run `uip maestro flow init` outside a solution and it auto-scaffolds `<ProjectName>Solution/<ProjectName>/` for you; running `uip solution init` first lets you control the solution name (otherwise it defaults to `<ProjectName>Solution`). Passing `--skip-solution-registration` leaves a bare single-nested `<ProjectName>/<ProjectName>.flow` layout that fails Studio Web upload, packaging, and downstream tooling.
-<!--skill-flavor:flow-project-creation:end-->
 
 ---
 
@@ -207,9 +191,7 @@ Infer the right option from the signals below and state your choice — do not p
 
 ### Surface: Case
 
-<!--skill-flavor:case-json-task-type:start-->
 In this package, Case HITL is authored by the `uipath-maestro-case` skill (the Case stop in Step 1). Skip this section.
-<!--skill-flavor:case-json-task-type:end-->
 
 ---
 
@@ -313,9 +295,7 @@ uip maestro flow validate <file> --output json
 
 ### Surface: Case
 
-<!--skill-flavor:case-json-write:start-->
 In this package, Case HITL is authored by the `uipath-maestro-case` skill (the Case stop in Step 1). Do not write a Case plan here.
-<!--skill-flavor:case-json-write:end-->
 
 ---
 
@@ -349,9 +329,7 @@ response = interrupt(CreateTask(
 
 ### Surface: Maestro
 
-<!--skill-flavor:bpmn-xml-write:start-->
 In this package, Maestro HITL is authored by the `uipath-maestro-bpmn` skill (the Maestro stop in Step 1). Do not write BPMN XML here. If the `uipath-maestro-bpmn` skill is not installed, tell the user it is needed to add a human task to a Maestro process (`npx skills add UiPath/skills --skill uipath-maestro-bpmn`), and stop; do not fall back to writing XML into the compiled `.bpmn`.
-<!--skill-flavor:bpmn-xml-write:end-->
 
 ---
 

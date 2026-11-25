@@ -1,14 +1,11 @@
 # Operate — ship, run, and manage a deployed flow
 
-<!--skill-flavor:operate-auth:start-->
 Everything that touches the cloud—upload, deploy, debug, trigger, inspect, and instance lifecycle—needs `uip login`; check with `uip login status --output json`.
-<!--skill-flavor:operate-auth:end-->
 
 Authoring is upstream. Do not ship source until it completes the loop in [`CLI-LOOP.md`](CLI-LOOP.md): `check` the source, `compile` it, and `validate` the emitted `.flow`.
 
 ## Layout of the emitted flow
 
-<!--skill-flavor:operate-format:start-->
 `compile` lays out the flow. For a flow or subflow whose source has no
 `.layout()`, each node gets the position `uip maestro flow format` would give
 it. Running `format` on the compiled file moves nothing; skip it.
@@ -22,7 +19,6 @@ holds the canvas author's positions, and `merge` keeps them, moving later
 nodes right or down and growing containers only to fit added ones. `format`
 re-lays out every node and discards them. Upload or debug the merged file as
 `merge` wrote it.
-<!--skill-flavor:operate-format:end-->
 
 This needs `@uipath/maestro-builder-sdk` 6.113.0 or later. An older SDK
 writes every node 96 × 96 on one row at y = 144 (an agent node's `ui.size` is
@@ -30,9 +26,7 @@ writes every node 96 × 96 on one row at y = 144 (an agent node's `ui.size` is
 `uip maestro flow format <Name>.flow --output json` once on a greenfield file
 (never on a merged or `.layout()` file), and in a `.layout()` give each agent
 node `dim(288, 96)` and each container at least `dim(560, 320)`;
-<!--skill-flavor:compile-layout-sdk-upgrade:start-->
 or upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
-<!--skill-flavor:compile-layout-sdk-upgrade:end-->
 
 `nodes create` without `--position`, or a hand edit adding nodes, leaves new nodes at `layout.nodes[<id>].position` 0,0. After such an edit to a file without an author-chosen layout, run `format` and confirm every `layout.nodes` entry has a distinct position. With an author-chosen layout, skip `format` and pass `--position <x>,<y>` to every `nodes create`.
 
@@ -72,27 +66,20 @@ Rules:
    For one row of 96 px nodes that is `dim(192 × bodyNodes + 192, 320)` from two body nodes on (two nodes: `dim(576, 320)`, as `eachInvoice` above); a body with an inline agent, a second row or a nested container is measured from its own entries, not from the node count.
 3. **Name every node, or none.** A missing entry falls back to compile's one-row placeholder, which lands on top of your layout. A key that names no node is dropped with a `LAYOUT_UNKNOWN_KEY` warning (an SDK older than 6.115.0 fails `compile` on it); remove it.
 4. **Never `format` a file whose source sets `.layout()`.** `format` re-lays out every node and discards the source's positions, exactly as it does to a merged brownfield file.
-<!--skill-flavor:layout-sdk-version:start-->
 5. **`at` and `dim` need `@uipath/maestro-builder-sdk` 6.36.0 or later** — check that `dist/api-index.md` in the SDK copy in use lists them. If not, upgrade that copy: run `npm install @uipath/maestro-builder-sdk@latest` in a workspace with its own `node_modules` copy (used before the global one), else run `npm install -g @uipath/maestro-builder-sdk@latest`; or write `{ position: { x, y } }` with optional `size: { width, height }`.
-<!--skill-flavor:layout-sdk-version:end-->
 
 ## Refresh solution resources first
 
-<!--skill-flavor:refresh-command:start-->
 ```bash
 uip solution resources refresh --solution-folder <SolutionDir> --output json
 ```
-<!--skill-flavor:refresh-command:end-->
 
-<!--skill-flavor:refresh-when:start-->
 Run this before `solution upload`, `solution publish` or `flow debug`, every time. It syncs connection and process declarations from `bindings_v2.json`; stale declarations cause runtime binding errors even when the `.flow` is correct.
-<!--skill-flavor:refresh-when:end-->
 
 There is no positional solution argument. Omit `--solution-folder` only from the solution root.
 
 ## Publish
 
-<!--skill-flavor:operate-publish:start-->
 "Publish", without a target, means **Studio Web**:
 
 ```bash
@@ -108,50 +95,38 @@ uip maestro flow pack <project-path> <OutputDir>
 ```
 
 Then run `uip solution publish`—see the `uipath-solution` skill. `uip maestro flow publish <project-path>` packs and uploads the `.nupkg` to Orchestrator packages in one step; `--folder-key` or `--folder-path` selects a folder feed. When the target is genuinely ambiguous, ask before packing.
-<!--skill-flavor:operate-publish:end-->
 
 ## Debug — a real end-to-end run
 
-<!--skill-flavor:operate-debug:start-->
 ```bash
 UIP_LOG_LEVEL=info uip maestro flow debug <project-dir> --output json
 ```
 
 Pass the PROJECT directory containing `project.uiproj`. `flow debug` executes the flow for real; it is not validation (`validate` is). If the user can answer and did not request a run, ask once before the first run, even when the request is for a flow that works; that yes covers the fix-and-re-run loop on the flow the user asked to get working this turn. With nobody to ask, run it when the request is for a flow that works, unless a connection was guessed ([bindings.md](bindings.md#where-both-values-come-from)); otherwise report the flow as unverified rather than letting a passing `validate` stand as the result. Debug overwrites the Studio Web solution whose `SolutionId` matches local `.uipx`. A request to run or debug the flow covers that overwrite; when you ask before the first run on a solution not scaffolded this turn, the question names it. Headless, never debug a solution not scaffolded this turn.
-<!--skill-flavor:operate-debug:end-->
 
 Operational constraints:
 
-<!--skill-flavor:operate-debug-wait:start-->
 - **Foreground, with a tool timeout of 10 minutes or more.** It takes 1-5 minutes and prints JSON only at exit.
 - **Poll the same process if the tool reports it still running.** An empty output file means unfinished, not failed.
 - **Never start a second debug while one is running.** It re-uploads and re-executes.
 - **Re-run only after changing the flow.** Do not rerun to reread or reshape completed output.
 - **`Debug polling timed out after <N>s` is not a failure.** The run continues server-side. Take `instanceId` from stderr and poll `uip maestro flow debug-instance status <INSTANCE_ID> --output json`.
-<!--skill-flavor:operate-debug-wait:end-->
 - **An RPA step does not run under a headless debug** ([rpa-workflow.md](rpa-workflow.md#evidence-boundary)).
-<!--skill-flavor:operate-debug-scratch-copy:start-->
 - **Every process and connection node must resolve.** Missing tenant resources (a placeholder process key, a stub connection) prevent provisioning and starting; `Data.missingResources` names them although `check` and `validate` pass. To debug the rest, debug a scratch copy without those nodes, delete it afterward, and report the run as the copy's.
-<!--skill-flavor:operate-debug-scratch-copy:end-->
 - **Do not pass `--folder-path` or `--folder-key`.** Debug provisions into the personal workspace; another folder fails `403` at `Stage: prepare-custom-debug`, and a personal-workspace `--folder-key` gives `404`. No instance starts.
-<!--skill-flavor:debug-shared-resources:start-->
 Shared resources reach the run through `resources refresh`, not the debug folder.
-<!--skill-flavor:debug-shared-resources:end-->
 
 Exception to the folder rule: an account without a personal workspace (service-principal or CI token, `403` at `get-personal-folder`) passes `--folder-id <number>` to skip that lookup. `prepare-custom-debug` may still `403` for a non-personal folder; tell the user if it does.
 
 Inputs for flows with `.input(...)` parameters:
 
-<!--skill-flavor:operate-debug-inputs:start-->
 ```bash
 UIP_LOG_LEVEL=info uip maestro flow debug <project-dir> --output json \
   --inputs '{"numberA": 5, "numberB": 7}'
 ```
-<!--skill-flavor:operate-debug-inputs:end-->
 
 Build inputs from real records, never invented values: an invented key matches no record, the lookup returns `[]`, and the run faults on empty data. Read an entity id with `uip df entities list --output json`, then a live record with `uip df records list <ENTITY_ID> --output json`.
 
-<!--skill-flavor:operate-debug-attachment:start-->
 A `types.file` input takes a repeatable local file; the left side is the input name:
 
 ```bash
@@ -159,9 +134,7 @@ A `types.file` input takes a repeatable local file; the left side is the input n
 ```
 
 At runtime the variable is a file reference, not a path and never content: [its shape and name field](author.md#variable-types). A flow that parses the file passes that reference to a file-reading step, such as an RPA process taking it as its file argument ([rpa-workflow.md](rpa-workflow.md#where-the-job-runs)).
-<!--skill-flavor:operate-debug-attachment:end-->
 
-<!--skill-flavor:operate-debug-entry-point:start-->
 **A flow with more than one root starts at the default root.** It is the trigger marked `isDefaultEntryPoint`, else the first trigger. To run another root, pass its trigger node id:
 
 ```bash
@@ -169,17 +142,13 @@ uip maestro flow debug <project-dir> --output json --entry-point <triggerNodeId>
 ```
 
 A wrong id exits 3 and lists valid trigger ids. `Data.entryPoint` names the starting trigger.
-<!--skill-flavor:operate-debug-entry-point:end-->
 
-<!--skill-flavor:operate-debug-conversational:start-->
 **A conversational flow cannot be debugged headlessly.** If the start root is a `conversationTrigger()` (default or selected by `--entry-point`), debug uploads, returns `Code: FlowDebugStudioWebHandoff` with `Data.studioWebUrl`, and starts no run; `--timeout` does nothing. Chat from Studio Web (`--open-in-browser` opens it) or the Maestro VS Code extension.
-<!--skill-flavor:operate-debug-conversational:end-->
 
 **An inbound voice flow cannot be debugged at all.** Do not run debug on a `voiceTrigger()` flow; [voice.md](voice.md#evidence-boundary) has the test loop.
 
 ### Reporting a debug run
 
-<!--skill-flavor:operate-debug-report:start-->
 `Data.studioWebUrl` and `Data.instanceId` are the first two summary lines:
 
 ```text
@@ -188,13 +157,10 @@ Instance ID: <instanceId>
 ```
 
 Emit the label with `<not returned by CLI>` rather than dropping a line. `Data.finalStatus: "Faulted"` means the response contains the cause. `--output-filter` never filters `Message` or `Instructions`; they summarize incidents when PIMS returned any and name `uip maestro flow debug-instance incidents <instanceId>`. If `Data.incidents` is missing or `null` in a projection, run that command. Do not rerun the flow. On the next run, add `incidents:incidents` to the projection, or redirect unfiltered output to a file and search it:
-<!--skill-flavor:operate-debug-report:end-->
 
-<!--skill-flavor:operate-debug-redirect:start-->
 ```bash
 UIP_LOG_LEVEL=info uip maestro flow debug <project-dir> --output json > /tmp/flow-debug.json
 ```
-<!--skill-flavor:operate-debug-redirect:end-->
 
 ## Trigger a deployed process
 
@@ -221,9 +187,7 @@ Traces are verbose, full timelines, and a last resort except per-iteration timin
 
 ## Instance lifecycle
 
-<!--skill-flavor:operate-instance-id:start-->
 Every `instance` command needs `--folder-key` (`-f`) or is rejected before the API. Get it from `uip or folders list --output json` or the job/process context. An instance id comes from debug `Data.instanceId`, `job status`, or `instance list`.
-<!--skill-flavor:operate-instance-id:end-->
 
 ```bash
 uip maestro flow instance pause  <INSTANCE_ID> -f <FOLDER_KEY> --output json

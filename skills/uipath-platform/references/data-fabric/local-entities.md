@@ -193,15 +193,12 @@ that deploy and debug replace. Without them the node is tenant-scoped and fails
 at runtime (below). Which way you supply them depends on how the flow is
 authored.
 
-<!--skill-flavor:flow-sdk-local-entity-keys:start-->
 **Builder SDK (`.flow.ts`, the Flow skill's default).** Name the entity, not its keys: `entity: { name: '<Name>' }` in the `dataFabric*` factory.
 `check` prints `uip maestro registry prepare --entity <Name>`; run it in the Flow project folder, where `check` and `compile` run and read `./.flow-sdk/resources.json`.
 It reads the solution as well as the tenant, records the entity's resource key and the placeholder folder key, and names the folder to pin with `folder:`.
 Do not look the entity up on the tenant yourself: it is not there until deploy.
 The `uipath-maestro-flow` skill covers this (Data Fabric, an entity the solution authors itself).
 
-<!--skill-flavor:flow-sdk-local-entity-keys:end-->
-<!--skill-flavor:flow-sdk-json-entity-node:start-->
 **Hand-written `.flow` JSON:**
 
 1. Author the node with `entityConfig.entityName` set to the entity.
@@ -225,7 +222,6 @@ the keys on the spot:
 uip maestro flow node add <Project>.flow core.datafabric.read \
   --input '{"entityConfig":{"entityName":"Product","resultMode":"multiple"}}'
 ```
-<!--skill-flavor:flow-sdk-json-entity-node:end-->
 
 **Why this matters, and why a missing binding is hard to diagnose:** a node
 carrying only `entityName` serializes to a bare tenant-scoped

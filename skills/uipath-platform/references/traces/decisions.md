@@ -2,9 +2,7 @@
 
 Record who decided what on a trace, field by field, and read it back. A decision holds the accepted outcome, the decided fields (proposed value, final value, disposition, proposer), the actor, and optional process context.
 
-<!--skill-flavor:host-availability-extra:start-->
 
-<!--skill-flavor:host-availability-extra:end-->
 
 ## Commands
 

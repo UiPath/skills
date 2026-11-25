@@ -63,12 +63,10 @@ step a `label` that says what it extracts: the processor is named after it.
 Needs `@uipath/maestro-builder-sdk` 6.118.0 or later. An older SDK requires
 `model` (compile fails reading `modelName` without it) and writes no
 `inputs.processorKey`.
-<!--skill-flavor:extract-sdk-floor:start-->
 Upgrade the copy in use: `npm install @uipath/maestro-builder-sdk@latest` in a
 workspace that has its own `node_modules` copy, else
 `npm install -g @uipath/maestro-builder-sdk@latest`. Where that is not
 possible, use the CLI.
-<!--skill-flavor:extract-sdk-floor:end-->
 
 **The CLI commands** author the same node in a flow that has no TypeScript
 source: add it and wire `fileRef` per

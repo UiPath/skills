@@ -1,6 +1,0 @@
-{
-  "Name": "JiraTicketCloser",
-  "ProjectType": "Process",
-  "Description": "JiraTicketCloser automation project.",
-  "MainFile": "Main.xaml"
-}

@@ -2,7 +2,7 @@
 name: uipath-feedback
 description: "UiPath bug reports and improvement suggestions via `uip feedback send`. Use for 'report issue', 'send feedback', 'file a bug', or the /uipath-feedback command. For investigating an error rather than reporting one→uipath-troubleshoot."
 when_to_use: "User says 'this is broken', 'this isn't working', 'report a bug', 'send feedback', 'something is wrong', 'file an issue', 'this crashed', 'wrong result' about a UiPath product, CLI, or skill. Also fires on the /uipath-feedback slash command."
-allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
+allowed-tools: Read, Grep, Glob
 user-invocable: true
 ---
 
@@ -256,11 +256,8 @@ ExpressionError: Invalid expression at unknown location — currentItem is not d
 - **Top 3 Improvements**: (1) Include expression location (line/node) in validation errors. (2) Add a CLI command to list variables in scope at a given point. (3) Document loop variable naming conventions in the Flow skill.
 ```
 
-<!--skill-flavor:feedback-description-budget:start-->
 Truncate the full description to 4000 characters max. Note if content was truncated.
-<!--skill-flavor:feedback-description-budget:end-->
 
-<!--skill-flavor:feedback-prepare-attachments:start-->
 #### Prepare attachments
 
 Write sanitized copies of relevant project files to a temp directory:
@@ -276,13 +273,11 @@ Copy and sanitize files based on the detected area:
 - CodedApps: `package.json`
 
 Max 10 files, max 10MB each. Skip files that exceed limits.
-<!--skill-flavor:feedback-prepare-attachments:end-->
 
 #### Show preview and confirm
 
 Display to the user:
 
-<!--skill-flavor:feedback-preview:start-->
 ```
 **Type:** bug
 **Priority:** normal
@@ -292,7 +287,6 @@ Display to the user:
 
 Send this to UiPath? (yes/no)
 ```
-<!--skill-flavor:feedback-preview:end-->
 
 The user can adjust type, priority, or title (the title carries the area / optional CLI-or-Skill tag) before confirming. **Never send without explicit "yes".**
 
@@ -303,7 +297,6 @@ The user can adjust type, priority, or title (the title carries the area / optio
 1. Write the sanitized description body to a temp file using the **Write tool** (not a shell heredoc — heredocs are bash-only and fail on PowerShell). Use an absolute path in the OS temp dir, e.g. `<temp>/uip-feedback/description.md`.
 2. Invoke the CLI with `--description-file` pointing at that file:
 
-<!--skill-flavor:feedback-send-command:start-->
 ```bash
 uip feedback send \
   --type "<bug|improvement>" \
@@ -313,7 +306,6 @@ uip feedback send \
   --attachment <FILE1> <FILE2> \
   --output json
 ```
-<!--skill-flavor:feedback-send-command:end-->
 
 `--description-file` reads the body from disk, so it is immune to shell quoting and works identically on PowerShell, cmd, and bash. (If the CLI predates this flag, pipe the body via stdin instead; do not inline it.)
 
@@ -327,13 +319,11 @@ Parse the JSON output. On success, show the user a confirmation with any referen
 
 **Fallback:** Only after `--description-file` genuinely fails (network, auth, real CLI error) save the full feedback to `./feedback-report.md` using the description body and tell the user: _"Could not send automatically. The report is saved to `feedback-report.md`."_
 
-<!--skill-flavor:feedback-cleanup-attachments:start-->
 Clean up temp attachments:
 
 ```bash
 rm -rf "${TMPDIR:-${TMP:-/tmp}}/uip-feedback-attachments"
 ```
-<!--skill-flavor:feedback-cleanup-attachments:end-->
 
 ### Step 5 -- Report result
 
@@ -352,9 +342,7 @@ Could not send feedback automatically.
 - You can submit it manually or retry with `/uipath-feedback` later.
 ```
 
-<!--skill-flavor:feedback-cleanup-note:start-->
 Always clean up temp attachments regardless of success or failure.
-<!--skill-flavor:feedback-cleanup-note:end-->
 
 ## Sanitization Rules
 

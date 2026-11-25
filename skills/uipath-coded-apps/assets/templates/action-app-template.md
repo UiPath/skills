@@ -4,23 +4,21 @@ Complete, copy-paste scaffold for a new UiPath Coded Action App (React + TypeScr
 
 > **How to use this template.** Treat it as the visual + structural baseline. Keep the design system, the header/section/sticky-footer structure, the dark-theme handling, and the animations. **Adapt the schema-specific parts** — the `FormData` interface, default values, field labels, sections, number/currency formatting, and outcome buttons — to the confirmed `action-schema.json`. **Customer instructions (Q5 layout/style) always win** — layer their requested colours, layout, copy, and structure on top of this baseline; only fall back to the baseline where they gave no direction.
 
-> **CSS ships as files, not markdown — copy them byte-for-byte.** The four stylesheets (`index.css`, `App.css`, `Form.css`, `DocumentTab.css`) live as real files under [`action-app/`](action-app/) next to this template. **Copy them verbatim into the project** (`action-app/index-template.css` → `src/index.css`, `app-template.css` → `src/App.css`, `form-template.css` → `src/components/Form.css`, `document-tab-template.css` → `src/components/DocumentTab.css`). Do **not** retype them from memory — copying the file is what keeps the default UI identical across every scaffold.
+> **CSS ships as files, not markdown — copy them byte-for-byte.** The four stylesheets (`index.css`, `App.css`, `Form.css`, `DocumentTab.css`) live as real files under [`action-app/`](action-app/) next to this template. **Copy them verbatim into the project** (`action-app/index-template.css.md` → `src/index.css`, `app-template.css.md` → `src/App.css`, `form-template.css.md` → `src/components/Form.css`, `document-tab-template.css.md` → `src/components/DocumentTab.css`). Do **not** retype them from memory — copying the file is what keeps the default UI identical across every scaffold.
 
 > **Customization is token-first.** Most Q5 requests — brand colour, accent, fonts, corner radius, density — are satisfied by editing the design tokens in `:root` / `body.dark` at the top of `src/index.css` **only**, leaving the component CSS untouched. Reserve edits to `Form.css` / `DocumentTab.css` for **structural** changes the tokens can't express (new sections, a different grid, added/removed regions). This keeps the baseline stable and the diff reviewable. Prefer adding a small `src/theme-overrides.css` imported after `index.css` over rewriting `index.css` when the override set is large.
 
 > **The default `Form` is form-only — no document/PDF tab.** Only add the optional `DocumentTab` (last two sections) when the use case requires showing a document, per the PDF viewer step in [../../references/create-action-app.md](../../references/create-action-app.md). Do not wire it in by default.
 
-> The `Form.tsx` below is shown for a loan-review example (inputs: applicant name, loan amount, credit score; outputs: risk score, reviewer comments; outcomes: Approve / Reject). Swap those specifics for the real schema; preserve the structure and styling. (`form-template.css` uses generic class names — no per-schema edits.)
+> The `Form.tsx` below is shown for a loan-review example (inputs: applicant name, loan amount, credit score; outputs: risk score, reviewer comments; outcomes: Approve / Reject). Swap those specifics for the real schema; preserve the structure and styling. (`form-template.css.md` uses generic class names — no per-schema edits.)
 
 ---
 
-<!--skill-flavor:host-base-files:start-->
-<!--skill-flavor:host-base-files:end-->
 ## `src/index.css`
 
 Design system: CSS variables for light + dark, fonts, accent gradient palette, shadows, radii. Required — every component references these tokens.
 
-**Copy [`action-app/index-template.css`](action-app/index-template.css) verbatim to `src/index.css`.** This is the token-first customization surface: for brand/colour/font/radius requests, edit the `:root` and `body.dark` variable values here and leave the component stylesheets alone.
+**Copy [`action-app/index-template.css.md`](action-app/index-template.css.md) verbatim to `src/index.css`.** This is the token-first customization surface: for brand/colour/font/radius requests, edit the `:root` and `body.dark` variable values here and leave the component stylesheets alone.
 
 ---
 
@@ -82,7 +80,7 @@ export default App;
 
 ## `src/App.css`
 
-**Copy [`action-app/app-template.css`](action-app/app-template.css) verbatim to `src/App.css`.** Just the `app-shell` wrapper; no schema-driven changes.
+**Copy [`action-app/app-template.css.md`](action-app/app-template.css.md) verbatim to `src/App.css`.** Just the `app-shell` wrapper; no schema-driven changes.
 
 ---
 
@@ -385,7 +383,7 @@ export default Form;
 
 ## `src/components/Form.css`
 
-**Copy [`action-app/form-template.css`](action-app/form-template.css) verbatim to `src/components/Form.css`.** Styles the gradient header, section cards, responsive grid, readonly/dashed inputs, sticky outcome footer, and entrance/header animations — all on the `index.css` tokens. Edit it only for **structural** layout changes; colour/brand/font tweaks belong in `index.css` tokens (token-first rule above).
+**Copy [`action-app/form-template.css.md`](action-app/form-template.css.md) verbatim to `src/components/Form.css`.** Styles the gradient header, section cards, responsive grid, readonly/dashed inputs, sticky outcome footer, and entrance/header animations — all on the `index.css` tokens. Edit it only for **structural** layout changes; colour/brand/font tweaks belong in `index.css` tokens (token-first rule above).
 
 ---
 
@@ -509,4 +507,4 @@ export default function DocumentTab({ fileUrl, fileName = 'document.pdf' }: Docu
 
 ## `src/components/DocumentTab.css`
 
-**Copy [`action-app/document-tab-template.css`](action-app/document-tab-template.css) verbatim to `src/components/DocumentTab.css`** (only when the app shows a document). Styles the PDF shell, toolbar, paging/zoom buttons, and viewport on the `index.css` tokens.
+**Copy [`action-app/document-tab-template.css.md`](action-app/document-tab-template.css.md) verbatim to `src/components/DocumentTab.css`** (only when the app shows a document). Styles the PDF shell, toolbar, paging/zoom buttons, and viewport on the `index.css` tokens.

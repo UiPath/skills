@@ -1,6 +1,0 @@
-{
-  "Name": "AutomatedBillingNotifier",
-  "ProjectType": "Process",
-  "Description": "Sends billing notification emails via Send SMTP Mail Message on an unattended Robot session.",
-  "MainFile": "Main.xaml"
-}

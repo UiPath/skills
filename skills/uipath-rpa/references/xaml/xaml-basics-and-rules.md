@@ -2,8 +2,6 @@
 
 UiPath workflow XAML concepts and the Discovery → Generate/Edit → Validate & Fix → Response workflow.
 
-<!--skill-flavor:host-scope:start-->
-<!--skill-flavor:host-scope:end-->
 
 **Read contract (Rule 22):** read this file in full, with no prior lookup, in the same assistant turn as the other T1 reads (card and pitfalls heading lists). For per-operation/activity catalogs (§ Common Editing Operations, § XAML Reference Examples), Grep `^###` in [xaml-editing-catalog.md](xaml-editing-catalog.md) and Read only matching entries; if unsure, read it.
 

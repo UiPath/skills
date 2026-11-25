@@ -2,7 +2,7 @@
 name: uipath-platform
 description: "UiPath platform ops via the uip CLI — use for ANY task hitting UiPath Cloud / Orchestrator / Studio Web / Integration Service / Data Fabric / LLM Gateway. Load BEFORE writing code calling a UiPath API. Covers auth/OAuth2, folders, assets, queues, buckets, libraries, packages, webhooks, triggers, processes, jobs, machines, robots, users, roles, sessions, calendars, IS connectors/connections/activities, `uip df` entities/records/files/choice-sets, BYO LLM configs/custom connectors, BYOG, context grounding, traces/spans/feedback, licensing, CLI/skills setup. Job metrics→uipath-insights; root-cause/'why did X fail'→uipath-troubleshoot; audit logs/login history→uipath-admin; `uip solution`/.uipx→uipath-solution; PDD/SDD→uipath-planner; .xaml/.cs→uipath-rpa; .flow/Data Fabric flow nodes→uipath-maestro-flow; .bpmn→uipath-maestro-bpmn; agents/`uip eval run`→uipath-agents; Test Manager→uipath-test."
 when_to_use: "tenant; ROI; federated/virtual/zero-copy entities/choice sets; fields; insert/query/filter records, group-by/SUM/AVG; CSV/spreadsheet import; own LLM key, model substitution; BYOG; custom connector hooks, probe fails (MALFORMED_RESPONSE/VendorModelNotFound); uipath.com REST, `uip`/Node/npm/Python/.NET missing; local entity/entity in my solution; write/record/query a decision on a trace."
-allowed-tools: Bash, Read, Write, Glob, Grep, Skill
+allowed-tools: Read, Grep, Glob
 ---
 
 # UiPath Platform — uip CLI Assistant
@@ -18,11 +18,9 @@ Classify the requested **outcome** before running any command:
 3. **Mixed request → troubleshoot first.** Hand off the diagnosis; return here only for the platform mutation that applies the confirmed fix.
 4. **Sibling unavailable → degrade gracefully.** State the handoff could not run; give the entity, scope, and time window needed to retry the investigation. Do not improvise a platform-only root cause.
 
-<!--skill-flavor:freeze-critical-rule:start-->
 ## Critical Rules
 
 1. **In a frozen config, fix a freeze refusal without changing the freeze.** A freeze refusal is a `uip` failure with `ErrorCode: configuration_error` while the config has a `versions` block, or one whose `Message` names a freeze, a frozen config or a pin. On one, read [`references/cli-freeze-guide.md`](references/cli-freeze-guide.md) before the next command. Run only the fixes it names: no `--force` and no reinstall of the newest CLI without the user's agreement. Every other failure in a frozen repo (`Not logged in`, a 404, a validation error) is not a freeze refusal: handle it as usual.
-<!--skill-flavor:freeze-critical-rule:end-->
 
 ## Use the CLI. Don't roll your own REST.
 
@@ -40,9 +38,7 @@ If you find yourself about to `curl` `https://cloud.uipath.com/...` — stop. Se
 
 ## CLI Bootstrap for Fresh Machines
 
-<!--skill-flavor:freeze-bootstrap:start-->
 In a repo whose `.uipath/config.json` has `versions.cli`, run the installers below from inside the repo folder: they read the freeze there and put the CLI on its pin.
-<!--skill-flavor:freeze-bootstrap:end-->
 
 When `uip --version` fails, Node/npm is missing, or a coding agent needs a workstation prepared for UiPath work, use the official onboarding installers instead of reconstructing package-manager logic. They are idempotent and safe to rerun.
 
@@ -176,9 +172,7 @@ Check first:
 uip --version
 ```
 
-<!--skill-flavor:freeze-step0-install:start-->
 If the command is missing, use the official installer from [CLI Bootstrap for Fresh Machines](#cli-bootstrap-for-fresh-machines), then open a new shell if the installer added PATH entries. In a frozen repo, run the installer from inside the repo folder so it installs the pinned CLI.
-<!--skill-flavor:freeze-step0-install:end-->
 
 ### Step 1 — Authenticate
 
@@ -295,9 +289,7 @@ Choose the appropriate operation from the Task Navigation table below. For `uip 
 | **Diagnose a licensing symptom**                                                                                         | [references/licensing/diagnose/CAPABILITY.md](references/licensing/diagnose/CAPABILITY.md)                                                                   |
 | **Full CLI command reference**                                                                                           | [references/uip-commands.md](references/uip-commands.md)                                                                                                     |
 | **Bootstrap `uip`, Node, Python, .NET, and agent skills**                                                                | [CLI Bootstrap for Fresh Machines](#cli-bootstrap-for-fresh-machines)                                                                                        |
-<!--skill-flavor:freeze-nav-row:start-->
 | **Fix a command refused by a frozen config (`uip config freeze`)**                                                       | [references/cli-freeze-guide.md](references/cli-freeze-guide.md)                                                                                             |
-<!--skill-flavor:freeze-nav-row:end-->
 | **Build/run/validate coded workflows**                                                                                   | [/uipath:uipath-rpa](/uipath:uipath-rpa)                                                                                                                     |
 
 ## Resolving UiPath Studio
@@ -427,9 +419,7 @@ Every `uip` command accepts:
 - **[Orchestrator](references/orchestrator/orchestrator.md)** — Concepts, folders, jobs, processes, machines, users
 - **[Resources](references/orchestrator/resources.md)** — Assets, queues, buckets, triggers, libraries, webhooks
 - **[Orchestrator API Limits](references/orchestrator/api-limits.md)** — Per-tenant rate limits, export quotas, 429 handling, field size caps
-<!--skill-flavor:solutions-index-row:start-->
 - **[Solutions](/uipath:uipath-solution)** — Solution lifecycle (`uip solution init/pack/publish/deploy/activate`)
-<!--skill-flavor:solutions-index-row:end-->
 - **[Planner](/uipath:uipath-planner)** — PDD/SDD design + multi-skill task planning (Process → Solution Design Document → task list)
 - **[Traces — Spans](references/traces/traces.md)** — LLM execution trace observability
 - **[Traces — Feedback](references/traces/feedback.md)** — Annotate traces with sentiment and comments

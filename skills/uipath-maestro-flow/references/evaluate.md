@@ -2,9 +2,7 @@
 
 Manage evaluators, eval sets, data points, and simulations with `uip maestro flow eval`; defining an `inlineAgent(...)` node does not create them. Every `eval` command takes `--path <project-dir>`, the directory containing `project.uiproj`.
 
-<!--skill-flavor:eval-login:start-->
 **Local `add` / `list` / `remove` edit project files and need no login.** Starting a run does — run `uip login` first, and it needs a matching solution in Studio Web.
-<!--skill-flavor:eval-login:end-->
 
 Probe the installed CLI once, then let it write the JSON formats and generated file references rather than hand-authoring them:
 
@@ -99,7 +97,6 @@ uip maestro flow eval run compare <evalSetRunId> --compare-to <evalSetRunId> \
 
 ## Never upload as part of an eval workflow
 
-<!--skill-flavor:eval-no-upload:start-->
 **Never run `uip solution upload` automatically here. Always ask first.**
 
 `eval run start` needs the solution in Studio Web. If it cannot resolve one, it fails with `solution-id could not be resolved` or a variant; never treat that as permission to upload. `eval run start` itself re-uploads and overwrites the matching Studio Web solution unless `--solution-id` and `--project-id` are passed, so ask before it too. If Studio Web assigns another id, `eval run start` and `flow debug` repoint local `.uipx` `SolutionId` and report `Data.LocalSolutionIdUpdated` (`Path`, `From`, `To`); keep and commit that change, or the next upload creates a second solution.
@@ -107,7 +104,6 @@ uip maestro flow eval run compare <evalSetRunId> --compare-to <evalSetRunId> \
 `uip solution upload` writes to Studio Web, creating or **overwriting** the solution matching local `.uipx` `SolutionId`; it needs no flag and raises no prompt. It can push work in progress to where teammates and triggers pick it up, send partial local state from a `uip solution download` back over whatever else moved, or discard divergent remote state. The overwrite is restorable only through the browser and only if `--no-snapshot` was not passed; recovery is after the fact, by the user, and does not undo work in progress already pushed to teammates and triggers.
 
 Ask and offer either upload now with the user's acknowledgement, or pass `--solution-id` and `--project-id` for an existing Studio Web solution and plumb them through to `eval run start`.
-<!--skill-flavor:eval-no-upload:end-->
 
 ## Confirm what was written
 

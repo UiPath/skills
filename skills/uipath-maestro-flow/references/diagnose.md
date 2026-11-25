@@ -15,7 +15,6 @@ first one did.
 
 ## Step 0 — read the cause in the output you already have
 
-<!--skill-flavor:diagnose-step-0:start-->
 `Data.finalStatus: "Faulted"` means the response in hand holds the reason.
 A projection can drop `Data.incidents`, but `--output-filter` never filters
 `Message` and `Instructions`: they summarize the incidents, when PIMS returned
@@ -23,13 +22,10 @@ any, and name the `uip maestro flow debug-instance incidents <instanceId>`
 command. If `Data.incidents` is missing, or `null` in a projection, run that
 command. Do not re-run the flow. On the next run, add `incidents:incidents` to the projection,
 or redirect the unfiltered output to a file and search it:
-<!--skill-flavor:diagnose-step-0:end-->
 
-<!--skill-flavor:debug-redirect:start-->
 ```bash
 UIP_LOG_LEVEL=info uip maestro flow debug <project-dir> --output json > /tmp/flow-debug.json
 ```
-<!--skill-flavor:debug-redirect:end-->
 
 Look for the faulted element and its message. The node id in the fault maps
 back to the `.step('<id>', …)` that produced it, so the fix is usually a source
@@ -61,11 +57,9 @@ uip maestro flow job status <job-key> --output json
 uip maestro flow job traces <job-key> --output json
 ```
 
-<!--skill-flavor:diagnose-auth:start-->
 All of these need `uip login`. Every `instance` command and `incident get` also
 needs `--folder-key` (`-f`) or it is rejected before reaching the API. Get the key from
 `uip or folders list --output json`, or from the job or process context.
-<!--skill-flavor:diagnose-auth:end-->
 
 **Use these commands, never the underlying APIs.** The CLI applies the tenant
 and folder resolution the raw endpoints do not, so a direct call that appears to
@@ -103,7 +97,6 @@ time against a connection this tenant does not have. Read keys from
 `registry list --local` or the generated resource file, never from another
 project.
 
-<!--skill-flavor:skip-registration-fix:start-->
 **A single-nested project that upload rejects.** `uip maestro flow init` with
 `--skip-solution-registration` opts out of auto-scaffold and registration and
 leaves `<Project>/<Project>.flow` where `<Solution>/<Project>/<Project>.flow` is
@@ -116,9 +109,7 @@ running `uip solution init` then `flow init` from inside the solution; add
 `--automate` on the rebuild if the original was a Maestro Automate project — a
 `.maestro_automate` file in the project root says it was, and rebuilding without
 the flag silently returns a plain Flow.
-<!--skill-flavor:skip-registration-fix:end-->
 
-<!--skill-flavor:misshapen-format:start-->
 **Misshapen nodes on the canvas.** Symptom: the flow behaves correctly and is
 unreadable: nodes overlap, or a node is drawn at the wrong size. This is not a
 run-time fault and no check reports it — `validate` passes, because layout is
@@ -129,7 +120,6 @@ leaves every node on one row; the fallback is in
 [`operate.md`](operate.md#layout-of-the-emitted-flow).
 Do not run `format` on a merged brownfield file; it re-lays out the author's
 canvas.
-<!--skill-flavor:misshapen-format:end-->
 When the source sets `.layout()`, the misshapen node is the one with no entry, an entry at the wrong coordinates, or a container whose `dim()` no longer holds a body that grew.
 In a greenfield source: add or move its `at(x, y)`, resize with `dim(width, height)`, and recompile rather than running `format`, which would discard every other entry too.
 In a brownfield edit, fix it the same way in the decompiled source and merge again; `merge` applies a changed entry to the original node ([`operate.md`](operate.md#lay-out-from-source-instead-layout-at-dim)). This needs `@uipath/maestro-builder-sdk` 6.115.0 or later; the older-SDK fallback is in [`brownfield.md`](brownfield.md#designer-shapes-decompile-keeps).

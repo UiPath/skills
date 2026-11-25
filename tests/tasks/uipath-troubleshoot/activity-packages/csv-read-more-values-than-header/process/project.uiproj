@@ -1,6 +1,0 @@
-{
-  "Name": "CsvIngest",
-  "ProjectType": "Process",
-  "Description": "CsvIngest automation project.",
-  "MainFile": "Main.xaml"
-}

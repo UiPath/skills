@@ -1,5 +1,0 @@
-<Activity x:Class="Wf_ParseDocument" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-  <Sequence DisplayName="Parse Document">
-    <ui:DeserializeXml XMLString="not a valid xml document" DisplayName="Deserialize XML" />
-  </Sequence>
-</Activity>

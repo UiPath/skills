@@ -32,7 +32,6 @@ graph LR
 
 ---
 
-<!--skill-flavor:step-create-solution:start-->
 ## Step 1: Create a New Solution
 
 ```bash
@@ -44,15 +43,12 @@ Creates `InvoiceAutomation/InvoiceAutomation.uipx`. All projects must live insid
 > If the target folder already exists and is empty, `solution init` drops the `.uipx` inside without nesting or erroring. No need to pre-delete an empty target.
 
 > If the target folder already holds a `.uipx`, the solution exists: do not run `solution init`. It reports success but overwrites the manifest with a new `SolutionId` and an empty `Projects` list. Add projects to the existing solution instead.
-<!--skill-flavor:step-create-solution:end-->
 
 ## Step 2: Add Existing Projects
 
 > **Prerequisite for Coded Function and Coded Agent projects:** before running `uip solution projects add`, run `uip function init` (Python Coded Functions) or `uip codedagent init` (LangGraph/LlamaIndex/OpenAI Agents) inside the project directory to generate `entry-points.json`. JS/TS Coded Functions have no `init` — their `uipath.json` functions map is the registration marker (`entry-points.json` is generated at pack). Registration without these creates an incomplete solution entry.
 
-<!--skill-flavor:create-project-from-root:start-->
 To create a Coded Function or Coded Agent project from the solution root, run `uip function new <NAME> -l py` or `uip codedagent new <NAME>` there — from a directory holding a `.uipx` both create `<NAME>/` — then `cd <NAME>` for `init`; a coded agent's `new` additionally needs its framework package in the active venv first (see `uipath-agents`).
-<!--skill-flavor:create-project-from-root:end-->
 
 Register a project that already lives inside the solution directory. An RPA project `uip rpa init` creates there is registered by its creation, unless `--skip-solution-registration` kept it out.
 
@@ -323,9 +319,7 @@ A local stub starts from the kind's defaults: a queue has automatic retry on, `m
 **A federated entity's connection:** `uip solution resources add --source remote --kind Connection --name <CONNECTION> --folder-path <FOLDER>`, where `<FOLDER>` holds the connection.
 
 **Tenant-scoped `Entity` / `ChoiceSet`** (created without `--folder-key`) — NOT a solution resource. Reference the entity from the workflow via a DataService activity; the referencing runtime resolves it. Flow (Maestro `.flow`) and API workflows (`process:api`) use the DataService connector activity and are fully CLI-packable end-to-end (no special bundle in the nupkg).
-<!--skill-flavor:tenant-df-rpa:start-->
 RPA (XAML) workflows use strongly-typed DataService activities: install the entities into the project (`uip rpa data-fabric-entities install --add "<ENTITY_NAME>" --project-dir "<PROJECT_DIR>" --output json`), and `uip solution pack` packs their generated types into the project's package; the deployed process reads the tenant entity.
-<!--skill-flavor:tenant-df-rpa:end-->
 In all cases, do not run `uip solution resources add` for tenant-scoped DF, and **the destination tenant must already have the same entity at tenant scope with matching schema** (name + fields + SQL types) — the solution does NOT provision it.
 
 > **Do not hand-write `configurations/default/configuration.json`.** `uip df entities get` returns `fieldDataType`-shaped fields — pack and publish succeed silently; upgrade fails with per-field `EntityConflict`. Only `uip solution resources add --source remote` writes the shape the deploy validator accepts.
@@ -558,11 +552,8 @@ Deletes the Studio Web copy only -- local files and published packages are not a
 
 ## Complete Example
 
-<!--skill-flavor:e2e-lead-in:start-->
 Create a solution with two projects, sync resources, and verify:
-<!--skill-flavor:e2e-lead-in:end-->
 
-<!--skill-flavor:e2e-create-and-add:start-->
 ```bash
 # 1. Create the solution
 uip solution init "InvoiceAutomation" --output json
@@ -576,7 +567,6 @@ cd ./InvoiceAutomation
 
 # 4. Sync resource declarations from project bindings
 uip solution resources refresh --output json
-<!--skill-flavor:e2e-create-and-add:end-->
 
 # 5. Verify resources are tracked (per kind)
 uip solution resources list --kind Process --source local --output json
@@ -697,9 +687,7 @@ The probe covers the whole organization. Studio Web solutions do not belong to a
 
 A direct `.uis` upload has no local `.uipx` to read, so the CLI takes the `SolutionId` out of the archive (`SolutionStorage.json`, root `.uipx` as fallback, GUID-shaped values only). Re-uploading a `.uis` produced by `uip solution download` therefore updates the solution it came from instead of minting a `"<name> 1"` copy each time. An archive carrying no usable id imports as new.
 
-<!--skill-flavor:upload-as-new:start-->
 To upload as an unrelated new cloud solution rather than overwriting, for example a second copy of a solution in the same org, scaffold a fresh solution with `uip solution init`, or replace the `SolutionId` in the local `.uipx` with a fresh GUID and re-run `upload` — removing the field entirely fails `.uipx` validation.
-<!--skill-flavor:upload-as-new:end-->
 
 ### `delete` uses the solution UUID, not the name
 
@@ -727,9 +715,7 @@ Because `get` falls back to RCS + FPS export when the key isn't local, it works 
 
 | Want to... | Command | Watch for |
 |---|---|---|
-<!--skill-flavor:cheat-create-row:start-->
 | Create a fresh solution | `uip solution init <name>` | Accepts an existing empty directory; drops `.uipx` inside |
-<!--skill-flavor:cheat-create-row:end-->
 | Add a project already in the solution dir | `uip solution projects add ./<dir>` | Transactional — `.uipx` and `resources/solution_folder/{package,process}/` agree on success |
 | Pull in an external project | `uip solution projects import <path>` | Rename source folder first to avoid 3-name divergence |
 | Remove a project | `uip solution projects remove ./<dir>` | Manually delete `resources/.../package/<name>.json` afterwards |

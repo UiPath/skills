@@ -38,10 +38,8 @@ deployed process), set `location: 'in-solution'` and `projectId`, and omit
   [agent.md](agent.md#name-an-in-solution-sibling-by-project) for what it
   fills in, what it refuses, and when to fall back to the ids below.
 - **Where the two ids come from.**
-<!--skill-flavor:rpa-sibling-register:start-->
   Register the sibling and refresh resources
   (`uip solution projects add`, then `uip solution resources refresh`), then
-<!--skill-flavor:rpa-sibling-register:end-->
   run `uip maestro flow registry list --local --output json` from the Flow
   project directory. The generated
   `resources/solution_folder/process/process/<RpaProject>.json` carries the

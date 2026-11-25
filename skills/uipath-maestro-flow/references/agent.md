@@ -54,7 +54,6 @@ When asked to CREATE a coded agent in this solution, scaffold it as a sibling pr
 
 ## Task-created in-solution coded agent
 
-<!--skill-flavor:agent-scaffold:start-->
 1. Scaffold the solution and Flow project.
 2. Scaffold and implement the coded agent as a sibling directory.
 3. Register the sibling with `uip solution projects add`.
@@ -112,7 +111,6 @@ ls <SolutionName>/resources/solution_folder/process/*/<AgentProject>.json
 ```
 
 `uip solution projects list --output json` reports the type resolved from the manifest. `Type: Function` on a coded agent is this fallback, not a wiring error; re-adding the project or hand-editing `uipath.json` will not change it. Read the identifiers and wire the Flow instead.
-<!--skill-flavor:agent-scaffold:end-->
 
 ```ts
 .step('analyze', agent({

@@ -17,7 +17,6 @@ This guide assumes the node exists. For adding it, wiring `fileRef`, when it app
 
 ## Starting from a flow in Studio Web
 
-<!--skill-flavor:extract-brownfield:start-->
 For a Studio Web flow, work on a local copy: download, edit, and upload it. Identify it by solution id or the Studio Web URL's `solutionId` query parameter. If neither was provided, ask for either; if Studio Web was not mentioned and no local `.flow` exists, ask whether the flow is in Studio Web. **When in doubt, ask, rather than working it out.** Nothing lists Studio Web: `uip solution` downloads, uploads, and deletes only by id. Search endpoints and stored CLI credentials are not ways around asking; say either a link or an id works, and continue once it arrives.
 
 Run:
@@ -30,17 +29,14 @@ uip solution download <solution-id>
 The download creates a directory named for the id containing the flow project. Run this guide's commands against its `.flow`. If login expired, report it and ask the user to log in with `uip login`.
 
 Push the finished taxonomy with `uip solution upload` from the downloaded solution root and tell the user where to find the updated flow.
-<!--skill-flavor:extract-brownfield:end-->
 
 ### The documents uploaded to the node
 
-<!--skill-flavor:extract-eval-files-path:start-->
 Studio Web sample documents are downloaded under:
 
 ```
 <Project>/evals/<dataset-id>/eval-files/
 ```
-<!--skill-flavor:extract-eval-files-path:end-->
 
 List `evals/` rather than guessing its GUID dataset directory. Files retain their extensions but contain:
 

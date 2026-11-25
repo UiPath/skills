@@ -1,6 +1,5 @@
 # Frozen CLI Config
 
-<!--skill-flavor:cli-freeze-guide:start-->
 A team can pin the CLI, tool and skills versions with `uip config freeze`. The pins live in a `versions` block in the config file, usually committed with the repo. Under a freeze the CLI refuses commands that would run off the pins. Fix a refusal the way this guide says, not with the `--force` the CLI's own message offers.
 
 ## Spot a freeze
@@ -60,4 +59,3 @@ uip update --output json
 ## The CLI that comes with Studio
 
 The Studio-bundled CLI ignores `versions.cli` and `versions.tools`, so it gives none of the refusals above, and it refuses `uip config freeze`. It still follows `versions.skills`, and `uip config set` / `uip config clear` still refuse to edit a frozen config without `--force`.
-<!--skill-flavor:cli-freeze-guide:end-->

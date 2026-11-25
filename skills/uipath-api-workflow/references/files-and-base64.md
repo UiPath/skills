@@ -106,7 +106,6 @@ To send binary content as-is, make the bare reference the entire HTTP body; its 
 
 ## 5. Run a workflow that uses files
 
-<!--skill-flavor:file-inputs-cli:start-->
 Run `uip login` once, then run the workflow with a signed-in session. `uip api-workflow run --no-auth` refuses workflows calling `$helpers.file.*` before the engine starts and refuses `--input-file` / `--output-dir`. Rule 21 still applies: ask before running.
 
 ```bash
@@ -136,7 +135,6 @@ Example output:
 ```
 
 `uip api-workflow validate` supports these activities offline: it accepts `FileToBase64` / `Base64ToFile` and rejects either activity type when its script does not call the corresponding `$helpers.file.*` function.
-<!--skill-flavor:file-inputs-cli:end-->
 
 ## 6. Limits and gotchas
 

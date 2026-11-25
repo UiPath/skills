@@ -56,9 +56,7 @@ take none, so `where` stays empty and `check` refuses a subscription that
 omits `object` (`EVENT_GENERIC_NO_OBJECT`) or puts the object in `where`.
 
 ```ts
-<!--skill-flavor:generic-event-import:start-->
 import { RecordCreated, RecordUpdated } from './connectors/uipath-salesforce-sfdc.ts';
-<!--skill-flavor:generic-event-import:end-->
 
 // Start when an Opportunity is created with CloseDate before 2026-08-04.
 .trigger(onEvent(RecordCreated, {

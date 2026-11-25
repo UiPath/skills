@@ -16,20 +16,16 @@ Every `.loop()` emits `core.logic.loop` 2.4. Body writes use `{ updates }`, neve
 
 - `parallel: true` runs iterations concurrently. Their `{ updates }` writes overwrite one another in no fixed order, so a `.var()` updated by all iterations retains only some writes. Read results after the loop from `$vars.<loop>.output` instead: one entry per item in collection order, each `{ <bodyStep>: { output } }`. Do not use parallel when a body step reads `currentItem`; iterations do not isolate it (30 items produced 26 distinct values, run `Completed`, no warning), so run that loop sequentially. Entries omit HTTP steps, and a step that did not run in a pass carries the previous pass's value; therefore do not read either from `$vars.<loop>.output`.
 - `completionCondition` is checked after each iteration and stops the loop when true. It requires `@uipath/maestro-builder-sdk` 6.87.2 or later; older SDKs compile it but ignore it, run every item, and report `Completed`, no warning,
-<!--skill-flavor:completion-condition-sdk-upgrade:start-->
   so upgrade the copy `uip` uses by running:
   `npm install -g @uipath/maestro-builder-sdk@latest`, or
   `npm install --save-dev @uipath/maestro-builder-sdk@latest` for a
   workspace copy.
-<!--skill-flavor:completion-condition-sdk-upgrade:end-->
 - `body.break()` exits the whole loop from inside an arm; its path is terminal, like `.terminate()` but loop-scoped, and automatically shows the loop's `breakEnabled` handle.
 - `body.continue()` advances to the next iteration from an arm or `.onError()` handler through the loop's continue handle; its path is terminal. Without it, a handler inside the body ends the whole run on its own End. Do not use `.stepToRef('<the loop>')`: it re-enters from the outer input and restarts the loop, and `check` rejects it with `REF_TO_OWN_LOOP`. `body.continue()` also works on 1.0.0 through `loopBack`. On any version it requires `@uipath/maestro-builder-sdk` 6.20.0 or later; older SDKs fail with `continue is not a function`,
-<!--skill-flavor:continue-sdk-upgrade:start-->
   so upgrade the copy `uip` uses by running:
   `npm install -g @uipath/maestro-builder-sdk@latest`, or
   `npm install --save-dev @uipath/maestro-builder-sdk@latest` for a
   workspace copy.
-<!--skill-flavor:continue-sdk-upgrade:end-->
 
 ```ts
 .loop('each', input('items'), (body) => body

@@ -168,9 +168,7 @@ Then STOP and wait. On reply, hand the user the matching one-shot login from [..
    **Finally**, run `uip codedagent eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --no-report` (use the entrypoint name from `entry-points.json`).
 8. **Delivery target.** Single branch point. **Evaluate branches in order — Local Workspace projects also have `UIPATH_PROJECT_ID` set in `.env`, so the `local-workspace` check MUST come before the `has_project_id` check, or Local Workspace will incorrectly fall into the push branch:**
 
-<!--skill-flavor:local-workspace-delivery:start-->
    - **(1) `project_state == local-workspace`** → Studio Web auto-syncs saves to the remote SW project, so options A and B (manual push / solution upload) are skipped — they would be redundant or break sync identity. The user may still want a local dev console. Stop and ask the user (single choice, "Delivery"):
-<!--skill-flavor:local-workspace-delivery:end-->
 
      **Question:** *Studio Web is auto-syncing this workspace. Do you want a local dev console too?*
 
@@ -192,15 +190,12 @@ Then STOP and wait. On reply, hand the user the matching one-shot login from [..
      | # | Label (≤5 words) | Description |
      |---|---|---|
      | A | Studio Web — you set it up | You open Studio Web, create a Coded Agent project inside a solution, paste the project ID. I'll write `UIPATH_PROJECT_ID` to `.env` and run `uip codedagent push`. |
-<!--skill-flavor:delivery-option-b-row:start-->
      | B | Studio Web — I package & upload | I run `uip solution init`, import the agent, strip `.venv`, and run `uip solution upload`. No Studio Web setup needed from you. |
-<!--skill-flavor:delivery-option-b-row:end-->
      | C | Local dev web server | I start `uip codedagent dev` (default `http://localhost:8080`) so you can interact with the agent in the browser. Nothing is published. |
      | — | Skip — I'm done | Stop here. The agent is built and evaluated. |
 
      On reply:
      - **A** → wait for the project ID, write `UIPATH_PROJECT_ID=<id>` to `.env`, then run `uip codedagent push`.
-<!--skill-flavor:delivery-option-b:start-->
      - **B** → run the local-solution flow. `uip solution init "<SOLUTION_NAME>"` creates `<cwd>/<SOLUTION_NAME>/<SOLUTION_NAME>.uipx` (sibling, not ancestor). `uip solution upload` archives verbatim and does NOT honor `packOptions.directoriesExcluded` — strip `.venv` from the imported copy or upload fails with `code 20001: solution archive is corrupt`. From the parent directory of the agent:
 
        ```bash
@@ -211,13 +206,10 @@ Then STOP and wait. On reply, hand the user the matching one-shot login from [..
               "<AGENT_PROJECT_DIR>/__uipath" "<AGENT_PROJECT_DIR>/eval-results.json"
        uip solution upload . --output json
        ```
-<!--skill-flavor:delivery-option-b:end-->
      - **C** → run `uip codedagent dev` in the background; surface the URL (default `http://localhost:8080`). Prereq: `uipath-dev` (added during scaffold). **STOP — do NOT proceed to step 9.** Local dev is a terminal choice.
      - **Skip** → continue to step 9.
 
-<!--skill-flavor:deploy-reachability:start-->
 9. **Deploy.** Reachable from any `project_state` after option **Skip** at step 8 (greenfield or local-workspace), after the auto-push in branch (2), or after options **A** / **B** in greenfield. After option **C** at step 8, the run ends — do not ask. Stop and ask the user (single choice, "Deploy target").
-<!--skill-flavor:deploy-reachability:end-->
 
    **Question:** *Do you want to deploy the agent? If yes, which target?*
 
@@ -240,13 +232,10 @@ Read the relevant reference file at each step — do not guess.
 
 ## Quick Start: Scenario 2 — In-Solution Coded Agent in a Flow
 
-<!--skill-flavor:scenario-two-ownership:start-->
 Use when the coded agent is tightly coupled to one flow and lives as a sibling folder inside the same solution. The agent is wired to the flow via `--local` registry discovery — no separate Orchestrator deployment for the agent, no separate skill hand-off. **`uipath-agents` owns this scenario end-to-end** — solution scaffolding, flow scaffolding, agent build, registration, and flow wiring all happen here. Do not invoke `uipath-maestro-flow` as a separate skill; run the maestro-flow CLI commands directly from this workflow.
-<!--skill-flavor:scenario-two-ownership:end-->
 
 Execute the following in order, end-to-end, in one pass — do not pause for confirmation between steps.
 
-<!--skill-flavor:flow-project-creation:start-->
 1. **Scaffold the solution.** From the working directory:
 
    ```bash
@@ -263,11 +252,8 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
    ```
 
    This auto-registers the flow as a project in the solution.
-<!--skill-flavor:flow-project-creation:end-->
 
-<!--skill-flavor:agent-scaffold-solution-root:start-->
 3. **Scaffold the coded agent as a sibling folder.** From the solution root (still inside `<SolutionName>/`), create the agent folder first and run everything inside it — the venv and the framework package that selects the template must exist there before `new`. `uip codedagent new` scaffolds into the current directory; only when run from the solution root itself (the directory holding the `.uipx`) does it create `<AgentName>/`.
-<!--skill-flavor:agent-scaffold-solution-root:end-->
 
    ```bash
    mkdir "<AgentName>"
@@ -283,9 +269,7 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
 
    `uv add` requires the `pyproject.toml` that `codedagent new` generates — run it only after `new`, never at the solution root. Confirm `<framework>.json` exists before continuing (see [lifecycle/setup.md](lifecycle/setup.md) § Verify the Scaffold).
 
-<!--skill-flavor:agent-scaffold-result-paths:start-->
    Result: `<SolutionName>/<AgentName>/` sibling to `<SolutionName>/<FlowName>/`.
-<!--skill-flavor:agent-scaffold-result-paths:end-->
 
 4. **Implement the agent's `main.py`** with lazy LLM initialization (LLM clients inside graph nodes only — never at module top level), then regenerate entry-points / bindings (still inside `<AgentName>/`):
 
@@ -298,10 +282,8 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
 5. **Register the agent in the solution.** This step mints the `resource.key` UUID the flow node will reference:
 
    ```bash
-<!--skill-flavor:agent-solution-registration:start-->
    cd ..
    uip solution projects add "<AgentName>" "<SolutionName>.uipx" --output json
-<!--skill-flavor:agent-solution-registration:end-->
    ```
 
    After this command, `resources/solution_folder/process/agent/<AgentName>.json` holds the `resource.key`. Read that file (or the `--output json` response) to capture the UUID — it is what the flow node's `type` (`uipath.core.agent.<resourceKey>`) and `model.bindings.resourceKey` will reference.
@@ -316,10 +298,8 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
 
    The second command's `Data.Node` object is what gets pasted verbatim into the flow's top-level `definitions[]` array.
 
-<!--skill-flavor:flow-sdk-coded-agent-gate:start-->
    **Builder-SDK Flow projects (`.flow.ts`) — the default:** replace step 7 with one `agent({ key, name, ... })` step in `<Name>.flow.ts` and a `compile` — see [agent.md](../../../uipath-maestro-flow/references/agent.md). Step 7's JSON edits apply to a JSON-authored `.flow`.
 
-<!--skill-flavor:flow-sdk-coded-agent-gate:end-->
 7. **Wire the agent node into the `.flow` file.** Edit `<FlowName>.flow` directly:
    - Add a `uipath.core.agent.<resourceKey>` node to `nodes[]` with one `inputs.<field>` entry per property in the agent's input schema (see step 6's `Data.Node.inputDefinition`) and `model.section: "In this solution"`.
    - For input field values, see [embedding-in-flows.md § Wiring the Agent's Inputs](embedding-in-flows.md#wiring-the-agents-inputs).

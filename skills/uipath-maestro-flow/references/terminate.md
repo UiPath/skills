@@ -28,10 +28,8 @@ A Terminate's name is a step name, so another path can stop there with
 ONE Terminate with several incoming edges, as the canvas draws it.
 Needs `@uipath/maestro-builder-sdk` 6.32.2 or later; an older SDK refuses the
 ref as `REF_INTO_PORT_LIST`,
-<!--skill-flavor:terminate-ref-sdk-upgrade:start-->
 so upgrade with
 `npm install -g @uipath/maestro-builder-sdk@latest`.
-<!--skill-flavor:terminate-ref-sdk-upgrade:end-->
 
 ```ts
 .stepToList('branch-missing', (b) => b.step('reportMissing', script({ code })).terminate('stopFailed'))

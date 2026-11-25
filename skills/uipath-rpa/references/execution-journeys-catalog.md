@@ -1,7 +1,5 @@
 # Execution Journeys Catalog — turn-budgeted build journeys
 
-<!--skill-flavor:host-scope:start-->
-<!--skill-flavor:host-scope:end-->
 Catalog — read the one journey the task runs, never end-to-end: Grep `^## `, then Read that journey through the next `## ` heading. What every journey shares — source precedence, gate versus runtime proof, sequential gates, failure exits, cross-session memory — is [execution-maps-guide.md](execution-maps-guide.md), read whole first.
 
 ## Journey: Greenfield XAML (no UIA)

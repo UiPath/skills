@@ -21,20 +21,16 @@ Copy `project`, `modelName`, `folderName`, `folderPath`, and `versionTag` from t
 
 For "What document extractors can I add to this flow?", "what IxP models can I use here?", "list published extractors", or "what extraction nodes are in the registry?" (read-only Q&A, not build requests), run:
 
-<!--skill-flavor:ixp-list-commands:start-->
 ```bash
 uip login status --output json      # without login, tenant IxP nodes are hidden
 uip maestro flow registry search 'uipath.ixp' -f 'type:startsWith=uipath.ixp' --output json
 ```
-<!--skill-flavor:ixp-list-commands:end-->
 
 Present each `Data[]` entry's `DisplayName`, `NodeType`, and `Version` as a table, then stop.
 
 - Do **NOT** call `registry get` on search hits: search contains the answer. Use `registry get` only when authoring one specific node; it resolves ONE node's authoring identity.
 - Do **NOT** scaffold, run `uip maestro flow init`, write a `.flow.ts` or `.flow` file, or mock. If `Data: []`, run `uip maestro flow registry pull --force` once and search again (reads are cached for 30 minutes). If still empty, state that no IxP models are published. `mock()` is for build-time planning, not listing Q&A.
-<!--skill-flavor:ixp-no-login:start-->
 - **Do NOT log in for the user.** If `uip login status` shows logged-out, tell the user to run `uip login` and stop; listing without auth returns OOTB-only results and is misleading.
-<!--skill-flavor:ixp-no-login:end-->
 - Search only `uipath.ixp` (lowercase), never `runtime`, `document extractor`, `extractor`, or uppercase `IXP`.
 - Do **NOT** switch to the `uipath-ixp` skill: `uip ixp projects ...` lists IxP-product projects, not Maestro wiring.
 - Do **NOT** use `uip maestro flow process list` or Orchestrator folder iteration; they enumerate deployed flow process instances, not published models.

@@ -2,8 +2,6 @@
 
 Scaffold a production-ready UiPath Coded Action App — a React form component rendered inside UiPath Action Center as part of a Maestro or Agent automation workflow.
 
-<!--skill-flavor:host-scope:start-->
-<!--skill-flavor:host-scope:end-->
 ## What Is a Coded Action App?
 
 When an automation creates a human task (via `CreateAppTask` RPA activity/Maestro `User Task`/Agent `Escalation`/Flow `HITL node`), the assigned action app is rendered in Action Center for the reviewer. The app:
@@ -219,7 +217,6 @@ After collecting all answers, scaffold the project. **[assets/templates/action-a
 
 The sections below describe the schema-driven adaptations; copy the CSS files verbatim (per rules 4–5) and copy the small TS scaffolding (`main.tsx`, `vite.config.ts`, `App.tsx`) from the template for the parts they don't override.
 
-<!--skill-flavor:scaffold-commands:start-->
 ```bash
 npx --yes create-vite@latest <app-name> --no-interactive --template react-ts && node -e "require('fs').existsSync('<app-name>/src/main.tsx')||(console.error('SCAFFOLD_NOT_REACT'),process.exit(1))" && echo SCAFFOLD_OK
 ```
@@ -234,7 +231,6 @@ If SDK services are needed:
 ```bash
 npm install @uipath/uipath-typescript --@uipath:registry=https://registry.npmjs.org
 ```
-<!--skill-flavor:scaffold-commands:end-->
 ---
 
 ## Generated Files
@@ -309,8 +305,8 @@ Without SDK services there is no OAuth client, so **do not** write `uipath.json`
 
 ### `src/index.css`, `src/App.css`, `src/main.tsx`
 
-- `src/index.css` — copy [assets/templates/action-app/index-template.css](../assets/templates/action-app/index-template.css) byte-for-byte. Carries the design system (light/dark tokens, fonts, accent palette). For brand/colour/font requests, edit the `:root` / `body.dark` token values **here** (token-first rule) — do not touch component CSS.
-- `src/App.css` — copy [assets/templates/action-app/app-template.css](../assets/templates/action-app/app-template.css) byte-for-byte (`app-shell` wrapper; no changes).
+- `src/index.css` — copy [assets/templates/action-app/index-template.css.md](../assets/templates/action-app/index-template.css.md) byte-for-byte. Carries the design system (light/dark tokens, fonts, accent palette). For brand/colour/font requests, edit the `:root` / `body.dark` token values **here** (token-first rule) — do not touch component CSS.
+- `src/App.css` — copy [assets/templates/action-app/app-template.css.md](../assets/templates/action-app/app-template.css.md) byte-for-byte (`app-shell` wrapper; no changes).
 - `src/main.tsx` — copy verbatim from the template's `src/main.tsx` section (Vite entry that imports `index.css`).
 
 ### `src/App.tsx`
@@ -409,7 +405,7 @@ const handle<OutcomeName> = async () => {
 
 ### `src/components/Form.css`
 
-Copy [assets/templates/action-app/form-template.css](../assets/templates/action-app/form-template.css) byte-for-byte to `src/components/Form.css`. It styles the gradient header (`.review-header`), section cards (`.form-section`, `.form-title`), the responsive `.form-grid`, inputs (incl. read-only/dashed treatment), the sticky `.form-buttons` footer with primary/secondary `.outcome-btn`, and the entrance/header animations, all on the `index.css` design-system tokens.
+Copy [assets/templates/action-app/form-template.css.md](../assets/templates/action-app/form-template.css.md) byte-for-byte to `src/components/Form.css`. It styles the gradient header (`.review-header`), section cards (`.form-section`, `.form-title`), the responsive `.form-grid`, inputs (incl. read-only/dashed treatment), the sticky `.form-buttons` footer with primary/secondary `.outcome-btn`, and the entrance/header animations, all on the `index.css` design-system tokens.
 
 Edit `Form.css` only for **structural** Q5 changes the tokens can't express — drop classes for sections you removed, add classes for new ones, apply a two-column grid or a top summary card. Colour/brand/font changes go in the `index.css` tokens (token-first rule), **not** here. Customer styling instructions override the baseline.
 
@@ -443,7 +439,7 @@ npm install react-pdf
 
 #### Component & styles — copy from the template
 
-Copy `src/components/DocumentTab.tsx` verbatim from the template's [DocumentTab section](../assets/templates/action-app-template.md), and copy [assets/templates/action-app/document-tab-template.css](../assets/templates/action-app/document-tab-template.css) byte-for-byte to `src/components/DocumentTab.css`. The component is a generic PDF viewer: it takes a ready-to-render `fileUrl` (a `blob:` URL or direct URL) and owns paging, zoom, download, and the pdf.js worker setup. **The parent fetches the bytes** from whatever source Q3-doc settled on (Attachments / Buckets / Data Fabric), builds the URL with `URL.createObjectURL(blob)`, and passes it in as `fileUrl`. No schema-driven changes are needed inside the component.
+Copy `src/components/DocumentTab.tsx` verbatim from the template's [DocumentTab section](../assets/templates/action-app-template.md), and copy [assets/templates/action-app/document-tab-template.css.md](../assets/templates/action-app/document-tab-template.css.md) byte-for-byte to `src/components/DocumentTab.css`. The component is a generic PDF viewer: it takes a ready-to-render `fileUrl` (a `blob:` URL or direct URL) and owns paging, zoom, download, and the pdf.js worker setup. **The parent fetches the bytes** from whatever source Q3-doc settled on (Attachments / Buckets / Data Fabric), builds the URL with `URL.createObjectURL(blob)`, and passes it in as `fileUrl`. No schema-driven changes are needed inside the component.
 
 ---
 

@@ -1,8 +1,6 @@
 # HITL QuickForm Node — Direct JSON Reference
 
-<!--skill-flavor:flow-sdk-quickform:start-->
 In a builder-SDK (`.flow.ts`) project, author the quick form with `hitl({ variant: 'quick-form', ... })` through the `uipath-maestro-flow` skill — see [hitl.md](../../uipath-maestro-flow/references/hitl.md). `compile` emits the node; never write it into the compiled `.flow`, because the next `compile` overwrites the file. The JSON below describes that compiled node, and is how a JSON-authored `.flow` is built.
-<!--skill-flavor:flow-sdk-quickform:end-->
 
 ---
 
@@ -73,9 +71,7 @@ Also read `workflow.variables.globals`. Each entry has an `id` that maps directl
 
 > **`binding` vs `variable` prefix rule:** `binding` (input/inOut fields) uses the full path starting with `vars.` because it references an existing variable path. `variable` (output/inOut fields) uses `vars.<name>` — the `vars.` prefix is required; it declares the global variable name.
 
-<!--skill-flavor:flow-sdk-vars:start-->
 For the full variable system in a builder-SDK project, see the expression table in [uipath-maestro-flow SKILL.md § Builder frame](../../uipath-maestro-flow/SKILL.md#builder-frame)
-<!--skill-flavor:flow-sdk-vars:end-->
 
 ---
 

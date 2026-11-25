@@ -1,7 +1,7 @@
 ---
 name: uipath-admin
 description: "UiPath Admin via `uip admin` — Identity Server (users, groups, robot accounts, external OAuth2 apps, secrets, PATs, SMTP), Authorization (custom roles, role assignments, permission catalog, effective-access check-access PDP), OMS (org read/update, tenant lifecycle, service provisioning, regions, async op polling), IP Restriction (allowlist, enforcement, bypass rules, lockout safety), and Audit via `uip admin audit` (event sources, paginated queries, JSON-folder or CSV export, exclusion rules). Troubleshoot access-denied, login failures, role misconfig, IP lockout, PAT/app auth. Owns ALL org/tenant/identity audit — use `uip admin audit`, NOT `uip or audit-logs`, for any audit logs / audit trail / audit events / export / login history / who-did-what request. Also owns audit exclusion rules: stop, suppress, or mute recording of chosen audit events (`audit org exclusions`). Orchestrator-specific roles/permissions/folders/jobs→uipath-platform. RPA workflows→uipath-rpa."
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
+allowed-tools: Read, Grep, Glob
 ---
 
 # UiPath Admin

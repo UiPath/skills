@@ -5,17 +5,12 @@ Start an API workflow from a connector event (a Slack button clicked, a new Outl
 ## Rules
 
 1. **One trigger, in one slot: the root Sequence's `do` array, directly after `WorkflowStart`** (`do[0].Sequence_1.do[1]`, where Studio Web writes it). Never put it inside an If / ForEach / TryCatch, never after another activity, never add a second one. `validate` rejects a misplaced or second trigger.
-<!--skill-flavor:trigger-binding-rule:start-->
 2. **Run `uip api-workflow bindings sync` after every trigger add or edit.** It writes the `EventTrigger` entry in `bindings_v2.json` that registers the subscription on deploy. Without it the workflow validates, packs, publishes and deploys clean, and never fires. No gate catches this.
-<!--skill-flavor:trigger-binding-rule:end-->
 3. **Never hand-author a trigger.** `registry resolve --kind trigger`, then `registry stub` (rule 16). Use the stub output verbatim. To change the event or object, re-stub; do not edit `metadata.configuration`.
-<!--skill-flavor:trigger-schedule-scope:start-->
 4. **Only connector events live in the workflow file.** A schedule is an Orchestrator trigger on the deployed process (`uip or triggers`); a manual run is just invoking it. See [operating-published-workflows.md](operating-published-workflows.md).
-<!--skill-flavor:trigger-schedule-scope:end-->
 
 ## Authoring flow
 
-<!--skill-flavor:trigger-authoring-steps:start-->
 1. `uip api-workflow registry resolve "<KEYWORD>" --kind trigger --output json` → trigger type id
 2. `uip is connections list <connector-key> --output json` → connection UUID, then `uip is connections ping <CONNECTION_UUID> --output json` — REQUIRED
 3. `GenericTrigger` only: `uip is triggers objects <connector-key> <EVENT> --connection-id <CONNECTION_UUID> --output json` → object name
@@ -24,15 +19,12 @@ Start an API workflow from a connector event (a Slack button clicked, a new Outl
 6. Insert `Data.Activity` as the first entry after `WorkflowStart`.
 7. `uip api-workflow bindings sync --workflow <WORKFLOW_PATH> --output json`
 8. `uip api-workflow validate <WORKFLOW_PATH> --output json`
-<!--skill-flavor:trigger-authoring-steps:end-->
 
 Connection rules (folder-scoped listing, `ping` mandatory) are the same as for any connector activity: [connector-activity-discovery.md](connector-activity-discovery.md#step-2--verify-a-vendor-connection-intsvc-only).
 
 Triggers live in a separate TypeCache catalog; `--kind` takes `activity`, `trigger`, or `all` (default). The keyword also matches `EventOperation`, so `resolve "button_clicked" --kind trigger` works. Each trigger match carries `ActivityType` (`CuratedTrigger` pins its object; `GenericTrigger` needs `--object-name`), `EventOperation` (`CREATED`, `BUTTON_CLICKED`, …) and `EventMode` (`polling` or `webhooks`).
 
-<!--skill-flavor:trigger-kind-unavailable:start-->
 If `resolve` answers `unknown option '--kind'`, the installed CLI predates trigger support — upgrade it. Hand-authoring is not the fallback (rule 3).
-<!--skill-flavor:trigger-kind-unavailable:end-->
 
 ## Event parameters
 
@@ -50,9 +42,7 @@ Downstream activities read `$context.outputs.<ExportBucketKey>.content`, using t
 
 ## The EventTrigger binding
 
-<!--skill-flavor:trigger-binding-command:start-->
 `uip api-workflow bindings sync` derives it from the trigger's `with` clause and regenerates it on every sync. After syncing, check `bindings_v2.json` for one `resource: "EventTrigger"` entry whose `key` is the connection UUID and whose `metadata.ObjectName` / `Operation` / `FilterExpression` match `with.objectName` / `eventType` / `filterExpression`. Event parameters the connector registers with (typically path and query fields) also get a `Property` entry under it. In Solutions mode follow with `uip solution resources refresh --solution-folder <SOLUTION_DIR>` (rule 16).
-<!--skill-flavor:trigger-binding-command:end-->
 
 ## Filter expression
 
@@ -65,14 +55,10 @@ Downstream activities read `$context.outputs.<ExportBucketKey>.content`, using t
 
 ## Exercising a trigger before deploy
 
-<!--skill-flavor:trigger-local-run:start-->
 | `uip api-workflow run` | Result |
 |---|---|
 | `--input-arguments '<json>'` | The trigger passes the input through as the event payload; no connector call. Shape it like `outputFields`. |
 | No input, `eventMode: polling` | Reads the latest matching event from the live connection (needs auth, healthy connection). No match → `"<EVENT>: Trigger activity could not find any matches"`. Side-effecting under rule 21. |
 | No input, `eventMode: webhooks` | Fails by design; the event only arrives from the vendor. Use `--input-arguments`. |
-<!--skill-flavor:trigger-local-run:end-->
 
-<!--skill-flavor:trigger-clean-gate-antipattern:start-->
 A clean `validate` / `pack` / `publish` / `deploy` is not proof the trigger fires. Only the `EventTrigger` binding does that (rule 2).
-<!--skill-flavor:trigger-clean-gate-antipattern:end-->

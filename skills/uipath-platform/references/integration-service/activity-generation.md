@@ -301,9 +301,7 @@ $WORK/<Name>.json           the compiled activity metadata
 
 ## Putting it in a flow
 
-<!--skill-flavor:flow-sdk-generated-activity:start-->
 The builder-SDK Flow skill (`uipath-maestro-flow`) has no node for a generated activity: `rawNode` refuses every `uipath.connector.*` type, and `connector()` only takes catalog operations. Report that gap to the user rather than hand-editing the compiled `.flow`, and offer managed HTTP in connector mode (the `uipath-maestro-flow` skill covers it) as the fallback.
-<!--skill-flavor:flow-sdk-generated-activity:end-->
 
 ## Keep the scripts readable
 

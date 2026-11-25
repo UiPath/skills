@@ -2,8 +2,6 @@
 
 Complete guide for packaging, publishing, and deploying UiPath Coded Web Applications to production.
 
-<!--skill-flavor:host-scope:start-->
-<!--skill-flavor:host-scope:end-->
 ## Pipeline Overview
 
 ```
@@ -409,7 +407,6 @@ Deleting the package also removes the matching published app version, except in 
 
 ---
 
-<!--skill-flavor:frozen-cli-config:start-->
 ## Frozen CLI Config
 
 A team can pin the CLI and its tools in the `versions` block of `.uipath/config.json`; `<CLI_PIN>` is its `versions.cli`. While the installed CLI or a tool is off its pin, `uip` refuses the command, with a `Message` such as `which this frozen config does not list` or `freezes the CLI at`. Critical Rule 24 says what to do; this section holds the detail.
@@ -420,7 +417,6 @@ A team can pin the CLI and its tools in the `versions` block of `.uipath/config.
 - **Anything else, or a second failure:** show the user the `Message` and `Instructions` and stop.
 
 Never run these to get past a refusal, even when the `Instructions` name them: a command with `--force`, `uip config freeze`, `uip config unfreeze`, `uip config import`, `npm i -g @uipath/cli` without the exact pin, or an edit of the `versions` block. Each one rewrites the team's pins or moves the CLI off them.
-<!--skill-flavor:frozen-cli-config:end-->
 
 ## Troubleshooting
 

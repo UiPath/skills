@@ -73,9 +73,7 @@ All sub-steps are non-interactive. Run them first; their outputs drive the Step 
 
 If Step 1 resolves the request to **one project owned end-to-end by one specialist** — even when it bundles inline HITL / script / connector nodes or its own solution wrapper (author sub-steps, per SKILL.md § Choosing the Verb item 8) — **stop `decompose`**:
 
-<!--skill-flavor:single-skill-exit-no-plan:start-->
 1. Do NOT write a plan file. Do NOT create tasks with the task-list tool. Do NOT ask the Step 3 batch.
-<!--skill-flavor:single-skill-exit-no-plan:end-->
 2. Say which specialist owns it and why ("Single-project `.flow` build — loading `uipath-maestro-flow` directly").
 3. Hand off the Step 1 context (detected paths, delivery model, any resolved answers) so the specialist does not re-discover it.
 
@@ -110,11 +108,9 @@ All inputs below are known by the end of Step 1/2 — no skip rule depends on a 
 > 2. **Explore, plan, and execute simultaneously** — emit the plan as text and the main agent starts executing right away
 
 **If "explore first, then plan":**
-<!--skill-flavor:approach-behavior:start-->
 - You may run non-mutating discovery: `uip rpa analyze`, `uip rpa get-errors`, reading `project.json`.
 - Do NOT run commands that mutate the project (create files, register targets, install packages) — those belong to execution.
 - After Steps 4–5, enter plan mode with the plan. User approves → exit plan mode.
-<!--skill-flavor:approach-behavior:end-->
 
 **If "explore, plan, and execute simultaneously":**
 - Emit the plan as text in Step 5. The main agent loads the first specialist skill immediately and follows that skill's own workflow.
@@ -187,26 +183,20 @@ Record the answers in the plan header AND summarize them in the relevant task's 
 ## Step 5 — Write the plan
 
 Compose the plan per the schema in [plan-and-tasks-format.md → `decompose`](../shared/plan-and-tasks-format.md#decompose-featuremd). Plan body holds the task list in the task row schema.
-<!--skill-flavor:write-plan-target:start-->
 
 **Every task's Skill prompt embeds the plan path** — the exact relative or absolute path of `<feature>.md`, written below. Live tasks copy prompts verbatim; a bare "this plan" leaves a resumed task with no way to find its values.
-<!--skill-flavor:write-plan-target:end-->
 
 ### Self-review before saving
 
 Check the plan against [plan-and-tasks-format.md § Quality rules](../shared/plan-and-tasks-format.md#quality-rules-applied-during-self-review-before-saving), and:
 
-<!--skill-flavor:self-review-plan-path:start-->
 - **Plan path present** — every Skill prompt names the plan file path (not "this plan").
-<!--skill-flavor:self-review-plan-path:end-->
 
 Fix issues before saving.
 
 ### Save location
 
-<!--skill-flavor:save-location-scope:start-->
 Save as `YYYY-MM-DD-<feature-name>.md`:
-<!--skill-flavor:save-location-scope:end-->
 
 - **Project directory exists** (`project.json`, `flow_files/`, `.uipath/`, or `pyproject.toml`) → save to `docs/plans/` within the project. Create the directory if needed.
 - **No project directory** → save to `./plans/` (relative to the current working directory). Create the directory if needed.
@@ -220,17 +210,13 @@ If a plan file already exists at the target path, ask the user with a structured
 > 1. **Continue with the current plan** *(recommended)* — pick up where you left off; checkbox state preserved
 > 2. **Regenerate from the current request** — discard the current plan and rebuild
 
-<!--skill-flavor:resume-choices:start-->
 Option 1: read existing plan → recreate the live tasks with the task-list tool, status preserved → done.
 Option 2: parse the request fresh, run identity-matching against the old file (preserve completed work), write the new plan, emit live tasks, per [plan-and-tasks-format.md → Regenerate logic](../shared/plan-and-tasks-format.md#regenerate-logic).
-<!--skill-flavor:resume-choices:end-->
 
 ## Step 6 — Present the plan
 
-<!--skill-flavor:present-plan:start-->
 - **Explore first, then plan:** enter plan mode with the plan content. User approves → exit plan mode → create the live tasks with the task-list tool.
 - **Explore, plan, and execute simultaneously:** emit the plan as text. Then immediately create the live tasks with the task-list tool. Main agent starts executing.
-<!--skill-flavor:present-plan:end-->
 
 ## `decompose` budget
 

@@ -30,18 +30,12 @@ When `.step()` continues every outcome, an `action: 'End'` outcome goes to its o
 - `recipient` is `{ channels?, assignee: { type, value? }, connections? }`. Channels: `'Slack' | 'teams' | 'Email' | 'ActionCenter'`; assignee types: `user`, `group`, `staticEmail`, `staticGroupName`, `workload`, `roundRobin`, `custom`. Omit it for default channels: Email + Action Center on default and `'quick-form'`; Action Center only on `'action-app'` and `'document-validation'`. Omitted recipients and assignees without `value` create an unassigned task. `user` and `staticEmail` require `value`; otherwise `check` warns `HITL_RECIPIENT_NO_USER` with `@uipath/maestro-builder-sdk` 6.61.1 or later; absence of an older-SDK warning does not prove validity.
 - `labels` is one comma-separated string shown in Action Center.
 - Field `direction` is `'input'` (shown), `'output'` (asked), or `'inOut'` (pre-filled/editable; provide `value`). The reviewed value returns at its field id. An asked field writes to Flow variable `variable` (name only, no `vars.` prefix), defaulting to its field id; read it with `v('<variable>')`, or bind a shown field with `value: v('<variable>')`. Studio Web names it `<Step>_<field>`; `variable: 'P_comments'` writes `vars.P_comments`. Preserve decompiled names or downstream reads fail `EXPR_UNDECLARED_REF`. `check` reports `HITL_FIELD_VARIABLE` for a `vars.` prefix, dotted path, or `variable` on a non-`direction: 'output'` field. The answer is also always `out('<step>', '<id>')`. SDK 6.44.0+ is required; older SDKs ignore `variable`, write `vars.<id>`, cause `EXPR_UNDECLARED_REF`, and decompile warns it cannot write the designer row back
-<!--skill-flavor:field-variable-sdk-upgrade:start-->
   — upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
-<!--skill-flavor:field-variable-sdk-upgrade:end-->
 - Field `type` is one of 11 quick-form types: `'string'`, `'number'`, `'integer'`, `'float'`, `'double'`, `'boolean'`, `'date'`, `'datetime'`, `'file'`, `'object'`, `'array'`. `'text'` and `'date-time'` are accepted as older spellings of `'string'` / `'datetime'`; leave them as they are in existing source; bound-variable types such as `'string[]'` and `'string | null'` decompile as `'array'` and `'string'`.
 - Picker types are `'singleSelect'` and `'enum'` (single-choice dropdown, `string` answer) or `'multiSelect'` (multi-select, `array` answer), with `options: [{ id, value, label }]` and all three keys required. Never replace them with `'string'` or `'array'`; preserve spellings and options in decompiled forms. SDK 6.31.9+ is required; older SDKs report `HITL_FIELD_TYPE_UNKNOWN` (ignore its `type: 'string'` hint),
-<!--skill-flavor:field-type-sdk-upgrade:start-->
   so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
-<!--skill-flavor:field-type-sdk-upgrade:end-->
 - A field also takes the platform's settings keys, with the platform's names and shapes: `controlType` (`'text'`, `'textarea'`, `'numberInput'`, `'datePicker'`, `'dateAndTimePicker'`, `'checkbox'`, `'dropdown'`, `'radioGroup'`, `'multiSelect'`, `'checkboxGroup'`, `'fileUpload'`), `defaultValue` (string or multi-select list), `colSpan` (1 to 12), `rules` (`{ id, conditions: [{ when, is?, ... }], operator?, effects }`), `requiredMessage`, and `description`. Preserve `type: 'string', controlType: 'dropdown'` and its `options`; removing `controlType` makes a text box. Decompiled canvas forms keep these keys and stay editable. `check` reports invalid values as `HITL_FIELD_SETTING_INVALID`, `FLOW_AGENT_ESCALATION_FIELD_SETTING_INVALID` on an agent quick-form escalation, or `INLINE_AGENT_ESCALATION_FIELD_SETTING_INVALID` on an SDK older than 6.88.2. SDK 6.35.0+ is required; older SDKs drop these on decompile and omit them on compile,
-<!--skill-flavor:field-settings-sdk-upgrade:start-->
   so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
-<!--skill-flavor:field-settings-sdk-upgrade:end-->
 
   A row key the SDK has no option for (a `variable` other than `vars.<id>`,
   a key the platform's schema does not define, a `binding` on an asked
@@ -88,9 +82,7 @@ If neither file exists, ask the user for the schema; never write one by hand. Wi
 Decompile preserves the schema: it prints `app.actionSchema` when it compiles exactly to the node's `inputSchema`; otherwise, including hand-edited `title`s, it prints the node schema as `app.inputSchema`. Preserve that form and provide `actionSchema` or `inputSchema`, not both.
 
 SDK 6.59.1+ is required; older SDKs lack `actionSchema` on `app`, so TypeScript rejects it (check that `dist/api-index.md` lists `PlatformActionSchema`),
-<!--skill-flavor:action-schema-sdk-upgrade:start-->
 so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
-<!--skill-flavor:action-schema-sdk-upgrade:end-->
 
 ## Variant judgment
 
@@ -107,18 +99,12 @@ A coded Action App in the SAME solution is not yet deployed to a folder. Use `lo
 ```
 
 - **Where the key comes from.**
-<!--skill-flavor:app-sibling-register:start-->
   Register the app project and refresh resources (`uip solution projects add`, then `uip solution resources refresh`). The
-<!--skill-flavor:app-sibling-register:end-->
   generated `resources/solution_folder/app/codedAction/<App>.json` carries `resource.key` → `key` and `resource.name` → `name`. Never invent the key; the full recipe is in [agent.md](agent.md#task-created-in-solution-coded-agent).
 - Never give `folderPath` with `location: 'in-solution'`; a literal `'solution_folder'` reaches the engine and is refused; `check` refuses any non-empty `folderPath` (`HITL_APP_LOCAL_HAS_FOLDER`). Decompiled in-solution tasks with folder `''` or `'solution_folder'` return as `location: 'in-solution'`. Do not transfer this rule to an agent escalation's app, which is an agent resource and does carry `'solution_folder'` ([agent-resources.md](agent-resources.md#escalation)).
 - SDK 6.66.2+ is required; older SDKs reject `location` on `app` and `check` asks for missing `folderPath`,
-<!--skill-flavor:inso-app-sdk-upgrade:start-->
   so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
-<!--skill-flavor:inso-app-sdk-upgrade:end-->
-<!--skill-flavor:inso-app-uip-floor:start-->
   No `uip` build checked so far preserves the app folder when packing this task (1.204.0 and 1.205.0-preview.269 both drop it), causing runtime `170004 Invalid input for the HITL task`. Tell the user an in-solution app task needs a `uip` release carrying the fix; do not retry the run.
-<!--skill-flavor:inso-app-uip-floor:end-->
 
 ## Evidence boundary
 

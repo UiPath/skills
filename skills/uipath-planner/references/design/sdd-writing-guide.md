@@ -11,9 +11,7 @@ Phase 3 of `design` writes the full SDD to disk incrementally, resolves the SME 
 | Step 2 item 6 | finalizing a Case Management draft | [case-review-and-conformance-guide.md](case-review-and-conformance-guide.md) § Finalizing a Case Draft |
 | Step 2 item 8 | a Case Management SDD | [case-review-and-conformance-guide.md](case-review-and-conformance-guide.md) § SDD Conformance Checklist |
 | Step 3, next turn | the SDD is `Status: ready` and no build skill handed the design over | [author-guide.md](../author/author-guide.md) whole — the `author` verb; its § Read Plan names the rest |
-<!--skill-flavor:client-word-read-row:start-->
 | § Client Word Document | the user asks for the client-facing Word SDD / ASDD (their official template, a `.docx`) | [asdd-crosswalk-guide.md](asdd-crosswalk-guide.md) whole |
-<!--skill-flavor:client-word-read-row:end-->
 
 ## Phase 3 — Full SDD Generation
 
@@ -64,9 +62,7 @@ Fill in all sections of the chosen template not covered in Phase 1 or Phase 2. S
 - **Next Steps — points at the build.** The genome `author` writes from the `ready` SDD is the implementation input; `design` writes no task list.
 
 > **What Phase 3 does NOT produce:** an Implementation Plan section or a task list for implementation work.
-<!--skill-flavor:phase3-output-surface:start-->
 > It creates no implementation tasks with the task-list tool.
-<!--skill-flavor:phase3-output-surface:end-->
 > The genome `author` writes from the `ready` SDD is the implementation input. The SDD's `## Next Steps` section marks that boundary, and that is the entire `design` output surface.
 
 ### Step 1.5: Resolve SME Review Items
@@ -201,14 +197,10 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 **A caller's request with `stop-after: sdd` skips this whole step**, the turn boundary included: its result ends the run in the same turn and the caller continues ([caller-request-guide.md](caller-request-guide.md)).
 
 The SDD is the deliverable of `design`. **Do not generate an Implementation Plan section inside the SDD.
-<!--skill-flavor:design-deliverable:start-->
 Do not create implementation tasks with the task-list tool during `design`.
-<!--skill-flavor:design-deliverable:end-->
 Do not start executing.**
 
-<!--skill-flavor:turn-boundary:start-->
 > **The SDD write is a turn boundary — do not begin the genome or the build in the same turn as `design`.** Once the SDD is on disk, the superset check has passed, and the Step 2 item 9 summary is emitted, that is the end of the current turn. Continue on the **next** turn with the sequence below. Rationale: `design` (read PDD + guides, author §1–§18), `author` (read the SDD, write and self-review the genome) and the build (`uipath-genome`: configuration questions, then every component through its owning skill) are each heavy; stacking two of them in one unbroken autonomous turn is what pushes a turn past the host's time or context limit and loses the whole run. Yielding after each durable write keeps each turn bounded: a turn that ends early still leaves the SDD on disk. This is a turn checkpoint, **not** a structured question — do not prompt the user; simply let the turn end after the summary.
-<!--skill-flavor:turn-boundary:end-->
 
 Then continue:
 
@@ -238,13 +230,9 @@ A build skill that finds no SDD to build from hands its request here (`uipath-ma
 1. **The output path is the caller's** — `sdd.md` at the working root for `uipath-maestro-case`. Never overwrite an existing file there: stop and say it exists.
 2. **The Phase 2 Step 5 review carries the caller's build options** (case: [case-review-and-conformance-guide.md](case-review-and-conformance-guide.md) § Presenting the Case Design). The answer is the build consent; it is never asked again.
 3. **The write does not end the turn and gets no genome:** after the `ready` flip, the caller's build starts in this conversation
-<!--skill-flavor:build-handoff-row:start-->
 (`uipath-maestro-case`: `uip solution init` and its Phase 1),
-<!--skill-flavor:build-handoff-row:end-->
 verifying the identities the SDD resolved instead of re-discovering them.
 
 ## Client Word Document
 
-<!--skill-flavor:client-word-document:start-->
 Only on request: an official client template, a Word SDD / ASDD, a `.docx`. Run it after the SDD is on disk, from the markdown SDD, following [asdd-crosswalk-guide.md](asdd-crosswalk-guide.md). The markdown SDD stays as-is: the client document is a separate file beside it, and its section structure is the customer's template, never this skill's.
-<!--skill-flavor:client-word-document:end-->

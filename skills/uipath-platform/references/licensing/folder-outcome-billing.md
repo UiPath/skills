@@ -14,9 +14,7 @@ Read and change the outcome billing setting of an Orchestrator folder. Server-si
 
 ## Prerequisites
 
-<!--skill-flavor:host-availability-extra:start-->
 
-<!--skill-flavor:host-availability-extra:end-->
 
 1. Authenticated — verify with `uip login status`; if not, ask the user to run `uip login` (interactive browser flow)
 2. The **tenant id** (GUID) of the tenant that owns the folder — `uip login status` shows the current tenant, `uip login tenant list` lists `TenantName` + `TenantId`

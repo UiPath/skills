@@ -1,6 +1,0 @@
-description = "Analyze what a skill teaches vs what its tests verify, producing a prioritized gap analysis report."
-prompt = """
-@{.claude/commands/test-coverage.md}
-
-User input: {{args}}
-"""

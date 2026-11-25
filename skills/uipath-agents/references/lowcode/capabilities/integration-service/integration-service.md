@@ -201,9 +201,7 @@ The activity metadata's `fields.<name>.enum` already has this exact shape — co
 
 1. Run `uip agent refresh` — regenerates `entry-points.json` and `bindings_v2.json` in the agent project directory.
 2. Run `uip agent validate` — read-only check. Fails with `AgentValidationOutdated` if refresh is needed.
-<!--skill-flavor:is-solution-files-refresh:start-->
 3. Run `uip solution resources refresh` from the solution root — auto-generates `resources/solution_folder/connection/{connectorKey}/` files and `debug_overwrites.json`.
-<!--skill-flavor:is-solution-files-refresh:end-->
 
 **`location` and `folderPath`:**
 
@@ -218,9 +216,7 @@ The activity metadata's `fields.<name>.enum` already has this exact shape — co
 
 Provisions an Integration Service connection as part of the solution. Required when an agent has an integration tool (`type: "integration"`). One per connector — all tools using the same connector share this connection resource.
 
-<!--skill-flavor:is-connection-definition-refresh:start-->
 **Auto-generated:** Do not create these files manually. After creating the agent-level integration tool `resource.json`, run `uip agent refresh` (regenerates `entry-points.json` and `bindings_v2.json`), then `uip agent validate` (read-only check), then `uip solution resources refresh` (auto-generates connection resources and `debug_overwrites.json` from `bindings_v2.json`).
-<!--skill-flavor:is-connection-definition-refresh:end-->
 
 **Cross-reference:** The connection resource `key` matches the `solutionProperties.resourceKey` in integration tool resources that use this connector.
 
@@ -322,7 +318,6 @@ If no `--connection-id` is available (e.g., the connector auto-provisions connec
 
 Build the `resource.json` from the metadata. See § Agent-Level Resource Shape above for the full template and field mapping.
 
-<!--skill-flavor:is-step8-refresh:start-->
 ### Step 8 — Refresh, validate, and refresh solution resources
 
 ```bash
@@ -342,7 +337,6 @@ At this point, the solution can be uploaded to Studio Web and tested:
 ```bash
 uip solution upload . --output json
 ```
-<!--skill-flavor:is-step8-refresh:end-->
 
 ## Gotchas
 

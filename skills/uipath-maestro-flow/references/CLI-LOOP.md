@@ -1,13 +1,11 @@
 # Authoring and product-CLI loops
 
-<!--skill-flavor:loop-choice:start-->
 Choose one loop before any build command, as [SKILL.md — Lifecycle](../SKILL.md#lifecycle) says:
 
 - For product-CLI validation/debug, or when `flowSdk.emitOnly`/`FLOW_SDK_EMIT_ONLY=1` is enabled, use only the eval/product-CLI loop. Its scaffold and full command block are in SKILL.md; the debug flags and projections here are only for runtime-evidence bars.
 - Otherwise use this file's packaged-SDK local gates.
 
 In eval/product mode, create the solution/project scaffold immediately after choosing the loop, before authoring. After the source first compiles, emit it into that nested project artifact—not `/tmp`—and keep the artifact current after every source edit.
-<!--skill-flavor:loop-choice:end-->
 
 Tenant discovery is not a loop phase. First choose the node ([SKILL.md, "Choose the node before writing it"](../SKILL.md)); `check` cannot flag a node never written, so a script or `mock()` substitution goes unflagged. Author from the task's words; source `check` names every owed tenant call—unresolved lookup, unmaterialized object, and out-of-snapshot field—with its exact `registry prepare` command. Spend that one expensive `registry prepare` call once, after the cheap pass finds all other errors.
 
@@ -21,7 +19,6 @@ When editing an existing Flow, edit the supplied `.flow.ts`, preserve existing s
 
 ## Installing the package
 
-<!--skill-flavor:install-package:start-->
 Skip the install when the SDK is already installed: `npm ls -g @uipath/maestro-builder-sdk` lists it, or a prepared workspace has `node_modules/@uipath/maestro-builder-sdk` (a workspace copy is used before a global one).
 Every `uip maestro flow` authoring verb — `check`, `compile`, `decompile`, `merge` — runs from the installed package, so all of them refuse until it is installed; the package cannot bootstrap itself.
 
@@ -74,11 +71,9 @@ The names are stable:
 To pin one SDK floor for a project, add `"flowSdk": { "minVersion": "<version>" }` to its `package.json`.
 From 6.101.0, `compile`, `check`, `decompile` and `merge` then refuse an older SDK with exit 2. The message names the copy that ran and the `npm install ...@latest` command that upgrades it (`--save-dev` in the project for a workspace copy, else `-g`).
 Both need `@uipath/maestro-builder-sdk` 6.101.0 or later (UiPath/builder-sdk#2009). An older SDK ignores `minVersion`, so a floor only takes effect once the SDK in use is 6.101.0 or later; upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` (or `--save-dev` for a workspace copy).
-<!--skill-flavor:install-package:end-->
 
 ## Local authoring hard gates
 
-<!--skill-flavor:local-gates:start-->
 Use this section only with emit-only disabled. Use source `check` as the fast no-output loop; with a library and `.flow-sdk/bindings.json` beside the source it reports every connector-input and binding refusal that `compile` would raise. Compile to emit, then run product static check on the artifact. There is no compiled-artifact `check`; `validate` is that rung. `validate` judges connector and other tenant nodes against the node cache `registry pull` wrote for your login (CLI 1.206 and earlier judge built-in nodes against that cache too); after a stale-handle error, run `uip maestro flow registry pull --force` once and validate again. `compile` does not run `check` and writes any serializable flow, so never compile with a `check` error. Ignore only an error whose own message says to ignore it, when applicable (for example `INLINE_AGENT_PROMPT_JSON_TEXT` when JSON is mentioned only as data). For a brownfield edit, add `--baseline <original.flow>` ([brownfield.md](brownfield.md#check-only-what-you-changed-check---baseline)).
 
 Run this sequence in order; run `registry prepare` only when `check` names it:
@@ -102,13 +97,10 @@ every node, so it discards the positions the author chose. See
 [`operate.md`](operate.md#layout-of-the-emitted-flow).
 
 These authoring verbs require a prerelease of `@uipath/cli` that exposes them.
-<!--skill-flavor:local-gates:end-->
 
 ## Product-CLI scaffold
 
-<!--skill-flavor:product-cli-scaffold:start-->
 The scaffold (`uip solution init`, `flow init --sdk-source` for the seed, and `--automate` for a Maestro Automate project) is in [SKILL.md — Project layout](../SKILL.md#project-layout); keep it there so copies cannot drift.
-<!--skill-flavor:product-cli-scaffold:end-->
 
 ## Eval/product-CLI packaging: emit-only
 
@@ -129,9 +121,7 @@ The JSON envelope has top-level `Result`; successful validation also reports `Da
 
 Merge's warning that it writes a missing binding row is [that repair](brownfield.md#merge-warnings-what-the-round-trip-changed), not a failure. Validate reads only the `.flow`, so `bindings.json`, `bindings_v2.json` and solution resources cannot explain it.
 
-<!--skill-flavor:unresolved-binding-persists:start-->
 A connection placeholder still there after the merge: update the SDK copy `uip` runs, `npm install --save-dev @uipath/maestro-builder-sdk@latest` when the workspace has `node_modules/@uipath/maestro-builder-sdk` (that copy runs first), else `npm install -g @uipath/maestro-builder-sdk@latest`, and merge once more. Any other placeholder, or still there: report the node and placeholder.
-<!--skill-flavor:unresolved-binding-persists:end-->
 
 A warning with no fix in this skill gets one bounded experiment ([below](#bounded-completion)), then is reported as a failure with its code and node.
 
@@ -165,7 +155,6 @@ Compilation resolves the names and writes connector-authenticated node detail an
 
 ## Refresh, debug, and preserve evidence
 
-<!--skill-flavor:debug-flags:start-->
 `flow debug` takes the project directory, not the `.flow` file; run resource refresh first. From the solution directory, `<Name>` names the project. A `500` at `prepare-custom-debug` is transient: retry once. A `403`/`404` there comes from a folder flag: drop it unless the account has no personal workspace ([operate.md](operate.md#debug--a-real-end-to-end-run)). Use only flags required by the claim:
 
 | Need | Exact form |
@@ -177,9 +166,7 @@ Compilation resolves the names and writes connector-authenticated node detail an
 | Poll bound | `--timeout <seconds> --poll-interval <milliseconds>`; keep the stated task bound |
 | Compact read-back | `--output-filter "<JMESPath>" --output json` |
 | Quiet logs | `--log-level error`, or `--log-file <path>` to move them off the stream entirely |
-<!--skill-flavor:debug-flags:end-->
 
-<!--skill-flavor:debug-readback:start-->
 ### `--output-filter` is JMESPath, and three things about it are worth knowing
 
 Use `'single-quoted'` for a string literal, not `` `backticked` ``; backticks delimit a JSON literal, so `` `Completed` `` is invalid. Both forms below work; prefer the first (its failure is loud), wrapped in DOUBLE quotes so the inner `'…'` survives the shell:
@@ -247,7 +234,6 @@ uip maestro flow debug-instance incidents <instanceId> \
 ```
 
 `ErrorDetails` commonly contains the service response or unresolved-resource value omitted by the summary.
-<!--skill-flavor:debug-readback:end-->
 
 ## CLI output conventions
 

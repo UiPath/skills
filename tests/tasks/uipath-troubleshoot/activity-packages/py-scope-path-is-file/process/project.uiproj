@@ -1,6 +1,0 @@
-{
-  "Name": "PythonHelloWorld",
-  "ProjectType": "Process",
-  "Description": "Runs a simple Python hello-world script inside a Python Scope.",
-  "MainFile": "Main.xaml"
-}

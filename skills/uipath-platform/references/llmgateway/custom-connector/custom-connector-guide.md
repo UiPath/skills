@@ -10,13 +10,9 @@ UiPath product ──(API flavor body)──▶ LLM Gateway ──▶ Integratio
 
 Everything here runs through `uip`: `uip is connectors builder` (author on disk), `uip is connectors import` and `publish` (tenant), `uip is connections` (the runtime connection), `uip llm-configuration byo-connections` (probe + save).
 
-<!--skill-flavor:draft-intro:start-->
 The one exception is the unpublished draft: `curl` creates its test connection and calls the connector through it, on the Integration Service API, with the token from `uip login refresh`. The draft is tested that way and stays unpublished until those calls pass; the product's probes run once, on the published connector's runtime connection, when the configuration is saved.
-<!--skill-flavor:draft-intro:end-->
 
-<!--skill-flavor:host-availability-extra:start-->
 
-<!--skill-flavor:host-availability-extra:end-->
 
 ## When to Use This Guide
 
@@ -88,7 +84,6 @@ Ask for (unless already given): the vendor base URL; how it authenticates (API k
 
 Check the vendor can do what the product's probes ask before building. Every configuration gets the gateway's default probe for its flavor, or the probe the gateway's code builds for that product in its place (Agents and UIA have one). On top of those, a product's Model Hub configuration can list its own probes for a feature. Those are opt in: ask the user, or the product team, which `ProbeId`s the feature lists, and name each with `--probe` (none named: the default and code-built probes only).
 
-<!--skill-flavor:probe-list:start-->
 List what will run, offline (`<GUIDE_DIR>` is the folder holding this guide: `references/llmgateway/custom-connector/` in the uipath-platform skill):
 
 ```bash
@@ -97,7 +92,6 @@ bash <GUIDE_DIR>/scripts/run-probes.sh --product <PRODUCT> --feature <FEATURE> -
 ```
 
 Each line names a file under `<GUIDE_DIR>/assets/probes/` holding the request body and what the answer must show ([probes-guide.md](probes-guide.md)).
-<!--skill-flavor:probe-list:end-->
 
 Agents forces a tool call (a required `tool_choice`, `parallel_tool_calls: false`); the probes a product lists can send images, several choices (`n`) or web-search grounding. Autopilot's round-trip probes (`autopilot_*_stream_roundtrip_probe`, one per flavor) stream both ways: the vendor must stream tool calls in the flavor's own event format, then answer from the tool results sent back. A connector cannot reshape a stream (Rule 4), so a vendor whose stream is not the flavor's cannot pass them. A vendor without the feature cannot pass, however the hooks are written — tell the user and agree whether to go on.
 
@@ -168,7 +162,6 @@ The `builder` commands find the connector from `<WORK_DIR>`; `import` and `publi
 
 The user connects twice, so say which connection this is before asking for it: this first one is only for testing the unpublished draft, a sandbox key is enough for it, and no product ever uses it. The connection the product runs on comes second, after publishing (step 9), and that one takes the credentials production must use.
 
-<!--skill-flavor:draft-test-connection:start-->
 This is the Connector Builder's **Add connection**, called with `curl` (it needs `curl`, `jq` and `node`). Shell variables do not survive between commands, so write a helper once, outside the connector folder, and source it in every call. It reads a fresh token from `uip login refresh` and hands it to `curl` on stdin, so the token never reaches a command line, a file or the output:
 
 ```bash
@@ -229,11 +222,9 @@ Either way `connectionId` is the test connection (the connection step 7 calls), 
 ```
 
 The connection belongs to the draft, so `uip is connections list` and `ping` do not see it; the step 7 calls are its test. Errors, delete and credential changes: [connections-guide.md](connections-guide.md).
-<!--skill-flavor:draft-test-connection:end-->
 
 ### 7. Call the draft through Integration Service
 
-<!--skill-flavor:draft-calls:start-->
 Send the product's probe requests to the test connection, the way the gateway sends them when the configuration is saved: the same bodies, at the flavor's resource path (`POST …/v3/element/instances/{connectionId}{flavor path}`), with the model the vendor expects in the body or the path, and the same checks on each answer. `run-probes.sh` does it with the step 6 helper, so the token stays in `api`:
 
 ```bash
@@ -257,7 +248,6 @@ No other probe streams. If the product streams and no round-trip probe ran, also
 ```
 
 A connector whose hook refuses streams ([hook-authoring-guide.md](hook-authoring-guide.md) §"Streaming") answers this call with that same message alone, as a `404`: it is Integration Service's answer to the refusal, not a missing resource. Repeat the call with `Accept: application/json` to see the hook's own refusal.
-<!--skill-flavor:draft-calls:end-->
 
 When a probe fails, read its answer, fix the hook or the config entry it points at, `builder validate`, `import` (the test connection runs the new import at once) and run the probes again. Integration Service answers two failures itself, both `404`: "No API found at that URL for the given token and credentials" (no resource at that path, Rule 1) and "Invalid Element Instance Id provided." (the test connection is gone). Every other answer comes from the vendor through your hooks. A vendor error keeps the vendor's status, but its body reaches you inside Integration Service's own envelope, flattened into `providerMessage` (`error - {message=…}`): read the vendor's reason there.
 
@@ -273,9 +263,7 @@ A `FAILURE` status or a non-zero exit stops the workflow: read the message, fix,
 
 ### 9. Runtime connection and the configuration
 
-<!--skill-flavor:runtime-connection:start-->
 The test connection usually holds the builder's own or a sandbox key. Ask the user which credentials production uses, then open the runtime connection's page for them: start the session on the published connector (`<PUBLISHED_KEY>`) in the shared folder the product will use with the Connections API call in [connections-guide.md](connections-guide.md) §"Create the runtime connection" (`uip is connections create` cannot pick a folder), and open its `authUrl` in their browser as in step 6. If the connection lands in the Personal workspace, have them create it from Integration Service in the web UI instead. Find its id:
-<!--skill-flavor:runtime-connection:end-->
 
 ```bash
 uip is connections list <PUBLISHED_KEY> --all-folders --refresh --output json    # Id, State, FolderKey
@@ -316,9 +304,7 @@ The reader is usually the customer's administrator, not a UiPath engineer. Write
 <BaseUrl>/<Organization>/portal_/admin/ai-trust-layer/llm-configurations/<TenantId>/<FOLDER_ID>/edit/<CONFIG_ID>
 ```
 
-<!--skill-flavor:config-link-values:start-->
 `BaseUrl`, `Organization` and `TenantId` come from `uip login status --output json`.
-<!--skill-flavor:config-link-values:end-->
 `<FOLDER_ID>` is the shared folder's **numeric** id, not its key: `uip or folders get <SHARED_FOLDER_KEY> --output json` prints it as `Data.Id` (`uip or folders list` does not).
 
 ## Change a published connector

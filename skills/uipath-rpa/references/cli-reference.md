@@ -2,8 +2,6 @@
 
 `uip rpa` and sibling tools (`uip is`, `uip tm`, …) communicate with UiPath Studio over named pipes (IPC). Use this reference to discover live commands, arguments, and flags, and to handle authentication, Studio backends, run results, and recovery.
 
-<!--skill-flavor:host-scope:start-->
-<!--skill-flavor:host-scope:end-->
 
 > Command and flag lists are not exhaustive or current. Discover the live surface with `--help`; this document covers behavior `--help` omits.
 

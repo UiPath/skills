@@ -123,10 +123,8 @@ Tenant-scoped entities use `entity: '<Name>'`; folder-scoped entities use the Or
 ```
 
 SDK 6.73.0 or later is required. An older SDK refuses `{ name, folder }` and has no key-less `prepare`,
-<!--skill-flavor:data-fabric-entity-ref-sdk:start-->
 so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 If `uip maestro registry prepare --entity …` says `missing required argument 'connector-key'`, run the same command as `npx flow-sdk registry prepare --entity …`.
-<!--skill-flavor:data-fabric-entity-ref-sdk:end-->
 
 `check` reports `RESOURCE_UNRESOLVED` and prints the command recording keys. Run it, then run `check` again:
 
@@ -220,14 +218,12 @@ const BIND = { connection: 'dataservice', folder: 'shared' } as const;
 
 The same source rule applies to `documentClassify`, `dynamicExtract`, `ixpExtract`, `summarize`, and `batchTransform`: the file field accepts a `types.file` input, `out('<step>', '<fileField>')`, or any step whose declared output is a file. Runtime values are file references, never bytes.
 
-<!--skill-flavor:operation-doc:start-->
 **Read the operation's own doc before guessing anything.**
 Run:
 ```bash
 uip maestro registry describe uipath.connector.uipath-uipath-dataservice.create-entity-record
 ```
 It prints the connector page (UiPath Data Fabric), HTTP route `POST /v2/{entityName}/CreateEntityRecord`, and exact `prepare-connector … -f entityName=<value>` line before anything is inferred.
-<!--skill-flavor:operation-doc:end-->
 
 ## Evidence boundary
 

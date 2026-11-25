@@ -10,8 +10,6 @@ Create, edit, manage, validate, build, run, debug, test, and publish UiPath code
 
 > **Read referenced files imperatively.** This SKILL.md routes you; it does not replace references. When a rule, Task Navigation entry, or section points to a file, open and read it in full before acting—do not grep, skim, use `--help`, or substitute prior knowledge. Catalogs may prescribe targeted lookup (for example, Grep `^##` for contents or `<command> --help` for flags); read matching sections only. A pointer naming a section (`file.md § Section`) is targeted through the next heading of its level. Skipped or partial references commonly cause build/runtime errors.
 
-<!--skill-flavor:host-scope:start-->
-<!--skill-flavor:host-scope:end-->
 ## When to Use This Skill
 
 Use for projects, workflows, tests, source files, configuration, dependencies, activities, validation/build/run/debug, assertions, Integration Service connectors, and desktop/web UI automation.
@@ -22,9 +20,7 @@ UIA work requires `UiPath.UIAutomation.Activities` at or above the minimum versi
 
 ## Precondition: Project Context
 
-<!--skill-flavor:project-context-precondition:start-->
 Before work, check `.claude/rules/project-context.md` in the project directory. If present and fresh, proceed. If missing/stale, run the skip gate and, only if it does not trip, perform [environment-setup.md § Project Context Discovery](references/environment-setup.md): metadata-comment counts versus current counts, the 60–70% threshold, greenfield/empty/untouched-scaffold skip gate, host-specific discovery-agent options, and `context-files:`/`SKIP:` handling. The agent writes context files; do not re-read or rewrite them. **Dispatch discovery AT MOST ONCE per session** — reuse a running agent or its produced result; a later step that calls for project-context discovery means INTEGRATE the earlier dispatch, never spawn a second. If the skip gate trips, use no discovery agent and write both context files yourself after build per that section.
-<!--skill-flavor:project-context-precondition:end-->
 
 ## Step 0: Resolve PROJECT_DIR
 
@@ -100,14 +96,10 @@ Common Rules are 1–12. Coded rules 13–19 are in [coded/codedworkflow-referen
 ### Common Rules (Both Modes)
 
 1. **NEVER create a project without confirming none exists.** Check explicit path, project name, then CWD for `project.json`; create only when no match exists and the user explicitly requests creation.
-<!--skill-flavor:rules-project-creation:start-->
 2. **ALWAYS use `uip rpa init`**; never manually write `project.json` or scaffolding. Before init, if the user names a template ("REFramework", "based on the X template") or an industry/domain pattern (SAP, ERP, banking, mainframe), run `uip rpa templates search --query "<term>" --output json` and follow [environment-setup.md § Template selection](references/environment-setup.md): never silently choose Marketplace; present candidates and ask; if Official and Marketplace both match, ask.
 2a. **Pass `--target-framework` AND `--expression-language` explicitly on every `uip rpa init` — never omit them.** Both are immutable after creation (Rule 23); omitting `--target-framework` silently yields a **Windows** project. Choose `Portable` for cross-platform/non-Windows runtime (Linux, container, serverless) or Studio Web; choose `Windows` for Windows runtime using Windows-only capabilities (Excel COM, classic Office, WPF / `PresentationFramework`, Windows-only UIA) or Studio Desktop (`Windows` is not editable in Studio Web). Studio Web accepts Portable only when every workflow is XAML with VB expressions; errors are `20042 Project has coded workflows` and `20021 ... unsupported programming language: CSharp`, and the project then opens only in Studio Desktop. A request requiring both cross-platform runtime and Windows-only capability is contradictory—surface it. **Windows - Legacy is a last resort** (explicit ask or hard .NET 4.6.1 need; never inferred from VB.NET or non-"X" classic activities) — create it in Legacy mode, not modern `init`. No signal → `AskUserQuestion` about Windows versus Cross-platform, framed around runtime host. `--expression-language` defaults to `VisualBasic`; use `CSharp` only explicitly. `init` writes installed Studio `dotNetVersion`; unsupported robot versions fault before activities with `Error converting value "<VERSION>" to type 'UiPath.Shared.DotNetVersion'`; then set `dotNetVersion` to the robot version (`net8.0` where `net10.0` is refused), rebuild, and republish.
-<!--skill-flavor:rules-project-creation:end-->
-<!--skill-flavor:rules-validation-gate:start-->
 3. **Phase-gated validation.** After every create/edit, run `uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json` until 0 errors, fixing one thing per iteration; after every touched file is clean, run `uip rpa build "<PROJECT_DIR>" --output json` until clean. `validate` catches structural XAML, references, and schema; `build` covers all project workflows, analyzer rules, and packaging. The split is [cli-reference.md § What each phase covers](references/cli-reference.md#what-each-phase-covers). If `build` errors, take each error's file from the build's detailed log and re-run `validate --file-path` on it for a compile error. Limit each file validation loop and separate build loop to 5 attempts. A smoke test does not replace build; prefer `run --skip-build` after a passing build ([cli-reference.md § Smoke Test](references/cli-reference.md#smoke-test)). Do not run `uip rpa analyzer-rules list` as an authoring prerequisite; use it only on request or after repeated rule-family violations (the unscoped call can take a minute or more; [cli-reference.md § analyzer-rules list](references/cli-reference.md#analyzer-rules-list)). Warnings do not gate delivery, naming warnings excepted (Rule 4c): with 0 errors from validate/build, deliver; investigate warnings only on request or acceptance impact. Report warning counts by rule ID; do not spend gate attempts on them. Expected UIA warnings (verification-feature, Automation Hub URL) are at [cli-reference.md § Expected non-defect warnings](references/cli-reference.md#expected-non-defect-warnings). Read errors in full. See [cli-reference.md § Validation Iteration Loop](references/cli-reference.md#validation-iteration-loop).
 4. **Always validate every touched file and verify project build before declaring done.** Clean validate alone is insufficient; for observable-output workflows, finish with one `run` and check outputs ([execution-maps-guide.md § Gate ≠ runtime proof](references/execution-maps-guide.md#gate--runtime-proof)).
-<!--skill-flavor:rules-validation-gate:end-->
 4a. Use file tools: `Write` each `.xaml`/`.cs` completely and `Edit` later; never generate workflow files with scripts/templates: validation and fixes stay per file, and Object Repository links survive `Edit` but not regeneration. For similar files, parallel `Write`s, a helper workflow, or copy a validated file and `Edit` differences.
 4b. Write only invokable units: extract reused or independently readable groups; keep one activity or short assignments inline. Do not wrap one activity merely to pass arguments. A scope the activity needs (an Application Card, an attach) is no reason to extract it: open the scope at the step, around the steps that act on that window in a row.
 4c. **Name XAML workflow arguments and variables by the Workflow Analyzer naming rules in force** — entry points and library public workflows included — and clear every naming warning `build` reports (`validate` does not run the analyzer). Default rules: direction prefix on arguments (`in_InvoiceId`, `out_Result`, `io_Browser`; ST-NMG-002); `dt_` after it on a DataTable argument (`in_dt_Rows`; ST-NMG-011) and first on a DataTable variable (`dt_Rows`; ST-NMG-009); then letters, digits only at the end (`in_dt_InvoiceRows`, not `in_dt_Invoice_Rows`). An organization can change the rules; a warning's pattern overrides these defaults. No prefix: coded workflow arguments ([coded/operations-guide.md § Add a Workflow File to Existing Project](references/coded/operations-guide.md#add-a-workflow-file-to-existing-project), step 3), the Global Exception Handler's `errorInfo` and `result` ([error-handling-guide.md § Global Exception Handler](references/error-handling-guide.md#8-global-exception-handler-geh)), test-data arguments ([testing-guide.md § Data-Driven Testing](references/testing-guide.md#data-driven-testing)). Library public arguments: [library-authoring-guide.md § The Public-Workflow Contract](references/library-authoring-guide.md#the-public-workflow-contract--mandatory).
@@ -126,9 +118,7 @@ Common Rules are 1–12. Coded rules 13–19 are in [coded/codedworkflow-referen
 
 ### Destination Preflight (Both Modes)
 
-<!--skill-flavor:studio-web-destination:start-->
 **Studio Web means a Solution deliverable, not a bare project.** Studio Web ingests Solutions only; a bare project folder is invisible in both SW workspace tabs. Signals: “Studio Web”, “SW”, “upload to web”, “browser editor”, “cloud workspace edit”. Build normally, then hand off to `uipath-solution`: `uip solution init <NAME>` → `uip solution projects import "<PROJECT_DIR>" --solutionFile <SOLUTION>.uipx` → `uip solution upload "<SOLUTION_DIR>"`. Deliver the Solution. Bare projects remain valid for local `uip rpa run` and Orchestrator `uip rpa pack` → `uip rpa publish`.
-<!--skill-flavor:studio-web-destination:end-->
 
 ### Execution Discipline (Both Modes)
 
@@ -218,16 +208,10 @@ Read [uia-starter-guide.md](references/uia-starter-guide.md) first for UIA. The 
 Before “done”, verify plan completion: re-read `docs/plans/*.md`; if autonomous and unchecked boxes remain without a Stop condition, resume; if a Stop condition stopped work, name it; if interactive, report status. Save only memory patterns qualified by [execution-maps-guide.md § Cross-session memory](references/execution-maps-guide.md#cross-session-memory); a first-try clean gate on card-covered activities qualifies none. If persistent memory exists, write qualifying memory, context files, and report in parallel in the final turn; nothing runs afterward.
 
 When finished, report:
-<!--skill-flavor:report-what-was-done:start-->
 1. **What was done** — created, edited, and deleted file paths.
-<!--skill-flavor:report-what-was-done:end-->
-<!--skill-flavor:report-validation-status:start-->
 2. **Validation status** — every touched file’s per-file `validate` and project-level `uip rpa build`. Both must be clean to claim verification; if build has not run since the last edit, say so.
-<!--skill-flavor:report-validation-status:end-->
 3. **Plan completion** — checked `[x]` tasks and every remaining `[ ]`, with its Stop-condition item or “not reached”.
-<!--skill-flavor:report-how-to-run:start-->
 4. **How to run** — applicable `uip rpa run` or `uip rpa debug start` command.
-<!--skill-flavor:report-how-to-run:end-->
 5. **Next steps** — connections, OR elements, placeholders, and other follow-up actions.
 6. **Trouble?** — if issues occurred, say: “If something didn't work as expected, use `/uipath-feedback` to send a report.”
 

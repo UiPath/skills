@@ -40,9 +40,7 @@ function normalize($vars: FlowVars) {
 
 - The function is never called: its body becomes the script exactly as written. Parameter one is runtime `$vars`; parameter two is `$metadata` ([below](#reading-the-instance-metadata)). Name them `$vars` and `$metadata` to avoid renaming; other names are renamed. Parameters bind by position, so take them in that order: a parameter named like the other one (`($metadata) => …`) is refused.
 - Read parameters only with dots (`$vars.start.output.amount`). Destructuring, aliases (`const v = $vars`), `$vars['start']`, `$vars?.start`, and passing `$vars` to a helper are refused because `check` cannot see the step read.
-<!--skill-flavor:script-function-returns-check:start-->
 - `returns` is the `.flow` declaration and is checked against the function return; `returns: { amount: 'string' }` for the example is a type error. `compile` does not type-check. In a workspace copy, run `npm install --save-dev @uipath/maestro-builder-sdk typescript`, then run `npx tsc --noEmit --strict --module nodenext --moduleResolution nodenext --skipLibCheck <file>.flow.ts`; with only the global SDK copy, nothing checks it, so match `returns` fields by hand. Without `returns`, the body's type is inferred as for a string body.
-<!--skill-flavor:script-function-returns-check:end-->
 - The function may read only [the runtime](#the-javascript-runtime). External values, module constants, imports, and module helpers named like runtime globals (such as `parseInt`) are refused: each throws when the flow loads (`script(normalize) cannot be a script: it reads LIMIT, …`), and `compile` and `check` also refuse such a helper. Move values inside the function or declare them with `.var()` and read `$vars.<name>`. Pass the function by name or inline from a `.ts` file; `compile` and `check` refuse any other shape (`script(h.check)`, a wrapper around `script`).
 - Refused with a function-naming message: `async`, generators, more than two parameters (more than one on an SDK older than 6.72.0, which lacks [the metadata parameter](#reading-the-instance-metadata)), default or rest parameters, `this` or `arguments` outside a nested function, a reference to the function's own name, and a `var` or function declaration reusing a parameter name.
 - With an SDK containing `dist/script-globals.d.ts`, these are also refused, each because it fails in the run: top-level declaration or assignment of `console`, `uipath`, `aggregate`, `_aggregate`, or `_pipe`, and a `crypto` or `console` member the engine lacks (`crypto.getRandomValues`, `console.table`).
@@ -50,9 +48,7 @@ function normalize($vars: FlowVars) {
 
 To type-check a function using `randomUUID`, `btoa`, or `atob`, add `/// <reference types="@uipath/maestro-builder-sdk/script-globals" />` when the SDK has `dist/script-globals.d.ts`; older SDKs refuse those names. Do not import an implementation: the engine provides them and `compile` refuses module reads. The reference does not declare `crypto`; `crypto.randomUUID()` requires `@types/node` or the DOM library, or call bare `randomUUID()`.
 
-<!--skill-flavor:script-function-sdk-version:start-->
 The function form requires `@uipath/maestro-builder-sdk` 6.57.0 or later. Check that the SDK copy's `dist/api-index.md` lists `ScriptValue`. An older SDK fails with `compile: Cannot read properties of undefined (reading 'matchAll')`. Upgrade it by running `npm install @uipath/maestro-builder-sdk@latest` in a workspace with its own `node_modules` copy (used before the global one); else run `npm install -g @uipath/maestro-builder-sdk@latest`; otherwise write `script({ code })`.
-<!--skill-flavor:script-function-sdk-version:end-->
 
 ### Reading the instance metadata
 
@@ -73,9 +69,7 @@ function tag($vars: FlowVars, $metadata: FlowMetadata) {
 
 These five keys are all the engine sets. `check` warns `UNKNOWN_METADATA_KEY` for any other key, including misspellings (`$metadata.instanceId` reads `undefined`); the suggestion names the correct key. A case that starts the flow may set its own instance keys. When the flow is meant to read one of those, keep the read and warning, and widen the parameter type: `$metadata: FlowMetadata & { Region?: string }`. Decompile instead widens it to `FlowMetadata & Record<string, any>`; these forms are interchangeable, so leave either.
 
-<!--skill-flavor:script-function-metadata-sdk-version:start-->
 The metadata parameter requires `@uipath/maestro-builder-sdk` 6.72.0 or later. Check that the SDK copy's `dist/api-index.md` lists `FlowMetadata`. An older SDK refuses two parameters and any function reading `$metadata`. Upgrade as above, or read `$metadata` from `script({ code })`.
-<!--skill-flavor:script-function-metadata-sdk-version:end-->
 
 ## The JavaScript runtime
 

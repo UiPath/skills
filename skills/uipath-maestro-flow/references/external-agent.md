@@ -13,7 +13,6 @@ uip is connections list <connector-key> --all-folders --output json           # 
 Search a short name (`'Cortex'`, not `'Snowflake Cortex'`): a full product name can match only a connector's HTTP-request tool.
 
 - **In the connector library** (Snowflake Cortex is): author it with `connector(...)` like any connector ([connector-params.md](connector-params.md)).
-<!--skill-flavor:external-agent-cli:start-->
 - **Not in the library** (CrewAI returns `"total": 0`): prepare it, then author it with `connector(...)` like a library operation. `rawNode` is not an option for a `uipath.connector.*` type.
 
 ## Prepare it when the library lacks it
@@ -35,4 +34,3 @@ import { ExecuteSalesforceAgent } from './connectors-local/uipath-salesforce-age
 - A picker input such as `agent_id` is a lookup: author `lookup(...)` as above, and record its id with the `--resolve agent_id:DeveloperName=<agent name>` that `prepare` prints, rather than pasting an id ([connector-params.md](connector-params.md#resolving-connection-scoped-reference-values)).
 - The node runs as the connector object says (`sync`, `async` or `hybrid`). With `@uipath/maestro-builder-sdk` 6.116.0 or later, compile writes that as `inputs.detail.executionType`, as `nodes configure` does, and the runtime picks the sync or async service type from it. Leave the definition's service type alone (`Intsvc.AsyncAgentExecution` even for a sync agent). If `prepare` warns that Integration Service reported no execution type, run `uip update` and prepare again. If it warns that an async or hybrid object names no event, the node has nothing to wait on: tell the user it may never finish. An older SDK writes no execution type, so the node runs under the definition's service type: upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 - To run it, `uip solution resources refresh` and `uip maestro flow debug <Name>` ([CLI-LOOP.md](CLI-LOOP.md)); ask first ([operate.md](operate.md#debug--a-real-end-to-end-run)).
-<!--skill-flavor:external-agent-cli:end-->

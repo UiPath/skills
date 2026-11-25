@@ -30,9 +30,7 @@ Define an autonomous agent with optional resources.
 Context signature: `{ name, id, folderPath?, folderKey?, query?, retrievalMode?, resultCount?, threshold?, fileExtension? }`.
 
 Resolve the tenant index. If you know its name, use `solution resources list` below.
-<!--skill-flavor:cg-discover:start-->
 Discover what exists with the `uip context-grounding` bridge, which reports every index with its folder.
-<!--skill-flavor:cg-discover:end-->
 To resolve an index, do not use `uip maestro flow registry` (node manifests), `uip maestro registry` (connector library), or `uip or folders list`.
 
 ```bash
@@ -43,7 +41,6 @@ Map `Key` → `id`, `Name` → `name`, `Folder` → `folderPath`, and `FolderKey
 
 Local execution has no semantic retrieval service: answers are ungrounded even when wiring exists. Platform evidence must establish that the intended index was used and its retrieved knowledge influenced the answer.
 
-<!--skill-flavor:cg-bridge:start-->
 Activate the existing Python environment and run setup once before list/search; setup is the command itself, not a `setup --help` probe:
 
 ```bash
@@ -56,7 +53,6 @@ uip context-grounding search \
 ```
 
 Use `--folder-key` instead of `--folder-path` when that is the known identity. The delegated command uses `--format json`, not the outer CLI's `--output json` spelling. One search answering the grounding claim is enough; do not repeat paraphrases solely for confidence.
-<!--skill-flavor:cg-bridge:end-->
 
 ## Tools
 

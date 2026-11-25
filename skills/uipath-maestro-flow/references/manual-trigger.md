@@ -80,11 +80,9 @@ on different triggers, and each entry point's caller-facing input is keyed by
 that id. So two roots cannot both take `amount`; `check` reports
 `ENTRY_POINT_INPUT_COLLISION`.
 
-<!--skill-flavor:manual-trigger-entry-point:start-->
 To run a root other than the default, pass `--entry-point <id>` (the `id` you
 gave `.entryPoint`; the default root's trigger is `start` unless the flow sets
 `.triggerId(...)`) to `uip maestro flow debug` or `uip maestro flow process run`.
-<!--skill-flavor:manual-trigger-entry-point:end-->
 
 ### One input, whichever root fired: `{ shared }`
 
@@ -139,7 +137,6 @@ own `{ updates }` (below).
 
 ### Other variable updates on a trigger
 
-<!--skill-flavor:trigger-updates-sdk-version:start-->
 Needs `@uipath/maestro-builder-sdk` 6.85.7 or later: check that
 `entryPoint(` in `dist/flow-sdk.d.ts` of the SDK copy in use takes
 `'version' | 'label' | 'updates'`. An older SDK refuses `.trigger(spec, { updates })`
@@ -149,7 +146,6 @@ with no row at all. Upgrade the copy in use: `npm install
 `node_modules` copy (it is used before the global one), else `npm install -g
 @uipath/maestro-builder-sdk@latest`. If you can't upgrade, set the variable in
 the first step's `{ updates }` instead.
-<!--skill-flavor:trigger-updates-sdk-version:end-->
 
 `.trigger(spec, { updates })` and `.entryPoint(id, spec, { updates })` write any
 other row on that root's trigger node. The rows run when the root fires, after

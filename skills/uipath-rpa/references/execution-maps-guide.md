@@ -2,8 +2,6 @@
 
 Read once per build, then the task's journey in [execution-journeys-catalog.md](execution-journeys-catalog.md) (greenfield or brownfield XAML, greenfield or brownfield coded, UIA capture + build). Happy path, including the final report: **greenfield ≤5 turns, brownfield ≤5**; one repair cycle adds ≤2. Each T-row is one assistant message: all tool calls in one message cost one turn; one call per message costs N.
 
-<!--skill-flavor:host-scope:start-->
-<!--skill-flavor:host-scope:end-->
 > **Tool vocabulary.** `Edit` = in-place replacement, `Write` = full-file write, `Read`/`Glob`/`Grep` = read/search, `Bash` = shell. Map these Claude Code names to the harness equivalents. If parallel calls are unavailable, preserve each grouping as consecutive calls; CLI chains still collapse round-trips.
 
 If a harness rejects a batch for permissions, treat it as an approval gate, not a CLI failure; do not split it to evade approval. For Claude Code Bash calls, offer `/uipath:install-permissions` to install the curated allowlist with user approval; use the harness permission mechanism otherwise.

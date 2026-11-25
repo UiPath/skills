@@ -1,6 +1,0 @@
-{
-  "ProjectType": "Api",
-  "Name": "SlackAlert",
-  "Description": null,
-  "MainFile": "Workflow.json"
-}

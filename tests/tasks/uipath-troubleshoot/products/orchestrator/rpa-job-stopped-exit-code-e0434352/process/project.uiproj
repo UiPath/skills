@@ -1,6 +1,0 @@
-{
-  "Name": "ReportCompiler",
-  "ProjectType": "Process",
-  "Description": "Unattended worker that compiles reports; logs activity and exits.",
-  "MainFile": "Main.xaml"
-}

@@ -4,7 +4,7 @@ description: "UiPath planner and genome writer: always invoke to extract, author
 when_to_use: "'generate an SDD', 'design/architect a UiPath solution'; 'propose a demo scenario'; document a project; 'refactor this process', 'rebuild it on Maestro or Portable' (extract first); a request spanning separate buildable projects; ambiguous 'what should I build'. A PDD always routes here, even for one RPA process, but not an ontology. Skip only with no PDD, SDD, genome or existing automation to document, and one project (inline nodes count as one). Flow calling only deployed processes→uipath-maestro-flow."
 argument-hint: "[design | decompose | author | extract | edit | interview | check] [target]"
 user-invocable: true
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch, AskUserQuestion, Agent, Skill, EnterPlanMode, ExitPlanMode, TaskCreate, TaskUpdate, TaskList
+allowed-tools: Read, Grep, Glob
 ---
 
 # UiPath Planner — design, decompose and genome-writing verbs
@@ -12,9 +12,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch, AskUser
 One skill, seven verbs. It writes the documents — the SDD, the plan and the genome — and checks every genome it writes; `uipath-genome` builds from the genome. The user names a verb (`/uipath-planner author invoice-sdd.md`) or the request implies one (§ Choosing the Verb). This file routes and holds the rules every verb shares; each verb's guide holds its procedure, its own rules and its read plan, and opens only when the verb runs.
 
 **Host tools.** These names mean whatever your host provides: a **structured question** is the host's multiple-choice question tool — with none, list numbered options in one message and wait for the reply;
-<!--skill-flavor:host-tools-task-list:start-->
 the **task-list tool** creates, updates and lists tasks with blocked-by links — with none, the plan is the task list;
-<!--skill-flavor:host-tools-task-list:end-->
 **plan mode** is the host's review-before-acting mode — with none, present the plan and wait for approval before changing anything.
 
 ## Setup
@@ -27,9 +25,7 @@ the **task-list tool** creates, updates and lists tasks with blocked-by links �
 | Verb | Input | Output | Guide |
 |---|---|---|---|
 | `design` | A PDD or any process-knowledge source, or "design / architect this" | SDD markdown (`*-sdd.md`) with the `## Planner Handoff` header, then the genome of the agreed design (`author`, [genome-from-sdd-guide.md](references/author/genome-from-sdd-guide.md)) | [design-guide.md](references/design/design-guide.md), then [sdd-writing-guide.md](references/design/sdd-writing-guide.md) for Phase 3 |
-<!--skill-flavor:plan-job:start-->
 | `decompose` | A request spanning separate buildable projects, with no SDD | A dated plan and live tasks created with the task-list tool | [decompose-guide.md](references/decompose/decompose-guide.md) |
-<!--skill-flavor:plan-job:end-->
 | `author` | An idea, description, SOP, transcript, PDD, TO-BE or agreed SDD, when a genome or blueprint is asked for; an SDD to build that has no genome yet; an agreed SDD `design` just wrote; a workshop or demo goal that needs a scenario | `*-genome.md`, its open questions in its Open Decisions; from an agreed SDD, that SDD's Action Required written again | [author-guide.md](references/author/author-guide.md) |
 | `extract` | A UiPath project or solution with its deployed state, or another automation or test framework's export | `*-genome.md` with its Source Map; for a documentation request, or on request, the SDD written from it (`*-sdd.md`) beside it, every open question first | [extract-guide.md](references/extract/extract-guide.md) |
 | `edit` | A `*-genome.md` and a change: add, split, remove, re-extract what changed, apply the answers | The same genome, edited in place; its SDD, when it has one, written again | [edit-guide.md](references/edit/edit-guide.md) |
@@ -60,18 +56,14 @@ A verb hands its output to the next one only along these edges:
 - **`uipath-genome` → `edit` → `uipath-genome`.** A deviation the build reports in the genome comes back here as an `edit`, then the build runs again; the builder never changes the genome.
 - **`uipath-genome` not installed** (it is absent from the session's list of available skills) → the genome verbs still write and check genomes, and `design` still writes the genome; say that building them needs `uipath-genome`.
 - **Build → publish, only when asked.** The build is local and writes nothing to a tenant.
-<!--skill-flavor:deploy-after-build:start-->
 When the request asks to publish, deploy or go live, the publish follows the build's hand-off: through `uipath-solution`, or per package to Orchestrator through `uipath-platform` when Solutions (`.uipx`) are blocked for the SDD's `Delivery model` — standalone, Automation Suite older than 2.2510, or a user exclusion ([platform-availability-guide.md](references/shared/platform-availability-guide.md)).
-<!--skill-flavor:deploy-after-build:end-->
 
 ## Critical Rules
 
 Every verb obeys these; each verb's guide adds its own under § Verb Rules.
 
 1. **Plan, design and specify — never author automation code yourself.** `design`, `decompose`, `author`, `extract` and `edit` deliver only SDD, plan and genome markdown,
-<!--skill-flavor:plan-design-only-outputs:start-->
 plus live tasks created with the task-list tool;
-<!--skill-flavor:plan-design-only-outputs:end-->
 they NEVER write automation code (XAML, C#, Python) or project or scaffold files. Extraction's working files — inventory JSON under the work dir, part briefs and ledgers — are not deliverables and are exempt. Implementation always routes to a specialist, and every genome build to `uipath-genome`.
 2. **Choose the verb first** (§ Choosing the Verb) and run § Setup, before anything else. Every verb then reads by its guide's § Read Plan, in at most three turns — never file by file as each file names the next.
 3. **One writer, one builder, one handoff.** `author`, `extract` and `edit` write every genome and end with its strict check (§ Check); `uipath-genome` builds every genome as written and never changes one — not even a one-line fix the user names. The genome is what passes to `uipath-genome`; for a designed genome the agreed SDD is its source ([genome-format-guide.md § Design Links](references/shared/genome-format-guide.md)).
@@ -100,9 +92,7 @@ node "<SKILL_DIR>/scripts/check-genome.mjs" <component|process> "<GENOME_MD>" --
 | `design` | [design-guide.md](references/design/design-guide.md) whole — its § Read Plan names every other guide (Phase 3: [sdd-writing-guide.md](references/design/sdd-writing-guide.md)) and the SDD templates in `assets/templates/`; [asdd-crosswalk-guide.md](references/design/asdd-crosswalk-guide.md) with `scripts/sdd-to-docx.mjs` (client Word SDD, on request) |
 | `decompose` | [decompose-guide.md](references/decompose/decompose-guide.md), [multi-skill-patterns-guide.md](references/shared/multi-skill-patterns-guide.md) |
 | `interview`, and the interview inside `design`, `author` and `extract` | [interview-guide.md](references/interview/interview-guide.md) — the offer, the gap list and its coverage, asking order, where each answer goes |
-<!--skill-flavor:plan-and-tasks-format-row:start-->
 | `decompose`: format | [plan-and-tasks-format.md](references/shared/plan-and-tasks-format.md) — header schema, task row schema, identity tuple, status states, regenerate-with-preservation algorithm, task-list tool mapping, anti-hallucination rule, quality rules |
-<!--skill-flavor:plan-and-tasks-format-row:end-->
 | `author`, `extract`, `edit` | [author-guide.md](references/author/author-guide.md), [genome-from-sdd-guide.md](references/author/genome-from-sdd-guide.md), [scenario-proposal-guide.md](references/author/scenario-proposal-guide.md), [extract-guide.md](references/extract/extract-guide.md), [edit-guide.md](references/edit/edit-guide.md), [genome-format-guide.md](references/shared/genome-format-guide.md), [extracted-genome-guide.md](references/shared/extracted-genome-guide.md), [transactional-shape-guide.md](references/shared/transactional-shape-guide.md), [skill-mapping-guide.md](references/shared/skill-mapping-guide.md), [uipath-source-guide.md](references/extract/uipath-source-guide.md) with [uipath-rpa-signals-guide.md](references/extract/uipath-rpa-signals-guide.md) and [uipath-non-rpa-signals-guide.md](references/extract/uipath-non-rpa-signals-guide.md), [source-frameworks-guide.md](references/extract/source-frameworks-guide.md), [defect-verification-guide.md](references/shared/defect-verification-guide.md), [extraction-parts-guide.md](references/shared/extraction-parts-guide.md), [sdd-from-genome-guide.md](references/shared/sdd-from-genome-guide.md), [open-questions-guide.md](references/shared/open-questions-guide.md); the genome templates in `assets/templates/` |
 
 ## Anti-patterns

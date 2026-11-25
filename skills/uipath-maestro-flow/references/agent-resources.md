@@ -65,10 +65,8 @@ Every resource here is tenant data, runtime behavior, or both. No local rung cal
 
 ## Voice and conversational agents
 
-<!--skill-flavor:voice-conversational-resources-sdk-version:start-->
 **Needs `@uipath/maestro-builder-sdk` 6.88.2 or later.** Older SDKs accept these options without findings and compile no tool, context, or escalation nodes. Upgrade the copy in use: run `npm install
 @uipath/maestro-builder-sdk@latest` in a workspace with its own `node_modules` copy (used before the global one), else run `npm install -g @uipath/maestro-builder-sdk@latest`.
-<!--skill-flavor:voice-conversational-resources-sdk-version:end-->
 
 - **`check` codes.** All three agents share the inline rules under `FLOW_AGENT_TOOL_*`, `FLOW_AGENT_ESCALATION_*`, `FLOW_AGENT_RESOURCE_*`, and `FLOW_AGENT_CONTEXT_*`; messages name the kind (`Voice agent step "a" …`). SDKs older than 6.88.2 use `INLINE_AGENT_TOOL_*`, `INLINE_AGENT_ESCALATION_*`, `INLINE_AGENT_RESOURCE_*`, and `AGENT_CONTEXT_*` for an inline agent.
 - **Voice definitions.** Compile writes each resource definition with the voice agent as an allowed source, as the designer does; built-in tools and app escalation therefore use version 1.2.

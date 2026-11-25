@@ -1,7 +1,7 @@
 ---
 name: uipath-automationhub
 description: "Publish and read business processes in UiPath Automation Hub via the Open API, using the user's cloud login — no admin OpenAPI token needed. PUBLISH an approved process and its PDD/SDD documents (schema-driven payload, base64 file upload or link) to AH as the system of record — e.g. a process captured/approved by Process Scribe. GET a process back by id or search, list its attached documents, and DOWNLOAD their file bytes (e.g. for dedup / related-idea lookups or retrieving a published PDD). CHANGE an automation's idea flow (convert an idea into a Business Process; fix a wrong-flow publish). READ, POST, EDIT and DELETE comments on an automation. Authenticates with the user's cloud bearer token and NEVER sends the admin `x-ah-openapi-auth` header. CLI-first: when the installed `uip` has the `ah` commands, flows run through them (`references/*-cli-guide.md`); otherwise the raw Open API flows apply. Routes by intent to publish (create/upload) or get (read/fetch/download) references over the shared catalogs."
-allowed-tools: Bash, Read, AskUserQuestion
+allowed-tools: Read, Grep, Glob
 user-invocable: true
 ---
 

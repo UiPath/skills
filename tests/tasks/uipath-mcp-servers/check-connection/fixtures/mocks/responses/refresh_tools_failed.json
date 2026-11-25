@@ -1,7 +1,0 @@
-{
-  "Result": "Failure",
-  "Code": "AgentHubMcpRefreshTools",
-  "Message": "Failed to retrieve authentication token from Integration Service connection",
-  "ErrorCode": "unknown_error",
-  "Retry": "RetryWillNotFix"
-}

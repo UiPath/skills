@@ -29,15 +29,11 @@ Authoring never waits on `prepare`, and no discovery command precedes the source
 
 1. **Search** the library and read the operation page.
 2. **Author** intended fields, `lookup()` id tokens, and `{ object: '<name-as-the-task-said-it>' }` for generic operations.
-<!--skill-flavor:check-source:start-->
 3. **Run** `uip maestro flow check .flow-sdk/<Name>.flow.ts --source`. It names each
-<!--skill-flavor:check-source:end-->
    gap with the exact command — `LOOKUP_UNRESOLVED`, `OBJECT_UNPREPARED`, `CUSTOM_FIELDS_UNPREPARED`, `CONNECTOR_INPUT`.
    `CONNECTOR_NOT_IN_LIBRARY`, `CONNECTOR_OBJECT_REQUIRED`, and `CONNECTOR_OBJECT_NOT_GENERIC` mean the operation itself does not resolve; no prepare fixes them. Edit the source and re-run `check`:
    - `CONNECTOR_NOT_IN_LIBRARY`: no library layer has the operation, connector, or version, and with no library pulled neither does the tenant. The message lists operations and a `Closest:` match. Use the node type slug, not tenant `objectName` (`send-email`, not `send-mail-v2`).
-<!--skill-flavor:not-in-library-pull:start-->
      With no library pulled, `check` and `compile` already ask the tenant through `uip`; the last sentence says what it answered. With a pulled library they do not ask; refresh a newer operation with `uip maestro registry pull`. "The tenant was asked … and does not serve it" means the name is wrong or the connector is not available on this tenant: fix the name or use `http()`. Otherwise the sentence gives `uip`'s reason: run `uip login` only when it says `uip` is not logged in or the session expired; for anything else report `uip`'s reason and stop.
-<!--skill-flavor:not-in-library-pull:end-->
    - `CONNECTOR_OBJECT_REQUIRED`: add `{ object: '<name>' }`; the message lists objects.
    - `CONNECTOR_OBJECT_NOT_GENERIC`: remove `object` from a single, non-generic operation.
 4. **Prepare once**: run one invocation composing `--object`, `--resolve`, and `-f`; it finds the connection and writes `bindings.json`. It repoints the import and asks only when two flows import the same connector or `--no-source-rewrite` was passed.
@@ -53,7 +49,6 @@ Every prepare command below is the command `check` prints at step 3, documented 
 
 ## Discovering operations and fields
 
-<!--skill-flavor:library-discovery:start-->
 `uip maestro registry pull` downloads the published library to `~/.uipath/cache/flow-sdk/library/current/`; `compile`, `check`, and `registry search` resolve it without a flag. The project receives only `.flow-sdk/connectors/`, one descriptor per referenced connector.
 
 ```bash
@@ -63,7 +58,6 @@ uip maestro registry pull
 If download fails or none is published (Automation Suite), pull is optional: `pull` fetches referenced connectors through `uip` into `.flow-sdk/connectors-local/` (use `--connector <key>` for a key not yet in source); `registry search` searches the tenant catalog; `check`, `compile`, `decompile`, `merge`, and `registry describe` fetch missing operations through `uip` into `.flow-sdk/connectors-local/` and continue. These require logged-in `uip` and an SDK recent enough to fetch; see [CLI-LOOP.md](CLI-LOOP.md#installing-the-package). With neither a library nor a working `uip`, connector work stops at a message giving the reason; fix what it names (`uip login` only for a session problem). `$FLOW_SDK_LIBRARY_JSON`, when set, overrides the cache.
 
 Library verbs are `pull`, `search`, `describe`, `path`, and `prepare`; they require prerelease `@uipath/cli` and run the installed `@uipath/maestro-builder-sdk`. `uip` is the entry point and is present here. The package also exposes `flow-sdk`; printed remedies use it when `FLOW_SDK_INVOKED_AS` is unset.
-<!--skill-flavor:library-discovery:end-->
 
 **`uip maestro registry` is not `uip maestro flow registry`.** The names are one
 word apart and the jobs are unrelated: this one is the connector library the
@@ -72,7 +66,6 @@ pull|search|get` syncs the tenant's **node manifests** — the node types other
 references reach for (`uipath.core.function`, `uipath.core.agent.<name>`).
 Connectors are never node-registry entries and nodes are never library entries, so a miss in one is not evidence about the other.
 
-<!--skill-flavor:library-search:start-->
 Search static contracts, then read an operation page:
 
 ```bash
@@ -81,7 +74,6 @@ uip maestro registry describe uipath.connector.uipath-microsoft-outlook365.send-
 ```
 
 `describe` renders from the operation entry with or without a pulled library; tenant-fetched pages identify that on their first line.
-<!--skill-flavor:library-search:end-->
 
 When `check` rejects a connection-specific field or warns that schema is unprepared, materialize live schema with the diagnostic command; do not guess or edit emitted Flow. It needs a live Integration Service connection and logged-in `uip`; otherwise author only fields listed by `registry describe`.
 
@@ -94,14 +86,12 @@ uip maestro registry prepare <connector-key> --action <action> --object <api-obj
 
 Results land in `.flow-sdk/connectors-local/`, which compilers union over the library; calls accumulate. `prepare` chooses a connection. Pass `--connection-id <id>` only to pin one; non-`Enabled` connections are refused with enabled alternatives. A `Failed` connection returns an empty schema, so preparing through it would write a no-field overlay and the next compile would reject every input as unknown; the refusal is the only signal that says "connection", not "field".
 
-<!--skill-flavor:descriptor-imports:start-->
 Import descriptors from either tree with the real `.ts` extension (a `.js` specifier does not resolve); paths are relative to the source in `.flow-sdk/`:
 
 ```ts
 import { CreateInvoiceShare } from './connectors-local/uipath-salesforce-sfdc.ts';
 import { SendMessageToChannel } from './connectors/uipath-salesforce-slack.ts';
 ```
-<!--skill-flavor:descriptor-imports:end-->
 
 Older environments expose bare `prepare-connector` with identical arguments except connector version is `--connector-version` (not Commander's `--version`). For many connectors the first prepare is insufficient; use the parent-field loop before concluding a field does not exist.
 
@@ -290,9 +280,7 @@ Do not crawl Integration Service after lookup failure: the message names the con
 
 `check` reports unresolved lookups as `LOOKUP_UNRESOLVED`, warns on literal ids, and warns runtime expressions as `LOOKUP_RUNTIME_VALUE` with the sent id (for example `reporter.accountId`); it errors when an e-mail expression feeds a lookup that neither sends nor searches by e-mail. Resolve a required lookup field you have no value for with its helper, never from a look-alike input. Run `check` before compile so the one expensive prepare call is last.
 
-<!--skill-flavor:connection-user:start-->
 **When the task names nobody for a person-shaped required field** (`reporter`, `requester`, `owner`), use the connection's own user: take the account from `uip login status` and resolve by **display name**. Search only names declared by the field's "matches on" list; do not query raw collections. Jira user search hides e-mail addresses, so `emailAddress=` returns nothing while `displayName=` finds the user; the spec (`matches on displayName | accountId`) excludes e-mail.
-<!--skill-flavor:connection-user:end-->
 
 Operation pages and generated-descriptor comments list lookup helpers and searchable fields; `grep -B6 'export const SendMessageToUser'` finds the latter. Plain strings are correct for enumerated legal values and tenant-invariant collections (country lists, timezones) when the page says so and supplies the accepted-value command.
 
@@ -321,9 +309,7 @@ Stop when the target appears; otherwise continue until `Data.Pagination.HasMore`
 
 A get-by-id not-found is a service error. Add `.onError(...)` when the scenario wants a not-found answer; otherwise failing loud may be intentional.
 
-<!--skill-flavor:output-names:start-->
 Output field names are case-sensitive and `check` does not verify them: `out('upload', 'WebUrl')` compiles but reads `null` when the field is `webUrl`. Copy names from the operation's `## Outputs` in `uip maestro registry describe <nodeType>`.
-<!--skill-flavor:output-names:end-->
 
 For responses without declared fields, read the whole output into a script local before inspecting service properties:
 

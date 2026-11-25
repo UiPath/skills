@@ -2,8 +2,6 @@
 
 **Goal:** Resolve the project root before any other operations.
 
-<!--skill-flavor:host-scope:start-->
-<!--skill-flavor:host-scope:end-->
 ## Studio Desktop vs headless Studio
 
 `uip rpa` uses headless Studio (Helm, shipped as `UiPath.Studio.Helm.{Platform}` NuGet package and auto-launched when needed) by default. Studio Desktop is unnecessary for the standard authoring loop (`init`, `run`, `debug start`, `validate`, `build`, `activities find`, `packages install`, and `uia` indication/capture/interaction). It is required only for `uip rpa files diff` and `uip rpa focus-activity`; see [§ Edge case: requiring Studio Desktop](#edge-case-requiring-studio-desktop).

@@ -1,0 +1,49 @@
+# GreenhouseWatering.flow.ts
+
+Source file `GreenhouseWatering.flow.ts`, shipped as Markdown. Copy the code block byte-for-byte.
+
+```ts
+/**
+ * CAPABILITY: a two-way `.branch` — run one of two paths on a boolean condition.
+ *
+ * The scenario is deliberately generic (a greenhouse sensor) so it shows the
+ * SHAPE, not a task answer: a condition, a `yes` arm, a `no` arm, each ending in
+ * its own `.return()`.
+ *
+ *     .branch(name, <js boolean>, (yes) => …, (no) => …)
+ *
+ * `js\`…\`` builds the condition from inputs/vars/step outputs; each arm is a
+ * sub-builder exactly like the top-level flow. An arm that ends in `.return()`
+ * is that path's End node — the two arms are independent endings, not a join.
+ */
+import { flow, script, input, out, js, types, type FlowVars } from '@uipath/maestro-builder-sdk';
+
+export default flow('greenhouse-watering')
+  .name('GreenhouseWatering')
+  .version('1.0.0')
+  .input({ moisture: types.number, threshold: types.number })
+  .output({ action: types.string })
+
+  .branch(
+    'needsWater',
+    js`${input('moisture')} < ${input('threshold')}`,
+    (yes) =>
+      yes
+        .step('water', script(water))
+        .return({ action: out('water') }),
+    (no) =>
+      no
+        .step('hold', script(hold))
+        .return({ action: out('hold') }),
+  )
+
+  .build();
+
+function water($vars: FlowVars) {
+  return "watered: moisture " + $vars.start.output.moisture + " is below " + $vars.start.output.threshold;
+}
+
+function hold($vars: FlowVars) {
+  return "held off: moisture " + $vars.start.output.moisture + " is at or above " + $vars.start.output.threshold;
+}
+```

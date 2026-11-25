@@ -191,10 +191,8 @@ make from syntax alone. Exact signatures remain in the generated API.
   After discovery, add the deployment to the solution:
   `uip solution resources add --source remote --kind IxpDeployment
   --name "<DeploymentTitle>" --folder-key "<FOLDER_KEY>" --output json`
-<!--skill-flavor:docextraction-refresh:start-->
   Then refresh:
   `uip solution resources refresh --solution-folder <SOLUTION_DIR> --output json`
-<!--skill-flavor:docextraction-refresh:end-->
 
 <!-- RULE:case.docextraction.check -->
 - Compile refuses a missing `deploymentKey`; `check` reports blank model,
@@ -216,10 +214,8 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!-- RULE:case.connector.bindings -->
 - Source connection and folder ids from `bindings.json`; TypeScript uses symbolic
   names. Compiling into a scaffolded project regenerates its existing
-<!--skill-flavor:bindings-refresh:start-->
   `bindings_v2.json`; then run `uip solution resources refresh --solution-folder
   {solution} --output json`.
-<!--skill-flavor:bindings-refresh:end-->
   A live run is the evidence that those environment
   resources resolve. A `CONNECTION_STUB` warning from `case check` or `case
   compile` means a connection or folder label compiles to a value that is not
@@ -231,7 +227,6 @@ make from syntax alone. Exact signatures remain in the generated API.
 - Published process, agent, RPA, API workflow, sub-case, connector, and folder
   references are tenant facts. Static validation cannot prove they exist.
 
-<!--skill-flavor:orphan-cleanup:start-->
 - Resource refresh is additive. After removing or repointing a resource-bound
   task, prune orphans before refreshing:
 
@@ -249,7 +244,6 @@ make from syntax alone. Exact signatures remain in the generated API.
   4. Never remove the Case project's own process/package pair, and never
      target package entries directly.
   5. `uip solution resources refresh --solution-folder {solution} --output json`
-<!--skill-flavor:orphan-cleanup:end-->
 
 ## SLA and runtime semantics
 
@@ -375,7 +369,7 @@ make from syntax alone. Exact signatures remain in the generated API.
   | `sequential` | `rule('runs-sequentially')` | unique per task | Strict chain: each task waits for the previous set. |
 
   A task without `runs-sequentially` gets its own set regardless of `lane`.
-  See `examples/PermitIssuance.case.ts` for a three-set stage.
+  See `examples/PermitIssuance.case.ts.md` for a three-set stage.
 
 <!-- RULE:case.activation.anti-pattern -->
 - Omitting `lane` on all `runs-sequentially` tasks defaults them to set 0 —
@@ -445,14 +439,12 @@ make from syntax alone. Exact signatures remain in the generated API.
   A `uip` that knows it lists `task-exited` under `task-entry` and `stage-exit`
   in `uip maestro case rule-types list --output json`; one that does not
   rejects the rule at `validate` as an invalid discriminator.
-<!--skill-flavor:task-exit-upgrade:start-->
   Upgrade the one that is behind (the SDK with `npm install -g
   @uipath/maestro-builder-sdk@latest`), then compile. If `uip` still does not
   list `task-exited` after the upgrade, no `uip` on this machine supports the
   rule yet: stop and tell the user. Do not author the rule, and never write a
   different rule in its place. Never remove a rule the plan already has to
   pass.
-<!--skill-flavor:task-exit-upgrade:end-->
 
 ## Design fidelity
 
@@ -517,11 +509,9 @@ make from syntax alone. Exact signatures remain in the generated API.
   Edit the generated `.case.ts` and retain `preserveCaseJson(...)`: it keeps
   the foreign metadata the typed surface does not own. Compile back into the
   same plan: `uip maestro case compile <Name>.case.ts -o <plan>`.
-<!--skill-flavor:sdk-upgrade:start-->
   Needs `@uipath/maestro-builder-sdk` 6.50.1 or later, which resolves the decompiled
   labels (for example `bOC1`) against that plan's own `bindings` array; an
   older SDK writes the label in as the key, so upgrade first.
-<!--skill-flavor:sdk-upgrade:end-->
   Do not pass
   `--bindings <plan>`: it replaces `bindings.json`, so a connector the edit
   adds loses its mapping. Do not run `<Name>.pipeline.mjs`: it writes a plan
@@ -557,7 +547,6 @@ The baseline must be the plan as it was before your first compile: compile
 writes back into the same plan, so after it the file on disk is your edit.
 Never pass that plan itself as `--baseline`: the edit compared with itself
 reports every finding as pre-existing, so `check` passes with errors in it.
-<!--skill-flavor:check-baseline-original:start-->
 At the start of each editing session, before its first compile, copy it aside
 and check against the copy. Overwrite any copy an earlier session left: an old
 copy would count that session's changes as yours.
@@ -566,7 +555,6 @@ copy would count that session's changes as yours.
 mkdir -p .flow-sdk/original && cp <project>/<plan> .flow-sdk/original/
 uip maestro case check <Name>.case.ts --source --baseline .flow-sdk/original/<plan>
 ```
-<!--skill-flavor:check-baseline-original:end-->
 
 ```text
 ✗ [TASK_NO_ENTRY] Task "Escalate" in stage "Intake" has no entry rule — ... (edited)
@@ -595,7 +583,6 @@ check: 1 error(s) in edited parts of the case, 0 pre-existing SDK defect(s), 1 p
   compile. If you no longer have it, decompile the current plan again and use
   that plan as the baseline from now on.
 
-<!--skill-flavor:check-baseline-sdk-upgrade:start-->
 Needs two releases: `@uipath/maestro-builder-sdk` 6.97.0 or later, and the
 `uip` release that carries UiPath/cli#6081 (`uip` 1.205.0 does not).
 - `unknown option '--baseline'` means `uip` is too old, whatever the SDK
@@ -607,7 +594,6 @@ Needs two releases: `@uipath/maestro-builder-sdk` 6.97.0 or later, and the
 Until both are upgraded, run `check --source` without `--baseline`. In this
 fallback only, fix only the errors on stages and tasks you changed, even
 though the exit code stays non-zero.
-<!--skill-flavor:check-baseline-sdk-upgrade:end-->
 
 ## Product boundary
 

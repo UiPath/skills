@@ -324,11 +324,9 @@ flowchart LR
 
 ### HITL Touchpoints
 
-<!--skill-flavor:bpmn-hitl-touchpoints:start-->
 <!-- One row per human-task node. Authored INLINE by uipath-maestro-bpmn (`.humanTask(...)` in the `.bpmn.ts` source) — never
      route to uipath-human-in-the-loop, which hands Maestro HITL back to uipath-maestro-bpmn. Record business intent only
      (who approves, what criteria); the BPMN specialist owns the task schema. -->
-<!--skill-flavor:bpmn-hitl-touchpoints:end-->
 
 | Node Key | HITL Type | Purpose | Approval Criteria |
 |---|---|---|---|
@@ -357,7 +355,6 @@ flowchart LR
 
 ## 12. Project Structure
 
-<!--skill-flavor:bpmn-project-structure:start-->
 <!-- Editable source layout per the owning skill: `uip maestro bpmn init` scaffolds the project, and the .bpmn
      basename matches the project directory exactly. The `.bpmn.ts` source sits in the workspace root,
      not inside the solution or project folder; the compiled .bpmn is never hand-edited. bindings_v2.json, entry-points.json, operate.json,
@@ -370,7 +367,6 @@ flowchart LR
     ├── <BPMN_PROJECT_NAME>.bpmn     # compiled output
     └── project.uiproj
 ```
-<!--skill-flavor:bpmn-project-structure:end-->
 
 ### Orchestrator Deployment Target
 

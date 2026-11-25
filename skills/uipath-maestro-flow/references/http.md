@@ -18,11 +18,9 @@ with `code` a number; there is no `statusCode`. Reading `output.code` needs
 `@uipath/maestro-builder-sdk` 6.90.1 or later; an older SDK's `check` rejects it
 (`HTTP_READ_UNKNOWN_FIELD`), so on it read neither field and route a status with
 `.onError()` + `err(step, 'status')`,
-<!--skill-flavor:http-code-sdk-upgrade:start-->
 or upgrade the copy `uip` uses:
 `npm install -g @uipath/maestro-builder-sdk@latest`, or
 `npm install --save-dev @uipath/maestro-builder-sdk@latest` for a workspace copy.
-<!--skill-flavor:http-code-sdk-upgrade:end-->
 A status check is an `.onError()` handler reading `err(step, 'status')`, not a
 `branches` condition on `statusCode`.
 
