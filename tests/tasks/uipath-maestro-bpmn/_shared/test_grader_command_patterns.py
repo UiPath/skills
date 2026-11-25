@@ -925,6 +925,12 @@ NOT_SHOWN = [
     # The undo copy and a relative scratch copy are not the target either.
     "uip maestro bpmn compile .flow-sdk/Process.bpmn.ts -o .flow-sdk/original/Process.bpmn",
     "uip maestro bpmn compile s.bpmn.ts -o ShippingQuote/edited/Process.bpmn",
+    # The same copies written from inside the draft or `.flow-sdk/`, the solution root, a variable path.
+    "uip maestro bpmn compile s.bpmn.ts -o edited/Process.bpmn",
+    "uip maestro bpmn compile s.bpmn.ts -o ./baseline/Process.bpmn",
+    "uip maestro bpmn compile Process.bpmn.ts -o original/Process.bpmn",
+    "uip maestro bpmn compile s.bpmn.ts -o /solution/Process.bpmn",
+    "uip maestro bpmn compile s.bpmn.ts -o $TMPDIR/Process.bpmn",
 ]
 
 

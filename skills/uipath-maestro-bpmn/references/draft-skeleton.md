@@ -12,7 +12,7 @@ A connector step it cannot resolve then follows [Draft with an unresolved connec
 Plan mode is the host's state: never enter it yourself to satisfy "show me first".
 
 **The deliverable is a file.**
-A mermaid or ASCII diagram in chat is not a draft, and neither is a prose outline: the draft is the compiled, formatted, validated `<Project>/<Name>.bpmn`, which opens on the canvas.
+A preview in chat (a mermaid or ASCII diagram, a `ui` widget, a prose outline) is not a draft: the draft is the compiled, formatted, validated `<Project>/<Name>.bpmn`, which opens on the canvas.
 Write the `.bpmn.ts`, run the loop below, and only then reply.
 
 **In plan mode, writes wait for plan approval.**
