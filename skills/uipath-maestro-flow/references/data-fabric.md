@@ -33,17 +33,24 @@ Data Fabric **events** (Record Created / Record Updated on an entity) are
 Integration Service connector events on `uipath-uipath-dataservice`, not this
 node family. They are curated events with the object built in, so do not pass
 `object`: the registry serves them as `record-created-preview-` and
-`record-updated-preview-`. Name the entity with `entity`, not `where`:
-`onEvent({ connector: 'uipath-uipath-dataservice', event: 'record-created-preview-', connection, folder, entity: 'Invoices' })`
-for a tenant entity, `entity: { name: 'Movie', folder: '<folder path>' }` for a
-folder entity. A folder entity compiles to the picker Studio Web saves, so
-packaging declares the entity in the solution and a deploy re-points it to the
-copy it provisions in the deployment folder; `where: { folderEntityName }` writes
-no picker and does neither. `check` reports `RESOURCE_UNRESOLVED` with the
-`uip maestro registry prepare --entity <name> --folder-path <path>` that records
-its keys; run it, then `check` again. `waitForEvent` takes `entity` the same way.
-Needs `@uipath/maestro-builder-sdk` <NEXT_SDK_VERSION> or later; an older SDK has
-no `entity` on an event (`check` reports `TS2353`),
+`record-updated-preview-`. The entity is plain fields in `where`:
+`onEvent({ connector: 'uipath-uipath-dataservice', event: 'record-created-preview-', connection, folder, where: { entityScope: 'tenant', tenantEntityName: 'Invoices' } })`
+for a tenant entity, `where: { entityScope: 'folder', folderEntityName: { name: 'Movie', folder: '<folder path>' } }`
+for a folder entity. `folderEntityName` is a solution-resource picker: give it
+the entity, and never write `folderEntityName_folderKey`. It compiles to the
+picker Studio Web saves, so packaging declares the entity in the solution and a
+deploy re-points it to the copy it provisions in the deployment folder;
+decompile writes it back as `{ name, folderKey, resourceKey }`, which recompiles
+as is. A scope takes only its own field: `entityScope: 'tenant'` beside
+`folderEntityName` is refused as `EVENT_PARAMETER_CLEARED`. `check` reports
+`RESOURCE_UNRESOLVED` with the `uip maestro registry prepare --entity <name>
+--folder-path <path>` that records a folder entity's keys, and names the
+`uip maestro registry prepare uipath-uipath-dataservice --action <event>` that
+gives it the event's rules; run each, then `check` again. `waitForEvent` takes
+`where` the same way. The `entity` option still compiles a folder entity but is
+deprecated, and `entity: '<name>'` is refused: write `where`.
+Needs `@uipath/maestro-builder-sdk` <NEXT_SDK_VERSION> or later; an older SDK
+does not read a resource in `where`,
 <!--skill-flavor:event-entity-sdk-upgrade:start-->
 so upgrade the copy `uip` resolves, local copy first, then global. From the
 directory you run `uip` in (the workspace root), run
