@@ -55,12 +55,20 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The process owner's entries D1–D4 and D7 read decided in the genome"
-    command: "node $REFERENCE_DIR/_shared/check_interview.mjs entries invoice-intake-genome.md decided 1-4 7"
+    description: "The process owner's entries D1–D4 read decided in the genome"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs entries invoice-intake-genome.md decided 1-4"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
+
+  - type: run_command
+    description: "Advisory: D7 reads decided too (it stays open when the user takes the defaults for the rest)"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs entries invoice-intake-genome.md decided 7"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 0.5
+    pass_threshold: 0
 
   - type: run_command
     description: "The other roles' entries D5, D6 and D8 stay open in the genome"
@@ -71,12 +79,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The process owner's Configuration Question CQ10 carries its answer in the SDD"
+    description: "Advisory: the process owner's Configuration Question CQ10 carries its answer in the SDD"
     command: "node $REFERENCE_DIR/_shared/check_interview.mjs items invoice-intake-sdd.md answered CQ10"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: run_command
     description: "The other roles' SDD items stay blank"

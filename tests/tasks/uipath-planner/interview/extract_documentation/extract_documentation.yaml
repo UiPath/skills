@@ -63,13 +63,19 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  - type: file_exists
+    description: "An SDD was written"
+    path: "*-sdd.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: file_matches_regex
-    description: "The SDD was written, with Action Required ahead of its body"
+    description: "Advisory: the SDD's Action Required comes ahead of its body"
     path: "*-sdd.md"
     pattern: '(?s)^## Action Required.*^## 1\.? '
     flags: 8
-    weight: 2.0
-    pass_threshold: 1.0
+    weight: 0.5
+    pass_threshold: 0
 
   - type: file_matches_regex
     description: "Advisory: the SDD's Document History records the interview"

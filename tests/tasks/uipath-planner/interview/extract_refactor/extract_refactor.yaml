@@ -114,7 +114,8 @@ success_criteria:
       A configuration value the build asks (a server, a folder, an address, a credential) is not an
       interview entry, even when an entry's wording mentions it. When no interview ran (the user declined
       it, or it was never asked), it decided nothing and left every entry open: the build may ask each
-      entry once.
+      entry once. A build question of its own (how the work is split, the unit of work) whose option
+      would change a decided entry, and says so, is not asking that entry again.
 
       Score 1.0 when both hold:
       1. The build asks none of the entries the interview decided, and offers no edit for them.

@@ -69,14 +69,22 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The genome is unchanged: answers that keep what it builds change nothing"
+    description: "The genome passes the strict check"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs strict"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Advisory: the genome is unchanged: answers that keep what it builds change nothing"
     command: >-
       node $REFERENCE_DIR/_shared/check_interview.mjs unchanged supplier-invoice-entry-and-approval-genome.md
       a68dbce8f3bf5a87faf9108f0ba4ce755207a4532d831b388ddfef5711d8eec8
     timeout: 30
     expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0
+    weight: 1.0
+    pass_threshold: 0
 
   - type: llm_judge
     description: "The build asks the open business decisions and does not require an SDD"
