@@ -28,8 +28,10 @@ def top_level(items: str) -> list[str]:
     for i, ch in enumerate(items):
         depth += (ch in "([{") - (ch in ")]}")
         if ch == "," and depth == 0:
-            parts, start = parts + [items[start:i]], i + 1
-    return [p.strip() for p in parts + [items[start:]] if p.strip()]
+            parts.append(items[start:i])
+            start = i + 1
+    parts.append(items[start:])
+    return [p.strip() for p in parts if p.strip()]
 
 
 def passes_confidence(script: str, agent: str) -> bool:
@@ -39,16 +41,21 @@ def passes_confidence(script: str, agent: str) -> bool:
     code = re.sub(r"/\*.*?\*/|//[^\n]*", "", script, flags=re.S)
     code = re.sub(r"\[\s*['\"]confidence['\"]\s*\]", ".confidence", code)
     out = f"$vars.{agent.rsplit('/', 1)[-1]}.output"
-    bound = lambda value: re.findall(rf"\bconst\s+(\w+)\s*=\s*{re.escape(value)}\s*;", code)
+
+    def bound(value: str) -> list[str]:
+        return re.findall(rf"\bconst\s+(\w+)\s*=\s*{re.escape(value)}\s*;", code)
+
     outputs = {out, *bound(out)}
     scores = {o + ".confidence" for o in outputs} | set(bound(out + ".confidence")) | {
         "confidence" for names, source in re.findall(r"\bconst\s*\{([^}]*)\}\s*=\s*([\w$.]+)\s*;", code)
         if source in outputs and "confidence" in top_level(names)
     }
-    end = re.search(r"\breturn\s+(.*?)\s*;?\s*$", code, re.S)
-    if not end or len(re.findall(r"\breturn\b", code)) != 1 or re.search(r"\.confidence\s*([-+*/]?=(?!=)|\+\+|--)", code):
+    end = re.search(r"\breturn\s+(.*)", code.rstrip().removesuffix(";"), re.S)
+    one_return = len(re.findall(r"\breturn\b", code)) == 1
+    assigns = re.search(r"\.confidence\s*([-+*/]?=(?!=)|\+\+|--)", code)
+    if not end or not one_return or assigns:
         return False
-    value, decides = end.group(1), False
+    value, decides = end.group(1).rstrip(), False
     if value in outputs:
         return True
     for prop in top_level(value[1:-1]) if value.startswith("{") and value.endswith("}") else []:
@@ -66,8 +73,13 @@ def only_control_between(g, source: str, target: str, blocked) -> bool:
     return all(g.type_of(n).startswith(CONTROL) for n in between)
 
 
+def script_of(g, node_id: str) -> str:
+    return str((g.nodes[node_id].get("inputs") or {}).get("script", ""))
+
+
 def main() -> None:
     g = load_graph()
+    reason = "no loop body holds an agent, a confidence gate and a human task together"
 
     for loop in g.ids(LOOP):
         body = {n for n in g.nodes if g.inside(n, loop)}
@@ -81,10 +93,18 @@ def main() -> None:
             for s in [a] + [
                 s for s in g.reachable(a, blocked=people)
                 if s in body and g.type_of(s) == SCRIPT and g.reaches(s, n, blocked=people)
-                and passes_confidence(str((g.nodes[s].get("inputs") or {}).get("script", "")), a)
+                and passes_confidence(script_of(g, s), a)
             ]
             if g.thresholds(n, s) and g.routes_low(n, people, s)
         ]
+        rejected = [
+            f"{n} reads {s}, which does not return {a}'s confidence unchanged"
+            for a in agents for n in g.ids(DECISION, SWITCH) if n in body
+            for s in g.reachable(a, blocked=people)
+            if s in body and g.type_of(s) == SCRIPT and g.thresholds(n, s) and not passes_confidence(script_of(g, s), a)
+        ]
+        if people and rejected and not gated:
+            reason = rejected[0]
         if not (gated and people):
             continue
 
@@ -123,7 +143,7 @@ def main() -> None:
         print(f"PASS: loop {loop} decides with {agent}, reviews with {people[0]}, applies at {shared[0]}")
         return
 
-    fail("no loop body holds an agent, a confidence gate and a human task together")
+    fail(reason)
 
 
 if __name__ == "__main__":

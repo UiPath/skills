@@ -174,6 +174,23 @@ def review_before_check_step() -> dict:
     return retarget(flow, "reviewDecision", "outcome-approve", "checkFields")
 
 
+def review_check_script_in_subflow() -> dict:
+    """The agent, the check script and the gate inside a subflow the loop calls."""
+    outer = review_check_script(CHECK_SCRIPT)
+    inner = [n for n in outer["nodes"] if n.get("parentId") == "processBatch"]
+    flow = {"nodes": [n for n in outer["nodes"] if n not in inner], "edges": [], "subflows": {"processItem": {
+        "nodes": [{"id": "processItemStart", "type": "core.trigger.manual", "inputs": {}}, *({**n, "parentId": None} for n in inner),
+                  {"id": "done", "type": "core.control.end", "inputs": {}}],
+        "edges": [{**e, "targetNodeId": "done", "targetPort": "input"} if e["targetNodeId"] == "processBatch" else e
+                  for e in outer["edges"] if e["sourceNodeId"] != "processBatch"]}}}
+    add(flow, "processItem", "core.subflow", parent="processBatch")
+    edge(flow["subflows"]["processItem"], "processItemStart", "analyzeItem")
+    edge(flow, "start", "processBatch")
+    edge(flow, "processBatch", "processItem", "start")
+    edge(flow, "processItem", "processBatch", target_port="continue")
+    return edge(flow, "processBatch", "end", "success")
+
+
 CHECK_SCRIPT = (
     "const p = $vars.analyzeItem.output; if (!p.decision) throw new Error('no decision'); "
     "return { decision: p.decision, confidence: p.confidence };"
@@ -235,6 +252,9 @@ CASES = [
     ("composition/check_batch_review.py", "apply per route, then joined", review_two_applies_joined, 1),
     ("composition/check_batch_review.py", "gate reads a check script",
      lambda: review_check_step("core.action.script", {"script": CHECK_SCRIPT}), 0),
+    ("composition/check_batch_review.py", "check script in a subflow", review_check_script_in_subflow, 0),
+    ("composition/check_batch_review.py", "check script ends with a comment",
+     lambda: review_check_script("return $vars.analyzeItem.output; // forwarded"), 0),
     ("composition/check_batch_review.py", "check step does not read the agent",
      lambda: review_check_step("core.action.script", {"script": "return { decision: 'approve', confidence: 0.9 };"}), 1),
     ("composition/check_batch_review.py", "mock between agent and gate only names the agent",
