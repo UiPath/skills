@@ -49,7 +49,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The tab's set is edited in place and scored only by exact match"
+    description: "The tab's set is edited in place and scored by an exact-match evaluator on every output"
     command: "python3 $REFERENCE_DIR/evaluate/local_crud/check_local_crud.py kept"
     timeout: 30
     expected_exit_code: 0
@@ -59,14 +59,14 @@ success_criteria:
   - type: command_executed
     description: "Agent changed the data points through uip rules eval"
     tool_name: "Bash"
-    command_pattern: 'uip\s+rules\s+eval\s+(create|add|delete)\b'
+    command_pattern: '(uip|\$UIP)\s+rules\s+eval\s+(create|add|delete|remove)\b'
     min_count: 1
-    weight: 1.0
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Agent did not start an evaluation run"
+    description: "Agent did not sign in, upload, debug or start an evaluation run"
     tool_name: "Bash"
-    command_pattern: 'uip\s+rules\s+eval\s+runs?\s+start'
+    command_pattern: '(uip|\$UIP)\s+(login\b(?!\s+[a-z])|solution\s+upload\b|rules\s+(debug\b|eval\s+runs?\s+start\b))(?![^\n;&|]*\s(--help|-h)\b)'
     weight: 1.0
     pass_threshold: 1.0

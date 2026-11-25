@@ -367,45 +367,102 @@ def policy_table(project):
     return rc.table_of(rc.load_rule(project)[1])
 
 
+def smoke(project):
+    return rc.find_eval_set(project, "Smoke")
+
+
+def grade(project):
+    eval_set = smoke(project)
+    refs = rc.check_scored_by_exact_match(project, eval_set)
+    rc.check_data_points(eval_set, policy_table(project), "decision1", refs)
+    return refs
+
+
 class TestEvals:
     def test_right_data_points_pass(self, policy_project):
         write_evals(policy_project, [data_point("a", {"creditScore": 550, "income": 90000}, "High"),
                                      data_point("b", {"creditScore": 700, "income": 0}, "Low")])
-        eval_set = rc.find_eval_set(policy_project, "Smoke")
-        rc.check_data_points(eval_set, policy_table(policy_project), "decision1")
-        assert rc.data_point_inputs(eval_set)[1] == {"creditScore": 700, "income": 0}
+        assert grade(policy_project) == ["exact-1"]
+        assert rc.data_point_inputs(smoke(policy_project))[1] == {"creditScore": 700, "income": 0}
         assert [e["id"] for e in rc.check_exact_match_only(policy_project)] == ["exact-1"]
 
     def test_wrong_band_fails(self, policy_project):
         write_evals(policy_project, [data_point("a", {"creditScore": 720, "income": 30000}, "Medium")])
         with pytest.raises(SystemExit):
-            rc.check_data_points(rc.find_eval_set(policy_project, "Smoke"), policy_table(policy_project), "decision1")
+            grade(policy_project)
 
     def test_stale_evaluator_copy_fails(self, policy_project):
         point = data_point("a", {"creditScore": 720, "income": 30000}, "Low")
         point["evaluationCriterias"]["exact-1"]["expectedOutput"] = {"decision1": {"riskBand": "Medium"}}
         write_evals(policy_project, [point])
         with pytest.raises(SystemExit):
-            rc.check_data_points(rc.find_eval_set(policy_project, "Smoke"), policy_table(policy_project), "decision1")
+            grade(policy_project)
 
-    @pytest.mark.parametrize("expected", [{}, {"Decision": {"riskBand": "Low"}}, {"decision1": {}}])
-    def test_expected_not_keyed_by_decision_fails(self, policy_project, expected):
-        point = data_point("a", {"creditScore": 720, "income": 30000}, "Low", copies=())
-        point["expectedOutput"] = expected
+    @pytest.mark.parametrize("criterias", [{}, {"exact-1": None}, {"exact-1": {}}])
+    def test_missing_evaluator_copy_fails(self, policy_project, criterias):
+        """A hand-written data point without the copy the run scores against."""
+        point = data_point("a", {"creditScore": 720, "income": 30000}, "Low")
+        point["evaluationCriterias"] = criterias
         write_evals(policy_project, [point])
         with pytest.raises(SystemExit):
-            rc.check_data_points(rc.find_eval_set(policy_project, "Smoke"), policy_table(policy_project), "decision1")
+            grade(policy_project)
+
+    @pytest.mark.parametrize("expected", [{}, {"Decision": {"riskBand": "Low"}}, {"decision1": {}},
+                                          {"decision1": {"riskBand": "Low"}, "extra": {"riskBand": "Low"}},
+                                          {"decision1": {"riskBand": "Low", "score": 1}}])
+    def test_expected_not_every_output_of_the_decision_fails(self, policy_project, expected):
+        point = data_point("a", {"creditScore": 720, "income": 30000}, "Low")
+        point["expectedOutput"] = expected
+        point["evaluationCriterias"]["exact-1"]["expectedOutput"] = expected
+        write_evals(policy_project, [point])
+        with pytest.raises(SystemExit):
+            grade(policy_project)
+
+    @pytest.mark.parametrize("inputs", [{"creditScore": 650}, {}, {"creditScore": 650, "income": 1, "age": 3}])
+    def test_inputs_other_than_the_rules_fail(self, policy_project, inputs):
+        """The engine reads a left-out input as null; {"creditScore": 650} would return High, not Medium."""
+        write_evals(policy_project, [data_point("a", inputs, "Medium")])
+        with pytest.raises(SystemExit):
+            grade(policy_project)
 
     def test_empty_set_fails(self, policy_project):
         write_evals(policy_project, [])
         with pytest.raises(SystemExit):
-            rc.check_data_points(rc.find_eval_set(policy_project, "Smoke"), policy_table(policy_project), "decision1")
+            grade(policy_project)
+
+    @pytest.mark.parametrize("refs", [[], ["missing"]])
+    def test_set_not_linked_to_an_evaluator_on_disk_fails(self, policy_project, refs):
+        write_evals(policy_project, [data_point("a", {"creditScore": 700, "income": 0}, "Low")])
+        path = policy_project / "evals" / "rule" / "eval-sets" / "evaluation-set-smoke.json"
+        doc = json.loads(path.read_text(encoding="utf-8"))
+        path.write_text(json.dumps({**doc, "evaluatorRefs": refs}), encoding="utf-8")
+        with pytest.raises(SystemExit):
+            grade(policy_project)
 
     def test_other_evaluator_type_fails(self, policy_project):
         write_evals(policy_project, [], evaluator_type="uipath-llm-judge-output-semantic-similarity")
         with pytest.raises(SystemExit):
             rc.check_exact_match_only(policy_project)
+        with pytest.raises(SystemExit):
+            rc.check_scored_by_exact_match(policy_project, smoke(policy_project))
+
+    def test_no_evaluators_fails(self, policy_project):
+        with pytest.raises(SystemExit):
+            rc.check_exact_match_only(policy_project)
 
     def test_missing_set_fails(self, policy_project):
         with pytest.raises(SystemExit):
-            rc.find_eval_set(policy_project, "Smoke")
+            smoke(policy_project)
+
+    def test_two_sets_of_one_name_fail(self, policy_project):
+        write_evals(policy_project, [])
+        sets = policy_project / "evals" / "rule" / "eval-sets"
+        (sets / "evaluation-set-copy.json").write_text((sets / "evaluation-set-smoke.json").read_text())
+        with pytest.raises(SystemExit):
+            smoke(policy_project)
+
+    def test_invalid_json_fails(self, policy_project):
+        write_evals(policy_project, [])
+        (policy_project / "evals" / "rule" / "eval-sets" / "broken.json").write_text("{", encoding="utf-8")
+        with pytest.raises(SystemExit):
+            rc.eval_sets(policy_project)

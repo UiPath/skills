@@ -685,3 +685,38 @@ class TestFeelEqualityInsideAList:
 
     def test_lists_of_different_length_do_not_match(self):
         assert not gc.same_value([1], [1, 2])
+
+
+def graph_set(points, refs=("exact-1",)):
+    return {"name": "Loans", "evaluatorRefs": list(refs), "evaluations": [
+        {"name": name, "inputs": inputs, "expectedOutput": expected,
+         "evaluationCriterias": {ref: {"expectedOutput": expected} for ref in refs}}
+        for name, inputs, expected in points]}
+
+
+LOAN = {"creditScore": 650, "income": 60000, "loanAmount": 150000}
+
+
+class TestGraphDataPoints:
+    def test_every_decision_expected_passes(self):
+        gc.check_graph_data_points(
+            graph_set([("a", LOAN, {"risk": {"riskBand": "Medium"}, "rate": {"interestRate": 9}})]),
+            fixture_root(), ["exact-1"])
+
+    @pytest.mark.parametrize("expected", [
+        {"risk": {"riskBand": "Medium"}},
+        {"risk": {"riskBand": "Medium"}, "rate": {}},
+        {"risk": {"riskBand": "Medium"}, "rate": {"interestRate": 8}},
+        {"risk": {"riskBand": "Medium"}, "rate": {"interestRate": "9"}},
+        {"risk": {"riskBand": "Medium"}, "rate": {"interestRate": 9}, "fee": {"fee": 1}},
+    ])
+    def test_missing_extra_or_wrong_decision_fails(self, expected):
+        with pytest.raises(SystemExit):
+            gc.check_graph_data_points(graph_set([("a", LOAN, expected)]), fixture_root(), ["exact-1"])
+
+    def test_left_out_input_fails(self):
+        inputs = {"creditScore": 650, "income": 60000}
+        with pytest.raises(SystemExit):
+            gc.check_graph_data_points(
+                graph_set([("a", inputs, {"risk": {"riskBand": "Medium"}, "rate": {"interestRate": 8}})]),
+                fixture_root(), ["exact-1"])

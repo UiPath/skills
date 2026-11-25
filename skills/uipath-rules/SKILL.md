@@ -117,7 +117,7 @@ Binding a rule into a process, workflow, or case belongs to that artifact's skil
 | Reference | When to read |
 |---|---|
 | [Decision Graphs Guide](references/drd-guide.md) | The rule holds, or needs, more than one decision |
-| [Failure Modes Guide](references/failure-modes-guide.md) | A `uip rules` command reports an error |
+| [Failure Modes Guide](references/failure-modes-guide.md) | A `uip rules` command reports an error (for `uip rules eval`, the Evaluate Guide's Failures table) |
 | [Evaluate Guide](references/evaluate-guide.md) | Writing, running, or reading a rule's evaluation sets (`uip rules eval`) |
 
 ## Anti-patterns

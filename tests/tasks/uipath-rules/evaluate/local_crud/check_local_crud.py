@@ -3,8 +3,9 @@
 
 `points`: the table still holds the policy, and every data point expects what it returns, in
 every evaluator's copy too (the wrong `Prime` band is fixed). `edits`: `Legacy` is gone, the
-kept and boundary data points are there. `kept`: the set keeps its id, file and the tab's
-`selectedEntrypoint`, and still links only exact-match evaluators.
+kept and boundary data points are there. `kept`: the edit happened (`Legacy` is gone) on the
+set itself, which keeps its id and the tab's `selectedEntrypoint` and is scored by an exact-match
+evaluator on `*`.
 """
 
 from __future__ import annotations
@@ -15,8 +16,8 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "_shared"))
 
 from rules_check import (  # noqa: E402
-    POLICY, check_cases, check_data_points, check_exact_match_only, data_point_inputs,
-    decision_of, eval_sets, fail, find_eval_set, find_project, load_rule, table_of,
+    POLICY, check_cases, check_data_points, check_exact_match_only, check_scored_by_exact_match,
+    data_point_inputs, decision_of, eval_sets, evaluators, fail, find_eval_set, find_project, load_rule, table_of,
 )
 
 SET_NAME = "Rule tests"
@@ -34,7 +35,9 @@ def check_points() -> None:
     project = find_project()
     root = load_rule(project)[1]
     check_cases(table_of(root), "riskBand", POLICY)
-    check_data_points(find_eval_set(project, SET_NAME), table_of(root), decision_of(root).get("name"))
+    eval_set = find_eval_set(project, SET_NAME)
+    refs = check_scored_by_exact_match(project, eval_set)
+    check_data_points(eval_set, table_of(root), decision_of(root).get("name"), refs)
     print("OK: the policy is unchanged and every data point expects what the rule returns")
 
 
@@ -58,12 +61,16 @@ def check_kept() -> None:
     if len(eval_sets(project)) != 1:
         fail(f"expected the one set {SET_NAME!r}, found {len(eval_sets(project))}; edit it in place")
     eval_set = find_eval_set(project, SET_NAME)
+    # The untouched fixture already holds this set, so only an edited one counts as kept.
+    if "Legacy" in [point.get("name") for point in eval_set.get("evaluations") or []]:
+        fail("data point Legacy is still in the set; nothing was edited")
     if eval_set.get("id") != SET_ID or eval_set.get("selectedEntrypoint") != "__br_eval_trigger__":
         fail("the set lost its id or the Evaluate tab's selectedEntrypoint; it was recreated, not edited")
-    linked = set(eval_set.get("evaluatorRefs") or [])
-    exact = {e.get("id") for e in check_exact_match_only(project)}
-    if not linked or not linked <= exact:
-        fail(f"the set links {sorted(linked)}, expected exact-match evaluators among {sorted(exact)}")
+    check_exact_match_only(project)
+    refs = check_scored_by_exact_match(project, eval_set)
+    targets = {e.get("id"): (e.get("evaluatorConfig") or {}).get("targetOutputKey") for e in evaluators(project)}
+    if "*" not in [targets[ref] for ref in refs]:
+        fail(f"no evaluator the set links compares every output (targetOutputKey '*'): {[targets[r] for r in refs]}")
     print("OK: the tab's set is edited in place and scored by exact match")
 
 

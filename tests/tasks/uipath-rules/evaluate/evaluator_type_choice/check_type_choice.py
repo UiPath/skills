@@ -15,8 +15,8 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "_shared"))
 
 from rules_check import (  # noqa: E402
-    check_data_points, check_exact_match_only, decision_of, fail, find_eval_set, find_project,
-    load_rule, table_of,
+    check_data_points, check_exact_match_only, check_scored_by_exact_match, decision_of, fail,
+    find_eval_set, find_project, load_rule, table_of,
 )
 
 EVALUATOR = "band-judge"
@@ -45,9 +45,10 @@ def check_set() -> None:
     project = find_project()
     root = load_rule(project)[1]
     eval_set = find_eval_set(project, SET_NAME)
-    if eval_set.get("evaluatorRefs") != [band_judge(project).get("id")]:
-        fail(f"{SET_NAME} links {eval_set.get('evaluatorRefs')}, expected only {EVALUATOR}")
-    check_data_points(eval_set, table_of(root), decision_of(root).get("name"))
+    refs = check_scored_by_exact_match(project, eval_set)
+    if refs != [band_judge(project).get("id")]:
+        fail(f"{SET_NAME} links {refs}, expected only {EVALUATOR}")
+    check_data_points(eval_set, table_of(root), decision_of(root).get("name"), refs)
     inputs = [point.get("inputs") for point in eval_set.get("evaluations") or []]
     absent = [case for case in CASES if case not in inputs]
     if absent:

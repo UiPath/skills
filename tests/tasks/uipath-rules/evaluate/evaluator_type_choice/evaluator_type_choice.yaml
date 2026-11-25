@@ -49,7 +49,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created the evaluator through uip rules eval"
     tool_name: "Bash"
-    command_pattern: 'uip\s+rules\s+eval\s+evaluators\s+(create|add)\b'
+    command_pattern: '(uip|\$UIP)\s+rules\s+eval\s+evaluators?\s+(create|add)\b'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -57,6 +57,13 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did not start an evaluation run"
     tool_name: "Bash"
-    command_pattern: 'uip\s+rules\s+eval\s+runs?\s+start'
+    command_pattern: '(uip|\$UIP)\s+rules\s+eval\s+runs?\s+start\b(?![^\n;&|]*\s(--help|-h)\b)'
     weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent never tried an evaluator type other than exact match"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+rules\s+eval\s+evaluators?\s+(create|add)\b[^\n;&|]*--type[=\s]+["'']?(?!exact-match\b)'
+    weight: 2.0
     pass_threshold: 1.0

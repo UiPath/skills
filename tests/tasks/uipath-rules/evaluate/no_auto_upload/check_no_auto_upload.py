@@ -14,7 +14,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "_shared"))
 
 from rules_check import (  # noqa: E402
-    check_data_points, check_exact_match_only, data_point_inputs, decision_of, fail,
+    check_data_points, check_exact_match_only, check_scored_by_exact_match, data_point_inputs, decision_of, fail,
     find_eval_set, find_project, load_rule, table_of,
 )
 
@@ -30,7 +30,8 @@ if __name__ == "__main__":
     root = load_rule(project)[1]
     check_exact_match_only(project)
     eval_set = find_eval_set(project, SET_NAME)
-    check_data_points(eval_set, table_of(root), decision_of(root).get("name"))
+    refs = check_scored_by_exact_match(project, eval_set)
+    check_data_points(eval_set, table_of(root), decision_of(root).get("name"), refs)
     absent = [case for case in CASES if case not in data_point_inputs(eval_set)]
     if absent:
         fail(f"no data point has the inputs {absent}")

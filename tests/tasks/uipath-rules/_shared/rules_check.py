@@ -370,25 +370,61 @@ def check_exact_match_only(project: Path) -> list[dict]:
     return found
 
 
-def check_data_points(eval_set: dict, table: ET.Element, decision: str) -> None:
-    """Each data point expects what the table returns for its inputs, in every evaluator's copy too."""
+def check_scored_by_exact_match(project: Path, eval_set: dict) -> list[str]:
+    """The set links at least one evaluator, each on disk and exact match; returns their ids."""
+    by_id = {e.get("id"): e for e in evaluators(project)}
+    refs = eval_set.get("evaluatorRefs") or []
+    if not refs:
+        fail(f"eval set {eval_set.get('name')!r} links no evaluators")
+    missing = [ref for ref in refs if ref not in by_id]
+    if missing:
+        fail(f"eval set {eval_set.get('name')!r} links {missing}, which are not in evals/rule/evaluators/")
+    other = [ref for ref in refs if by_id[ref].get("evaluatorTypeId") != EXACT_MATCH]
+    if other:
+        fail(f"eval set {eval_set.get('name')!r} links {other}, which are not {EXACT_MATCH}")
+    return refs
+
+
+def check_point_shape(point: dict, input_names: set[str], refs: list[str]) -> dict:
+    """A data point gives every rule input and keeps one copy of its expected output per linked
+    evaluator; returns its expected output.
+
+    The engine reads an input a data point leaves out as null, and the run scores each evaluator
+    against its own copy, so a missing input or a missing or stale copy grades wrongly.
+    """
+    name, expected = point.get("name"), point.get("expectedOutput") or {}
+    given = set(point.get("inputs") or {})
+    if given != input_names:
+        fail(f"data point {name!r} gives inputs {sorted(given)}, the rule reads {sorted(input_names)}")
+    criterias = point.get("evaluationCriterias") or {}
+    for ref in refs:
+        copy = (criterias.get(ref) or {}).get("expectedOutput")
+        if copy != expected:
+            fail(f"data point {name!r}: evaluator {ref}'s expectedOutput {copy} differs from {expected}")
+    return expected
+
+
+def check_data_points(eval_set: dict, table: ET.Element, decision: str, refs: list[str]) -> None:
+    """Each data point expects every output the table returns for its inputs, keyed by `decision`.
+
+    Every output, because `runs start` sends one a data point leaves out as null and exact match
+    on `*` then misses it.
+    """
     points = eval_set.get("evaluations") or []
     if not points:
         fail(f"eval set {eval_set.get('name')!r} has no data points")
     for point in points:
-        name, expected = point.get("name"), point.get("expectedOutput") or {}
+        name = point.get("name")
+        expected = check_point_shape(point, set(input_columns(table)), refs)
         actual = evaluate(table, point.get("inputs") or {}) or {}
         outputs = expected.get(decision)
-        if set(expected) != {decision} or not isinstance(outputs, dict) or not outputs:
+        if set(expected) != {decision} or not isinstance(outputs, dict):
             fail(f"data point {name!r} expects {expected}, not outputs keyed under decision {decision!r}")
+        if set(outputs) != set(output_names(table)):
+            fail(f"data point {name!r} expects outputs {sorted(outputs)}, the decision returns {output_names(table)}")
         for output, value in outputs.items():
             if output not in actual or actual[output] != value:
                 fail(f"data point {name!r} expects {output}={value!r}, the table returns {actual.get(output)!r}")
-        # The run scores each evaluator against its own copy, so a stale copy fails a right data point.
-        for evaluator_id, criteria in (point.get("evaluationCriterias") or {}).items():
-            copy = (criteria or {}).get("expectedOutput")
-            if copy is not None and copy != expected:
-                fail(f"data point {name!r}: evaluator {evaluator_id}'s expectedOutput {copy} differs from {expected}")
 
 
 def data_point_inputs(eval_set: dict) -> list[dict]:

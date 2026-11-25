@@ -13,16 +13,24 @@ sandbox:
   template_sources:
     - type: template_dir
       path: fixtures
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 
 run_limits:
-  task_timeout: 2400
+  # 1800 turn + 1500 for the engine grade + 300 margin. At 2400 an agent that used its
+  # whole turn was killed partway through grading, which reads as a failure.
+  task_timeout: 3600
   turn_timeout: 1800
 
 reference:
   directory: ../..
 
-# A fresh solution per run, so concurrent runs never share a Studio Web solution.
+# A fresh solution per run, so concurrent runs never share a Studio Web solution. `record`
+# runs first, so the solution `init` writes counts as this run's and `post_run` deletes it.
 pre_run:
+  - command: 'python3 _setup/solution_cleanup.py record RiskRules'
+    timeout: 60
   - command: |
       uip solution init RiskRulesSolution --output json >/dev/null \
         && mv RiskRules RiskRulesSolution/ \
@@ -34,11 +42,13 @@ initial_prompt: |
   `RiskRulesSolution/` holds our UiPath Business Rules project RiskRules for
   credit risk. Write an evaluation set `Policy` with a data point for each row
   of the rule and for the policy's boundaries: credit score 579 with income
-  50000, 580 with income 50000, 699 with income 75000, and 700 with income 0.
+  50000, 580 with income 50000, 650 with income 49999, 699 with income 75000,
+  and 700 with income 0.
 
   Then run the set on the tenant and report its score. You are approved to
   upload the solution to Studio Web for the run. Do not change the rule. Do
   not ask for confirmation.
+  Before starting, load the uipath-rules skill and follow its workflow.
 
 success_criteria:
   - type: run_command
@@ -52,7 +62,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran the set with rules eval runs start"
     tool_name: "Bash"
-    command_pattern: 'uip\s+rules\s+eval\s+runs?\s+start'
+    command_pattern: '(uip|\$UIP)\s+rules\s+eval\s+runs?\s+start\b(?![^\n;&|]*\s(--help|-h)\b)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -65,14 +75,8 @@ success_criteria:
     weight: 5.0
     pass_threshold: 1.0
 
-# `runs start` uploads a Studio Web solution; delete it so runs do not accumulate on the tenant.
+# `runs start` uploads a Studio Web solution; delete the ones this run created so they do not
+# accumulate on the tenant, and only those.
 post_run:
-  - command: |
-      python3 - <<'EOF' || true
-      import glob, json, subprocess
-      for path in glob.glob("**/*.uipx", recursive=True):
-          solution_id = json.load(open(path)).get("SolutionId")
-          if solution_id:
-              subprocess.run(["uip", "solution", "delete", solution_id, "--yes", "--output", "json"], timeout=120)
-      EOF
+  - command: 'python3 _setup/solution_cleanup.py delete RiskRules || true'
     timeout: 180

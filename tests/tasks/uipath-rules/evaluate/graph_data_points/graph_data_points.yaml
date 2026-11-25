@@ -1,0 +1,54 @@
+task_id: skill-rules-eval-graph-data-points
+description: >
+  Agent writes an evaluation set for an existing two-decision Business Rules
+  project (risk band, then interest rate), offline. The default exact-match
+  evaluator compares every output, and `runs start` sends one a data point
+  leaves out as null, so each data point must expect both decisions. Grades
+  each data point against the graph, every evaluator's copy, the requested
+  inputs, and no run started.
+tags: [uipath-rules, smoke, "mode:build", "lifecycle:generate", "feature:eval"]
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  `LoanRules/` is our UiPath Business Rules project: it decides a risk band,
+  then an interest rate from it. Add an evaluation set `Loan checks` with a
+  data point for each of these applicants:
+
+  - credit score 550, income 90000, loan amount 20000
+  - credit score 650, income 60000, loan amount 150000
+  - credit score 720, income 30000, loan amount 50000
+
+  There is no tenant here, so keep everything local. Do not change the rule.
+  Do not ask for confirmation.
+
+success_criteria:
+  - type: run_command
+    description: "Each data point expects what both decisions return, in every evaluator's copy"
+    command: "python3 $REFERENCE_DIR/evaluate/graph_data_points/check_graph_data_points.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added the data points through uip rules eval"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+rules\s+eval\s+(create|add)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not start an evaluation run"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+rules\s+eval\s+runs?\s+start\b(?![^\n;&|]*\s(--help|-h)\b)'
+    weight: 1.0
+    pass_threshold: 1.0

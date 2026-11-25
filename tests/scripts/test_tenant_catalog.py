@@ -100,14 +100,20 @@ def test_a_builder_sdk_check_is_offline(tasks_root: Path) -> None:
     "uip rules validate RiskRules --output json",
     "uip rules eval create dp --set Smoke --path RiskRules",
     "uip rules eval evaluators list --path RiskRules",
+    "uip rules eval evaluator create e --type exact-match --path RiskRules",
+    "uip rules eval set create Smoke --path RiskRules",
+    "uip rules eval remove dp --set Smoke --path RiskRules",
 ])
 def test_a_business_rules_local_verb_is_offline(command: str) -> None:
     assert tc.verbs_in(command) == set()
 
 
 @pytest.mark.parametrize("command, verb, services", [
-    ("uip rules eval runs start --set Smoke --wait", "rules eval runs", ("Studio Web", "Agents", "Business Rules")),
-    ("uip rules debug RiskRules --inputs '{}'", "rules debug", ("Studio Web", "Business Rules")),
+    ("uip rules eval runs start --set Smoke --wait", "rules eval runs",
+     ("Orchestrator", "Studio Web", "Agents", "Business Rules", tc.EVAL_FLAG)),
+    ("uip rules eval run start --set Smoke", "rules eval run",
+     ("Orchestrator", "Studio Web", "Agents", "Business Rules", tc.EVAL_FLAG)),
+    ("uip rules debug RiskRules --inputs '{}'", "rules debug", ("Orchestrator", "Studio Web", "Business Rules")),
     ("uip rules describe Risk --folder-path Shared", "rules describe", ("Orchestrator", "Business Rules")),
 ])
 def test_a_business_rules_run_or_lookup_calls_the_tenant(command: str, verb: str, services: tuple) -> None:
