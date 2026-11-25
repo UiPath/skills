@@ -17,20 +17,28 @@ be called. Exercises:
   * check_behavior.py's per-node provenance assertion, with synthetic
     `variables-all` payloads -- including the "one node cannot cover for
     another" case that is this suite's anti-cheat core.
+  * _setup/teardown.py's Studio Web cleanup, which deletes only solutions
+    named exactly after the run.
 """
 
 from __future__ import annotations
 
+import os
 import sys
+import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE / "_setup"))
 
 import composition  # noqa: E402
 import check_shape  # noqa: E402
 import check_behavior  # noqa: E402
+import teardown  # noqa: E402
 from check_shape import CheckFailure  # noqa: E402,F401  (re-exported for readability below)
 
 GOLD = HERE / "fixtures" / "gold" / "GreetingPipelineGoldSolution"
@@ -820,6 +828,54 @@ class CompletedAssertionTests(unittest.TestCase):
         }
         with self.assertRaisesRegex(CheckFailure, "Faulted"):
             check_behavior.assert_completed(debug_data, [{"Message": "boom"}])
+
+
+def minutes_ago(minutes: int) -> str:
+    return (datetime.now(timezone.utc) - timedelta(minutes=minutes)).isoformat().replace("+00:00", "Z")
+
+
+class TeardownTests(unittest.TestCase):
+    SOLUTIONS = [
+        {"Id": "run-id", "Name": "GreetingPipelineab12cd34", "CreationTime": minutes_ago(20)},
+        {"Id": "prefix-id", "Name": "GreetingPipelineab12cd34 copy", "CreationTime": minutes_ago(20)},
+        {"Id": "other-id", "Name": "Someone Else's Solution", "CreationTime": minutes_ago(20)},
+    ]
+
+    def delete_calls(self, rows):
+        calls = []
+
+        def fake_run(args, timeout):
+            calls.append(args)
+            return {"Result": "Success"}
+
+        with mock.patch.object(teardown, "_list_all", return_value=rows), mock.patch.object(teardown, "_run", fake_run):
+            teardown.delete_studio_web_solutions("GreetingPipelineAB12CD34")
+        return calls
+
+    def test_deletes_only_the_solution_named_after_the_run(self):
+        self.assertEqual(self.delete_calls(self.SOLUTIONS), [["uip", "solution", "delete", "run-id", "--yes"]])
+
+    def test_a_copied_manifest_cannot_select_another_solution(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            Path(tmp, "Copied.uipx").write_text('{"SolutionId": "other-id"}', encoding="utf-8")
+            cwd = os.getcwd()
+            os.chdir(tmp)
+            try:
+                calls = self.delete_calls(self.SOLUTIONS)
+            finally:
+                os.chdir(cwd)
+        self.assertNotIn("other-id", [arg for call in calls for arg in call])
+
+    def test_no_matching_solution_deletes_nothing(self):
+        self.assertEqual(self.delete_calls(self.SOLUTIONS[1:]), [])
+
+    def test_an_older_solution_with_the_run_name_is_not_deleted(self):
+        rows = [{"Id": "old-id", "Name": "GreetingPipelineab12cd34", "CreationTime": "2026-01-05T10:00:00.000Z"}]
+        self.assertEqual(self.delete_calls(rows), [])
+
+    def test_a_solution_without_a_creation_time_is_not_deleted(self):
+        rows = [{"Id": "run-id", "Name": "GreetingPipelineab12cd34"}]
+        self.assertEqual(self.delete_calls(rows), [])
 
 
 if __name__ == "__main__":
