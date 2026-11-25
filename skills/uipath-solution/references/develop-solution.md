@@ -256,7 +256,7 @@ If you need the full server spec for a resource that's already in the solution (
 
 Add a single resource to the solution without touching `bindings_v2.json` or re-scanning every project. Two modes:
 
-- `--source local` — create a *virtual stub*: a local-only resource record under `resources/solution_folder/<kind>/<name>.json` with no Orchestrator counterpart, to be provisioned at deploy time. Useful for new queues / assets / buckets that ship with the solution.
+- `--source local` — create a *virtual stub*: a local-only resource record under `resources/solution_folder/<kind>/<name>.json` with no Orchestrator counterpart, to be provisioned at deploy time. Useful for new queues / assets / buckets that ship with the solution, and for a connection authenticated after deployment ([Virtualizable vs non-virtualizable](#virtualizable-vs-non-virtualizable-resources)).
 - `--source remote` — import an existing Orchestrator resource into the solution via RCS lookup.
 
 `--source` is required, no default — pick the path explicitly. The command is idempotent: a second identical call returns `Status: "Unchanged"` instead of mutating, both on the local path (matched on `(kind, name, folder)`, suffix-aware so `name_<N>` siblings re-match) and the remote path (matched on resource key, case-insensitive).
@@ -656,10 +656,19 @@ Adding a project does not automatically sync its resources. The refresh scans al
 
 | Virtualizable | Non-virtualizable |
 |---------------|-------------------|
-| Queue, Asset, Bucket | Process, Connection, App |
-| Can exist as local placeholders (created at deploy time) | Must reference an existing Orchestrator/IS/Apps resource |
+| Queue, Asset, Bucket, Connection | Process, App |
+| Can exist as local placeholders (created at deploy time) | Must reference an existing Orchestrator/Apps resource |
 
 If a non-virtualizable resource isn't found in cloud, refresh emits a warning and the deployment will fail until the resource is provisioned (or the binding is fixed/removed).
+
+A connection is declared locally with its `authenticationType`: `AuthenticateAfterDeployment` for one a person signs in to after deploying; with `ConfigurableByUsers` the deploy creates no connection and the deployment activates. `add --source local` writes an empty spec, which deploy validation refuses (`[CNS1055]`, leaving a pending draft); set it with `edit`. `<RESOURCE_KEY>` is `Data.Key` from `add`; `<CONNECTOR_VERSION>` is `Data[0].Version` from `uip is connectors metadata <CONNECTOR_KEY> --output json`, which needs no connection of that connector; a version the connector lacks fails the install (`[CNS1056] Unexpected error creating connection`). `connectorName` is read-only and stays `""` until the deploy fills it:
+
+```bash
+uip solution resources add --source local --kind Connection --type <CONNECTOR_KEY> --name <CONNECTION_NAME> --output json
+uip solution resources edit <RESOURCE_KEY> --patch '{"authenticationType":"AuthenticateAfterDeployment","connectorKey":"<CONNECTOR_KEY>","connectorVersion":"<CONNECTOR_VERSION>","pollingInterval":5}' --output json
+```
+
+A project that uses it takes `<RESOURCE_KEY>` as its connection ID and a folder key beside it, for which `Data.FolderKey` from `add` serves; a case rule bound with no folder key faults at start (`102010`, `Value cannot be null. (Parameter 'Folder')`). `refresh` then warns `Connection <key> not found in Resource Catalog` and counts it under none of `Created`, `Imported` and `Skipped`, which is expected for a connection that does not exist yet. The deploy creates an `AuthenticateAfterDeployment` connection, unauthenticated, in the deployment's folder, so the deployment ends `NeedsSetupToActivate`; a person's sign-in to the connection alone does not activate it ([Pack and Deploy § Step 4](pack-and-deploy.md#step-4-deploy-to-orchestrator)).
 
 ### `bindings_v2.json` locations
 

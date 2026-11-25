@@ -89,6 +89,9 @@ def find_real_uip():
 def main(argv):
     record("uip", argv[1:], None)
 
+    # Bridged into Studio Web's browser shell: exit 199 so the browser's own uip runs the call.
+    if os.environ.get("STUDIOWEB_HOST_MOCK"):
+        return 199
     real_uip = find_real_uip()
     if real_uip is None:
         sys.stderr.write("uip logger: real uip executable not found later in PATH\n")

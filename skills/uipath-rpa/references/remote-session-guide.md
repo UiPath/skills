@@ -51,7 +51,7 @@ For a Serverless or attended robot, tell the user Live Authoring is not supporte
 7. **The remote filesystem is not directly accessible — transfer first.** To read a remote file, `download-file` it and read the local copy. To use a local file on the remote machine, `upload-file` it first and reference the remote path. Always use absolute remote paths.
 8. **`exec` verdict = the trailing JSON envelope.** The command's stdout and stderr stream to local stdout ahead of the envelope; read the command output from the streamed lines and the verdict from `Result` / `Message` only (§ Execute a Shell Command on the Remote).
 9. **Use `--output json`** on every command whose output is parsed, and **pass `--project-dir "<PROJECT_DIR>"` on every `uip rpa remote` command.** The target is stored per project; without the flag the current directory is used, and outside a project folder every command fails with `Not a UiPath project at '<DIR>': project.json is missing.`
-10. **Run/debug verdict = outer `Result` / inner `HasErrors`** — same as local runs, never log-entry levels (SKILL.md Common Rule 8a).
+10. **Judge a `--remote` run/debug verdict exactly like a local one — by `Data`'s backend shape (SKILL.md Common Rule 8a, [debugging.md § Output Format](debugging.md#output-format)), never by the outer `Result`, never by log-entry levels.** For the same failure the outer `Result` differs between backends: a faulted remote Helm `debug start` returns `Result: "Success"` with `hasErrors: false`.
 11. **No usable target → ask the user whether to prepare an unattended robot in Orchestrator. Never prepare one unasked.** User agrees → § Prepare a Remote Target in Orchestrator. User declines → ask for another folder or target, or stop.
 
 ## Session Lifecycle
@@ -277,7 +277,7 @@ uip rpa execution cancel --output json
 - **Live Authoring** — run/debug travel over the open session. After a `stop`, run `remote start` before the next `--remote` run.
 - **Remote Run Only** — every `--remote` run or debug session is an Orchestrator job of its own; nothing to start or stop.
 - The debug loop is unchanged from local debugging — breakpoints by `activityIdRef`, `DebugState` branching (`Paused` / `Suspended` / `Completed` / `Running`), locals in `DebugDetails`. Full loop: [debugging.md](debugging.md).
-- Works with both Studio and Helm backends.
+- Works with both Studio and Helm backends. Read the verdict by backend shape (Rule 10).
 - `--profiling-mode stream` is ignored when running remote; end-of-run profiling delivery still applies.
 - To read files the run produced on the robot (logs, screenshots, reports), download them (§ Transfer Files).
 

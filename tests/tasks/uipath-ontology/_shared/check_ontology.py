@@ -14,6 +14,12 @@
                                                        entity depends on another
     check_ontology.py choiceset <SOLUTION_DIR> <CHOICE_SET> <VALUE…>
                                                        `uip df choice-sets list-values --local` lists exactly VALUEs
+    check_ontology.py depends   <SOLUTION_DIR> <ENTITY> <KIND:NAME…>
+                                                       offline: local native entity ENTITY depends on each resource,
+                                                       by kind and name (ChoiceSet:OrderStatus, Entity:Customer)
+    check_ontology.py fieldtype <SOLUTION_DIR> <ENTITY> <FIELD:TYPE…>
+                                                       offline: each FIELD of the built entity has display type TYPE
+                                                       (File, ChoiceSetSingle, Relationship, Basic…)
 
 Exit 0 on pass; exit 1 prints the reason. UIP_CLI overrides the `uip` binary (a JS entry point runs with node).
 """
@@ -177,6 +183,43 @@ def check_relates(solution: Path, pairs: list[str]):
     print(f"OK: {', '.join(pairs)}")
 
 
+def native_entity_resource(solution: Path, entity: str) -> dict:
+    path = solution / "resources" / "solution_folder" / "entity" / "native" / f"{entity}.json"
+    if not path.is_file():
+        fail(f"{entity} is not a local native entity: {path} does not exist")
+    return json.loads(path.read_text()).get("resource") or {}
+
+
+def check_depends(solution: Path, entity: str, wanted: list[str]):
+    have = {(str(d.get("kind", "")).lower(), d.get("name"))
+            for d in native_entity_resource(solution, entity).get("dependencies") or []}
+    for item in wanted:
+        kind, _, name = item.partition(":")
+        if not name:
+            fail(__doc__)
+        if (kind.lower(), name) not in have:
+            fail(f"{entity} does not depend on {item}: {sorted(f'{k}:{n}' for k, n in have)}")
+    print(f"OK: {entity} depends on {', '.join(wanted)}")
+
+
+def check_fieldtype(solution: Path, entity: str, wanted: list[str]):
+    spec = native_entity_resource(solution, entity).get("spec") or {}
+    try:
+        fields = json.loads(spec.get("resourceJson") or "{}").get("Fields") or []
+    except json.JSONDecodeError as error:
+        fail(f"{entity}: spec.resourceJson is not JSON: {error}")
+    types = {f.get("Name"): str(f.get("FieldDisplayType", "")) for f in fields}
+    for item in wanted:
+        name, _, expected = item.partition(":")
+        if not expected:
+            fail(__doc__)
+        if name not in types:
+            fail(f"{entity} has no field {name}: {sorted(n for n in types if n)}")
+        if types[name].lower() != expected.lower():
+            fail(f"{entity}.{name} has display type {types[name]}, expected {expected}")
+    print(f"OK: {entity} fields {', '.join(wanted)}")
+
+
 def check_choiceset(solution: Path, choice_set: str, expected: list[str]):
     listed = uip("df", "choice-sets", "list-values", choice_set, "--local", cwd=solution)
     values = field(listed.get("Data") or {}, "values") or []
@@ -203,6 +246,10 @@ def main():
         return
     if len(sys.argv) >= 5 and sys.argv[1] == "choiceset":
         check_choiceset(Path(sys.argv[2]).resolve(), sys.argv[3], sys.argv[4:])
+        return
+    if len(sys.argv) >= 5 and sys.argv[1] in ("depends", "fieldtype"):
+        check = check_depends if sys.argv[1] == "depends" else check_fieldtype
+        check(Path(sys.argv[2]).resolve(), sys.argv[3], sys.argv[4:])
         return
     if len(sys.argv) != 4 or sys.argv[1] not in ("artifacts", "validate", "package"):
         fail(__doc__)
