@@ -56,8 +56,10 @@ No `Data.traceId` means the engine did not trace the run (tracing is off for the
 | `Missing required option --folder-path, --folder-key or --all-folders.` | Pass the rule's folder (`uip or folders list` finds folder paths), or `--all-folders` on `list`. |
 | `Option --all-folders cannot be used with --folder-path or --folder-key.` | Pass only one of them. |
 | `Options --folder-path and --folder-key cannot be used together.` | Pass one of them. |
-| `Business rule '<NAME>' was not found in folder '<FOLDER_PATH>'.` | Run `uip rules list --folder-path "<FOLDER_PATH>"` to see the rules in that folder. |
-| `Business rule '<NAME>' is not in the resource catalog for folder '<FOLDER_PATH>' yet.` | Normal right after a deploy; run the command again shortly. |
+<!--skill-flavor:rule-not-found:start-->
+| `Business rule '<NAME>' was not found in folder '<FOLDER_PATH>'.` | Run `uip rules list --folder-path "<FOLDER_PATH>"` to see the rules in that folder, or `uip rules list --all-folders` to find the rule when its folder is unknown. |
+<!--skill-flavor:rule-not-found:end-->
+| `Business rule '<NAME>' is not in the resource catalog for folder '<FOLDER_PATH>' yet.` | Normal right after a deploy; wait a minute and run the command again. If it fails again, show the user the error and stop. |
 | `Business rule '<NAME>' is in the resource catalog for folder '<FOLDER_PATH>', but the Business Rules service could not export it (404).` | Normal for a few minutes after a deploy; run it again shortly. If it keeps failing, the rule was deleted and the catalog has not caught up. |
 | `Business rule '<NAME>' is in the resource catalog for folder '<FOLDER_PATH>', but Orchestrator could not export it (404).` | Same as the row above. |
 | `Business Rules isn't supported on the connected environment.` | Stop; this environment has no Business Rules service. |
@@ -65,6 +67,6 @@ No `Data.traceId` means the engine did not trace the run (tracing is off for the
 | `The Business Rules service did not accept this login (401).` | Log in as a user with `uip login`; an external application login cannot read business rules. |
 <!--skill-flavor:deployed-rules-login:end-->
 | `Forbidden (403). Reading business rules needs the BusinessRules.View permission in the folder, on an environment with Business Rules turned on.` (in `Instructions`) | Stop; the user needs that permission in the rule's folder. No login or tenant change fixes it. |
-| `The Business Rules service did not answer within <SECONDS> seconds.` | Run the command again. |
-| `The Business Rules service answered with a body that is not a page of rules (<STATUS>).` | Run the command again; if it keeps failing, show the user the error and stop. |
+| `The Business Rules service did not answer within <SECONDS> seconds.` | Run the command again once; if it times out again, show the user the error and stop. |
+| `The Business Rules service answered with a body that is not a page of rules (<STATUS>).` | Run the command again once; if it fails again, show the user the error and stop. |
 | `Business rule '<NAME>' has no argument contract on its resource.` | The rule was deployed without `entry-points.json`; redeploy it from its solution with `uip solution publish` and `uip solution deploy run`. |
