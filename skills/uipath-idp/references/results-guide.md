@@ -100,7 +100,7 @@ Common codes (an open set: expect others):
 | `run-failed` | `pages get` on a failed digitization | Read its error with `runs get`; start a new run only when the cause is fixed |
 | `unsupported-media-type`, `file-too-large` | The upload was rejected | Convert to PDF or an image; split a file over 160 MB |
 | `upload-unavailable-for-tenant` | Uploads are not enabled for the tenant | Report it: an upload is the only way to pass a document |
-| `not-supported-yet` (501) | The service does not run that input or option yet | Follow `detail`, or report it; do not retry (SKILL.md Critical Rule 9) |
+| `not-supported-yet` (501) | The service does not run that input or option yet | Follow `detail`, or report it; do not retry |
 | `folder-access-denied` | The caller may not use that folder | Report it; a person must grant access |
 | `unauthenticated` | The token was refused | Run `uip login`, then send the same request once more |
 | `api-version-invalid` | The CLI and the API disagree on the API version | Update `uip`; do not work around it |

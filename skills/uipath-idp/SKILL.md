@@ -31,9 +31,8 @@ Turn documents into text with `uip documents`: upload a file to a folder, digiti
 6. **Keep `--timeout` under your shell's own command timeout.** `--wait` gives up after 300 seconds by default; a tool runner that kills commands sooner loses the output. Pass a lower `--timeout <SECONDS>` and resume as in Rule 5. Never poll in a shell loop.
 7. **Read engine names from `discovery digitization-engines list`; never guess one.** The defaults (OCR `auto`, `--apply-on-pdf auto`, no layout engine) suit most documents. Change them only when the user asks or the text comes back wrong. A layout engine runs on OCR output, so `--layout-engine` cannot be combined with `--apply-on-pdf never`.
 8. **Act on a failure by its `Retry` and `ErrorCode`, not by guessing.** The map is in [Results Guide § Errors](references/results-guide.md#errors). Never send a `RetryWillNotFix` request again unchanged, and send a `RetryLater` one again only once. A run succeeds or fails for the whole document; there is no partial status.
-9. **Stop on `not-supported-yet`.** The service answers it (HTTP 501) for an input or option it does not run yet, and its detail says what to send instead. Follow the detail when you can; otherwise report it. Never retry the same call or go around the CLI.
-10. **Read large documents page by page.** `Data.result.markdown` holds every page and grows with the page count. Read the count first (`--output-filter "result.pageCount"`), then one page at a time with `pages get`, or write a page to disk with `--output-file`.
-11. **Report the text as it was digitized.** Do not correct, complete or translate OCR output unless the user asks. When the text looks wrong, say so and offer another engine or `--apply-on-pdf always`.
+9. **Read large documents page by page.** `Data.result.markdown` holds every page and grows with the page count. Read the count first (`--output-filter "result.pageCount"`), then one page at a time with `pages get`, or write a page to disk with `--output-file`.
+10. **Report the text as it was digitized.** Do not correct, complete or translate OCR output unless the user asks. When the text looks wrong, say so and offer another engine or `--apply-on-pdf always`.
 
 ## Quick Start
 
@@ -47,7 +46,7 @@ uip documents pages get <PAGE_NUMBER> --run-id "<RUN_ID>" --format markdown --fo
 
 1. **Upload** → keep `Data.documentId`. Skip this step when the user already gave a `documentId`.
 2. **Digitize** → check `Result` and `Data.status` ([Results Guide § Run envelope](references/results-guide.md#run-envelope)). `Data.result.markdown` is the whole document, each page opening with `<!-- page: N -->`. Keep `Data.runId` for the pages.
-3. **Read pages** (optional) → one page as `text`, `markdown` or `dom` (Critical Rule 10).
+3. **Read pages** (optional) → one page as `text`, `markdown` or `dom` (Critical Rule 9).
 4. **On `TimeoutError`** → the `runs get` command in `Instructions`, repeated while it keeps timing out (cap: 10 tries, then report the `runId` and stop).
 
 ## Task Navigation
