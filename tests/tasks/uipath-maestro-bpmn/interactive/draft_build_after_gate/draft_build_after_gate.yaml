@@ -160,12 +160,13 @@ success_criteria:
   # canvas target `Process.bpmn`, the file Studio Web's `bpmn init` names, is
   # written by `merge` or `compile -o`, and each write counts as the upload;
   # a compile into `<Draft>/edited/` is not the target and does not count.
+  # The target may be named from `/solution` as `<Project>/Process.bpmn`.
   # The CLI's `bpmn init` names the file `<Name>.bpmn`, so a CLI agent still
   # needs two real uploads.
   - type: command_executed
     description: "At least two uploads (in Studio Web, writes to the open canvas target); which turn built is proven by the outline-box check"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+solution\s+upload\b|(uip|\$UIP)\s+maestro\s+bpmn\s+(merge|compile)\b(?:\\\n|(?<= )\n|[^\n;&|])*\s(-o|--output-file)(\s+|=)["'']?(/solution/[^/\s"'']+/|\./)?Process\.bpmn(?![\w./-])'
+    command_pattern: '(uip|\$UIP)\s+solution\s+upload\b|(uip|\$UIP)\s+maestro\s+bpmn\s+(merge|compile)\b(?:\\\n|(?<= )\n|[^\n;&|])*\s(-o|--output-file)(\s+|=)["'']?(/solution/|\./)?([^/\s"''.][^/\s"'']*/)?Process\.bpmn(?![\w./-])'
     min_count: 2
     weight: 1.5
     pass_threshold: 1.0
