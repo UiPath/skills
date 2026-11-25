@@ -130,34 +130,34 @@ malformed declaration; both change once the script is published.
 
 ## Checked before you publish
 
-Cache declarations are checked before a connector ships. The runtime cannot tell whether a vendor read is shared across scripts, so these rules run on the scripts themselves.
+Cache declarations are checked before a connector ships. The runtime cannot tell whether a vendor read is shared across scripts, so the connector rule engine's `script-cache` rules (CACHE-001 to CACHE-008) run on the scripts themselves.
 
 **Errors** fail the check:
 
-| Rule | Fails when | Fix |
+| Code | Fails when | Fix |
 |---|---|---|
-| `cache-shape` | `cache` is not `{ ttl: <seconds> }`: an extra key, a missing ttl, or a ttl that is not a positive finite number (`0`, `Infinity`, `1e999`, `NaN`, an undefined name). `export const cache`, `export { cache }`, `export { x as cache }` and `export function cache` are all checked | Write `cache: { ttl: 3600 }` |
-| `cache-on-write` | `cache` is on a call that changes data (anything but GET, HEAD, OPTIONS, or POST with `read: true`) | Remove `cache`, or mark a query-only POST `read: true` |
-| `cache-not-shared` | a vendor call has `cache` but no other script makes the same call with `cache` | Cache the script's whole answer with `export const cache = { ttl }` instead |
-| `script-parse` | a script is not valid JavaScript, so it cannot be checked | Fix the syntax error |
+| CACHE-001 (`cache-shape`) | `cache` is not `{ ttl: <seconds> }`: an extra key, a missing ttl, or a ttl that is not a positive finite number (`0`, `Infinity`, `1e999`, `NaN`, `undefined`). `export const cache`, `export { cache }`, `export { x as cache }` and `export function cache` are all checked | Write `cache: { ttl: 3600 }` |
+| CACHE-002 (`cache-on-write`) | `cache` is on a call that changes data (anything but GET, HEAD, OPTIONS, or POST with `read: true`), or on a call whose options have a spread | Remove `cache`, or mark a query-only POST `read: true` |
+| CACHE-003 (`cache-not-shared`) | a vendor call has `cache` but no other script makes the same call with `cache` | Cache the script's whole answer with `export const cache = { ttl }` instead |
+| CACHE-004 (`script-parse`) | a script is not valid JavaScript, so it cannot be checked | Fix the syntax error |
 
-Two calls count as the same when the method and URL match, ignoring the query string and treating every `${…}` in the URL as a placeholder. A URL built at runtime (`byId ? "/a" : "/b"`) cannot be compared and fails `cache-not-shared`. Only the scripts present in the repo count, so a read cached in one script fails until a second script that makes it is in the repo too.
+Two calls count as the same when the method and URL match, ignoring the query string and treating every `${…}` in the URL as a placeholder. A URL built at runtime (`byId ? "/a" : "/b"`) cannot be compared and fails CACHE-003. Only the scripts present in the repo count, so a read cached in one script fails until a second script that makes it is in the repo too.
 
-Where the checker cannot see a value it assumes the worst. A call whose `method` is missing or not a literal, or whose options object has a spread, cannot be proven a read, so `cache` on it fails. `intsvc.http(options)` with a non-literal options object counts as a possible write for `answer-cache-on-write`.
+Where the checker cannot see a value it assumes the worst. A call whose `method` is missing or not a literal fails CACHE-003, and one whose options object has a spread fails CACHE-002, since neither can be proven a read. `intsvc.http(options)` with a non-literal options object counts as a possible write for CACHE-005.
 
-**Warnings** print but never fail:
+**Warnings and info** never fail the check:
 
-| Warning | Means |
+| Code | Means |
 |---|---|
-| `answer-cache-on-write` | `export const cache` on a script that writes; its answers are never stored |
-| `answer-cache-reads-headers` | the script reads `context.request.headers`, which a cached script does not get |
-| `cache-ttl-capped` | the ttl is above 48 h, the runtime's default cap |
+| CACHE-005 (`answer-cache-on-write`) | `export const cache` on a script that writes; its answers are never stored |
+| CACHE-006 (`answer-cache-reads-headers`) | the script reads `context.request.headers`, which a cached script does not get |
+| CACHE-007 (`cache-ttl-capped`) | the ttl is above 48 h, the runtime's default cap |
+| CACHE-008 (`script-skipped`, info) | a `.ts` script is not parsed, so its cache declarations are not checked |
 
 **How it is enforced**
 
-- **Locally:** `uip is connectors builder validate`. Errors fail validation, and warnings are listed.
-- **Connector repos, CI:** the unit tests step in periodic-workflows, which a connector repo gets with `./scripts/build`. Errors fail the PR check, and warnings are printed.
-- Both print `<file>:<line>:<col> <rule> <message>`, and there is no ignore list.
+- `uip is connectors builder validate`, with `--checks legacy` (the default) or `--checks rules`. Errors fail validation, and warnings are listed.
+- Each finding prints as `CODE severity file message`. A script finding has no JSON pointer, and its message starts `line L, col C: `.
 
 ## Worked example: Slack
 
@@ -173,7 +173,7 @@ today, and Slack would not anyway because v3 never did:
 - Send message to user sets an `Authorization` header on the call, and a call carrying
   `authorization` is never cached.
 - Get User by Email picks `/users.info` or `/users.lookupByEmail` at runtime, so its URL
-  cannot be compared and `validate` fails it with `cache-not-shared`. It also forwards
+  cannot be compared and `validate` fails it with CACHE-003. It also forwards
   `context.request.headers`, which would split the key from any other script's.
 
 To share a read, every script that makes it needs a literal method and url template, no
