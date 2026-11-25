@@ -24,21 +24,13 @@ export const cache = { ttl: 900 };
 
 async function execute(context) {
   const { types = "public_channel" } = context.request?.query ?? {};
-  const page = intsvc.decodePageToken(context.request?.query?.nextPage) ?? {};
-  const pageSize = Number(page.pageSize ?? 200);
-  const cursor = page.next;
-
-  const query = { types, exclude_archived: "true", limit: pageSize };
-  if (cursor) query.cursor = cursor;
+  const query = { types, exclude_archived: "true", limit: 200 };
 
   const listed = await intsvc.http({ method: "GET", url: "/conversations.list", query });
   if (listed.status !== 200 || !listed.body?.ok) throw new Error(`conversations.list failed: ${listed.status} ${listed.body?.error ?? ""}`);
 
-  const next = listed.body.response_metadata?.next_cursor || "";
-  // A fresh result, so no vendor header is stored with the cached page.
-  const result = { status: 200, body: (listed.body.channels ?? []).map((c) => ({ id: c.id, name: c.name, is_private: c.is_private })) };
-  intsvc.setPaginationHeaders(result, { current: cursor, next, pageSize, hasMore: next !== "" });
-  return result;
+  // A fresh result, so no vendor header is stored with the cached answer.
+  return { status: 200, body: (listed.body.channels ?? []).map((c) => ({ id: c.id, name: c.name, is_private: c.is_private })) };
 }
 ```
 
@@ -183,7 +175,7 @@ To share a read, every script that makes it needs a literal method and url templ
 |---|---|---|
 | ListChannels, first time | miss, script runs | 1 |
 | ListChannels again within 48 h | hit, script does not run | 0 |
-| ListChannels with another `types` or `nextPage` | miss, different key | 1 |
+| ListChannels with another `types` | miss, different key | 1 |
 | ListChannels with `--refresh` | skipped, answer re-stored | 1 |
 | SendMessageToUser | not declared (a write) | every call |
 
