@@ -161,9 +161,9 @@ Six rules on it:
 
 ## Phase 1 — Ingest
 
-**Responsibility.** Parse the `.ofn` and the SHACL file into one typed model.
+**Responsibility.** Parse the `.ofn` and the SHACL file into one typed model. **No shipped command parses either file** — there is no `.ofn` reader and no SHACL reader in the CLI (§ Proposed tooling, not shipped) — so the run parses both itself.
 
-**Handoff.** The typed model, `<MODEL_NAME>-model.json` — committed, because every later walk reads the model from it rather than re-parsing OWL functional syntax. Shape: [federated-artifact-shapes-guide.md § Shape — the typed model](federated-artifact-shapes-guide.md).
+**Handoff.** The typed model, `<MODEL_NAME>-model.json` — committed, because every later walk reads the model from it rather than re-parsing OWL functional syntax. Shape: [federated-artifact-shapes-guide.md § Shape — the typed model](federated-artifact-shapes-guide.md). **Where the typed model and the `.ttl` disagree — which a hand edit to either can cause — the typed model wins**, and the disagreement is recorded as a decision. The committed artifact is complete, so no later phase re-parses the `.ttl` to settle it.
 
 **Shape.**
 
@@ -184,7 +184,7 @@ SHACL binds to classes through `sh:targetClass`.
 | `DataPropertyDomain` | which class each field belongs to |
 | `AnnotationAssertion` | labels, comments, `:sourceOfRecord` |
 
-**`:sourceOfRecord` is the lane gate, per class.** A class whose `:sourceOfRecord` names UiPath belongs to the native lane and is not built here. A model whose classes name a mix of systems is **split by that annotation at phase 4, never forced into one lane**. A class carrying no `:sourceOfRecord` cannot be assigned a lane: write the exception, never a default.
+**`:sourceOfRecord` is the lane gate, per class.** A class whose `:sourceOfRecord` names UiPath belongs to the native lane and is not built here. A model whose classes name a mix of systems is **split by that annotation at phase 4, never forced into one lane**. A class carrying no `:sourceOfRecord` cannot be assigned a lane: write the exception, never a default. **An annotation naming a connection, an external object or a field is an input defect** — reported to the model's owner and not worked around, because the model may name a system and nothing narrower.
 
 **Cross-check `DataPropertyRange` against `sh:datatype`.** A model may declare a datatype in both places, and a supplied model usually does. This lane **authors** no `DataPropertyRange` — every datatype it writes stays in SHACL — but it reads every one the `.ofn` carries into the typed model's `range`, and a disagreement with `datatype` is an exception at ingest, exactly as `sh:class` against `ObjectPropertyRange` is. A range the grammar skipped (`xsd:date` or `xsd:boolean` inside an axiom, § Stops) leaves `range` null and SHACL as the only declaration.
 
@@ -286,12 +286,30 @@ Connection resolution, folder scope and connector keys are `uipath-platform`'s. 
 
 1. At most `MAX_SOURCES` cells for one class (§ A class that needs more sources than fit).
 2. Every non-primary cell joinable **directly** off the primary. A chain — a join off a spoke — is refused by the star check with *"Joins must form a star — every join's `source` must be the same primary source"*, a plain error carrying no code. `INVALID_JOIN` is a narrower thing and not this: it covers a join side naming an object that is not one of the entity's sources, and a join of a source to itself.
-3. Every cell of a class yields the **same subject key**. Identical subjects are the only thing that makes several blocks describe one object instead of several.
+3. Every cell of a class yields the **same subject key**. Identical subjects are the only thing that makes several blocks describe one object instead of several. Which candidate objects can satisfy that is a decidable test, not a judgement — see § A class over several objects below.
 4. The key column of every class folded into another class's entity appears among that entity's selected fields. A folded class still mints its own subject in the target mapping and has nothing to mint from otherwise.
 
 **No key, no individual.** Every external table a class binds to carries a declared primary key. OWL 2 QL names an individual only by IRI, the subject IRI is minted from that column, and a relational row offers nothing else. That column does triple duty: it mints the subject, it is what the class's other cells must mint an identical subject from, and it is what the federated star joins on.
 
 **Fields spanning several objects is the ordinary shape, not an edge case.** A federated entity takes one primary object and joins the rest, so a class may bind to several objects and carry one block per cell — all minting an identical subject. Two conditions bound it, and they are conditions 1 and 2 above. A class whose sources form a chain rather than a star is the case that does not fit.
+
+### A class over several objects
+
+Condition 3 says every cell mints the same subject key. **Which objects can be a cell follows from that, and the test is decidable.** The class has no declared key — `HasKey` is rejected, so nothing in the `.ofn` says what identifies an instance. Its key is the **primary cell's declared primary key**, fixed here, flowing upward from the physical layer.
+
+A further object qualifies as a cell of the same class **only if its own declared primary key carries that same value**. It must be a 1:1 extension of the class, which makes the join primary-key to primary-key by construction. Three candidates that look workable and are not:
+
+| Candidate | Why it fails |
+|---|---|
+| the shared column is **not** that object's primary key | the object permits many rows per key, so the cell mints one subject repeatedly and the entity stops having one row per key |
+| a **parent** reached from the primary | its primary key identifies the parent, never the class, so no column in it can mint the class's subject at all |
+| an object keyed on a different value space | the cells cannot agree on a subject, and reaching it needs a chain the star check refuses |
+
+**The column names differ and that is expected.** `emp_details.id` and `emp_compensation.emp_id` are the same value under two spellings; each block's subject template reads **its own object's** primary-key column, and condition 3 is about the value, never the name. Do not look for one spelling across the cells.
+
+**What no channel can verify.** That two primary-key columns share a value space is unobservable — no connector declares a foreign key, and the metadata carries nothing that relates one object's key to another's. Two GUID primary keys in one database is the strongest evidence available and it is still inference. So a multi-cell class is a **decision**, recorded with the evidence it rests on and what it was chosen over, never a fact the discovery record asserts. A class whose extension cannot be justified that way stands alone.
+
+**The contrary direction needs none of this.** Several classes reading **one** object — different column subsets of the same table — requires no shared key at all, because each class mints from that object's primary key and they are different classes with different subjects. That case is unconstrained and is where most of a sparse matrix's second dimension comes from.
 
 **An object property carries a second question.** A data property asks only which field holds the value. An object property asks that **and** whether the pair of fields can carry the join: a usable field on both sides, the related side's field being the key the related object is bound on, and the related object reachable directly off the primary. Usually yes — which is why the check gets skipped. When it is no, the axiom is still sound and the binding is still wrong, and that is a **different** exception from "which field is it".
 
@@ -541,11 +559,12 @@ What that leaves, in each direction:
 | authoring the target YARRRML (phase 6) — the class-to-entity record, the second half of the two-file diff, and what `ont validate` reads | shipping it. The one `mapping` slot is still the reason there is exactly one target file |
 | the entity and connection resources | every artifact of the pack: the pack is committed beside the `.ofn`, not deployed |
 
-**The install rules are a note about a lane this pipeline does not enter.** They are not constraints to satisfy, and no artifact here is shaped to clear them. They are recorded only so a run that meets them knows why, and knows the dead end is upstream. Three of them bind jointly:
+**The install rules are a note about a lane this pipeline does not enter.** They are not constraints to satisfy, and no artifact here is shaped to clear them. They are recorded only so a run that meets them knows why, and knows the dead end is upstream. Four rules, the first three binding jointly:
 
 1. every declared data property must be mapped;
 2. the mapped datatype must equal the declared `DataPropertyRange`;
-3. the compiler rewrites `xsd:nonNegativeInteger` to `xsd:integer`, then objects that the two differ.
+3. the compiler rewrites `xsd:nonNegativeInteger` to `xsd:integer`, then objects that the two differ;
+4. the installer **refuses a relationship with no join keys** — `Relationship '<property>' has no join keys` — which makes the condition-less same-row form undeployable. It binds with nothing; it bites **only if that lane is ever entered**. Phase 7 keeps the condition-less block and does not reach for the self-join fallback precisely because this pipeline never enters it ([federated-check-guide.md § Three rejections to expect](federated-check-guide.md)). The two passages are one position, not two: should the ontology resource ever ship, this rule is what reopens that choice.
 
 Worked example, from the run: a data property declaring `DataPropertyRange xsd:nonNegativeInteger`. Rule 1 forbids dropping it from the mapping; rule 2 forbids mapping it as anything but `xsd:nonNegativeInteger`; rule 3 rewrites that to `xsd:integer` and fails rule 2 against the declaration it just rewrote. No authored form clears all three, and the only remedy is a different declaration in the `.ofn` — a model edit, which this lane never makes (§ Principles rule 8). The same property stands in [federated-source-mapping-guide.md § Worked example](federated-source-mapping-guide.md), flagged there for what it is.
 

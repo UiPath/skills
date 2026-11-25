@@ -328,6 +328,7 @@ Every join gives `source` the same primary — `WorkOrder` twice, which is the s
 | `run` | string | yes | the manifest's `run`, so a report is attributable to one run of the pack |
 | `verdict` | object[] | yes | one row per artifact **and per input**: `artifact` (its `path` as the manifest lists it, under `inputs` or `artifacts` — the `.ofn` and the constraints `.ttl` take a row of their own, because a rule that refuses the input blocks every artifact derived from it), `state` (`clear` or `blocked` — **the whole vocabulary**), `blockedBy` (the `E<n>` ids, empty when clear), `expectedRejections` (number) |
 | `expectedRejections` | object[] | yes, may be empty | `site` (string, the shipped rule or check that rejects a correct artifact — `XF-015`, `firstMappingByClass` and `SHC-002` are the ones seen so far, and the vocabulary is open because the next run meets the next one), `reached` (boolean, **whether the rule actually ran** — a prediction that never fired is not a prediction confirmed, and a run blocked before the cross-file rules reports every one of them `false`), `blocks` (the `blk:` ids it touches), `reason`, `decision` (the `D<n>` recording it). An expected rejection blocks nothing |
+| `sourceChecks` | object[] | yes | one row per check of [federated-check-guide.md § The nine checks over the source YARRRML](federated-check-guide.md), run against the **committed** source YARRRML: `check` (one of the nine, by name — `blockKeyForm`, `subjectReadsPrimaryKey`, `oneSubjectKeyPerClass`, `fieldInDiscovery`, `blockCountInBounds`, `starWithinBudget`, `foldedKeySelected`, `classTypeRow`, `subjectKeyMatchesManifest`), `subject` (the id the check ran against — a `blk:`, `cell:`, `cls:` or `fld:`, or the file's path where the check is over the file as a whole), `result` (`pass` or `fail`), `message` (string, **required on a fail**, absent on a pass). No shipped rule performs any of them |
 | `datatypeAgreement` | object[] | yes | one row per cell per property — the four readings and the three comparisons |
 | `reconciliation` | object[] | yes | one row per declared fact |
 | `coverage` | object | yes | the counts of [federated-check-guide.md § Coverage](federated-check-guide.md) |
@@ -352,6 +353,17 @@ A `reconciliation` row: `declared` (string \| null, the SHACL term — **null wh
    "reason":"three condition-less same-row joins, which R2RML §8 permits; the cross-file rules never ran (E8)","decision":"D12"},
   {"site":"SHC-002","reached":true,"blocks":[],
    "reason":"the rule counts the string sh:targetClass inside a # comment as a sixth shape; all five shapes carry a sh:NodeShape","decision":"D11"}],
+ "sourceChecks":[
+  {"check":"blockKeyForm","subject":"fieldservice-source.yarrrml","result":"pass"},
+  {"check":"blockCountInBounds","subject":"fieldservice-source.yarrrml","result":"pass"},
+  {"check":"subjectReadsPrimaryKey","subject":"cell:PartReservation__PARTS_RESERVATION","result":"pass"},
+  {"check":"oneSubjectKeyPerClass","subject":"cls:ServiceAccount","result":"pass"},
+  {"check":"fieldInDiscovery","subject":"fld:<SF_CONNECTION>/Account/Customer_Tier__c","result":"fail",
+   "message":"the committed block reads $(Customer_Tier__c); no field of that name is in the discovery record for this connection (E2)"},
+  {"check":"starWithinBudget","subject":"cls:ServiceWorkOrder","result":"pass"},
+  {"check":"foldedKeySelected","subject":"cls:PartStockPosition","result":"pass"},
+  {"check":"classTypeRow","subject":"blk:PartReservation__PARTS_RESERVATION","result":"pass"},
+  {"check":"subjectKeyMatchesManifest","subject":"cls:InstalledAsset","result":"pass"}],
  "datatypeAgreement":[
   {"cell":"cell:ServiceWorkOrder__WorkOrder","property":"dp:ServiceWorkOrder.grandTotal",
    "field":"fld:<SF_CONNECTION>/WorkOrder/GrandTotal",

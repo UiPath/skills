@@ -6,7 +6,7 @@ Two halves, and they fail differently. The **validation** half asks whether the 
 
 ## Where the report lives
 
-`<MODEL_NAME>-check.json`, beside the `.ofn`. **Its shape — every field, its type, whether it is required, and a worked example — is [federated-artifact-shapes-guide.md § Shape — the check report](federated-artifact-shapes-guide.md); this guide owns what each part means.** The parts, in the order the shape lists them: `verdict`, `expectedRejections`, `datatypeAgreement`, `reconciliation`, `coverage`, `openItems`, `handChecks`, `notPerformed`.
+`<MODEL_NAME>-check.json`, beside the `.ofn`. **Its shape — every field, its type, whether it is required, and a worked example — is [federated-artifact-shapes-guide.md § Shape — the check report](federated-artifact-shapes-guide.md); this guide owns what each part means.** The parts, in the order the shape lists them: `verdict`, `expectedRejections`, `sourceChecks`, `datatypeAgreement`, `reconciliation`, `coverage`, `openItems`, `handChecks`, `notPerformed`.
 
 The report is machine-read, like every artifact of the pack: nothing in it is rendered for a person, and a `state` string is a value a parser branches on rather than a sentence. **`verdict[].state` is `clear` or `blocked` and nothing else** — a verdict of "mostly clear" is not checkable — with the expected-rejection count beside it in `expectedRejections` and the blocking exceptions in `blockedBy`.
 
@@ -19,7 +19,25 @@ The reconciliation half is a **view over the ledger** — it re-presents decisio
 | the cross-file rules between the `.ofn`, the SHACL file and the target YARRRML | **exists** — `uip ont validate <ONTOLOGY_NAME> --local --output json`. `--local` is required: without it the command fails (`validate.ts` returns `failLocalRequired("validate")`), it does not act on the service instead. It runs the local rules and **then calls the ontology service only for an ontology whose local rules passed**: an ontology with an ERROR violation reports `"serviceValidation": "Skipped"`, and where no ontology passed, the service is never called and **no login is needed**. So the login is a precondition of a clean local pass, not of the command. Read `serviceValidation` per entry before reading a pass as complete — `Skipped` means half the check did not run. `uip ont artifacts check <FILE> --output json` is the per-file convention check only, one file at a time |
 | the datatype-agreement rule | **does not exist** — the run writes it (§ The agreement rule) |
 | the declared-versus-observed reconciliation | **does not exist** — the run writes it, as a view over the ledger (§ Declared, observed, enforced) |
-| anything over the source YARRRML | **does not exist** — the shipped checks were built for artifacts whose `table:` names an entity that already exists, and they do not know this file. Its half of the obligation — the block bound of phase 3 and the subject keys — is checked by the run |
+| anything over the source YARRRML | **does not exist** — no shipped rule can read this file. Its half of the obligation is nine checks the run performs itself (§ The nine checks over the source YARRRML) |
+
+### The nine checks over the source YARRRML
+
+**Phase 7's obligation, and it runs over the committed file.** The source YARRRML is committed and hand-editable, and the rerun merge rule makes the committed file win ([federated-rerun-guide.md § The merge rule](federated-rerun-guide.md)). So a hand edit that breaks the star, drops an `[a, ont:<Class>]` row or renames a `$()` to a field discovery never saw passes phase 7 in silence unless this phase re-reads the file. Phase 3's four conditions are **pre-write** conditions: they protect generation and do nothing for the artifact's later life. Run all nine against the file on disk, never against phase 3's record of it.
+
+| # | `check` | Demands |
+|---|---|---|
+| 1 | `blockKeyForm` | every block key has the `<Class>__<Object>` form |
+| 2 | `subjectReadsPrimaryKey` | each block's subject template reads that object's declared primary key |
+| 3 | `oneSubjectKeyPerClass` | all blocks of one class mint the same subject key |
+| 4 | `fieldInDiscovery` | every `$()` field exists in the discovery record |
+| 5 | `blockCountInBounds` | the block count falls within `max(M, N) ≤ blocks ≤ M × min(N, MAX_SOURCES)` — M classes, N distinct source objects (pipeline guide phase 3 § How many blocks) |
+| 6 | `starWithinBudget` | each class's cells are within `MAX_SOURCES` and form a star off one primary |
+| 7 | `foldedKeySelected` | every folded class's key column appears among its host entity's selected fields |
+| 8 | `classTypeRow` | `[a, ont:<Class>]` present in every block that types a class. A junction block carries none |
+| 9 | `subjectKeyMatchesManifest` | the subject keys agree with the correspondence recorded in the partition manifest |
+
+**None of the nine has a shipped checker, and none can get one from the shipped set.** The cross-file rules resolve `table:` through the solution's entities and a source block names an external object, so no shipped rule can read this file at all. The run performs all nine itself and records each in the report's `sourceChecks` ([federated-artifact-shapes-guide.md § Shape — the check report](federated-artifact-shapes-guide.md)). **This is the half of the consistency obligation that is net-new** — the other half is `uip ont validate` over the `.ofn`, the `.ttl` and the target YARRRML.
 
 ## Four ERROR rules the run must clear
 
