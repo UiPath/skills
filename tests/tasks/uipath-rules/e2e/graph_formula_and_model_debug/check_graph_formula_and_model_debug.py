@@ -132,3 +132,7 @@ def _model_answers(xml: str, model_id: str, rate: float) -> str:
     return xml.replace(model.group(0),
                        model.group(0).replace(body.group(0),
                                               body.group(1) + parameters + constant + body.group(4), 1), 1)
+
+
+if __name__ == "__main__":
+    main()

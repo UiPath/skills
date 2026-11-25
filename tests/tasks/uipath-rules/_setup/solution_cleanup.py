@@ -2,14 +2,20 @@
 """Deletes only the Studio Web solutions a `uip rules debug` run created.
 
 `rules debug` uploads a solution per run, so an e2e task has to clean up after itself or they
-accumulate on the tenant. An id is deleted only when its manifest sits under the project
-directory the task names, its path was not on disk before the run, and its id was not either --
-so a manifest that was already there, copied to a new path, is not a new solution.
+accumulate on the tenant. An id is deleted only when neither its manifest's path nor the id
+itself was on disk when `record` ran before the agent -- so a manifest that was already there,
+copied to a new path, is not a new solution.
 
-Ownership is inferred, not proven: only `uip rules debug` knows which solution it made, and
-`post_run` never sees its output. Where ownership is unknown the id is left on the tenant, and
-no record at all deletes nothing -- a leftover solution is tidied by hand, a deleted one is not.
-Narrowing this to a trusted create record is MST-18679.
+The record is the whole of the evidence, deliberately. Scoping by a directory name was tried and
+was worse than useless: `uip rules init <NAME>` writes the manifest to
+`<NAME>Solution/<NAME>Solution.uipx`, beside the project rather than inside it, so a filter on
+the project name matched nothing and the cleanup deleted nothing at all. A path an agent writes
+is not proof of anything; the before-and-after record is.
+
+Ownership is inferred from that record, not proven: only `uip rules debug` knows which solution
+it made, and `post_run` never sees its output. Where ownership is unknown the id is left on the
+tenant, and no record at all deletes nothing -- a leftover solution is tidied by hand, a deleted
+one is not. Narrowing this to a trusted create record is MST-18679.
 """
 
 from __future__ import annotations
@@ -22,9 +28,9 @@ from pathlib import Path
 STATE = Path(".rules-e2e-solutions.json")
 
 
-def manifests(project: str) -> list[Path]:
-    """Every `.uipx` under the named project directory, wherever the agent put it."""
-    return sorted(path for path in Path().rglob("*.uipx") if project in path.parts)
+def manifests() -> list[Path]:
+    """Every `.uipx` in the sandbox, wherever the agent or the CLI put it."""
+    return sorted(Path().rglob("*.uipx"))
 
 
 def solution_id(path: Path) -> str | None:
@@ -34,14 +40,14 @@ def solution_id(path: Path) -> str | None:
         return None
 
 
-def record(project: str) -> None:
+def record() -> None:
     """What is on disk before the agent runs: these are not ours to delete."""
-    found = {str(path): solution_id(path) for path in manifests(project)}
+    found = {str(path): solution_id(path) for path in manifests()}
     STATE.write_text(json.dumps(found), encoding="utf-8")
-    print(f"recorded {len(found)} pre-existing manifest(s) under {project}/: {sorted(found)}")
+    print(f"recorded {len(found)} pre-existing manifest(s): {sorted(found)}")
 
 
-def delete(project: str) -> None:
+def delete() -> None:
     # No record is no evidence. Treating a missing state file as "nothing was here before" is
     # exactly the glob this replaces, so a `pre_run` that was dropped or failed would silently
     # restore the behaviour rather than show itself.
@@ -51,7 +57,7 @@ def delete(project: str) -> None:
     before = json.loads(STATE.read_text(encoding="utf-8"))
     known_ids = {value for value in before.values() if value}
     deleted, failed, skipped = [], [], []
-    for path in manifests(project):
+    for path in manifests():
         found = solution_id(path)
         if not found:
             continue
@@ -69,9 +75,10 @@ def delete(project: str) -> None:
 
 
 if __name__ == "__main__":
+    # A project name used to scope the search and no longer does; it is still accepted so a task
+    # that passes one is not an error, and ignored.
     mode = sys.argv[1] if len(sys.argv) > 1 else ""
-    name = sys.argv[2] if len(sys.argv) > 2 else ""
-    if mode in ("record", "delete") and name:
-        {"record": record, "delete": delete}[mode](name)
+    if mode in ("record", "delete"):
+        {"record": record, "delete": delete}[mode]()
     else:
-        sys.exit("usage: solution_cleanup.py record|delete <PROJECT_DIR_NAME>")
+        sys.exit("usage: solution_cleanup.py record|delete")

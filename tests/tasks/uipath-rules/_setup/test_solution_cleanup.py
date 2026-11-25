@@ -53,21 +53,25 @@ def manifest(folder: Path, name: str, solution_id: str) -> Path:
 
 
 def test_a_solution_the_run_created_is_deleted(workspace, deletes):
-    sc.record("FeeRules")
-    manifest(workspace / "FeeRules", "FeeRules.uipx", "created-by-this-run")
+    # The layout `uip rules init FeeRules` actually writes: the manifest sits in the solution
+    # directory, beside the project rather than inside it. The old filter looked for the project
+    # name in the manifest's path, matched nothing here, and deleted nothing at all.
+    sc.record()
+    (workspace / "FeeRulesSolution" / "FeeRules").mkdir(parents=True)
+    manifest(workspace / "FeeRulesSolution", "FeeRulesSolution.uipx", "created-by-this-run")
 
-    sc.delete("FeeRules")
+    sc.delete()
 
     assert deletes == ["created-by-this-run"]
 
 
 def test_a_manifest_already_on_disk_is_left_alone(workspace, deletes):
-    # The finding: a manifest that was there before the run names a solution this run did not
-    # create, and the glob deleted it anyway.
-    manifest(workspace / "FeeRules", "FeeRules.uipx", "someone-elses-solution")
-    sc.record("FeeRules")
+    # The finding this script exists for: a manifest that was there before the run names a
+    # solution this run did not create, and the glob deleted it anyway.
+    manifest(workspace / "FeeRulesSolution", "FeeRulesSolution.uipx", "someone-elses-solution")
+    sc.record()
 
-    sc.delete("FeeRules")
+    sc.delete()
 
     assert deletes == []
 
@@ -75,41 +79,43 @@ def test_a_manifest_already_on_disk_is_left_alone(workspace, deletes):
 def test_the_same_id_copied_to_a_new_path_is_left_alone(workspace, deletes):
     # A new path is not a new solution. Recording the ids as well as the paths is what catches
     # a pre-existing manifest copied somewhere else during the run.
-    manifest(workspace / "FeeRules", "FeeRules.uipx", "someone-elses-solution")
-    sc.record("FeeRules")
-    manifest(workspace / "FeeRules" / "copy", "FeeRules.uipx", "someone-elses-solution")
+    manifest(workspace / "FeeRulesSolution", "FeeRulesSolution.uipx", "someone-elses-solution")
+    sc.record()
+    manifest(workspace / "copy", "FeeRulesSolution.uipx", "someone-elses-solution")
 
-    sc.delete("FeeRules")
+    sc.delete()
 
     assert deletes == []
 
 
-def test_a_manifest_outside_the_task_project_is_out_of_scope(workspace, deletes):
-    sc.record("FeeRules")
+def test_a_manifest_that_was_already_there_is_left_alone_wherever_it_sits(workspace, deletes):
+    # The record, not a directory name, is what spares it — which is the whole reason the path
+    # filter went: a name the layout chooses cannot carry ownership.
     manifest(workspace / "SomeOtherSolution", "Other.uipx", "not-this-tasks-solution")
+    sc.record()
 
-    sc.delete("FeeRules")
+    sc.delete()
 
     assert deletes == []
 
 
 def test_a_manifest_with_no_solution_id_is_skipped(workspace, deletes):
-    sc.record("FeeRules")
-    (workspace / "FeeRules").mkdir()
-    (workspace / "FeeRules" / "FeeRules.uipx").write_text('{"Name": "FeeRules"}', encoding="utf-8")
+    sc.record()
+    (workspace / "FeeRulesSolution").mkdir()
+    (workspace / "FeeRulesSolution" / "FeeRulesSolution.uipx").write_text('{"Name": "FeeRules"}', encoding="utf-8")
 
-    sc.delete("FeeRules")
+    sc.delete()
 
     assert deletes == []
 
 
 def test_an_unreadable_manifest_does_not_stop_the_cleanup(workspace, deletes):
-    sc.record("FeeRules")
-    (workspace / "FeeRules").mkdir()
-    (workspace / "FeeRules" / "broken.uipx").write_text("{not json", encoding="utf-8")
-    manifest(workspace / "FeeRules", "FeeRules.uipx", "created-by-this-run")
+    sc.record()
+    (workspace / "FeeRulesSolution").mkdir()
+    (workspace / "FeeRulesSolution" / "broken.uipx").write_text("{not json", encoding="utf-8")
+    manifest(workspace / "FeeRulesSolution", "FeeRulesSolution.uipx", "created-by-this-run")
 
-    sc.delete("FeeRules")
+    sc.delete()
 
     assert deletes == ["created-by-this-run"]
 
@@ -117,9 +123,9 @@ def test_an_unreadable_manifest_does_not_stop_the_cleanup(workspace, deletes):
 def test_no_record_deletes_nothing_rather_than_everything(workspace, deletes):
     # A `pre_run` that never ran leaves no state. Reading that as "nothing was here before" is
     # the glob's behaviour and the bug; with no record there is no evidence, so nothing goes.
-    manifest(workspace / "FeeRules", "FeeRules.uipx", "unknown-provenance")
+    manifest(workspace / "FeeRulesSolution", "FeeRulesSolution.uipx", "unknown-provenance")
 
-    sc.delete("FeeRules")
+    sc.delete()
 
     assert deletes == []
 
@@ -127,10 +133,10 @@ def test_no_record_deletes_nothing_rather_than_everything(workspace, deletes):
 def test_a_refused_delete_is_reported_rather_than_counted(workspace, refused, capsys):
     # A 403 exits non-zero and the solution is still on the tenant. Reporting it as deleted hid
     # a cleanup failure behind a line saying the opposite.
-    sc.record("FeeRules")
-    manifest(workspace / "FeeRules", "FeeRules.uipx", "refused-by-the-tenant")
+    sc.record()
+    manifest(workspace / "FeeRulesSolution", "FeeRulesSolution.uipx", "refused-by-the-tenant")
 
-    sc.delete("FeeRules")
+    sc.delete()
 
     assert refused == ["refused-by-the-tenant"]
     printed = capsys.readouterr().out

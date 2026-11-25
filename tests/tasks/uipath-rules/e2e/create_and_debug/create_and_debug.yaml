@@ -9,6 +9,10 @@ tags: [uipath-rules, e2e, "mode:build", "lifecycle:generate", "outcome-graded"]
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 
 run_limits:
   # 1800 turn + 1500 for the engine grade + 300 margin. At 2400 an agent that used its
@@ -70,11 +74,11 @@ success_criteria:
 
 # What is already on disk is not ours to delete; `solution_cleanup.py` says why.
 pre_run:
-  - command: 'python3 $REFERENCE_DIR/_shared/solution_cleanup.py record RiskRules'
+  - command: 'python3 _setup/solution_cleanup.py record RiskRules'
     timeout: 60
 
 # `rules debug` uploads a Studio Web solution per run; delete the ones this run created so they
 # do not accumulate on the tenant, and only those.
 post_run:
-  - command: 'python3 $REFERENCE_DIR/_shared/solution_cleanup.py delete RiskRules || true'
+  - command: 'python3 _setup/solution_cleanup.py delete RiskRules || true'
     timeout: 180
