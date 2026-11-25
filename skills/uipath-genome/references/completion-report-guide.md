@@ -17,7 +17,7 @@ Execution ends with a hand-off for the engineer who maintains and deploys the bu
 | `integration-check.md` | the independent review of the projects against each other and what became of each finding | after every project is built (§ 3.5) |
 | `reports/<project-slug>.md` | each project's group reports: files, validation and link counts, the activity kinds read, what each step's source defects became | at each group's end (§ 2.2 step 4) |
 
-The README is the completion report. It is written for a reader who has this folder and the build but no working folder: in full sentences, with steps and components by the names the genome gives them ([configuration-questions-guide.md](configuration-questions-guide.md) rule 2b), source objects by the names their author wrote, and each decision with its reason, never by a ruling, part or finding number. It states each fact once: the tables stay in their files, and the README counts and links them. The final message to the user is the README's Status section and its path. A change to the build after the hand-off is written re-checks the hand-off's tables and counts against the built projects before the build is delivered again.
+The README is the completion report. It is written for a reader who has this folder and the build but no working folder: in full sentences, with steps and components by the names the genome gives them ([configuration-questions-guide.md](configuration-questions-guide.md) rule 2b), source objects by the names their author wrote, and each decision with its reason, never by a ruling, part or finding number. It states each fact once: the tables stay in their files, and the README counts and links them. The final message to the user is the README's Status section and its path, followed by the deploy question ([execution-guide.md § 3.6](execution-guide.md)). A change to the build after the hand-off is written re-checks the hand-off's tables and counts against the built projects before the build is delivered again.
 
 ````markdown
 # <Solution or project>: hand-off
@@ -30,7 +30,7 @@ The README is the completion report. It is written for a reader who has this fol
 | Built | `<path to the solution or project folder>`: <projects, each with its type>; <n> files |
 | Source export | `<path>` (<identity>) | none — live capture or placeholders |
 | Built with | <skills, and the mandatory reads each performed> |
-| Run it | `<the owning skill's run command for the entry point>` |
+| Run it | `<the owning skill's run command for each entry point>`, and a coded app's local address — <runs now, on the resources created | needs first: <what, and the open-items step that provides it>> |
 
 ## Status
 - Acceptance criteria: <n>/<total> met (§ Acceptance criteria).
@@ -39,9 +39,11 @@ The README is the completion report. It is written for a reader who has this fol
 <!--skill-flavor:report-gate:end-->
 - UI targets: <screens>/<elements> (<high/medium/low>), <created>/<reused>/<parametrised>; <n> verified, <n> shape-verified on <instance>, <n> offline-unverified; <n> live checks open (`live-checks/`); <n> placeholders.
 - Tests: per test case, `Checkpoints: <source> / <asserted> / <not asserted: reasons> / <added>` (`parity/`).
-- Test data and Data Fabric: <n> seed records, <variation files> filled from source rows, <n> credential assets declared; <entity, …> <created and loaded | created | open items> | none.
+- Test data: <n> seed records, <variation files> filled from source rows, <n> credential assets declared | none.
+- Platform resources: <n> created in <the folder `<folder>` | the tenant> of `<tenant>` — <each by kind and name>; <n> records loaded; <n> waiting on the user (a connection's sign-in, a credential) | none created — every one is an open item.
 - Refactor: <the line of refactor-guide.md § Done> | not a refactor.
 - Before the first run: <n> setup steps (`open-items.md`).
+- Deployed: <version> into the folder `<folder>` of `<tenant>`; <each process and its folder, each app's address>; <n> steps left to a person | not deployed — `open-items.md` deploys it in any tenant.
 
 ## Next steps
 1. Set up the target environment: `open-items.md`, in order.
@@ -51,7 +53,7 @@ The README is the completion report. It is written for a reader who has this fol
 ## Configuration answers
 | Question | Answer |
 |---|---|
-| <the question in plain words> | <the answer>, with its source's label where the user did not give it in a batch: "(from the SDD)", "(from the request)" or "(from the refactor answers)" where the genome records it as decided, "(from the answers file)" where a file of answers gave it, "(source)" where the source's values answered it, "(default)" where no one answered |
+| <the question in plain words> | <the answer>, with its source's label where the user did not give it in a batch: "(from the SDD)", "(from the request)" or "(from the refactor answers)" where the genome records it as decided, "(from the answers file)" where a file of answers gave it, "(SDD default)" where an SDD item left blank gave its default, "(source)" where the source's values answered it, "(default)" where no one answered |
 
 ## Acceptance criteria
 | # | Criterion | Verdict | Where, or what is missing |
@@ -92,7 +94,7 @@ What each section holds:
 2a. **Changes to existing projects:** every difference between each project the build reused and its copy from before the first change (§ 1.4) — a workflow added, rewritten or removed, an argument added, removed, renamed or retyped, a dependency, the version it packs under — with why; a change to a library's public workflow or its arguments is marked breaking for the consumers outside this build.
 3. **Expected failures on a live run:** the criteria Met (static) that the source's own data or defect fails on a live run (§ 3.1), the placeholder targets, and, as not built, the objects of the Source Map's `Not covered` row — building them is a `uipath-planner` edit (re-extraction), then a new build.
 3a. **Rulings still owed:** the questions raised after the configuration answers that the user has not answered, each with the default in place and what changes if the answer differs.
-3b. **Unconfirmed decisions:** each open Open Decisions entry the build followed as the genome builds it, of the run-behaviour or reading tier or one the defaults covered, by its id and component, so the owner can still confirm or change it through `uipath-planner`.
+3b. **Unconfirmed decisions:** each open Open Decisions entry the build followed as the genome builds it, of the run-behaviour or reading tier or one the defaults covered, the SDD's included, by its id and component, so the owner can still confirm or change it through `uipath-planner`.
 4. **Data the build's runs changed:** each change a run made in a target system or a store, with how to undo it; nothing is undone unasked.
 5. **Files:** every file of the folder with what it holds, and the working folder that stays with the build.
 

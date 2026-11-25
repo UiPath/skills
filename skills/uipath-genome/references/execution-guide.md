@@ -7,10 +7,11 @@ Genome says *what* to build; build skills know *how*. Execution reads genome, co
 1. Every configuration question is answered — by the user, or by its default in an autonomous run ([configuration-questions-guide.md](configuration-questions-guide.md)) — and applied: each setting lives where the Settings store answer puts it ([configuration-questions-guide.md](configuration-questions-guide.md)).
 2. Every project validates and builds through its owning skill (§ 2.2).
 3. Every acceptance criterion carries a verdict (§ 3.1).
-4. The completion report is written as the hand-off's README, and its status is given to the user ([completion-report-guide.md](completion-report-guide.md)).
+4. The completion report is written as the hand-off's README, its Run it row saying whether each entry point runs now and, when not, what it needs first, and its status is given to the user ([completion-report-guide.md](completion-report-guide.md)).
 5. When the target environment needs any setup — a package to deploy, an asset, a queue, a trigger, a connection, a machine prerequisite — [open-items-guide.md](open-items-guide.md) is read and the open-items files are written in the hand-off folder (§ 3.4).
 6. A migration with UI targets has its live checks written, and, where the Live application answer names a reachable application, its live healing pass done (§ 2.2b). An authored genome with UI steps has its targets captured live where that answer names a reachable application, placeholders otherwise ([live-application-guide.md § Authored genomes](live-application-guide.md)).
 7. A refactor also meets [refactor-guide.md § Done](refactor-guide.md).
+8. The deploy is settled as § 3.6 states.
 
 ## Phase 1 — Parse and configure
 
@@ -89,6 +90,10 @@ A component of type library is consumed by the other components as a package dep
 7. **A library that calls another library's public workflow depends on that library's package.** It installs the package like any consumer (items 2 and 6) and is packed after it. A private copy of the workflow inside the calling library drifts from the original on the first change to either.
 8. **A common library, whether the Shared steps answer creates it or the genome's shared-behaviour component names it, is named `<Solution>.Common`.** Before a process drops its own helpers, a run shows the library gives the same results on the same inputs.
 
+### 1.6 Platform resources
+
+When the Platform resources answer creates them ([configuration-questions-guide.md](configuration-questions-guide.md)), the lead agent creates each resource that answer names, as it says, once the solution or project exists and before the first group that uses it, and has the solution reference each through `uipath-solution`. A connection waits on the user's sign-in in the browser, and a credential on the user creating it in Orchestrator; the groups that need neither go on meanwhile. A resource the owning skill creates somewhere other than the answer's folder stays where it lands, and the README says where. The README's Status lists every resource created and where it is.
+
 ## Phase 2 — Build
 
 ### 2.1 Plan skill groups
@@ -126,6 +131,7 @@ For each group, in order:
    - **A `uipath-maestro-case` component whose Interface names a Case Management SDD as its build input** is built by invoking `uipath-maestro-case` with the SDD's file path — its basename contains `sdd`, so that skill builds from it instead of handing off to design. Inside a process genome it runs from the component's own working folder (`<SOLUTION_DIR>/<COMPONENT_FOLDER>/`, one per case component, so its `./sdd.md` copy and `tasks/` never collide with another case's) with the solution directory, stating that the solution already exists: the case project is created inside it, and solution registration stays with the lead agent (execution-parts-guide.md § What a Build Adds item 5). The case is never redesigned from the genome's steps. A component genome runs it from the genome's folder, and it creates the solution itself.
    - **Test components:** [test-execution-guide.md](test-execution-guide.md).
    - **REFramework chosen for a consumer project:** build it on the template's surfaces, and re-derive an alternative unit of work, per [transactional-execution-guide.md § REFramework at build](transactional-execution-guide.md).
+   - **What the genome designs that the owning skill cannot build as designed** — a connection the solution binds, a trigger linked to its process, a handoff's mechanism, a field's type, the outcome a step returns — is put to the user when the build finds it, and never replaced unasked. The options: keep the design and hand the missing piece over as an open item, which a person completes after the deploy (Recommended); a stand-in, named with what it changes (a setting holding a connection's id moves the connection out of the solution's deployment; a text field in place of a choice set takes any value). The build goes on with the design kept and the open item carrying the missing piece until the user answers, as does an autonomous run; the README lists an unanswered one under Rulings still owed, and an accepted stand-in under Differences from the genome.
 3. **Verify the group:** every file the group needed exists, the owning skill's validate command passed, no unresolved errors remain. When the group produced Object Repository targets, read their definitions back and write their live checks per [ui-target-migration-guide.md § Verifying targets](ui-target-migration-guide.md) before reporting the group complete; the live healing pass follows once all UI groups are linked (§ 2.2b). A consumer project on the REFramework also reports its customisation checklist and the exits it exercised ([transactional-execution-guide.md § REFramework at build](transactional-execution-guide.md)).
 4. **Report and advance without pausing.** The group report goes into the project's report in the hand-off folder ([completion-report-guide.md](completion-report-guide.md)); the message is:
 
@@ -205,6 +211,17 @@ Execution ends by writing, in the hand-off folder ([completion-report-guide.md](
 
 After every project of a process genome is built, and before the report, a reviewer who built none of them reads the projects against each other, read-only: each Handoffs row's mechanism and names, queue names, the argument contract at every invoke (names, directions, types) and the configuration keys and assets the projects share. It writes `integration-check.md` in the hand-off folder ([completion-report-guide.md](completion-report-guide.md)): each finding with the projects and files it spans, its severity, and what became of it. A finding is fixed by the project's owner and the touched files re-validated, or recorded unresolved in `integration-check.md` and the README's Expected failures; none is dropped. The README counts the findings and links the file.
 
+### 3.6 Deploy, on the user's answer
+
+<!--skill-flavor:deploy-on-answer:start-->
+Once the hand-off is written, ask whether to deploy. The build has authored what the genome describes and the hand-off deploys it in any tenant, so whether and where it goes is the user's call: the question names the connected tenant, and neither option is recommended. A request that says whether to deploy answers it.
+
+- **Deploy now**, into a folder the user names, the Platform resources folder offered first when that answer named one: publish and deploy through `uipath-solution`, or each package through `uipath-platform` when the Deployment says independent packages, then work through the open-items steps that tenant still needs, in their order, ticking each one done and asking before each that gives someone access (a robot account, a role, a group). The steps only a person does — signing a connection in, entering a password, switching a trigger on, a refactor's cutover — are left to the user and named in the final message.
+- **Not now**: the hand-off is the deployment, and `open-items.md` takes the build to any tenant.
+
+A deploy ends by naming where the automation runs: each process with its folder, and each app's address, read from the deployment, never assumed. The README's Status gains its Deployed line. An autonomous run is not asked and deploys nothing.
+<!--skill-flavor:deploy-on-answer:end-->
+
 ## Anti-patterns
 
 1. **Building before the configuration questions are answered.** Produces placeholder values the user must hunt down later. Variants: skipping 1.3 because the genome's section is a stub (scaffolding questions are asked regardless); taking a "(Recommended)" or discovered value without asking outside an autonomous run; declaring the run autonomous because nobody replied yet, or because it runs in a subagent; letting the init command pick target framework and package versions the user was never asked about.
@@ -216,6 +233,6 @@ After every project of a process genome is built, and before the report, a revie
 7. **Skipping acceptance validation** because "everything compiled". Criteria are the definition of done.
 8. **Building past the owning skill.** Activity XML written from memory, or a subagent dispatched without the skill's mandatory reads and authoring journey (2.2 step 2).
 9. **Skipping the export question, or deriving nothing because no catalog sat beside the genome**, and so shipping placeholder targets or generated test rows for a reachable export (1.3, 2.2b, 2.2c). Every other migration mistake — naive composite translation, per-step Object Repository entries, Check activities instead of `VerifyOptions`, copied credentials — is prohibited in the anti-patterns of [source-migration-guide.md](source-migration-guide.md), [ui-target-migration-guide.md](ui-target-migration-guide.md), [ui-verification-guide.md](ui-verification-guide.md) and [test-execution-guide.md](test-execution-guide.md).
-10. **Writing to a tenant that no answer allowed** — publishing or deploying a package, creating a queue, asset or trigger, or an entity the Data Fabric answer did not allow. The build is local; what the target environment needs goes into the open-items files (§ 3.4).
+10. **Writing to a tenant that no answer allowed** — creating a resource the Platform resources answer did not allow, or a trigger; publishing or deploying before the user's answer (§ 3.6). What the target environment needs goes into the open-items files (§ 3.4).
 11. **Generating workflows by script.** Every fix goes into the generator and regenerates the project; regeneration after linking drops Object Repository links; template shapes bypass the discovery commands; reviewers must read the generator to judge the build (2.2 step 2).
 12. **Ending with the report in the conversation only, or with the engineer's files spread across the working folder.** The genome and the build then travel without the answers, the decisions and what is left to check on the live application ([completion-report-guide.md](completion-report-guide.md)).

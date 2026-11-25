@@ -14,3 +14,7 @@ The host keeps the open solution's resources in sync and packages it only when i
 <!--skill-flavor:capability-discovery-scratch:start-->
    - **When that discovery needs a project** (the docs an installed package brings), read the docs of the packages the open solution's projects already install, and the owning skill's own guidance otherwise: Studio Web works on its one open solution, so discovery makes no scratch project.
 <!--skill-flavor:capability-discovery-scratch:end-->
+
+<!--skill-flavor:deploy-on-answer:start-->
+Publishing the open solution (`uip solution publish`) is the user's call. Once the hand-off is written, the final message says so, and names `open-items.md` as what the tenant it is deployed to still needs.
+<!--skill-flavor:deploy-on-answer:end-->

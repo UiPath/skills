@@ -70,7 +70,7 @@ Every point the genome leaves to a person, one numbered entry each: a component'
 - **reading:** an inferred point with no outcome of its own;
 - **material:** an object or file the build needs that nobody has supplied, the expected results of logic over the tables the source ships included.
 
-An open entry builds what it says the genome `builds now`, otherwise its `recommended` option or its `reading`, until someone answers it; the build asks the business outcomes and the material ([configuration-questions-guide.md](configuration-questions-guide.md), Open decisions) and lists the others in the report as unconfirmed. A marked line names its entry: `*[Inferred: D3]*`, `*[Inferred: process D3]*`, or `*[Inferred: CQ2]*` for a value a Configuration Question asks.
+An open entry builds what it says the genome `builds now`, otherwise its `recommended` option or its `reading`, until someone answers it; the build asks the business outcomes and the material that no SDD beside the genome holds ([configuration-questions-guide.md](configuration-questions-guide.md), Open decisions) and lists the others in the report as unconfirmed. A marked line names its entry: `*[Inferred: D3]*`, `*[Inferred: process D3]*`, or `*[Inferred: CQ2]*` for a value a Configuration Question asks.
 
 ## Workflow
 
