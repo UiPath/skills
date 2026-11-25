@@ -85,6 +85,7 @@ success_criteria:
   - type: run_command
     description: "Agent updated employee records with performance scores"
     command: python3 _setup/verify_recorded_call.py --log _cli_recorder/uip-calls.jsonl --pattern 'uip\s+df\s+records\s+update'
+    timeout: 30
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -117,6 +118,7 @@ success_criteria:
   - type: run_command
     description: "Agent used filterGroup key in records query body"
     command: python3 _setup/verify_recorded_call.py --log _cli_recorder/uip-calls.jsonl --pattern '(?s)^uip\s+df\s+records\s+query.*\\?"filterGroup\\?"\s*:'
+    timeout: 30
     expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
@@ -124,6 +126,7 @@ success_criteria:
   - type: run_command
     description: "Agent included Id key in records update body"
     command: python3 _setup/verify_recorded_call.py --log _cli_recorder/uip-calls.jsonl --pattern '(?s)^uip\s+df\s+records\s+update.*\\?"Id\\?"\s*:'
+    timeout: 30
     expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
