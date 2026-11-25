@@ -67,7 +67,7 @@ intsvc.http({ method, url, query?, headers?, body?, read?, cache? })   // → { 
 | `headers` | `{ name: value }` or `[{ name, value }]` (ordered, duplicates preserved) |
 | `body` | an object is sent as JSON; a string is sent as its UTF-8 bytes |
 | `read` | `true` marks a POST as a read (a query API with no side effect), so it can be cached |
-| `cache` | `{ ttl }` (seconds) caches a read that other scripts of the connector also make; see [caching.md](caching.md). A hit costs no budget |
+| `cache` | `{ ttl }` (seconds) caches a read that other scripts of the connector also make; see [caching.md](caching.md). A hit makes no vendor call but still counts against the call budget |
 
 | response field | rule |
 |---|---|

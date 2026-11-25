@@ -170,8 +170,10 @@ uip is resources run script \
   --output json
 ```
 
-An inline script is never cached, so every run calls the vendor. Test caching against
-the published script (`--script-ref`; [caching.md](activity-generation/caching.md)).
+An inline script is never cached, so every run calls the vendor, and it keeps
+`context.request.headers` and does not refuse a bad `export const cache`. Test caching, and a
+script that reads headers, against the published script (`--script-ref`;
+[caching.md](activity-generation/caching.md)).
 
 Read `Data.Body` — the vendor's own response, parsed — and loop:
 

@@ -74,8 +74,9 @@ async function execute(context) {
   return listed;
 }
 ```
-This returns Slack's first page only; pagination is not handled. `usergroups.list`
-returns the whole set for most workspaces, so that is enough for a lookup.
+`usergroups.list` has no cursor and returns the whole set, so there is no next page to hand
+on. For a paged vendor list, set the cursor with `intsvc.setPaginationHeaders` and read it back
+with `intsvc.decodePageToken` ([runtime.md](runtime.md#one-page-per-invocation)).
 The main action takes vendor-canonical IDs only. Its `usergroups.users.list`
 read is part of the OPERATION (read-merge-write), not a lookup, so it stays
 inside — and the final vendor call's response is returned verbatim:

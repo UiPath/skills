@@ -68,6 +68,8 @@
   several scripts make takes `cache: { ttl }` on `intsvc.http` in each of them; a
   script cached on its own takes `export const cache = { ttl }`. Throw on any vendor
   failure (a 2xx `ok: false` too), or a returned failure is cached. An inline script
-  (`--inline-script`) is never cached, so edit and run it freely; `--refresh` re-fetches
-  for a published one. Fix `uip is connectors builder validate` cache findings before publishing
-  ([caching.md](caching.md)).
+  (`--inline-script`) is never cached, so edit and run it freely; it also keeps
+  `context.request.headers` and does not refuse a bad `export const cache`, so re-check
+  once published. `--refresh` re-fetches for a published one. A Layer A hit still counts
+  against the 4-call budget. Fix `uip is connectors builder validate` cache findings
+  before publishing ([caching.md](caching.md)).
