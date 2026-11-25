@@ -1,0 +1,72 @@
+task_id: skill-rules-eval-local-crud
+description: >
+  Agent cleans up the `Rule tests` evaluation set the Studio Web Evaluate tab
+  wrote for an existing credit-risk Business Rules project, offline: fixes the
+  data point whose expected band contradicts the rule (Prime, 720 → Low, not
+  Medium), removes one, and adds the policy's boundary cases. Grades every data
+  point against the unchanged table (each evaluator's copy of the expected
+  output included), the requested edits, the tab's set edited in place, and no
+  run started.
+tags: [uipath-rules, smoke, "mode:build", "lifecycle:generate", "feature:eval"]
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  `RiskRules/` is our UiPath Business Rules project for credit risk. Its tests
+  are in the `Rule tests` evaluation set. Clean them up:
+
+  - Fix any data point whose expected risk band does not match what the rule
+    returns. The rule is correct; do not change it.
+  - Remove the `Legacy` data point; it is obsolete.
+  - Add data points for the policy's boundaries: credit score 579 with income
+    50000, 580 with income 50000, 650 with income 49999, and 700 with income 0.
+
+  There is no tenant here, so keep everything local. Do not ask for
+  confirmation.
+
+success_criteria:
+  - type: run_command
+    description: "The rule is unchanged and every data point expects what it returns, in every evaluator's copy"
+    command: "python3 $REFERENCE_DIR/evaluate/local_crud/check_local_crud.py points"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Legacy is removed, Subprime and Prime kept, and the four boundaries added"
+    command: "python3 $REFERENCE_DIR/evaluate/local_crud/check_local_crud.py edits"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The tab's set is edited in place and scored only by exact match"
+    command: "python3 $REFERENCE_DIR/evaluate/local_crud/check_local_crud.py kept"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent changed the data points through uip rules eval"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rules\s+eval\s+(create|add|delete)\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not start an evaluation run"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rules\s+eval\s+runs?\s+start'
+    weight: 1.0
+    pass_threshold: 1.0

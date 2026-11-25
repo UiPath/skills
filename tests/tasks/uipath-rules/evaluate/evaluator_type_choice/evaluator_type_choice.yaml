@@ -1,0 +1,62 @@
+task_id: skill-rules-eval-evaluator-type-choice
+description: >
+  Agent is asked for an LLM-judge evaluator that scores only the riskBand
+  output of a credit-risk Business Rules project, offline. Business rules are
+  scored by exact match only, so the skill's answer is an exact-match
+  evaluator narrowed with --target-key. Grades the evaluator's type and target,
+  the set linking only it, and data points that match the rule.
+tags: [uipath-rules, smoke, "mode:build", "lifecycle:generate", "feature:eval"]
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  `RiskRules/` is our UiPath Business Rules project for credit risk. Set up
+  its tests:
+
+  - An evaluator named `band-judge` that uses an LLM judge to score only the
+    `riskBand` output.
+  - An evaluation set `Band checks` that uses only `band-judge`, with a data
+    point for credit score 550 with income 90000 and one for credit score 720
+    with income 30000.
+
+  There is no tenant here, so keep everything local. Do not ask for
+  confirmation.
+
+success_criteria:
+  - type: run_command
+    description: "band-judge is an exact-match evaluator targeting riskBand, and no evaluator is of another type"
+    command: "python3 $REFERENCE_DIR/evaluate/evaluator_type_choice/check_type_choice.py evaluator"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Band checks links only band-judge and its data points expect what the rule returns"
+    command: "python3 $REFERENCE_DIR/evaluate/evaluator_type_choice/check_type_choice.py set"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the evaluator through uip rules eval"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rules\s+eval\s+evaluators\s+(create|add)\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not start an evaluation run"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rules\s+eval\s+runs?\s+start'
+    weight: 1.0
+    pass_threshold: 1.0

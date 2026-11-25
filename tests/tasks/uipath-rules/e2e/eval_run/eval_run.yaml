@@ -1,0 +1,78 @@
+task_id: skill-rules-e2e-eval-run
+description: >
+  Agent writes an evaluation set for an existing credit-risk Business Rules
+  project and runs it on a tenant with Business Rules enabled through
+  `uip rules eval runs start`, with the upload approved in the prompt. Grades
+  the set's data points against the rule and its boundaries, the agent's run,
+  and a run the grader starts itself, which must complete with every data
+  point scored in full.
+tags: [uipath-rules, e2e, "mode:operate", "lifecycle:setup", "feature:eval", "outcome-graded"]
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+run_limits:
+  task_timeout: 2400
+  turn_timeout: 1800
+
+reference:
+  directory: ../..
+
+# A fresh solution per run, so concurrent runs never share a Studio Web solution.
+pre_run:
+  - command: |
+      uip solution init RiskRulesSolution --output json >/dev/null \
+        && mv RiskRules RiskRulesSolution/ \
+        && cd RiskRulesSolution \
+        && uip solution projects add RiskRules --output json >/dev/null
+    timeout: 120
+
+initial_prompt: |
+  `RiskRulesSolution/` holds our UiPath Business Rules project RiskRules for
+  credit risk. Write an evaluation set `Policy` with a data point for each row
+  of the rule and for the policy's boundaries: credit score 579 with income
+  50000, 580 with income 50000, 699 with income 75000, and 700 with income 0.
+
+  Then run the set on the tenant and report its score. You are approved to
+  upload the solution to Studio Web for the run. Do not change the rule. Do
+  not ask for confirmation.
+
+success_criteria:
+  - type: run_command
+    description: "Policy expects what the rule returns and covers the boundaries"
+    command: "python3 $REFERENCE_DIR/e2e/eval_run/check_eval_run.py set"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the set with rules eval runs start"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rules\s+eval\s+runs?\s+start'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A run of Policy completes and every data point scores in full"
+    command: "python3 $REFERENCE_DIR/e2e/eval_run/check_eval_run.py run"
+    timeout: 1500
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+# `runs start` uploads a Studio Web solution; delete it so runs do not accumulate on the tenant.
+post_run:
+  - command: |
+      python3 - <<'EOF' || true
+      import glob, json, subprocess
+      for path in glob.glob("**/*.uipx", recursive=True):
+          solution_id = json.load(open(path)).get("SolutionId")
+          if solution_id:
+              subprocess.run(["uip", "solution", "delete", solution_id, "--yes", "--output", "json"], timeout=120)
+      EOF
+    timeout: 180

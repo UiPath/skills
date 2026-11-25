@@ -90,6 +90,18 @@ OFFLINE_VERBS = (
     "solution resources remove",
     "solution resources edit",
     "solution resources list",
+    # Business Rules' local verbs. `rules eval` writes files under evals/rule/ only; its
+    # `runs` group uploads the solution and runs the set, so it is not listed here.
+    "rules init",
+    "rules refresh",
+    "rules format",
+    "rules validate",
+    "rules eval evaluators",
+    "rules eval sets",
+    "rules eval create",
+    "rules eval add",
+    "rules eval list",
+    "rules eval delete",
     "login",
     "tools",
     "update",
@@ -106,6 +118,10 @@ VERB_SERVICES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("maestro flow", ("Orchestrator", "Maestro")),
     ("maestro", ("Orchestrator", "Maestro")),
     ("solution upload", ("Studio Web",)),
+    # Both upload the solution to Studio Web; eval runs go through the Agents runtime.
+    ("rules debug", ("Studio Web", "Business Rules")),
+    ("rules eval runs", ("Studio Web", "Agents", "Business Rules")),
+    ("rules", ("Orchestrator", "Business Rules")),
     ("solution", ("Orchestrator", "Automation Solutions")),
     ("is", ("Integration Service",)),
     ("or", ("Orchestrator",)),
@@ -373,7 +389,10 @@ def skill_names() -> set[str]:
 SHELL_COMMAND_RE = re.compile(r"(?:^|[;&|(]\s*)uip\s")
 
 # Command groups that name no operation on their own; a call cut off here had a variable sub-command.
-INCOMPLETE_VERBS = {"maestro", "maestro case", "maestro flow", "maestro bpmn", "solution", "solution resources"}
+INCOMPLETE_VERBS = {
+    "maestro", "maestro case", "maestro flow", "maestro bpmn", "solution", "solution resources",
+    "rules", "rules eval",
+}
 
 
 def classify_verb(words: list[str]) -> str | None:

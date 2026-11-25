@@ -6,6 +6,7 @@ decision-keyed contract, and the DMN profile checks. A regression here passes
 a wrong table or fails a right one in every task that imports it.
 """
 
+import json
 import shutil
 import sys
 import xml.etree.ElementTree as ET
@@ -331,3 +332,80 @@ def test_first_stops_at_its_first_match():
     </decisionTable>''')
 
     assert rc.evaluate(table, {"amount": 10}) == {"fee": 1}
+
+
+POLICY_FIXTURE = TASKS / "smoke" / "brownfield_extend" / "fixtures" / "RiskRules"
+
+
+def data_point(name, inputs, band, copies=("exact-1",)):
+    expected = {"decision1": {"riskBand": band}}
+    return {"id": name, "name": name, "inputs": inputs, "expectedOutput": expected,
+            "evaluationCriterias": {c: {"expectedOutput": expected} for c in copies}}
+
+
+def write_evals(project, points, evaluator_type=rc.EXACT_MATCH):
+    """The files `uip rules eval` writes: one evaluator and one set, in the shapes the CLI saves."""
+    root = project / "evals" / "rule"
+    (root / "evaluators").mkdir(parents=True, exist_ok=True)
+    (root / "eval-sets").mkdir(parents=True, exist_ok=True)
+    (root / "evaluators" / "exact-1.json").write_text(json.dumps({
+        "version": "1.0", "id": "exact-1", "name": "exact", "evaluatorTypeId": evaluator_type,
+        "evaluatorConfig": {"name": "exact", "targetOutputKey": "*"}}), encoding="utf-8")
+    (root / "eval-sets" / "evaluation-set-smoke.json").write_text(json.dumps({
+        "version": "1.0", "id": "set-1", "name": "Smoke", "evaluatorRefs": ["exact-1"],
+        "evaluations": points}), encoding="utf-8")
+
+
+@pytest.fixture
+def policy_project(tmp_path, monkeypatch):
+    shutil.copytree(POLICY_FIXTURE, tmp_path / "RiskRules")
+    monkeypatch.chdir(tmp_path)
+    return tmp_path / "RiskRules"
+
+
+def policy_table(project):
+    return rc.table_of(rc.load_rule(project)[1])
+
+
+class TestEvals:
+    def test_right_data_points_pass(self, policy_project):
+        write_evals(policy_project, [data_point("a", {"creditScore": 550, "income": 90000}, "High"),
+                                     data_point("b", {"creditScore": 700, "income": 0}, "Low")])
+        eval_set = rc.find_eval_set(policy_project, "Smoke")
+        rc.check_data_points(eval_set, policy_table(policy_project), "decision1")
+        assert rc.data_point_inputs(eval_set)[1] == {"creditScore": 700, "income": 0}
+        assert [e["id"] for e in rc.check_exact_match_only(policy_project)] == ["exact-1"]
+
+    def test_wrong_band_fails(self, policy_project):
+        write_evals(policy_project, [data_point("a", {"creditScore": 720, "income": 30000}, "Medium")])
+        with pytest.raises(SystemExit):
+            rc.check_data_points(rc.find_eval_set(policy_project, "Smoke"), policy_table(policy_project), "decision1")
+
+    def test_stale_evaluator_copy_fails(self, policy_project):
+        point = data_point("a", {"creditScore": 720, "income": 30000}, "Low")
+        point["evaluationCriterias"]["exact-1"]["expectedOutput"] = {"decision1": {"riskBand": "Medium"}}
+        write_evals(policy_project, [point])
+        with pytest.raises(SystemExit):
+            rc.check_data_points(rc.find_eval_set(policy_project, "Smoke"), policy_table(policy_project), "decision1")
+
+    @pytest.mark.parametrize("expected", [{}, {"Decision": {"riskBand": "Low"}}, {"decision1": {}}])
+    def test_expected_not_keyed_by_decision_fails(self, policy_project, expected):
+        point = data_point("a", {"creditScore": 720, "income": 30000}, "Low", copies=())
+        point["expectedOutput"] = expected
+        write_evals(policy_project, [point])
+        with pytest.raises(SystemExit):
+            rc.check_data_points(rc.find_eval_set(policy_project, "Smoke"), policy_table(policy_project), "decision1")
+
+    def test_empty_set_fails(self, policy_project):
+        write_evals(policy_project, [])
+        with pytest.raises(SystemExit):
+            rc.check_data_points(rc.find_eval_set(policy_project, "Smoke"), policy_table(policy_project), "decision1")
+
+    def test_other_evaluator_type_fails(self, policy_project):
+        write_evals(policy_project, [], evaluator_type="uipath-llm-judge-output-semantic-similarity")
+        with pytest.raises(SystemExit):
+            rc.check_exact_match_only(policy_project)
+
+    def test_missing_set_fails(self, policy_project):
+        with pytest.raises(SystemExit):
+            rc.find_eval_set(policy_project, "Smoke")

@@ -96,6 +96,25 @@ def test_a_builder_sdk_check_is_offline(tasks_root: Path) -> None:
     assert task(report(tasks_root), "demo-sdk")["tier"] == "local"
 
 
+@pytest.mark.parametrize("command", [
+    "uip rules validate RiskRules --output json",
+    "uip rules eval create dp --set Smoke --path RiskRules",
+    "uip rules eval evaluators list --path RiskRules",
+])
+def test_a_business_rules_local_verb_is_offline(command: str) -> None:
+    assert tc.verbs_in(command) == set()
+
+
+@pytest.mark.parametrize("command, verb, services", [
+    ("uip rules eval runs start --set Smoke --wait", "rules eval runs", ("Studio Web", "Agents", "Business Rules")),
+    ("uip rules debug RiskRules --inputs '{}'", "rules debug", ("Studio Web", "Business Rules")),
+    ("uip rules describe Risk --folder-path Shared", "rules describe", ("Orchestrator", "Business Rules")),
+])
+def test_a_business_rules_run_or_lookup_calls_the_tenant(command: str, verb: str, services: tuple) -> None:
+    assert tc.verbs_in(command) == {verb}
+    assert tc.services_for_verb(verb) == services
+
+
 def test_a_uip_lookup_in_python_is_not_a_command() -> None:
     assert tc.verbs_in("UIP = shutil.which('uip') or 'uip'") == set()
 

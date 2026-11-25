@@ -1,0 +1,89 @@
+{
+  "version": "1.0",
+  "id": "ab9a6050-a9a8-4fc6-89ef-2b8275f02de5",
+  "name": "Rule tests",
+  "evaluatorRefs": [
+    "exact-e1550adc"
+  ],
+  "evaluations": [
+    {
+      "id": "e2ae9c36-5ae2-41a8-9ea5-cb3b4da84322",
+      "name": "Subprime",
+      "inputs": {
+        "creditScore": 550,
+        "income": 90000
+      },
+      "expectedOutput": {
+        "decision1": {
+          "riskBand": "High"
+        }
+      },
+      "evaluationCriterias": {
+        "exact-e1550adc": {
+          "expectedOutput": {
+            "decision1": {
+              "riskBand": "High"
+            }
+          }
+        }
+      },
+      "createdAt": "2026-11-25T12:24:57.620Z",
+      "updatedAt": "2026-11-25T12:24:57.620Z"
+    },
+    {
+      "id": "0decc27a-237f-4028-bb4d-43d4b7dbcc13",
+      "name": "Prime",
+      "inputs": {
+        "creditScore": 720,
+        "income": 30000
+      },
+      "expectedOutput": {
+        "decision1": {
+          "riskBand": "Medium"
+        }
+      },
+      "evaluationCriterias": {
+        "exact-e1550adc": {
+          "expectedOutput": {
+            "decision1": {
+              "riskBand": "Medium"
+            }
+          }
+        }
+      },
+      "createdAt": "2026-11-25T12:24:57.809Z",
+      "updatedAt": "2026-11-25T12:24:57.809Z"
+    },
+    {
+      "id": "bec2bd57-5777-4c03-90fe-694f2abd2193",
+      "name": "Legacy",
+      "inputs": {
+        "creditScore": 600,
+        "income": 60000
+      },
+      "expectedOutput": {
+        "decision1": {
+          "riskBand": "Medium"
+        }
+      },
+      "evaluationCriterias": {
+        "exact-e1550adc": {
+          "expectedOutput": {
+            "decision1": {
+              "riskBand": "Medium"
+            }
+          }
+        }
+      },
+      "createdAt": "2026-11-25T12:24:57.976Z",
+      "updatedAt": "2026-11-25T12:24:57.976Z"
+    }
+  ],
+  "fileName": "evaluation-set-rule-tests-ab9a6050.json",
+  "createdAt": "2026-11-25T12:24:57.436Z",
+  "updatedAt": "2026-11-25T12:24:57.976Z",
+  "selectedEntrypoint": "__br_eval_trigger__",
+  "target": {
+    "kind": "flow"
+  }
+}
