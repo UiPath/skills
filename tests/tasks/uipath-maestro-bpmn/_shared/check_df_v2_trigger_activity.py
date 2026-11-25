@@ -9,10 +9,13 @@ Web opens it, and the builder SDK does not write the marker):
   1. A bpmn:startEvent carries Intsvc.EventTrigger on uipath-uipath-dataservice
      for EntityTriggers_V3 / UPDATED_V3, with `activityConfigurationVersion`
      v2, a V2 `connection` (not V1 `connectionId`), a `uipath:entryPointId`,
-     design-time metadata, and the entity on `folderEntityName`.
+     design-time metadata, and the entity on `folderEntityName` as a
+     `=bindings.<id>` read of the entity's `resource="entity"` name binding
+     (a literal watches the entity but writes no picker).
   2. A bpmn:sendTask carries Intsvc.ActivityExecution on the same connector
      for CreateEntityRecord_V3, V2 the same way, picking the
-     entity and setting `title` to `V2Test`.
+     entity with its `queryParameters` `folderEntityName` read the same way
+     as the trigger's, and setting `title` to `V2Test`.
   3. `bindings_v2.json` beside the .bpmn has an EventTrigger resource whose
      EntryPointUniqueId is the trigger's entry point id, and the entity
      resource; `entry-points.json` lists the trigger start.
@@ -34,9 +37,11 @@ from _shared.bpmn_check import (  # noqa: E402
     fail,
     has_typed_uipath_extension,
     parse_bpmn,
+    query_parameters,
     root_bindings,
 )
 from _shared.check_df_picker_folder_entity import (  # noqa: E402
+    body_parameters,
     picker_values,
     title_of,
 )
@@ -61,6 +66,22 @@ def require_v2(path: str, node: ET.Element, label: str) -> None:
         fail(f"{path}: {label} metadata has no activityPropertyConfiguration from the design-time client")
     if not (metadata.get("activityMetadata") or {}).get("activity"):
         fail(f"{path}: {label} metadata has no activityMetadata.activity (the catalog entry)")
+
+
+def require_name_picker(
+    path: str, name_read: str, bindings: dict[str, dict[str, str]], fixture: dict, label: str
+) -> None:
+    """``name_read`` is a `=bindings.<id>` read of the entity's `resource="entity"` name binding."""
+    picked = bindings.get(name_read[len("=bindings.") :], {}) if name_read.startswith("=bindings.") else {}
+    if (
+        picked.get("resource") != "entity"
+        or picked.get("propertyAttribute") != "name"
+        or picked.get("resourceKey", "").lower() != fixture["key"].lower()
+    ):
+        fail(
+            f"{path}: the {label}'s folderEntityName is {name_read!r}, not a read of "
+            f"{fixture['name']}'s resource=\"entity\" picker binding"
+        )
 
 
 def one(path: str, nodes: list[ET.Element], label: str) -> ET.Element:
@@ -105,6 +126,7 @@ def main() -> None:
         fail(f"{path}: the trigger start has no uipath:entryPointId")
     if not picker_values(trigger, bindings) & entity:
         fail(f"{path}: the trigger does not pick {fixture['name']} on folderEntityName")
+    require_name_picker(path, str(body_parameters(trigger).get("folderEntityName") or ""), bindings, fixture, "trigger")
 
     activity = one(
         path,
@@ -121,6 +143,7 @@ def main() -> None:
     require_v2(path, activity, "activity")
     if not picker_values(activity, bindings) & entity:
         fail(f"{path}: the activity does not pick {fixture['name']} on folderEntityName")
+    require_name_picker(path, query_parameters(activity).get("folderEntityName", ""), bindings, fixture, "activity")
     if title_of(activity) != TITLE:
         fail(f"{path}: the activity sets title to {title_of(activity)!r}, not {TITLE!r}")
 

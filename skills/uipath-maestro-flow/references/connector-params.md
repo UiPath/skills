@@ -140,7 +140,7 @@ connector('uipath-microsoft-azureactivedirectory', 'list-groups',
 The artifact must contain both runtime `inputs.detail.queryParameters.where` and design-time `configuration.essentialConfiguration.savedFilterTrees.where`. Studio Web renders the FilterBuilder from the tree; product
 validation rejects a literal filter that has only one of the two, so a
 hand-written literal without its tree fails `validate` even though the run
-would have worked (a runtime `tmpl` filter is exempt; see below). If the task asks for the filter tree as a separate review artifact, compile first and copy `configuration.essentialConfiguration.savedFilterTrees.<parameter>` verbatim, directly or under a named top-level property, never an ad hoc `{ field, operator, value }` object or only the CEQL string; retain numeric `groupOperator` and `filters`.
+would have worked (a runtime `tmpl` filter is exempt; see below). If the task asks for the filter, or its tree, as a separate file, compile first and copy `configuration.essentialConfiguration.savedFilterTrees.<parameter>` verbatim, directly or under a named top-level property, never an ad hoc `{ field, operator, value }` object or only the CEQL string; retain numeric `groupOperator` and `filters`.
 
 Supported operators: `=` `!=` `<` `<=` `>` `>=`, `Contains`, `Starts With`, `Ends With`, `Like`, their `Not` forms, and `Is Null` / `Is Not Null`; combine with `AND` or `OR`, and parenthesise to nest — `(a = 1 OR b = 2) AND c = 'x'`. Mixing `AND` and `OR` at one level is refused.
 

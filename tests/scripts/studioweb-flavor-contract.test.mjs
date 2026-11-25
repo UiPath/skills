@@ -241,6 +241,84 @@ test("the studioweb functions and coded-app flavors do not deny the QuickJS node
   }
 });
 
+// Studio Web creates coded apps through the `CreateProjects` host tool
+// (Autopilot `services/projectCreation.ts`), and nothing compiles one before its
+// first `tsc -b`, so the flavor routes creation to that tool and ships the
+// create-vite base files, Vite client types included (TS2882 on `import './index.css'`).
+const CODED_APP_CREATION_DENIAL =
+  /cannot create an AppV2 project|cannot create function or coded-app projects|coded-app projects cannot be created/;
+const CREATE_VITE_COMMAND = "npx --yes create-vite";
+const SCAFFOLD_REFERENCES = ["create-web-app.md", "create-action-app.md"];
+const SOLUTION_CODEDAPP_INIT_RULE = "`uip codedapp init` is the solution-side scaffolding entry point";
+// One line from each canonical passage that runs the CLI host's scaffold, install or build;
+// the studioweb flavor replaces each passage through its own named block.
+const CLI_HOST_PASSAGES = [
+  "**Two lifecycles, two scaffolding entry points.**",
+  "**Never skip the build step.**",
+  "If `node_modules` is absent, run the install step first",
+  "**A scaffold is not React until `src/main.tsx` exists",
+  "`cd <app-name> && npm run dev`",
+];
+
+test("the built studioweb flavor creates coded apps with CreateProjects and writes buildable base files", (t) => {
+  const output = buildStudioweb(t);
+  const codedApps = join(output, "uipath-coded-apps");
+
+  const skill = readFileSync(join(codedApps, "SKILL.md"), "utf8");
+  assert.ok(skill.includes("`CreateProjects` host tool"), "uipath-coded-apps must create coded apps with CreateProjects");
+  assert.ok(skill.includes("Read its live schema first"), "uipath-coded-apps must take the CreateProjects fields from its live schema");
+  for (const passage of CLI_HOST_PASSAGES) {
+    assert.ok(!skill.includes(passage), `uipath-coded-apps must replace the CLI-host passage: ${passage}`);
+  }
+
+  const solution = readFileSync(join(output, "uipath-solution", "SKILL.md"), "utf8");
+  assert.ok(!solution.includes(SOLUTION_CODEDAPP_INIT_RULE), "uipath-solution must not send coded apps to `uip codedapp init`");
+
+  const template = readFileSync(join(codedApps, "assets", "templates", "web-app-template.md"), "utf8");
+  assert.ok(template.includes('"types": ["vite/client"]'), "the base files must declare the Vite client types");
+  const actionTemplate = readFileSync(join(codedApps, "assets", "templates", "action-app-template.md"), "utf8");
+  assert.ok(
+    actionTemplate.includes('"@uipath/coded-action-app"') && !template.includes('"@uipath/coded-action-app"'),
+    "the Coded Action App package.json must live in the action-app template",
+  );
+
+  for (const reference of SCAFFOLD_REFERENCES) {
+    const text = readFileSync(join(codedApps, "references", reference), "utf8");
+    assert.ok(!text.includes(CREATE_VITE_COMMAND), `${reference} must not tell the agent to run create-vite`);
+  }
+
+  const denials = markdownFiles(output)
+    .filter((file) => CODED_APP_CREATION_DENIAL.test(readFileSync(file, "utf8")))
+    .map((file) => relative(output, file));
+  assert.deepEqual(denials, [], "no studioweb skill may say coded apps cannot be created in Studio Web");
+
+  // Field names belong to the live CreateProjects schema; a copy in skill text goes stale on a rename.
+  const hardcodedFields = markdownFiles(output)
+    .filter((file) => readFileSync(file, "utf8").includes("projectSubType"))
+    .map((file) => relative(output, file));
+  assert.deepEqual(hardcodedFields, [], "studioweb skills must not hardcode CreateProjects field names");
+});
+
+test("the default uipath-coded-apps skill keeps create-vite scaffolding (the guard is not vacuous)", (t) => {
+  const output = buildDefault(t);
+  const codedApps = join(output, "uipath-coded-apps");
+
+  const skill = readFileSync(join(codedApps, "SKILL.md"), "utf8");
+  for (const passage of CLI_HOST_PASSAGES) {
+    assert.ok(skill.includes(passage), `the default uipath-coded-apps must keep: ${passage}`);
+  }
+  const template = readFileSync(join(codedApps, "assets", "templates", "web-app-template.md"), "utf8");
+  assert.ok(!template.includes("## Studio Web base files"));
+  const actionTemplate = readFileSync(join(codedApps, "assets", "templates", "action-app-template.md"), "utf8");
+  assert.ok(!actionTemplate.includes("## Studio Web base files"));
+  const solution = readFileSync(join(output, "uipath-solution", "SKILL.md"), "utf8");
+  assert.ok(solution.includes(SOLUTION_CODEDAPP_INIT_RULE), "the default uipath-solution must keep its `uip codedapp init` rule");
+  for (const reference of SCAFFOLD_REFERENCES) {
+    const text = readFileSync(join(codedApps, "references", reference), "utf8");
+    assert.ok(text.includes(CREATE_VITE_COMMAND), `the default ${reference} must still run create-vite`);
+  }
+});
+
 // The Studio Web panel has plan mode but no task tools. `EnterPlanMode` is
 // called before research (the host names the plan files and attaches its
 // authoring contract), `ExitPlanMode` puts the plan on the review card, and the
@@ -350,7 +428,7 @@ test("the studioweb BPMN skill edits a target outside /solution as a /tmp copy, 
   assert.ok(skill.includes("**An existing `.bpmn` outside a `/solution` project**"));
   assert.ok(skill.includes("Run `cd /tmp && mkdir -p /tmp/bpmn-work/<Name>`"));
   assert.ok(skill.includes("Never run `init` to give an existing file outside `/solution` a project."));
-  assert.ok(skill.includes("**The baseline is step 1's compile of the unedited source, never a copy of the target or the edited file.**"));
+  assert.ok(skill.includes("**The baseline is the compile of `.flow-sdk/original/<Name>.bpmn`, never a copy of the target or a compile of the edited `.flow-sdk/<Name>.bpmn.ts`.**"));
   assert.ok(skill.includes("and the target is in a project, delete that key"));
 });
 
@@ -584,6 +662,14 @@ test("the studioweb BPMN skill finds the project before writing and never builds
   assert.match(skill, /ask the user whether to replace its process or use a new project/);
   assert.match(skill, /run `uip maestro bpmn init <NewProject>` from `\/solution`/);
   assert.match(skill, /Never pass `--force`/);
+  assert.match(skill, /ask for the project's name before `init`/);
+  assert.match(skill, /Run `validate` as its own command/);
+  assert.match(skill, /call neither before `<NewProject>` is settled/);
+  assert.match(skill, /is not a name/);
+  assert.match(readFileSync(join(buildStudioweb(t), "uipath-maestro-bpmn", "references", "final-report-template.md"), "utf8"), /<validated\|not validated>/);
+  assert.match(skill, /Never `mkdir`\/`cp` the nested layout by hand/);
+  assert.match(skill, /that project exists: apply step 2 to it, never copy it/);
+  assert.match(skill, /`\/solution` projects are flat/);
 });
 
 test("the default BPMN skill carries no Studio Web Rule 13", (t) => {

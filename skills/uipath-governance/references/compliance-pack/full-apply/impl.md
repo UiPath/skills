@@ -44,7 +44,7 @@ Require `y`. Halt on anything else.
 ## Apply
 
 ```bash
-TENANT_ID=$(grep '^UIPATH_TENANT_ID=' ~/.uipath/.auth | cut -d'=' -f2-)
+TENANT_ID=$(uip login status --output json | sed -n 's/.*"TenantId": *"\([^"]*\)".*/\1/p')
 uip gov compliance-packs state enable tenant $TENANT_ID <packId> --output json
 ```
 
@@ -78,7 +78,7 @@ SUMMARY
 └──────────────────────┴──────────────────────────────────────────────┘
 (omit the ⚠ table if no SKIPped controls)
 
-Applied by: <UIPATH_USER from ~/.uipath/.auth>  ·  <tenantName>  ·  <date>
+Applied by: <Data.Identity from uip login status>  ·  <tenantName>  ·  <date>
 Note: compliance status is determined by your auditor, not this tool.
 ```
 
@@ -109,7 +109,7 @@ Aggregate results: note how many tenants have gaps vs are already fully Applied.
 ### Step 3 — Confirmation
 
 ```
-Configure <packName> settings across all tenants in <UIPATH_ORGANIZATION_NAME>?
+Configure <packName> settings across all tenants in <ORGANIZATION_NAME>?
 
 Tenants to configure:
   <tenantName1> — <N> settings Not Applied
@@ -141,7 +141,7 @@ for each configured tenant:
 ### Report
 
 ```
-<packName> settings configured across <N> tenants in <UIPATH_ORGANIZATION_NAME> ✓
+<packName> settings configured across <N> tenants in <ORGANIZATION_NAME> ✓
 
 ┌──────────────────┬──────────────────┐
 │ Tenant           │ Status           │

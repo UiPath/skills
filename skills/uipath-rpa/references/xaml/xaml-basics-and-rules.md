@@ -403,7 +403,6 @@ Use child elements for complex objects (`BackupSlot`, `MailboxArgument`, `Activi
   </ui:SomeActivity.Result>
 </ui:SomeActivity>
 ```
-Literal `[`/`]` strings, including `[k(enter)]`, `[d(ctrl)]`, and `[u(ctrl)]`, require child-element syntax. Attribute form such as `Foo="[&quot;…[k(enter)]&quot;]"` runs correctly because the runtime VB compiler reads quoted string literals correctly, but does not render in Studio because inner brackets collide with outer VB markers; see [common-pitfalls.md § NTypeInto `Text` with literal `[k(...)]` special-key tokens](common-pitfalls.md#ntypeinto-text-with-literal-k-special-key-tokens).
 
 ### Version-Sensitive Properties
 

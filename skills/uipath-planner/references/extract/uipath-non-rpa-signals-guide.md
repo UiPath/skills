@@ -44,13 +44,15 @@ Skip `bpmndi:` diagram elements.
 |---|---|---|
 | `metadata.caseIdentifier`, `caseIdentifierType` | top | Case ID scheme |
 | `nodes[type=uipath.case.trigger].data.inputs.serviceType` | trigger | `None` (manual), `Intsvc.EventTrigger`, `timer` |
-| `nodes[type=case-management:Stage]`, `data.stageType` (`secondary` = exception stage) | nodes | Stages → Process Map |
+| `nodes[type=case-management:Stage]`, `data.stageType` (`secondary` = exception stage), each stage's and task's `description` | nodes | Stages → Process Map, each description written as spelled at its step |
 | `data.tasks` (2-D array: inner = parallel, consecutive = sequential) | stage | Task order and parallelism |
 | task `type`: `process`, `rpa`, `agent`, `api-workflow`, `action` (human), `case-management`, `execute-connector-activity`, `wait-for-connector`, `wait-for-timer` | tasks | Component kind invoked — handoff edges |
-| `isRequired`, `skipCondition`, `shouldRunOnlyOnce`, `entryConditions[].rules` (DNF), `exitConditions[].{type, exitToStageId}` | tasks / stage | Business rules and gating |
+| Stage: `data.isRequired`, `entryConditions[].{isInterrupting, rules}`, `exitConditions[].{type, marksStageComplete, exitToStageId, rules}`; task: `isRequired`, `shouldRunOnlyOnce`, `skipCondition`, `entryConditions[].rules` (`rules` DNF) | stage / task | Business rules and gating, each written for the stage or task that holds it with every `rule` kind its condition joins (`required-tasks-completed` included) |
+| `wait-for-connector` rules — `uipath.serviceType`, `uipath.context[]` (`connectorKey`, `connection`, `resourceKey`, `folderKey`, `objectName`, `operation`, `metadata`) and `uipath.inputs[].body` (`parameters`, `queryParams`, `filters.expression`) — and tasks, the same under `data.*` (`data.serviceType`, `data.context`, `data.inputs`) | stage / task | The event in words at the step it starts or wakes; the context values, the inputs, and each filter as spelled (the `metadata` entry's and `filters.expression`) quoted in that step's Source Map row, since the build writes the event from them |
+| task `data.inputs[].value` (`=vars.<name>`, `=js:<expression>`, `=js:metadata.<field>`) and its `data.outputs[]` mappings (`source`, `target`, `var`) | tasks | What each task is given and returns, in words at its step; each expression quoted in that step's Source Map row as spelled, since the build writes the mapping from it |
 | `metadata.slaRules[]`, `nodes[].data.slaRules[]` (`count`, `unit`, `escalationRule[]` with `triggerInfo.type`, `atRiskPercentage`, `recipients`) | metadata / stage | SLAs and escalation → Business Rules and Error Handling |
 | `metadata.caseExitRules[].marksCaseComplete` | metadata | Case completion |
-| `variables.{inputs, outputs, inputOutputs}`, `bindings[]` | top | Interface and platform resources |
+| `variables.{inputs, outputs, inputOutputs}`, `bindings[]` | top | Interface and platform resources; each variable with its type, and its default where one is set, on whichever entry carries it, which decides the conditions that hold before any task has run |
 
 ## Signals — Low-code Agent
 
@@ -78,6 +80,7 @@ Skip `bpmndi:` diagram elements.
 | `interrupt(InvokeProcess / CreateTask / CreateEscalation(...))`, `EscalateAction(app_name=…)` | any `.py` | HITL checkpoints |
 | System prompt strings passed to the model | any `.py` | Business rules — paraphrase |
 | `bindings.json` `resources[]` (`resource`: `asset`, `queue`, `process`, `bucket`, `app`, `index`, `connection`, `mcpServer`) | root | Platform resources |
+| `bindings.json` / `bindings_v2.json` `EventTrigger`, when one is present (`metadata.Connector`, `ObjectName`, `Operation`, `FilterExpression`) and the `Property` resources whose `ParentResourceKey` names it | root | Triggers row in words; the metadata and property values quoted in the triggered step's Source Map row as spelled, since the build writes the binding from them |
 | `evaluations/eval-sets/*.json`, `evaluations/evaluators/*.json` | evaluations | Expected behaviour → acceptance criteria |
 | `pyproject.toml` `[project].dependencies` | root | Framework packages |
 
@@ -106,7 +109,7 @@ Skip `bpmndi:` diagram elements.
 | `method` + `path` on `defineFunction` | TS/JS | HTTP endpoint vs run-as-job |
 | `UiPath()` SDK calls (Python), `ctx.platform.*` (TS/JS) | code | Platform side effects |
 | Body logic (conditions, calculations) | code | Business rules |
-| `entry-points.json` `entryPoints[].{type: "function", input, output}`, `bindings_v2.json` `HttpTrigger` | generated | Confirms interface and trigger |
+| `entry-points.json` `entryPoints[].{type: "function", input, output}`, `bindings_v2.json` `HttpTrigger` | generated | Confirms interface and trigger; an `EventTrigger` is read as in § Signals — Coded Agent |
 
 ## Signals — Coded App
 
@@ -116,6 +119,10 @@ Skip `bpmndi:` diagram elements.
 | `action-schema.json` `inputs` / `outputs` / `inOuts` / `outcomes` | root | Human-task data contract → Interface, HITL handoff |
 | `package.json` deps `@uipath/coded-action-app`, `@uipath/uipath-typescript` | root | App flavour |
 | `sdk.processes.*`, `sdk.queues.*`, `sdk.entities.*`, `sdk.tasks.*`, `sdk.assets.*`, `sdk.buckets.*`, `sdk.maestro.*`, `sdk.conversations.*` | `src/**/*.ts(x)` | Platform data read and written → Platform Dependencies, handoffs |
-| Route and page components, forms, tables | `src/**` | Workflow steps as user actions ("reviewer opens…, edits…, submits…") |
+| Route and page components, forms, tables | `src/**` | Workflow steps as user actions ("reviewer opens…, edits…, submits…"); the controls a screen leaves out (row selection, a view menu), what it keeps across reloads under which storage key, and the base path and history type its router serves under |
+| A control's attributes (`min`, `max`, `step`, `rows`, `maxLength`, `required`) and the handler that stores its entry | `src/**` | Each field as shown: its limits and size, a displayed number's or date's locale, and what a typed, cleared or unparsable entry is stored as. A field marked required is checked where a handler tests it, or where the browser does: a native input in a form saved through its submit, without `noValidate` on the form or `formnovalidate` on the button that submits it; a mark neither tests (a save from a click handler, a control that only draws the mark) is shown, not enforced, and is a suspected defect ([defect-verification-guide.md](../shared/defect-verification-guide.md)) |
+| Event handlers (`onChange`, `onSubmit`, `onClick`) and host calls (`getTask`, `setTaskData`, `completeTask`, `showMessage`) | `src/**` | What each user action does, in order: the checks it runs, what it saves and when, what it sends with which values, and whether a message goes through the host's message call, with its severity, or is drawn on the page |
+| A write's completion handler — `onSuccess` or `onSettled` invalidating queries, a refetch | `src/**` | What the screens show after the write: the reads fetched again, in the step the write belongs to, and what the write leaves for another component to change |
+| An in-memory or stub module standing in for a platform service; a sign-in or backend the code marks as still to come | `src/**` | The behaviour the app shows as shipped: each read and write the module serves, what each write changes, and the checks and messages it applies. The service it stands in for, and the sign-in or backend to come, are an Open Decision whose `Builds now:` is the shipped behaviour, never a Platform Dependency, Interface entry or Configuration Question |
 | Widget imports (Validation Station, PDF viewer, DataTable, chat) | `src/**` | Capabilities to name in Overview |
 | `.uipath/app.config.json` `appType`, `appName` | root | Deployed identity |

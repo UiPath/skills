@@ -39,6 +39,18 @@ Example:
 uip rpa get-errors --file-path "<FILE_PATH>" --project-dir "<PROJECT_DIR>" --output json
 ```
 
+## Credentials and Authentication
+
+Skill content MUST NOT put a credential into agent context. Applies to `skills/`, `skill-flavors/`, and task prompts under `tests/tasks/`.
+
+1. **Never read the `uip` credentials file.** No step may `cat`, `grep`, `source`, `jq`, open, or decode `~/.uipath/.auth` or any profile's credentials file. It holds a live access token (not revoked by logout) and the refresh token. `uip login which` may return the file's path; never open the file it names.
+2. **Session details come from `uip login status --output json`** — base URL, organization, tenant, user id, user email. Never parse them from the credentials file or a decoded JWT.
+3. **REST calls go through `uip api`.** CLI makes the call and holds the token. Never extract a bearer token for `curl`, `fetch`, or SDK code.
+4. **Never run `uip login refresh` bare or print its output** — it contains `Data.AccessToken`. Never use it as a token source when `uip api` covers the call.
+5. **Never ask the user to paste a token, password, or client secret** into the conversation. Send them to `uip login` instead.
+6. **Studio Web flavors:** browser bundle does not register `uip api` or `uip login refresh`. Use a command the bundle runs (e.g. `uip solution resources get`) or stop and report the value as unavailable — never fall back to a token.
+7. **Mention the credentials file only to forbid it** — e.g. a "never include `~/.uipath/.auth`" list.
+
 ## Cross-Platform Awareness
 
 - Shell commands must use Unix syntax (`/dev/null`, forward slashes, `rm`/`ls`/`cp`)

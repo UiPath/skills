@@ -8,7 +8,7 @@ Compose the concrete `PolicyDefinition` JSON from an **approved Phase 1 Spec** (
 
 ## Step 1 — Gather identity
 
-Every `PolicyDefinition` requires `organizationId` and `tenantId` at the top level. Read them from `~/.uipath/.auth` — see [access-policy-commands.md — Reading `organizationId` and `tenantId`](./access-policy-commands.md#reading-organizationid-and-tenantid) for the exact command. Use the two UUIDs verbatim in the assembled JSON; never hardcode (Critical Rule #3).
+Every `PolicyDefinition` requires `organizationId` and `tenantId` at the top level. Read them from `uip login status --output json` — see [access-policy-commands.md — Reading `organizationId` and `tenantId`](./access-policy-commands.md#reading-organizationid-and-tenantid) for the exact command. Use the two UUIDs verbatim in the assembled JSON; never hardcode (Critical Rule #3).
 
 If the file is missing or the IDs are not present, the user is not logged in — stop and route them to [access-policy-commands.md — Authentication](./access-policy-commands.md#authentication).
 

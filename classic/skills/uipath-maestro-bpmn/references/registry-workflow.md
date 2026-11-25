@@ -355,6 +355,19 @@ reverse map accepts only those plus raw HTTP verbs, which is also exactly what
 `uip is resources run` exposes as subcommands. `--operation` takes the same
 value, so pass `--operation Create`.
 
+`path` is the operation's route under the connector, copied from
+`Operation.Path` of `uip is resources describe <connectorKey> <object>
+--operation <Verb> --output json` (`/curated_create_issue`,
+`/curated_get_issue/{issueId}`); the call needs no `--connection-id`. It
+differs per operation and is not always `/<objectName>` (`issue_properties` is
+`/issue/{issueIdOrKey}/properties`), so never derive it. `uip is resources
+list` prints the object's base `Path`, without an operation's `{placeholder}`.
+Never put the provider's REST route there (`/rest/api/2/issue`): `validate`
+accepts it, and the debug run faults at the node (observed on Jira Create
+Issue: `102002 Integration Services operation failed`, provider 401).
+A connector-mode `Intsvc.UnifiedHttpRequest` `url` is the other way round: the
+vendor's own endpoint, relative to the connection's base URL.
+
 ### Set every required `RequestFields` entry
 
 Put every `RequestFields` entry marked `Required: true` in the body under its
@@ -767,10 +780,29 @@ exact template for any of them with `registry get <type>`.
 | `BPMN.ScriptTask` | `bpmn:scriptTask` | mapping |
 | `Maestro.ReceiveMessageEvent` | `bpmn:intermediateCatchEvent` | event |
 | `Maestro.SendMessageEvent` | `bpmn:intermediateThrowEvent` | event |
-| `Maestro.CaseRulesEvaluator` / `Maestro.CaseManagerGuardrails` | `bpmn:serviceTask` | activity |
+| `Maestro.CaseRulesEvaluator` | `bpmn:task` | activity |
+| `Maestro.CaseManagerGuardrails` | `bpmn:serviceTask` | activity |
 
 This table is a discovery aid, not a substitute for `registry get` — always pull
 the live template before authoring.
+
+The two case decision types follow what Studio Web's case converter saves, and
+both carry their inputs in one merged `target="body"` input, not in
+`uipath:context`:
+
+- `Maestro.CaseRulesEvaluator`: `caseDeterministicRules` and
+  `caseCurrentExecutionState` merged into `caseManagerInput`; output
+  `caseRulesDecisions`, `type="json"`, `source="=result"`.
+- `Maestro.CaseManagerGuardrails`: `decisions` and `caseCurrentExecutionState`
+  merged into `body`. The output is the one with `source="=result"`; its name
+  is `caseManagerDecisions` or `schedulerOutput`, its type is not checked, and
+  its `var` must be the same variable the `decisions` input reads, so the
+  guardrails result overwrites the decisions the run-tasks step reads next.
+  Guardrails saved before 2026-08-25 have no output and no
+  `caseCurrentExecutionState`; re-save the case in Studio Web to fix them.
+
+Studio Web writes `custom="true"` on both outputs; keep it. Validation still
+checks them by shape.
 
 Event types stay event-wrapped even when you place them on task-like BPMN
 hosts: `Intsvc.WaitForEvent`, `Intsvc.EventTrigger`,

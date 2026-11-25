@@ -30,6 +30,13 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
+try:
+    from _shared.bpmn_check import vars_ref
+    from _shared.uip_auth import grader_env
+except ImportError:  # imported with _shared itself on sys.path (unit tests; stage_shared.sh pass 2)
+    from bpmn_check import vars_ref
+    from uip_auth import grader_env
+
 BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
 UIPATH_NS = "http://uipath.org/schema/bpmn"
 
@@ -175,6 +182,7 @@ def run_cli(
         text=True,
         timeout=effective_timeout,
         cwd=cwd,
+        env=grader_env(),
     )
 
 
@@ -828,10 +836,10 @@ def input_echo_ids(process: ET.Element) -> set[str]:
         if extensions is None:
             continue
         for mapping in extensions.iter(q(UIPATH_NS, "output")):
-            source = (mapping.attrib.get("source") or "").strip()
+            source = vars_ref(mapping.attrib.get("source"))
             var = mapping.attrib.get("var")
-            if source.startswith("=vars.") and var:
-                copies.append((source.removeprefix("=vars."), var, mapping.attrib.get("name")))
+            if source and var:
+                copies.append((source, var, mapping.attrib.get("name")))
 
     grew = True
     while grew:

@@ -103,8 +103,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Planner Handoff header did not hijack the run into the planner (no <case>-tasks.md or <case>-genome.md at the root)"
-    command: "! ls ./*-tasks.md ./*-genome.md 2>/dev/null | grep -q ."
+    description: "Planner Handoff header did not hijack the run into the planner (no <case>-tasks.md, <case>-genome.md or <case>-readiness.md anywhere in the workspace)"
+    command: "! find . \\( -name '*-tasks.md' -o -name '*-genome.md' -o -name '*-readiness.md' \\) -not -path '*/.venv/*' -not -path '*/node_modules/*' -not -path './.agents/*' -not -path './.claude/*' | grep -q ."
     timeout: 10
     expected_exit_code: 0
     weight: 3.0

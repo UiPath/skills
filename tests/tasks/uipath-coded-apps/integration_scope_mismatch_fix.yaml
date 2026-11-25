@@ -3,9 +3,11 @@ description: >
   Integration test (mode:diagnose, offline): Rule #16 negative path —
   mismatched OAuth scopes fail SILENTLY with 401/403 on the first SDK
   call. Agent receives a working-looking app where `Tasks.complete` (a
-  WRITE method) fails with 403, and the seeded `.env.example` scope line
-  only carries the READ scope (`OR.Tasks.Read`). Agent must diagnose the
-  scope↔method mismatch and fix the scope (not the code). Promotes Rule
+  WRITE method) fails with 403, and the seeded `uipath.json` `scope` key
+  only carries the READ scope (`OR.Tasks.Read`). `uipath.json` is the
+  skill's single SDK config source (no `.env`), so the fault is seeded
+  and graded there. Agent must diagnose the scope↔method mismatch and
+  fix the scope (not the code). Promotes Rule
   16 from Indirect (positive scope assertions only) to Direct, and adds
   a D7-adjacent diagnose archetype (config/permission health).
 tags: [uipath-coded-apps, integration, mode:diagnose, lifecycle:generate]
@@ -26,14 +28,16 @@ initial_prompt: |
   Reproduce the app state by writing these files at the sandbox root
   EXACTLY as shown, then find and fix the root cause.
 
-  `.env.example`:
+  `uipath.json`:
   ```
-  VITE_UIPATH_BASE_URL=https://api.uipath.com
-  VITE_UIPATH_ORG_NAME=acme
-  VITE_UIPATH_TENANT_NAME=Production
-  VITE_UIPATH_CLIENT_ID=00000000-0000-0000-0000-000000000000
-  VITE_UIPATH_REDIRECT_URI=http://localhost:5173
-  VITE_UIPATH_SCOPE=OR.Tasks.Read
+  {
+    "clientId": "00000000-0000-0000-0000-000000000000",
+    "scope": "OR.Tasks.Read",
+    "orgName": "acme",
+    "tenantName": "Production",
+    "baseUrl": "https://api.uipath.com",
+    "redirectUri": "http://localhost:5173"
+  }
   ```
 
   `src/taskActions.ts`:
@@ -62,16 +66,18 @@ initial_prompt: |
 
 success_criteria:
   - type: file_exists
-    description: ".env.example still exists after the fix"
-    path: ".env.example"
+    description: "uipath.json still exists after the fix"
+    path: "uipath.json"
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: run_command
-    description: "THE FIX — scope line now includes a write-capable Tasks scope: bare `OR.Tasks` or `OR.Tasks.Write` (not just OR.Tasks.Read). Rule #16: write/action methods need broader scopes than read-only flows. (Trailing space appended before matching so `OR.Tasks` at end-of-line matches without relying on `$`-in-alternation.)"
-    command: "grep -E '^VITE_UIPATH_SCOPE=' .env.example | sed 's/$/ /' | grep -E 'OR\\.Tasks( |\\.Write)'"
-    timeout: 10
-    expected_exit_code: 0
+  - type: json_check
+    description: "THE FIX — the `scope` key in uipath.json now covers BOTH the read call (`getAll`) and the write call (`complete`), as whole tokens: bare `OR.Tasks`, or `OR.Tasks.Read` together with `OR.Tasks.Write`. `OR.Tasks.Write` alone fails — it would break the read path. Rule #16: write/action methods need broader scopes than read-only flows."
+    path: "uipath.json"
+    assertions:
+      - expression: "scope"
+        operator: regex
+        expected: "(^|\\s)OR\\.Tasks(\\s|$)|^(?=.*(^|\\s)OR\\.Tasks\\.Read(\\s|$))(?=.*(^|\\s)OR\\.Tasks\\.Write(\\s|$))"
     weight: 3.0
     pass_threshold: 1.0
 

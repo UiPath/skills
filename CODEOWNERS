@@ -1,5 +1,5 @@
 # Default owners for the entire repo
-* @gabrielavaduva @AlvinStanescu @marius-bughiu @RaduAna-Maria @uipreliga @dmetzgar @rockymadden @gozhang2 @smflorentino
+* @gabrielavaduva @AlvinStanescu @RaduAna-Maria @uipreliga @dmetzgar @rockymadden @gozhang2 @smflorentino
 
 # CI workflows and review config
 /.github/ @uipreliga @bai-uipath @akshaylive @CarlesUIPath
@@ -41,6 +41,7 @@
 # Activity Migrator skill (Windows-Legacy → Windows, classic → modern activities)
 /skills/uipath-activity-migrator/ @costin-uipath @MarinRzv @liviusanduuip @dmorosanu
 /tests/tasks/uipath-activity-migrator/ @costin-uipath @MarinRzv @liviusanduuip @dmorosanu
+/tests/scripts/uipath-activity-migrator/ @costin-uipath @MarinRzv @liviusanduuip @dmorosanu
 
 # Platform skill
 /skills/uipath-platform/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange @UiPath/DatafabricCodingAgent @biftime @dragossandu-dev @PopaIuliana @lucianaparaschivei @dragospopa-up @gabi-raducu
@@ -130,6 +131,8 @@
 /skills/uipath-planner/references/extract/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /skills/uipath-planner/references/edit/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /skills/uipath-planner/references/shared/genome-format-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/shared/genome-questions-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/shared/process-genome-sections-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /skills/uipath-planner/references/shared/skill-mapping-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /skills/uipath-planner/references/shared/transactional-shape-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /skills/uipath-planner/references/shared/defect-verification-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
@@ -283,6 +286,9 @@
 /skills/uipath-mcp-servers/ @cristipufu @UiPath/team-coded-agents
 /tests/tasks/uipath-mcp-servers/ @cristipufu @UiPath/team-coded-agents
 /tests/tasks/activation/uipath-mcp-servers.jsonl @cristipufu @UiPath/team-coded-agents
+/skills/uipath-a2a-agents/ @cristipufu @UiPath/team-coded-agents
+/tests/tasks/uipath-a2a-agents/ @cristipufu @UiPath/team-coded-agents
+/tests/tasks/activation/uipath-a2a-agents.jsonl @cristipufu @UiPath/team-coded-agents
 
 # Insights skill (job monitoring and analytics)
 /skills/uipath-insights/ @UiPath/insights
@@ -305,4 +311,5 @@
 # Vertical Solutions skill (uip vss deploy)
 /skills/uipath-vertical-solutions/ @sandeeprao-uipath @UiPath/vertical-service-approvers
 /tests/tasks/uipath-vertical-solutions/ @sandeeprao-uipath @UiPath/vertical-service-approvers
+/tests/tasks/activation/uipath-vertical-solutions.jsonl @sandeeprao-uipath @UiPath/vertical-service-approvers
 /skill-flavors/studioweb/uipath-vertical-solutions/ @sandeeprao-uipath @UiPath/vertical-service-approvers

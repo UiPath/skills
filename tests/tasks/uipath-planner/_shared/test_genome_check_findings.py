@@ -154,6 +154,79 @@ def pinned(tmp_path, fingerprint=None):
     return designed_in(COMPONENT, f"> Designed in: [Design](x-sdd.md) · sdd-sha256 {recorded}")
 
 
+ASKED_SDD = "# SDD\n\n## Action Required — SME Review Items\n\n**D1. Which CRM address?**\n- **Default:** the sandbox. [SME REVIEW] D1: production URL\n\n## 1. Overview\n"
+NOT_CARRIED = "has Action Required items and the genome carries none"
+DECISIONS = re.compile(r"(## Open Decisions\n\n)(?:\d+\. .*\n)+")
+D_MARK = re.compile(r" ?\*\[Inferred: D\d+\]\*")
+
+
+def asked(tmp_path, text):
+    """text with a Designed in: line linking an SDD whose Action Required holds one item."""
+    sdd = tmp_path / "x-sdd.md"
+    sdd.write_text(ASKED_SDD, encoding="utf-8")
+    return designed_in(text, f"> Designed in: [Design](x-sdd.md) · sdd-sha256 {sdd_fingerprint(sdd)}")
+
+
+def with_decisions(text, entries):
+    """text with its Open Decisions entries replaced by entries and their D marks removed."""
+    return D_MARK.sub("", DECISIONS.sub(lambda m: m[1] + entries, text))
+
+
+def test_sdd_items_the_component_genome_drops_fail_strict_only(check, tmp_path):
+    text = asked(tmp_path, with_decisions(COMPONENT, "No open decisions.\n"))
+    assert NOT_CARRIED not in check(text)[1]
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert f"x-sdd.md {NOT_CARRIED}" in out
+
+
+def test_sdd_items_carried_as_entries_have_no_carry_finding(check, tmp_path):
+    assert NOT_CARRIED not in check(asked(tmp_path, COMPONENT), profile="strict")[1]
+
+
+def test_entry_withdrawn_as_a_question_without_its_cq_mark_fails_strict(check):
+    text = with_decisions(COMPONENT, "1. Which portal address? (withdrawn: asked as Configuration Question 4) — SDD item 1\n")
+    finding = "Open Decisions entry 1 is withdrawn as Configuration Question 4, and no line carries *[Inferred: CQ4]*"
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert finding in out
+    marked = text.replace("held as a Text asset)", "held as a Text asset) *[Inferred: CQ4]* (SDD [SME REVIEW]: portal)", 1)
+    assert marked != text
+    assert finding not in check(marked, profile="strict")[1]
+
+
+def test_entry_withdrawn_as_a_cq_numbered_question_is_checked_too(check):
+    text = with_decisions(COMPONENT, "1. (withdrawn: asked as Configuration Question CQ4) — portal address\n")
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert "Open Decisions entry 1 is withdrawn as Configuration Question 4, and no line carries *[Inferred: CQ4]*" in out
+
+
+CASE_SDD ="# SDD — Sample\n\n## Section 1: Case Definition\n\n### Case Metadata\n"
+NO_CASE_INPUT = "case component: Interface names no case SDD as its build input; name sample-case-sdd.md"
+
+
+def case_component(text):
+    """text built with uipath-maestro-case instead of uipath-rpa."""
+    return text.replace("| `uipath-rpa` |", "| `uipath-maestro-case` |")
+
+
+def test_case_component_beside_a_case_sdd_must_name_it_strict_only(check, tmp_path):
+    (tmp_path / "sample-case-sdd.md").write_text(CASE_SDD, encoding="utf-8")
+    text = case_component(COMPONENT)
+    assert text != COMPONENT
+    assert NO_CASE_INPUT not in check(text)[1]
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert NO_CASE_INPUT in out
+    named = re.sub(r"(## Interface\n)", r"\1\nBuild input: [the case SDD](sample-case-sdd.md).\n", text, count=1)
+    assert NO_CASE_INPUT not in check(named, profile="strict")[1]
+
+
+def test_case_component_with_no_case_sdd_beside_it_has_no_build_input_finding(check):
+    assert "case component:" not in check(case_component(COMPONENT), profile="strict")[1]
+
+
 def test_designed_in_line_without_fingerprint_fails_strict_only(check, tmp_path):
     text = designed_in(COMPONENT, "> Designed in: [Design](x-sdd.md)")
     assert text != COMPONENT
@@ -626,6 +699,34 @@ def test_role_word_in_type_cell_fails_strict(check_process):
     assert "role word in the Type cell of 'Invoice Extraction and Matching'" in out
 
 
+def test_process_genome_inside_its_component_folder_fails_strict_only(process_tree):
+    folder = process_tree.parent / PROCESS_DIR.name
+    inside = folder / PROCESS.name
+    text = process_tree.read_text(encoding="utf-8").replace(f"]({PROCESS_DIR.name}/", "](")
+    inside.write_text(text, encoding="utf-8")
+    process_tree.unlink()
+    finding = f"process genome sits inside its component folder {PROCESS_DIR.name}/"
+    assert finding not in cli("process", inside, "--profile", "core")[1]
+    rc, out = cli("process", inside, "--profile", "strict")
+    assert rc == 1
+    assert finding in out
+
+
+def test_process_genome_inside_a_differently_spelled_component_folder_fails_strict(process_tree):
+    """The folder's spelling need not match the file's slug: `InvoiceOps-genome/invoice-ops-genome.md`."""
+    folder = process_tree.parent / PROCESS_DIR.name
+    inside = folder / "renamed-process-genome.md"
+    inside.write_text(process_tree.read_text(encoding="utf-8").replace(f"]({PROCESS_DIR.name}/", "]("), encoding="utf-8")
+    process_tree.unlink()
+    rc, out = cli("process", inside, "--profile", "strict")
+    assert rc == 1
+    assert f"process genome sits inside its component folder {PROCESS_DIR.name}/" in out
+
+
+def test_process_example_beside_its_folder_has_no_placement_finding(check_process):
+    assert "inside its component folder" not in check_process(profile="strict")[1]
+
+
 def test_components_table_with_no_links_fails_core(check_process):
     rc, out = check_process(transform=lambda t: re.sub(r"\[[^\]]*\]\([^)]*-genome\.md\)", "n/a", t))
     assert rc == 1
@@ -1082,3 +1183,23 @@ def test_data_model_class_and_property_not_carried_fail_core(check, tmp_path):
     assert rc == 1
     assert "classes ['Supplier'] are realized by no entity" in out
     assert "properties ['Supplier.code'] are carried by no field" in out
+
+
+SPLIT_ONLY = "a dispatcher and a performer alone are ONE uipath-rpa component"
+
+
+def test_process_genome_of_a_dispatcher_and_performer_alone_fails_strict_only(check_process):
+    def two_rpa_rows(text):
+        rows = re.findall(r"^\| [123] \|.*$", text, flags=re.M)
+        text = text.replace(rows[0], "| 1 | Invoice Dispatcher | RPA process | `uipath-rpa` | [invoice-orchestration-genome.md](invoice-processing-genome/invoice-orchestration-genome.md) | Queues one item per invoice |")
+        text = text.replace(rows[1], "| 2 | Invoice Performer | RPA process | `uipath-rpa` | [invoice-extraction-genome.md](invoice-processing-genome/invoice-extraction-genome.md) | Works one queue item |")
+        return text.replace(rows[2] + "\n", "")
+
+    assert SPLIT_ONLY not in check_process(transform=two_rpa_rows)[1]
+    rc, out = check_process(profile="strict")
+    assert rc == 1
+    assert SPLIT_ONLY in out
+
+
+def test_process_example_has_no_dispatcher_performer_finding(check_process):
+    assert SPLIT_ONLY not in check_process(profile="strict")[1]

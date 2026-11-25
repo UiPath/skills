@@ -57,7 +57,7 @@ Read the answer this way:
 
 - The list prints and has the name: the feature is there.
 - The list prints and lacks the name: the feature is not there. Upgrade the SDK, or use the fallback the reference gives.
-- `error: unknown command 'capabilities'`: the SDK is older than 6.101.0. That says nothing about the features below, which all shipped earlier. For one of them, follow the version note in its reference (for example, `check --baseline` works from 6.64.0).
+- `error: unknown command 'capabilities'`: the SDK is older than 6.101.0. For `flow-entry-point-default`, which shipped later, that means the feature is not there. For the other features below, which all shipped earlier, it says nothing: follow the version note in its reference (for example, `check --baseline` works from 6.64.0).
 
 The names are stable:
 
@@ -69,6 +69,7 @@ The names are stable:
 | `flow-script-metadata` | the `$metadata` parameter of a script function |
 | `flow-merge-source` | `merge <Name>.flow.ts --original <Name>.flow`, from the `// @decompiled-from` stamp |
 | `project-min-version` | `flowSdk.minVersion`, below |
+| `flow-entry-point-default` | `.entryPoint(id, spec, { default: true })` ([manual-trigger.md](manual-trigger.md#multiple-entry-points)); always absent when `capabilities` is unknown |
 
 To pin one SDK floor for a project, add `"flowSdk": { "minVersion": "<version>" }` to its `package.json`.
 From 6.101.0, `compile`, `check`, `decompile` and `merge` then refuse an older SDK with exit 2. The message names the copy that ran and the `npm install ...@latest` command that upgrades it (`--save-dev` in the project for a workspace copy, else `-g`).
@@ -119,13 +120,28 @@ Emit-only rules—mode selection by `package.json`, and `compile`/`check` behavi
 
 The JSON envelope has top-level `Result`; successful validation also reports `Data.Status: "Valid"` and may contain `Data.Warnings`. Treat warnings as failures except the reviewed shared-connection advisory and `err()` read diagnostics in [`error-handling.md`](error-handling.md#reading-the-failure). Preserve an exception's exact code/text and rationale; do not broaden the allowlist.
 
+`[UNRESOLVED_BINDING]`: the `.flow` lacks the `bindings[]` row a step's `<bindings.NAME>` placeholder needs, and Studio Web refuses to publish it. Re-emit once through the loop in use, then validate again:
+
+- A new flow: `compile` its source.
+- An existing `.flow`, connection placeholder: decompile it (`--no-pipeline`) and `merge` it back ([the safe project loop](brownfield.md#the-safe-project-loop)).
+- An existing `.flow`, any other placeholder (queue, IxP): merge does not restore those rows; report the node and placeholder.
+- [A supplied source](brownfield.md#a-supplied-source): rerun its merge. Do not decompile, even though the warning says to: decompile overwrites the supplied source.
+
+Merge's warning that it writes a missing binding row is [that repair](brownfield.md#merge-warnings-what-the-round-trip-changed), not a failure. Validate reads only the `.flow`, so `bindings.json`, `bindings_v2.json` and solution resources cannot explain it.
+
+<!--skill-flavor:unresolved-binding-persists:start-->
+A connection placeholder still there after the merge: update the SDK copy `uip` runs, `npm install --save-dev @uipath/maestro-builder-sdk@latest` when the workspace has `node_modules/@uipath/maestro-builder-sdk` (that copy runs first), else `npm install -g @uipath/maestro-builder-sdk@latest`, and merge once more. Any other placeholder, or still there: report the node and placeholder.
+<!--skill-flavor:unresolved-binding-persists:end-->
+
+A warning with no fix in this skill gets one bounded experiment ([below](#bounded-completion)), then is reported as a failure with its code and node.
+
 ### Bounded completion
 
 Match final evidence to the acceptance bar after the last edit:
 
 - Validate-only: require `Data.Status: "Valid"` plus the required structural self-check, then stop; do not debug merely for confidence.
 - For each distinct behavior claim named by the bar, plan at most one bounded debug with inputs/attachments that exercise it; combine compatible claims and do not repeat equivalent inputs.
-- If one unknown blocks final wiring, run one bounded experiment distinguishing the choices, apply its answer, and return to final emit/validate. Do not create scratch-solution families.
+- If one unknown blocks final wiring, run one bounded experiment distinguishing the choices, apply its answer, and return to final emit/validate. If it does not settle the choice, stop experimenting: ask, or headless, take the most defensible choice and list it under Open questions. Do not create scratch-solution families.
 
 If evidence cannot be obtained within the bound, report the evidence boundary rather than repeating debug launches.
 

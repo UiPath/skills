@@ -126,8 +126,8 @@ Data-driven testing executes the same test case multiple times with different in
 
 | Source | Where Data Lives | Best For | Agent Support |
 |--------|-----------------|----------|---------------|
-| **Variations files** | `.variations/` folder in project | File-based test data committed with the project | CLI: `test-data add-variation` |
-| **Test Data Queues** | UiPath Orchestrator | Large-scale distributed testing, parallel execution. [To be deprecated](https://docs.uipath.com/overview-guide/docs/deprecation-timeline) at a later date | CLI: `test-data add-queue` |
+| **Variations files** | `.variations/` folder in project | File-based test data committed with the project | CLI, Studio Desktop only: `test-data add-variation`. Headless: files ([§ Adding Test Data via CLI](#adding-test-data-via-cli)) |
+| **Test Data Queues** | UiPath Orchestrator | Large-scale distributed testing, parallel execution. [To be deprecated](https://docs.uipath.com/overview-guide/docs/deprecation-timeline) at a later date | CLI, Studio Desktop only: `test-data add-queue` |
 | **Data Service** | Data Fabric entity | Centralized, shared test data, filtered per test case; records change without a republish | Files: [§ Data Service Entity](#data-service-entity) |
 
 > For coded data-driven tests using default parameters, see [coded/operations-guide.md § Add a Test Case File](coded/operations-guide.md).
@@ -149,6 +149,8 @@ The `.variations/` directory is available in all project types (Process, Tests, 
 ### Adding Test Data via CLI
 
 Two commands attach file and queue sources to a test case. Both register the data source in project metadata, extract arguments from the source schema, and add them to the test case (via Studio's workflow management API for XAML, via Roslyn for coded test cases). A Data Service source is written as files ([§ Data Service Entity](#data-service-entity)).
+
+> **Studio Desktop only.** Both commands need a running Studio Desktop with rpa-tool interop; headless Studio does not serve them. Without one ([cli-reference.md § Headless Studio (Helm) vs Studio Desktop](cli-reference.md#headless-studio-helm-vs-studio-desktop)), write the variations file and the case's `dataVariationFilePath` per [json-template.md § Data-driven test case](../assets/json-template.md#data-driven-test-case-with-variations-file) and declare one test case argument per field. A Test Data Queue has no headless route: tell the user it needs Studio Desktop.
 
 #### `test-data add-variation` — File-based (JSON)
 

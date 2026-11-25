@@ -124,26 +124,7 @@ Some properties are only required when another property has a specific value:
 **Wrong:** `ShortcutsArgument="[d(hk)][d(ctrl)]a[u(ctrl)][u(hk)]"` → VB parser error
 **Correct:** `Shortcuts="[d(hk)][d(ctrl)]a[u(ctrl)][u(hk)]"` → literal string, works fine
 
-See `ui-automation.md` NKeyboardShortcuts section for the full hotkey encoding reference.
-
-## NTypeInto `Text` with literal `[k(...)]` special-key tokens
-
-When `Text` contains literal `[k(...)]`, `[d(...)]`, or `[u(...)]` special-key tokens, use the long-form element — never the attribute form. The attribute form runs correctly but the value does not render in Studio, so the workflow looks empty even though it works.
-
-**Wrong:** `Text="[&quot;13700132[k(enter)]&quot;]"` → runs, but `Text` shows blank in Studio.
-
-**Correct:**
-```xml
-<uix:NTypeInto ...>
-  <uix:NTypeInto.Text>
-    <InArgument x:TypeArguments="x:String">["13700132[k(enter)]"]</InArgument>
-  </uix:NTypeInto.Text>
-</uix:NTypeInto>
-```
-
-Alternatives:
-- Build the bracket characters with `ChrW(91)` / `ChrW(93)` so the string carries no literal `[` / `]`: `Text="[&quot;13700132&quot; &amp; ChrW(91) &amp; &quot;k(enter)&quot; &amp; ChrW(93)]"`.
-- Split the input: one `NTypeInto` for the digits, one `NKeyboardShortcuts` (or a second `NTypeInto`) for `[k(enter)]`.
+Full hotkey encoding: the Keyboard Shortcuts activity doc, routed from `ui-automation-guide.md` § Documentation.
 
 ## UIA `N*` Activities Carry a `Version` — Never Strip It
 
@@ -667,7 +648,7 @@ Studio compiles expressions against `TextExpression.ReferencesForImplementation`
 <AssemblyReference>System.Collections</AssemblyReference>
 ```
 
-Other assemblies Studio reports missing: `System.Data`, `System.Data.Common`, `System.ComponentModel.TypeConverter`, `System.Net.Mail`, `netstandard` (fallback). A type from a package the project lacks needs `uip rpa packages install` first.
+Other assemblies Studio reports missing: `System.Data`, `System.Data.Common`, `System.ComponentModel.TypeConverter`, `netstandard` (fallback). By the type an expression uses: an image (`System.Drawing.Image`, an OCR activity's input or output) needs `System.Drawing`, `System.Drawing.Common` and `System.Drawing.Primitives`; an OCR activity's result types need `UiPath.UiAutomation.Activities`; `Process` (`Process.GetProcessesByName`, `Process.Start`) needs `System.Diagnostics.Process`; a mail message's members (an `Office365Message`'s `From.Address`) need `System.Net.Mail` and `System.Net.Primitives`. A type from a package the project lacks needs `uip rpa packages install` first.
 
 ## Workflow Argument Declarations Use `<x:Members>`, Not `<Activity.Properties>`
 

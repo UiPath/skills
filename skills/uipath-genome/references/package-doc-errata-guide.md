@@ -44,6 +44,20 @@ The owning skill's contract reads the installed package's per-activity doc for e
 | Get File List, Upload Files | declare the `Result` / `AllResults` variable as `scg:List(umo365fm:O365DriveRemoteItem)` | Both are `OutArgument<O365DriveRemoteItem[]>`: bind a `umo365fm:O365DriveRemoteItem[]` variable. A `List` variable fails to load (`Set property '…Result' threw an exception`) |
 | Set Email Categories | `CategoriesToAssign` / `SpecificCategoriesToRemove` only as a VB flat attribute, since an `InArgument` cannot be typed `String[]` | `<InArgument x:TypeArguments="s:String[]">` works in VB and C# projects; only `x:String[]` fails to load |
 
+## `UiPath.UIAutomation.Activities` — docs shipped with 26.10.9 and earlier
+
+| Doc | Installed docs say | What the build does |
+|---|---|---|
+| Target System (§ Window Selector), `NAppAttachMode` | the attach mode decides which windows inner activities search: `ByProcessName` "all windows with the same process name", `ByInstance` the whole instance, its windows ranked by the window selector's `title` | Treats a browser card as working in one tab under every attach mode: an inner activity whose window selector is a web selector searches the tab of the card's `InUiElement`, else the tab the card attached to, and the selector's `url` and `title` are not compared with it |
+| Check App State (`NCheckState`) | Two branches, "Target appears" and "Target does not appear", with no names for the other modes; `Exists` is "the detected state of the target" | The branches follow `Mode`. `WaitDisappear`: "Target disappears" in `IfExists`, run when the target is gone or goes within `Timeout`, and "Target does not disappear" in `IfNotExists`, run after the whole `Timeout` when it is still there. `WindowNotActive`: "Window not in foreground" in `IfExists`, run when the target's top-level window leaves the foreground or the target goes within `Timeout`, and "Window still active" in `IfNotExists`. `Exists` is `false` after `IfExists` and `true` after `IfNotExists` in these two modes. With `CheckVisibility`, `WaitDisappear` counts a present but hidden target as gone, and `WindowNotActive` counts a present target as gone only once it is hidden and its window has left the foreground. Work for "the element went" goes in `IfExists`, work for "still shown" in `IfNotExists` |
+
+## `UiPath.UIAutomation.Activities` — docs shipped with 26.10.8 and earlier
+
+| Doc | Installed docs say | What the build does |
+|---|---|---|
+| Selector Reference | nothing: the package guide's § Documentation routes to no Selector Reference, and the docs hold no per-tag attribute reference | Reads the reference in a project that installs the latest stable UI Automation: another project of the run, else a scratch project in the working folder, outside every project of the build. What the pinned version's driver does differently is settled by its own selector tools in the live phases |
+| Call Transaction, Select Menu Item, SAP Automation Guide | nothing on what Call Transaction waits for, how Select Menu Item matches each level, how a transaction is left, or how a tab, a combo box entry or a table row is selected | Reads them where it reads the Selector Reference |
+
 ## Tools — defects seen in builds, until fixed
 
 Each row was met in a build that validated and packed, or in a live search against the application; the third column is what that build did instead. Versions: Flow builder SDK `@uipath/maestro-builder-sdk` 6.15.3, `uip` 1.204.

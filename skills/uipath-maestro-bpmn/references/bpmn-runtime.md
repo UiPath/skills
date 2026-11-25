@@ -41,7 +41,10 @@ make from syntax alone. Exact signatures remain in the generated API.
   unless `name` is given) is one of these, matched case-insensitively
   (`RESERVED_VARIABLE_NAME`): `vars`, `iterator`, `metadata`, `bindings`, `datafabric`,
   `instanceglobals`, `orchestrator`, `outputs`, `result`, `runtime`, `senderinfo`,
-  `this`. `check` does not report it. A public `.output()` may be named `result`.
+  `this`. `check` does not report it. A job node's `outputs` key and `outputVar` are
+  variable names too: `outputs: { result: '=result.x' }` fails `validate`, and a newer
+  SDK refuses it in `check` (`BPMN_JOB_OUTPUT_VAR_RESERVED`). Name the key for its
+  value: `outputs: { message: '=result.message' }`. A public `.output()` may be named `result`.
 
 <!-- RULE:bpmn.variables.inputs-through-start -->
 - A process input belongs to the start event, so a later step that reads `vars.<inputId>` is
@@ -131,6 +134,10 @@ make from syntax alone. Exact signatures remain in the generated API.
   `VARIABLE_ORDER_DUPLICATE_ID`, because a PARTIAL list silently reorders the block.
 
 ## Script tasks
+
+<!-- RULE:bpmn.script.compute-step -->
+- A new step whose job is computation (totalling or counting over a collection, filtering, combining several values, deciding) is a `.scriptTask()`, in any pattern or composition outside a draft skeleton (bare `.task()` only there).
+  `.task()` with `set` assigns or copies values (a per-item append, a status flag, one simple expression). The designer shows a `set` task as an Assign step, so a computation hidden in it is not visible as a Script step. Leave existing `.task()`/`set` steps in an imported file as they are.
 
 <!-- RULE:bpmn.script.result-response -->
 - A script task (`scriptVersion` v3, what `.scriptTask()` writes) returns its value and the runtime wraps it as `result.response`.
@@ -298,8 +305,11 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!-- RULE:bpmn.orchestrator.job-outputs -->
 - A job's output arguments are fields of `result`: map each one with `outputs` on the job node, as in `.executeApiWorkflow('greet', { process, folder, input, outputs: { message: '=result.message' } })`.
   The same `outputs` option reads an RPA process's (`.startProcess()`), an agent's (`.startAgent()`) and a waited-for agentic or case process's (`.startAgenticProcess()`, `.startCaseProcess()` without `async`) output arguments.
-  `outputVar` (default `<id>_processResponse`) holds the job envelope, not the arguments; do not read an argument out of it with a `=js:` chain.
+  These builders take no `outputRows`, and only `.startAgenticProcess()` / `.startCaseProcess()` take `async`: an older SDK drops either silently, a newer one refuses it (`BPMN_UNKNOWN_OPTION`).
+  `outputVar` (default `<id>_processResponse`) holds the whole `result`, every output argument in one object; use it to pass them on together, and `outputs` for an argument a later node reads.
   The argument name is the workflow's own output argument, as the deployed process declares it; when no live run has shown it, say the mapping is unverified.
+  The source is an expression, not a key: a name that is not an identifier (`test-123`, a space, unicode) is read with brackets, `outputs: { test123: '=this["test-123"]' }`, which writes `source="=this[&quot;test-123&quot;]"`.
+  The expression holds the name exactly as declared, with no escaping (a TypeScript string literal still needs its own escapes); an empty name or one containing `"` or `]` cannot be mapped, so report it as unsupported. A bare `=result.test-123` is subtraction: it stores a wrong number (`27` when `result.test` is `150`) or leaves the variable empty, with no error.
 
 <!-- RULE:bpmn.http.manual -->
 - A plain HTTP call with no connection is `.http(id, { url, method, parameters, headers, body })` with no `connection`.
@@ -317,7 +327,8 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!-- RULE:bpmn.http.connector -->
 - An endpoint the connector catalog has no activity for, called through an existing connection, is
   `.http(id, { method, url, connection, folder, connectorKey })`.
-  - `url` is the vendor API's own endpoint, relative to the connection's base URL (`uip is connections base-url <CONNECTION_ID> --output json`), such as Slack's `/team.info` under `https://slack.com/api`. Never use an Integration Service resource `Path` from `uip is resources list` or `describe`, which belongs to `.connector()`: the request reaches the vendor as written, so an Integration Service path that differs from the vendor's returns the vendor's 404 (`[102021] Received failure from vendor system`). An absolute URL to another host gets 400 "Invalid request URL" (`check`: `MANAGED_HTTP_ABSOLUTE_URL`).
+  - Check `uip is connections base-url <CONNECTION_ID> --output json` before binding: it must be the host of the API you call. When it is another vendor's, do not bind that connection and never send this API's path relative to it; write the manual form above with the absolute URL (its SDK note applies). It carries no credential, so an API that needs one rejects it until the step is rebuilt on a connection for that host: name that connection on `Needs:` ([connectors](connectors.md)).
+  - `url` is the vendor API's own endpoint, relative to that base URL, such as Slack's `/team.info` under `https://slack.com/api`. Never use an Integration Service resource `Path` from `uip is resources list` or `describe`, which belongs to `.connector()`: the request reaches the vendor as written, so an Integration Service path that differs from the vendor's returns the vendor's 404 (`[102021] Received failure from vendor system`). An absolute URL to another host gets 400 "Invalid request URL" (`check`: `MANAGED_HTTP_ABSOLUTE_URL`).
   - `connectorKey` is the connection's connector key from `uip is connections list --all-folders --output json`; omit it only for a `uipath-uipath-http` connection. A wrong or missing one passes `check` and fails `validate` with `MISSING_BINDING`.
   - `connection` and `folder` name `.binding()`s holding the connection's `Id` and its `FolderKey` (or what `prepare` wrote); `folder` is required (`EMPTY_REQUIRED_FIELD folderKey`).
   - `outputVar` (`<id>_response`) is the body; `<id>_code`, `<id>_headers` and `<id>_Error` hold the rest.
@@ -474,6 +485,7 @@ binding half, which is the same for every connector-backed node.
   A decompiled process shows a folder-entity task as an `.activity()` with its rows and the entity's two bindings, with or without the connector library: a `.connector()` call would drop the picker, so decompile keeps the task as it is, and it compiles back unchanged.
 - The file operations (`downloadFile`, `uploadFile`, `deleteFile`) refuse a folder-scoped entity; there is no SDK form for them yet.
   Tell the user the file operation is not supported on a folder-scoped entity; do not fall back to a plain entity name, which addresses a tenant-level entity instead, or hand-fill `.activity()`.
+- A Data Fabric entity trigger takes the same `entity: { name, folder }` option on `.eventTrigger()`: [connector events](connectors.md#6-connector-events).
 - Do not add entity bindings by hand: compile writes the pair.
   A V2 task reads it, so its entity can be re-pointed per environment at deploy; a `delete` task's entity is fixed at compile time.
 

@@ -1,16 +1,16 @@
 ---
 name: uipath-rules
-description: "UiPath Business Rules — `.dmn` decision tables (DMN 1.5, FEEL) in a BusinessRules project (`project.uiproj`), built with `uip rules` (`init`, `refresh`, `validate`, `debug`). Author, edit, review, validate, and debug a rule's decision table from a policy, spreadsheet, or description; list and describe deployed rules. For .bpmn business rule tasks→uipath-maestro-bpmn. For EvaluateBusinessRule in .xaml→uipath-rpa. For caseplan.case/caseplan.json business rule tasks→uipath-maestro-case. For solution pack/publish/deploy→uipath-solution."
+description: "UiPath Business Rules — a `.dmn` rule (DMN 1.5, FEEL) in a BusinessRules project (`project.uiproj`), built with `uip rules` (`init`, `refresh`, `format`, `validate`, `debug`). Author, edit, review, validate, and debug a rule from a policy, spreadsheet, or description — one decision table, or a decision graph of several decisions linked by requirements, with literal expressions, business knowledge models and text annotations; list and describe deployed rules. For .bpmn business rule tasks→uipath-maestro-bpmn. For EvaluateBusinessRule in .xaml→uipath-rpa. For caseplan.case/caseplan.json business rule tasks→uipath-maestro-case. For solution pack/publish/deploy→uipath-solution."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
 # UiPath Business Rules
 
-A Business Rules project holds one DMN decision table. DMN and FEEL follow the OMG standard; this skill covers only what UiPath accepts on top of it.
+A Business Rules project holds one `.dmn` rule of one or more decisions. DMN and FEEL follow the OMG standard; this skill covers only what UiPath accepts on top of it.
 
 ## When to Use This Skill
 
-- Create a business rule (decision table) from a policy, spreadsheet, or description
+- Create a business rule from a policy, spreadsheet, or description — one decision, or a graph of several
 - Edit the rows, columns, or hit policy of a `.dmn` in a BusinessRules project
 - Validate or debug a rule that returns the wrong output
 - List deployed rules or read a deployed rule's inputs and outputs
@@ -19,15 +19,16 @@ A Business Rules project holds one DMN decision table. DMN and FEEL follow the O
 
 1. **Write DMN 1.5.** Use the MODEL and DMNDI namespaces `https://www.omg.org/spec/DMN/20230324/...` and DC/DI `http://www.omg.org/spec/DMN/20180521/...`. When editing a file on an older DMN version, rewrite it to these namespaces.
 2. **One `.dmn` per project.** `rules debug` evaluates only the project's first `.dmn`.
-3. **One decision per file, and its logic is a decision table.** When the user asks for chained decisions, a decision requirements diagram, business knowledge models, or a literal expression, say authoring them is not supported yet, then offer to flatten the logic into one table or to create one rules project per decision and let the calling process chain them. Never write the unsupported element.
-4. **No DOCTYPE, XML comments, or processing instructions.** Put notes in the annotation column or a `<description>` element.
+3. **A decision's logic is a decision table or a literal expression.** A rule may hold several decisions linked by `informationRequirement`, business knowledge models they call, and text annotations; read the [Decision Graphs Guide](references/drd-guide.md) before authoring or editing one, and remember how a decision reads an upstream one turns on how many outputs that one's table has: its own name when there is one output, `name.column` only when there are several. Never a column name on its own. When the user asks for a knowledge source, a decision service, a group, an import, or any other expression kind — context, invocation, relation, list, conditional — say authoring it is not supported yet, then offer to express the logic as decision tables. Never write the unsupported element.
+4. **No DOCTYPE, XML comments, or processing instructions.** Put notes in the annotation column, a `<description>` element, or a `<textAnnotation>` tied to the element it is about.
 5. **Use the designer's types.** `string`, `number`, `boolean`, `Any`, `date`, `time`, `date and time`, `days and time duration`, `years and months duration`, for both columns and input arguments.
 <!--skill-flavor:lifecycle-rules:start-->
-6. **Scaffold a new project with `init`; after every edit, `refresh` then `validate`.** An existing project needs no `init`: edit its `.dmn` and run `refresh`. Fix what `validate` reports. Never hand-write or delete `project.uiproj`, `entry-points.json`, or `bindings_v2.json`; keep the scaffolded `.dmn` file and its root element.
-7. **A rule is done when `validate` passes and `debug` returns what the reviewed table expects.** On a wrong output, read the trace with `uip traces spans get <Data.traceId>`. Stop after 3 fix rounds and show the user the table and the failing inputs.
+6. **Scaffold a new project with `init`; after every edit, `format`, `refresh` then `validate`.** An existing project needs no `init`: edit its `.dmn` and run `refresh`. Fix what `validate` reports. Never hand-write or delete `project.uiproj`, `entry-points.json`, or `bindings_v2.json`; keep the scaffolded `.dmn` file and its root element.
+7. **A rule is done when `validate` passes and `debug` returns what the reviewed design expects, from every decision and not only the last.** On a wrong output, read the trace with `uip traces spans get <Data.traceId>`. Stop after 3 fix rounds and show the user the tables and the failing inputs.
 <!--skill-flavor:lifecycle-rules:end-->
 8. **Stop on a tenant without Business Rules, and publish through `uip solution`.** When `rules debug` fails with `Business Rules is not available on tenant '<TENANT>'` or `Business Rules is a preview feature and is not enabled for your organization.`, stop and relay the CLI's instruction. Pack, publish, and deploy belong to the uipath-solution skill.
-9. **Name every rule.** Declare one `<annotation name="Annotation" />` after the table's last `<output>`, then give each `<rule>` one `<annotationEntry>` with a short name for the case it covers; the review table's Annotation column is what goes there. Never write an `<annotationEntry>` without that column.
+9. **Name every rule.** Declare one `<annotation name="Annotation" />` after each table's last `<output>`, then give each `<rule>` one `<annotationEntry>` with a short name for the case it covers; the review table's Annotation column is what goes there. Never write an `<annotationEntry>` without that column. A decision whose logic is a literal expression has no rules, so it has neither.
+10. **Never place diagram shapes by hand; `format` draws them.** Leave DMNDI out of a new `.dmn`, and run `uip rules format <PROJECT_DIR>` after adding or removing any element the canvas draws — an input, a decision, a knowledge model or a text annotation. It adds a shape for each new element, leaves placed shapes where the user left them, and drops the shapes of deleted ones. `validate` never looks at the diagram, so a shape you place yourself is reported by nothing; it just lands on top of another card in the designer. When you edit a `.dmn` that already has one, **keep its `dmndi:DMNDI` element as it is**: rewriting the file without it throws away the layout the user arranged, and `format` then lays the whole graph out afresh.
 
 ## Quick Start
 
@@ -43,7 +44,7 @@ Run `init` from the solution folder when one exists; outside a solution it creat
 
 ### 2. Design and review
 
-Show the table as Markdown before authoring and after each change. Ask only what the request leaves open, in one question; ask nothing when told not to pause.
+Show the table as Markdown before authoring and after each change — one table per decision when the rule is a graph, upstream first, each naming the decision it belongs to. Ask only what the request leaves open, in one question; ask nothing when told not to pause.
 
 ```markdown
 **Hit policy:** FIRST
@@ -55,18 +56,19 @@ Show the table as Markdown before authoring and after each change. Ask only what
 | 3 | - | - | "Low" | Default |
 ```
 
-### 3. Author the table
+### 3. Author the rule
 
-Replace the scaffolded table with the reviewed design.
+Replace the scaffolded table with the reviewed design, and add the other decisions a graph needs.
 
-### 4. Refresh and validate
+### 4. Format, refresh and validate
 
 ```bash
+uip rules format <PROJECT_DIR> --output json
 uip rules refresh <PROJECT_DIR> --output json
 uip rules validate <PROJECT_DIR> --output json
 ```
 
-Fix every error in `Data.Diagnostics`, then run both again.
+Run `format` whenever the edit added or removed a drawn element; it writes only the files whose diagram changed. Fix every error in `Data.Diagnostics`, then run all three again.
 
 ### 5. Verify
 
@@ -75,7 +77,7 @@ Fix every error in `Data.Diagnostics`, then run both again.
 uip rules debug <PROJECT_DIR> --inputs '<INPUTS_JSON>' --output json
 ```
 
-`--inputs` takes one JSON object keyed by input-argument name, or `@<FILE>`. Compare `Data.result.decisions[].outputs` with the expected values. The run failed when `debug` exits 1 (`Result: Failure`); the decision and input errors are in `Data.result`, the summary code in `Data.error`. On a mismatch, read the trace:
+`--inputs` takes one JSON object keyed by input-argument name, or `@<FILE>`. Compare `Data.result.decisions[].outputs` with the expected values, for every decision the rule holds. The run failed when `debug` exits 1 (`Result: Failure`); the decision and input errors are in `Data.result`, the summary code in `Data.error`. On a mismatch, read the trace:
 
 ```bash
 uip traces spans get <TRACE_ID> --output json
@@ -109,9 +111,11 @@ Binding a rule into a process, workflow, or case belongs to that artifact's skil
 
 | Reference | When to read |
 |---|---|
+| [Decision Graphs Guide](references/drd-guide.md) | The rule holds, or needs, more than one decision |
 | [Failure Modes Guide](references/failure-modes-guide.md) | A `uip rules` command reports an error |
 
 ## Anti-patterns
 
 - Guessing an input value's JSON shape instead of reading the input argument's `typeRef`
 - Naming an output with spaces or a leading digit; `validate` rejects it
+- Writing `dmndi:` shapes by hand instead of running `uip rules format`

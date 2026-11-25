@@ -45,8 +45,11 @@ def since_iso(minutes: int = 30) -> str:
     return start.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+READ_TIMEOUT_S = 180
+
+
 def _uip(args: list[str], what: str) -> Any:
-    r = _run(["uip", *args, "--output", "json"], timeout=180, what=what)
+    r = _run(["uip", *args, "--output", "json"], timeout=READ_TIMEOUT_S, what=what)
     data = _parse_json(r.stdout)
     if r.returncode != 0 or not isinstance(data, dict) or data.get("Result") != "Success":
         fail(f"{what} failed (exit {r.returncode}): {(r.stdout or r.stderr)[:1500]}")
@@ -90,6 +93,7 @@ class RunEvidence:
     """Case variables by name and task elements by id, from `variables-all` Data."""
 
     def __init__(self, variables_all: Any):
+        self.folder_key: str | None = None  # set by read_run: the folder the instance runs in
         blocks = _get_ci(variables_all or {}, "Variables") or []
         if isinstance(variables_all, dict) and not blocks and "Globals" in variables_all:
             blocks = [variables_all]
@@ -152,7 +156,9 @@ def read_run(payload: dict, since: str) -> RunEvidence:
         ["maestro", "case", "instance", "variables-all", instance_id, "--folder-key", folder_key],
         "uip maestro case instance variables-all",
     )
-    return RunEvidence(data)
+    evidence = RunEvidence(data)
+    evidence.folder_key = folder_key
+    return evidence
 
 
 def ci(value: Any, *path: str) -> Any:

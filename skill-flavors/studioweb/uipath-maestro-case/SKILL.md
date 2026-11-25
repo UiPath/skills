@@ -3,7 +3,7 @@
 
 **The builder SDK is built in.** `uip maestro case check`, `compile` and `decompile` run `@uipath/maestro-builder-sdk` inside the page. Install nothing: there is no `npm` and no Python here.
 
-**The open solution is the workspace.** `/solution` is the Studio Web solution the user has open; never create another. Each project is a folder `/solution/<Project>/` with its plan file, `project.uiproj` and package files. Create a Case project only when the user asks for a new project: run `uip maestro case init <Project>` from `/solution`. A `Data.AutoCreatedSolution` in the response means `init` ran outside the open solution: run it again from `/solution` and report the stray directory.
+**The open solution is the workspace.** `/solution` is the Studio Web solution the user has open; never create another. Each project is a folder `/solution/<Project>/` with its plan file, `project.uiproj` and package files. Create a Case project only when the user asks for a new project: run `uip maestro case init <Project>` from `/solution`. When the [Stop rule](#workflow) applies, create none: not with `case init`, and not with the `CreateProjects` host tool, which seeds a plan file too. A `Data.AutoCreatedSolution` in the response means `init` ran outside the open solution: run it again from `/solution` and report the stray directory.
 
 **Edit the open plan.** The context of each turn gives these values:
 
