@@ -35,12 +35,22 @@ Author typed BPMN graphs in TypeScript and compile them to `.bpmn` XML. Read onl
 Discovery-only requests (discover types or save registry evidence, no authoring) skip this workflow and follow [Discovery only](references/bpmn-runtime.md#registry-extension-types). Draft, outline, and sketch requests stop at [draft gate](#draft-first), regardless of specification completeness; [Draft first](#draft-first) determines which requests gate and which build.
 
 <!--skill-flavor:workflow-scaffold:start-->
-1. **Before the first `init`, ask which solution to use when one already exists.** Search up to two levels below the working directory and every directory above it:
-```bash
-find . -maxdepth 2 -type f -name '*.uipx' -print
-d="$PWD"; while [ "$d" != / ]; do d=$(dirname "$d"); find "$d" -maxdepth 1 -type f -name '*.uipx' -print; done
-```
-Ask for drafts and builds; an existing `.bpmn` edit skips `init` and the scan. When the scan finds nothing, or only a solution this run created, run `init` without asking. When the request names the solution to use (an existing one, or a new one by name), use it without asking. When the request names no solution and says nobody will answer questions, do not ask: put the project in a new solution, never an existing one, and say so in the draft gate sentence or build final report `Assumed:` line. Otherwise stop and ask, as a pick list if the host has one: one option per found solution (folder name) plus "Create a new solution". Do not run `init` until the user answers, and never silently adopt an existing solution: `init` registers the project in a solution above it without asking. Unless upload is forbidden, say in the question that adoption later overwrites its cloud copy. For an unnamed new solution ask only for its name, offering `<Name>Solution` as the default, or a free name by the numbering rule below when that one is taken.
+1. **Before the first `init`, ask which solution to use when one already exists.**
+   Search up to two levels below the working directory and every directory above it:
+
+   ```bash
+   find . -maxdepth 2 -type f -name '*.uipx' -print
+   d="$PWD"; while [ "$d" != / ]; do d=$(dirname "$d"); find "$d" -maxdepth 1 -type f -name '*.uipx' -print; done
+   ```
+
+   Ask this for a draft and for a plain build alike; an edit of an existing `.bpmn` runs no `init` and skips the scan.
+   - When the scan finds nothing, or only a solution this run created, run `init` without asking.
+   - When the request names the solution to use (an existing one, or a new one by name), use it without asking.
+   - When the request names no solution and says nobody will answer questions, do not ask: put the project in a new solution, never an existing one, and say so in the draft gate sentence or build final report `Assumed:` line.
+   - Otherwise stop and ask the user which to use, as a pick list if the host has one: one option per found solution (folder name) plus "Create a new solution".
+     Do not run `init` until the user answers, and never silently adopt an existing solution: `init` registers the project in a solution above it without asking.
+     Unless upload is forbidden, say in the question that adoption later overwrites its cloud copy.
+     For an unnamed new solution ask only for its name, offering `<Name>Solution` as the default, or a free name by the numbering rule below when that one is taken.
 
 For an existing solution, from its directory run `init`; project is `<SolutionDir>/<Name>/`. If selected after warning about cloud overwrite, upload without asking again; if named in the request, confirm before the first upload as [Operate](references/operate.md#studio-web-upload) requires, while a draft holds upload as [Draft skeleton](references/draft-skeleton.md#steps) says. Check its cloud copy before overwriting.
 
