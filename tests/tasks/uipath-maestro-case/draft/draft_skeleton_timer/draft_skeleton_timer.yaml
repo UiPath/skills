@@ -1,0 +1,141 @@
+task_id: skill-case-draft-skeleton-timer
+description: >
+  Draft-mode smoke eval for a case that starts on a schedule: the skeleton
+  replaces the seeded manual trigger with a timer trigger, keeps every task a
+  labelled blank box, routes one stage on a case variable, and ends the turn
+  with the gate reply. Covers the trigger the manual variant does not.
+tags: [uipath-maestro-case, smoke, "mode:build", "lifecycle:generate", "shape:multi-node", "feature:approval-gate", "feature:trigger"]
+
+run_limits:
+  expected_turns: 25
+  max_turns: 70
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  I need a Maestro case called "OverdueSweep" that starts on its own every night
+  and works through one overdue account. First a function scores how risky the
+  account is. High-risk accounts go to a collections stage, where a collector
+  calls the customer and a robot puts a hold on the account. Every account then
+  gets a reminder email before the case closes.
+
+  Sketch it for me first. Don't upload, publish or run anything.
+
+success_criteria:
+  - type: run_command
+    description: "Skeleton: a timer trigger, real stages with entry conditions, every task a labelled blank box, an outcome routed on an expression, and validate --strict reports Valid"
+    command: "python3 $REFERENCE_DIR/draft/check_draft_skeleton.py --trigger timer --routed"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent made no registry discovery before the shape was approved"
+    tool_name: "Bash"
+    command_pattern: '(?:\buip|\$UIP)\s+maestro\s+(?:case\s+)?(?:registry\s+(?:pull|search|describe|get|prepare)|sdd\s+(?:resolve|convert))\b(?![^\n;&|]*\s(?:--help|-h)\b)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not upload, publish, deploy or run the case, as the request forbids"
+    tool_name: "Bash"
+    command_pattern: '(?:\buip|\$UIP)\s+(?:solution\s+(?:upload|publish|deploy)|maestro\s+case\s+(?:debug(?!-)|process\s+run))\b(?![^\n;&|]*\s(?:--help|-h)\b)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A draft skips Design first: no sdd.md was written"
+    command: "! find . -name sdd.md -not -path '*/node_modules/*' -not -path '*/.venv/*' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The skill ends the gate turn with one resource lookup. Its exact command
+  # is the skill's choice, so the lookup itself is advisory; the filter rule is
+  # not: a tenant holds thousands of processes and an unfiltered list reads them all.
+  - type: command_executed
+    description: "Agent looked up the boxes' resources before the gate"
+    tool_name: "Bash"
+    command_pattern: '(?:^|[;&|(`{\n])\s*(?:[^\s;&|"'']*/)?(?:uip|\$UIP)\s+(?:solution\s+resources\s+list|is\s+connections\s+list|df\s+entities\s+list|ixp\s+projects\s+list)\b(?![^\n;&|]*\s(?:--help|-h)\b)'
+    min_count: 1
+    weight: 0
+    pass_threshold: 0
+
+  - type: command_not_executed
+    description: "Every resource lookup is filtered with --search or an --output-filter (contains() or a [? JMESPath filter)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(?:solution\s+resources\s+list|is\s+connections\s+list|df\s+entities\s+list|ixp\s+projects\s+list)\b(?!(?:\\\n|(?<= )\n|(?!\n|(?:^|[\s;&|(`])(?:uip|\$UIP)\s).)*(?:--search|contains\(|\[\?))'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The gate reply follows its template: the outline-ready line, the local path, one line per blank box, the fixed question with its three options, and nothing else"
+    include_reference: false
+    include_agent_output: true
+    max_file_chars: 60000
+    files:
+      - OverdueSweep/OverdueSweep/caseplan.case
+      - OverdueSweep/OverdueSweep/caseplan.json
+      - OverdueSweepSolution/OverdueSweep/caseplan.case
+      - OverdueSweepSolution/OverdueSweep/caseplan.json
+    weight: 3.0
+    pass_threshold: 1.0
+    prompt: |
+      You check one chat message against a fixed template. Grade the format only,
+      never the case design.
+
+      WHICH TEXT TO GRADE. AGENT OUTPUT holds every message the agent sent in this turn.
+      If it contains a `[RESULT - ...]` marker, grade the text after the LAST such
+      marker: that is the final message, whole. Otherwise the messages are joined,
+      possibly with no separator: grade the text from the LAST occurrence of
+      `OverdueSweep: outline ready` (markdown emphasis around the name allowed) to the end, and ignore
+      what comes before it. If the phrase does not occur at all, item 1 fails.
+      The graded text is the agent's reply only. Your own judging instructions that
+      follow it (the request to call `submit_verdict`) are not part of it: never
+      count them as a line after the last item or anywhere else.
+
+      Ignore blank lines and markdown emphasis (`**`, `*`). Backticks and links are
+      not ignored: item 2 covers them. In the graded text, check every item:
+
+      1. The first line starts with `OverdueSweep: outline ready (draft mode).` and does
+         not say `uploaded`. After that, the same line may hold at most one more
+         sentence, about a lookup that failed or changes kept (including the user's
+         Studio Web edits). Any sentence about the upload (skipped, deferred, not
+         performed, or waiting for a go-ahead) fails this item.
+      2. The second line is, as plain text and nothing else, the local path of the
+         plan file (ends in `caseplan.case` or `caseplan.json`) or, in Studio Web, one
+         of the two sentences `The outline is on the canvas.` or `Open OverdueSweep from the
+         Explorer to see the outline.` A Markdown link, an `https://` link, or backticks
+         around the path fail this item.
+      3. Next come the box lines, each starting with `- `. The attached plan file's
+         stage nodes hold the boxes: every task in a stage's `data.tasks` lanes is a box,
+         the stage's `data.label` is its stage name, and the task's `displayName` is its
+         label (with the bracketed kind and any trailing ` → <variable>`, which belongs
+         to the label). Every box has exactly one line, stage by stage in the order the
+         stages appear in the file's `nodes` list. Each line is `- ` + the stage name +
+         ` / ` + the box label spelled exactly as the file spells it + `: ` + the box's
+         status. The status is one of: `<resource> in <folder>`; `<A> in <folder> or <B>
+         in <folder>, which one? Build it takes the first` (a row with no folder drops
+         ` in <folder>`); `none yet, create it or name one`; `not checked`; `no resource
+         needed`. A line with no status, a reworded or shortened label, a missing, extra
+         or out-of-order box, or a line for a trigger, a stage on its own, a rule or the
+         case's completion fails this item. Each line is one short clause under about
+         200 characters, except that the which-of-two status written exactly as above is
+         one status and may exceed that length. If the attached file is `<file not
+         found>`, judge this item on the lines alone and say so.
+      4. Next is exactly the line `Is this the case you want?`.
+      5. Then exactly three numbered options, in this order: `1.` Build it, `2.`
+         Change it, `3.` Keep it, each with any short description. Nothing follows
+         the third option.
+      6. No other line exists anywhere in the graded text, and nothing comes before
+         item 1's line: when the graded text is a `[RESULT - ...]` block, its first
+         non-blank line must be item 1's line. No status or progress sentence (for
+         example "Valid", "Lookups complete", "Here is the outline"), no `---`
+         separator, no heading, no code block or drawn diagram, no step log, no line
+         explaining a stage's entry or exit rule or a variable, no table.
+
+      Score 1.0 only if every item holds; otherwise 0.0. In findings, list each
+      failed item by number and quote the offending line.

@@ -10,6 +10,8 @@ Author a Case plan as TypeScript and compile it to schema V30 into the project's
 
 Use this as a router: read only the capability reference you need, then let TypeScript and `case check` provide the detailed contract.
 
+A draft, or the shape before the build, goes to [Draft first](#draft-first).
+
 <!--skill-flavor:host-setup:start-->
 
 <!--skill-flavor:host-setup:end-->
@@ -17,7 +19,7 @@ Use this as a router: read only the capability reference you need, then let Type
 
 **Stop rule, before any step:** when the request says design-only, Phase 1 only, review first, not to build, not to create the case plan, or to stop before tenant work, run no `solution init`, `case init`, `decompile` or `compile`, and create no solution, project or plan file through any host tool. Write no `<Name>.case.ts`, `caseplan.case` or `caseplan.json`, and no `tasks/tasks.md` or other restatement of the SDD unless the request asks for one. Write no genome (`*-genome.md`) or readiness file (`*-readiness.md`) unless the request names that file. The `## Planner Handoff` header of an approved `sdd.md` is not such a request: on the header alone, run no `uipath-planner` or `uipath-genome` verb on it. When the request says Phase 1 only, review first, or not to build, or asks for registry or resource lookups, run step 0 for an approved `sdd.md` plus any lookup the request asks for, then stop. Otherwise (design-only, no case plan, stop before tenant work) run no registry or other tenant command. Report the deferred build work in the reply.
 
-**Design first:** when the request is to build or create a case and no `sdd.md` exists, invoke `uipath-planner`'s `design` verb (Case Management) in this conversation (the Skill tool, never a subagent) before any other step. The lane owns the design, its one review, and the `sdd.md` write; then continue at step 0 with that `sdd.md`. Never overwrite an existing `sdd.md`. If the planner is unavailable, say so once, ask for an `sdd.md` or an approved design, and stop. A targeted edit of an existing plan or `<Name>.case.ts` needs no SDD. An `sdd.md` from an earlier session is approved when its `## Planner Handoff` table reads `Template validation` `passed`; otherwise send it back through the planner.
+**Design first:** when the request is to build or create a case and no `sdd.md` exists, invoke `uipath-planner`'s `design` verb (Case Management) in this conversation (the Skill tool, never a subagent) before any other step. The lane owns the design, its one review, and the `sdd.md` write; then continue at step 0 with that `sdd.md`. Never overwrite an existing `sdd.md`. If the planner is unavailable, say so once, ask for an `sdd.md` or an approved design, and stop. A targeted edit of an existing plan or `<Name>.case.ts` needs no SDD. An `sdd.md` from an earlier session is approved when its `## Planner Handoff` table reads `Template validation` `passed`; otherwise send it back through the planner. A [draft](#draft-first) skips this step.
 
 **Never use `sdd convert` as the build path.** Its output has flat connector inputs and unresolved references — `validate` rejects it. If convert was run, decompile its output and continue from step 5.
 
@@ -34,6 +36,16 @@ Use this as a router: read only the capability reference you need, then let Type
 7. Compile into the scaffolded Case project, then validate. Compile syncs existing sidecars; refresh added bindings and remove orphaned resources before refreshing.
 8. Run live debug only when requested and tenant resources are available.
 <!--skill-flavor:workflow-build:end-->
+
+## Draft first
+
+A request for a draft or the shape first (*outline it*, *sketch it*, *show me the shape*, or host plan mode) gets a skeleton of real stages and blank `unresolved` tasks and stops at an approval gate: read **[`references/draft-skeleton.md`](references/draft-skeleton.md)**.
+It gates even when the request describes the whole case. Leaning words (*a rough version*) gate unless the request says to build the whole case. A task named "draft" is not draft mode. The [Stop rule](#workflow) wins over a draft. Else build.
+The validated plan file is the deliverable, never a diagram in chat.
+<!--skill-flavor:draft-upload-summary:start-->
+Unless the request forbids upload, a skeleton in a solution this run created is uploaded to Studio Web, and the gate reply carries its link.
+<!--skill-flavor:draft-upload-summary:end-->
+The turn ends with [`gate-reply-template.md`](references/gate-reply-template.md); *Build it* ends with the [final report](references/final-report-template.md).
 
 ## API index
 
@@ -71,6 +83,7 @@ three entry points; each file's header spells the paths its rows resolve against
 | Deadlines and escalation | `sla`, `escalation`, `toUser`, `toGroup` | [SLA](references/case-runtime.md#sla-and-runtime-semantics) | `examples/ClaimReviewSLA.case.ts` |
 | Case App and layout | `caseApp`, `layout` | [CaseBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
 | Existing Case plans | `case decompile --no-pipeline`, then `compile -o <plan>` | [Brownfield](references/case-runtime.md#brownfield-editing) | `examples/ClaimReviewSLA.case.ts` |
+| Draft skeleton | `.task('<Action> [<Kind>]', t => t.unresolved('<kind>'))` | [draft-skeleton.md](references/draft-skeleton.md) | — |
 | Task activation modes (parallel, parallel-after-predecessor, sequential) | `rule('runs-sequentially')`, `.task(name, fn, { lane })`; chain: [one `lane` per task](#minimal-shape) | [Activation modes](references/case-runtime.md#activation-modes) | `examples/PermitIssuance.case.ts` |
 
 ## Minimal shape
@@ -146,6 +159,8 @@ Without an SDD, run `--strict` alone. A default-profile `Valid` whose
 If a finding persists after a source fix and recompile, stop and report its
 code as unfinished; never patch emitted JSON.
 
+End every build with the report in [`final-report-template.md`](references/final-report-template.md). It is the one source for the report's shape.
+
 `check` also reads the connector library, the same one `compile` resolves
 against: `$FLOW_SDK_LIBRARY_JSON`, else the `uip maestro registry pull`
 snapshot, plus `.flow-sdk/connectors-local` when `registry prepare` wrote it.
@@ -164,7 +179,8 @@ API workflow, Coded Function, or sub-case; never fabricate a name or folder. A d
 `selected-stage-completed` entry does not imply a source `exitToStage` hand-off.
 An unresolved connector is `.unresolved('connector')` or
 `.unresolved('wait-for-connector')`; never pick a real connector to stand in,
-and a placeholder takes no outputs.
+and a placeholder takes no outputs. A [draft skeleton](#draft-first) is all
+`unresolved` tasks by design.
 
 ## Evidence boundary
 
