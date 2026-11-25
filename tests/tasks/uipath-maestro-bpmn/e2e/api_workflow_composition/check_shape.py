@@ -33,7 +33,7 @@ Per row in composition.RESOURCES:
      with no `vars.` reference in it at all.
   4. Every `vars.<id>` read anywhere in the process is declared.
   5. The invoking node fills at least one variable from its own response
-     (`source` absent or reading `result`), an end event maps one of those
+     (`source` reading `result`), an end event maps one of those
      into the row's declared output (`=vars.<id>` or any `=js:` using it),
      and no OTHER element (a decoy scriptTask, say) also writes to it -- so
      the exposed value cannot come from the input or an unrelated node.
@@ -404,7 +404,7 @@ def check_resource_row(
     if not response_var_ids:
         problems.append(
             f"{row['kind']}: {node_id!r} writes no output variable from its "
-            "own response (source absent or reading `result`)"
+            "own response (a source reading `result`)"
         )
         return problems
 

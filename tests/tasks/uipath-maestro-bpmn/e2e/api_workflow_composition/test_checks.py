@@ -130,6 +130,11 @@ class BpmnParsingTests(unittest.TestCase):
         self.assertTrue(refs, "expected at least one vars.<id> reference")
         self.assertEqual(refs - set(declared), set())
 
+    def test_output_without_source_is_not_a_response_write(self):
+        self.assertFalse(composition.is_response_mapping({"name": "Process response", "var": "r"}))
+        self.assertTrue(composition.is_response_mapping({"source": "=result", "var": "r"}))
+        self.assertTrue(composition.is_response_mapping({"source": "=result.message", "var": "r"}))
+
 
 class ShapeCheckGoldTests(unittest.TestCase):
     def test_gold_is_clean(self):

@@ -324,20 +324,20 @@ def output_mappings_of(task_element: ET.Element) -> list[dict[str, str]]:
 
 
 def is_response_mapping(mapping: dict[str, str]) -> bool:
-    """True when an output `mapping`'s own `source` reads the node's response:
-    absent (the whole response) or reading `result` and no process variable,
-    e.g. `=result.message` but not `=js:result?.message ?? vars.Var_Name`."""
+    """True when an output `mapping`'s own `source` reads the node's response
+    and no process variable, e.g. `=result` or `=result.message` but not
+    `=js:result?.message ?? vars.Var_Name`. A row with no source is never
+    written: the engine drops it when it parses the file."""
 
     source = mapping.get("source")
-    return not source or (
+    return bool(source) and (
         RESULT_REF_RE.search(source) is not None and ANY_VARS_RE.search(source) is None
     )
 
 
 def response_output_vars(task_element: ET.Element) -> set[str]:
-    """Vars the node fills from its own response: `source` absent (the whole
-    response) or reading `result` and no process variable, e.g.
-    `=result.message` but not `=js:result?.message ?? vars.Var_Name`."""
+    """Vars the node fills from its own response: `source` reading `result`
+    and no process variable (see `is_response_mapping`)."""
 
     return {
         mapping["var"]
