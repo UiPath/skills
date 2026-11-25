@@ -10,6 +10,7 @@ Where to look in an extracted genome and its source for a place the rebuild may 
 4. **An answer is a refactor answer, written as Step 6c writes Fold:**
    - a folded component keeps its row, its Rationale opening `Folded into <component>:`; a component rebuilt as a library keeps its row and genome, typed as a library; a library made of shared steps is a new row and component genome, and each component that shared the steps calls it there;
    - a Handoffs row to a folded component from any component but the one it is folded into names that one instead, and a row to a library names a library workflow call;
+   - a changed trigger is its Triggers row in Platform Dependencies;
    - the `Requested change` row records a fold as `Fold: <component> into <component>`, and any other answer in the user's words, naming each component it touches and what changes for it.
 5. **Unattended runs ask none.** Each spot found is an Open Decisions entry of the business-outcome tier, since it decides what is built, as a `Not covered` object does: in the process genome when it spans components, else in its component genome, `Builds now:` the source's shape, one `instead:` per other option, and named `(D<n>)` in each Components, Handoffs or Triggers row it concerns ([genome-questions-guide.md § Open Decisions](genome-questions-guide.md)).
 6. **An option that changes an input or output another party reads says so in its text**, since it changes only on the user's word ([extract-guide.md](../extract/extract-guide.md) Step 6c).
@@ -50,3 +51,10 @@ Where to look in an extracted genome and its source for a place the rebuild may 
 - **Why reconsider:** one Object Repository per application keeps one definition of each screen.
 - **Options:** one UI library for the application, the others folded into it; keep the source's libraries.
 - **Keep as is when:** other automations consume the libraries as they are, or different teams own the screens.
+
+### 6. An output file several jobs write at once
+
+- **Look for:** a file the run appends to or rewrites in a shared location — a summary, a status list, a report — where the Transactional Shape's As-is or the Triggers rows let several jobs run at once: several robots, overlapping schedules, a queue worked in parallel. The source's own run log is the evidence policy's ([extract-guide.md](../extract/extract-guide.md) Step 3), never this spot.
+- **Why reconsider:** two jobs writing at once can interleave or lose each other's lines, and a job that finds the file held by another fails.
+- **Options:** one file per job, named by its run, merged where the readers need one; a platform store each job writes — an entity, the queue item's output — with the file written from it once the work is done; keep the shared file as the source writes it.
+- **Keep as is when:** the jobs that write it never overlap in practice, as the schedules or the job history show.

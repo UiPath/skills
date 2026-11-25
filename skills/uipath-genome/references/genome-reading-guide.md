@@ -139,7 +139,7 @@ Extracted genomes only: where every part of the genome came from. A genome witho
 | Row | What the build does with it |
 |---|---|
 | Source framework | `UiPath` makes the build a refactor; any other framework name, spelled as its migration pack's README spells it, makes it a migration |
-| Requested change | the user's words and decisions by topic; [refactor-guide.md § Refactor questions](refactor-guide.md) rule 2 takes them as the user's answers |
+| Requested change | the user's words and decisions by topic, built in every build mode: [refactor-guide.md § Refactor questions](refactor-guide.md) rule 2 takes them as the user's answers in a refactor, and a migration builds each as a difference with its reason ([source-migration-guide.md § Source steps that are not UI actions](source-migration-guide.md)) |
 | Source export | the export's root path and identity (database or tenant, export date, process count), so a moved copy is recognised |
 | Steps | the step table above |
 | Checkpoints | per test-component step (and per step of a library a test component calls): the source's checkpoints. The build makes one assertion and one evidence artifact per checkpoint and the result parity table from them ([test-execution-guide.md § Result parity](test-execution-guide.md)) |
