@@ -427,7 +427,7 @@ function checkOpenDecisions(text, r, processEntries = null, namedElsewhere = new
   }
   if (unnamed.length) r.strict(`${unnamed.length} *[Inferred]* mark(s) name no Open Decisions entry or Configuration Question (write *[Inferred: D<n>]*), first: ${unnamed[0]}`);
   // an entry withdrawn into a Configuration Question keeps its point marked on the line that uses the question
-  for (const [, num, n] of section.matchAll(/^(\d+)\. .*\(withdrawn: asked as Configuration Question (\d+)/gm)) {
+  for (const [, num, n] of section.matchAll(/^(\d+)\. .*\(withdrawn: asked as Configuration Question (?:CQ)?(\d+)/gm)) {
     if (!new RegExp(`\\*\\[Inferred:\\s*CQ${n}\\]\\*`).test(text)) r.strict(`Open Decisions entry ${num} is withdrawn as Configuration Question ${n}, and no line carries *[Inferred: CQ${n}]*: mark the line that uses the question, *[Inferred: CQ${n}]* (SDD [SME REVIEW]: <note>)`);
   }
   const named = namedEntries(text);
