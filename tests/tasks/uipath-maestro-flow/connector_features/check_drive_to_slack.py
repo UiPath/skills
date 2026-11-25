@@ -45,9 +45,8 @@ def _essential_configuration(node: dict) -> dict:
             raw = json.loads(raw.split("=jsonString:", 1)[-1])
         except json.JSONDecodeError:
             return {}
-    if not isinstance(raw, dict):
-        return {}
-    return raw.get("essentialConfiguration") if isinstance(raw.get("essentialConfiguration"), dict) else raw
+    essential = raw.get("essentialConfiguration") if isinstance(raw, dict) else None
+    return essential if isinstance(essential, dict) else {}
 
 
 def _definition_output_type(flow: dict, node: dict) -> str | None:
