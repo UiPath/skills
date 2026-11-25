@@ -6,7 +6,7 @@ Use this page when the agent must answer questions over a deployed ontology. To 
 
 ## Step 1: Discover the Ontology
 
-The tool needs the ontology's id, which only the tenant returns. Discovery is auth-gated (`uip login status --output json` first). Do auth and discovery before Build, not after. "Scaffold only" does not skip this step: listing ontologies is read-only.
+The tool needs the ontology's id, which only the tenant returns. Discovery is auth-gated: confirm the user is logged in first, as described in [../../authentication.md](../../authentication.md). Do auth and discovery before Build, not after. "Scaffold only" does not skip this step: listing ontologies is read-only.
 
 ```bash
 # List the deployed ontologies in a folder
@@ -90,11 +90,11 @@ def create_ontology_tool(
 
 ## Gotchas
 
-1. **Never instantiate `UiPath()` or `UiPathChat()` at module level.** They read auth credentials at construction time, and `uip codedagent init` imports the module to introspect it. Wrap them in a lazy factory function.
+1. **Never instantiate `UiPath()` or `UiPathChat()` at module level.** They read auth credentials at construction time, and project initialization imports the module to introspect it. Wrap them in a lazy factory function.
 
 2. **Use `create_ontology_tool`, not a custom solution.** Do NOT call the Ontology service routes by hand, and do NOT use `create_datafabric_ontology_tool`: that is the low-code adapter and it is feature-flag gated.
 
-3. **The ontology is checked lazily.** A wrong id or an ontology that is not deployed fails the first tool call, not agent start-up or `uip codedagent init`. Run the agent once after wiring the id.
+3. **The ontology is checked lazily.** A wrong id or an ontology that is not deployed fails the first tool call, not agent start-up or project initialization. Run the agent once after wiring the id.
 
 4. **Placeholder ids are a build failure, not a deferral.** Never ship `<ONTOLOGY_ID>` for the user to fill in later. Run Step 1 and paste the discovered id.
 
@@ -104,7 +104,7 @@ def create_ontology_tool(
 
 7. **What the source system allows still applies.** A source that cannot count, aggregate or join returns an error for those statements. The inner LLM sees the error and retries, but it cannot answer a question the source cannot serve.
 
-8. **Bindings are not discovered.** `uip codedagent init` does not emit an ontology binding for the id passed to the factory, so the ontology cannot be re-pointed at deploy time yet.
+8. **Bindings are not discovered.** Project initialization does not emit an ontology binding for the id passed to the factory, so the ontology cannot be re-pointed at deploy time yet.
 
 ## Comparison with Low-Code Ontology Context
 
