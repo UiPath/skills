@@ -444,7 +444,7 @@ function checkDesignedIn(path, text, level, r) {
   let matches;
   // a line taken over the whole SDD, its Action Required section included, still matches an SDD that has not changed
   try { matches = sddFingerprint(sdd) === m[2] || sddFingerprint(sdd, { keepOpenQuestions: true }) === m[2]; } catch { r.strict(`Designed in: ${m[1]} or a child SDD it lists cannot be read`); return; }
-  if (!matches) r.strict(`Designed in: sdd-sha256 does not match ${m[1]}; the SDD changed since the genome was written`);
+  if (!matches) r.strict(`Designed in: sdd-sha256 does not match ${m[1]}; the SDD changed since the genome was written — write the value \`node sdd-fingerprint.mjs <SDD>\` prints (not sha256sum: the fingerprint leaves out the Genome row)`);
   // a component genome holds every gap of its SDD: an SDD with Action Required items, a genome with none of them
   if (level !== "component") return;
   const asked = sectionBody(read(sdd), "Action Required");

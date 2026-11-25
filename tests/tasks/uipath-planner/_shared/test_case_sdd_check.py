@@ -160,3 +160,21 @@ def test_an_illegal_rule_for_its_gate_fails(check, sound):
     rc, out = check(sound.replace("| required-stages-completed", "| required-tasks-completed", 1))
     assert rc == 1
     assert "is not a legal case complete rule" in out
+
+
+INTAKE_EXIT = "| required-tasks-completed | — | exit-only | Yes | Intake complete |"
+
+
+def test_two_completion_exits_with_the_same_if_fail(check, sound):
+    assert sound.count(INTAKE_EXIT) == 1
+    duplicate = INTAKE_EXIT + "\n" + INTAKE_EXIT.replace("exit-only", "wait-for-user")
+    rc, out = check(sound.replace(INTAKE_EXIT, duplicate))
+    assert rc == 1
+    assert "two required-tasks-completed rows with the same IF" in out
+
+
+def test_two_completion_exits_with_different_ifs_pass(check, sound):
+    split = (INTAKE_EXIT.replace("| — |", '| =js:vars.ok === true |', 1) + "\n"
+             + INTAKE_EXIT.replace("| — |", '| =js:vars.ok === false |', 1))
+    rc, out = check(sound.replace(INTAKE_EXIT, split))
+    assert "two required-tasks-completed rows" not in out
