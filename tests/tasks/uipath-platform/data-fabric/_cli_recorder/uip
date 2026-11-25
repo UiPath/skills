@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Pass-through recorder for `uip`, PATH-prepended via `mock_path_dirs`.
 
-Runs the real `uip` unchanged and, for `uip df records ...` calls only (so
-`login` and other argv are never written), appends one JSON line to
+Runs the real `uip` unchanged and, for `uip df records ...` and
+`uip df files ...` calls only (so `login` and other argv are never written),
+appends one JSON line to
 `uip-calls.jsonl` beside this file: argv, exit code, and, for
 `records query/insert/update/delete`, the body the CLI read from `--file` or from
 stdin (`--file -` or `--body -`). A criterion can then check what was actually
@@ -37,8 +38,9 @@ def find_real_uip():
 BODY_VERBS = ("query", "insert", "update", "delete")
 
 
-def is_records_call(args):
-    return any(args[i:i + 2] == ["df", "records"] for i in range(len(args) - 1))
+def is_recorded_call(args):
+    return any(args[i:i + 2] in (["df", "records"], ["df", "files"])
+               for i in range(len(args) - 1))
 
 
 def takes_body(args):
@@ -68,7 +70,7 @@ def record(entry):
 def main():
     args = sys.argv[1:]
     real = find_real_uip()
-    if not is_records_call(args):
+    if not is_recorded_call(args):
         if real is None:
             sys.stderr.write("uip: command not found\n")
             return 127
