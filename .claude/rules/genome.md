@@ -29,10 +29,10 @@ Paths are relative to the skill folder.
 | Defect verification | `references/shared/defect-verification-guide.md` |
 | The open questions an SDD puts to people (its Action Required): the item form, the groups, where the answers go | `references/shared/open-questions-guide.md`; the SDD written from a genome: `references/shared/sdd-from-genome-guide.md`; applying the answers: `references/edit/edit-guide.md` (§ Applying the Answers) |
 | `author`: genome from an idea, PDD, TO-BE or SDD; scenario proposals | `references/author/author-guide.md`; from an agreed SDD: `references/author/genome-from-sdd-guide.md`; scenarios: `references/author/scenario-proposal-guide.md` |
-| `edit`: edit requests and what each updates, partial re-extraction | `references/edit/edit-guide.md` |
+| `edit`: edit requests and what each updates, partial re-extraction, bringing the genome to the build after a refactor or migration build | `references/edit/edit-guide.md` |
 | Interview: the offer, the gap list and its coverage, asking order, where answers go (inside `design`, `author`, `extract`, and the `interview` verb) | `references/interview/interview-guide.md` |
 | Skill mapping: Build With names, Decision Tree, target choice (a refactor's targets included), operate-only skills, common combinations | `references/shared/skill-mapping-guide.md` |
-| Refactor hot spots: where to look for a place the rebuild may be better shaped than the source, each a question with the source's shape as an option | `references/shared/refactor-hotspots-guide.md` |
+| Refactor review, on the user's request: where to look for a place the rebuild may be better shaped than the source, discussing each with the user, the source's shape among its options, and applying the design agreed | `references/shared/refactor-hotspots-guide.md` |
 | `design`: SDD phases, products, packages, solution composition, caller requests | `references/design/design-guide.md`; Phase 3: `references/design/sdd-writing-guide.md`; the rest of `references/design/` per subject |
 | SDD and genome fingerprints | `scripts/sdd-fingerprint.mjs` |
 | `check` and the strict check after `author`, `extract` and `edit`; genome checker: what it checks | `SKILL.md`; checker: `scripts/check-genome.mjs` header comment |
@@ -144,7 +144,7 @@ One change, every file in its row, same PR.
 | Exploring, checking or healing against a reachable application | builder `live-application-guide.md`; what every UI migration owes the application, reachable or not: `ui-target-migration-guide.md` § Verifying targets |
 | Building test components or migrating their data | builder `test-execution-guide.md` |
 | Refactor target, retire or fold question | planner `extract-guide.md` § Step 6c; the target rules: `skill-mapping-guide.md` |
-| A place where a better shape than the source's may exist (a hot spot) | planner `refactor-hotspots-guide.md`, as a question with the source's shape among its options, never a rule |
+| A place where a better shape than the source's may exist (a hot spot) | planner `refactor-hotspots-guide.md`, raised in the refactor review with the source's shape among its options, never a rule |
 | What a refactor keeps, asks at build, plans, tests or hands over for cutover | builder `refactor-guide.md` |
 | A framework's transactional construct | UiPath: planner `uipath-source-guide.md`; any other framework: its source guide in the framework migration pack |
 | A framework's new action, locator format or pitfall | that framework's guides in the framework migration pack |

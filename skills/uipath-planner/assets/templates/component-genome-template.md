@@ -209,7 +209,7 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | Row | Source artifact | Notes |
 |-----|-----------------|-------|
 | {Dead code / Unresolved invocation / Inferred / a finding} | {Source framework}: `{Name}` ({id}) | {what it is, the lines that show it} |
-| Requested change | {for a refactor or migration request: the user's words; otherwise —} | {each refactor-question decision — `Target: <component> → <product>`, `Retire: <entry point>`, `Fold: <reader> into <writer>`; a split decision is that flow's `Decided:` line alone} |
+| Requested change | {for a refactor or migration request: the user's words; otherwise —} | {each decision of the refactor questions and of the refactor review — `Target: <component> → <product>`, `Retire: <entry point>`, `Fold: <reader> into <writer>`, any other in the user's words; a split decision is that flow's `Decided:` line alone} |
 | Related resources | {path or link} — {kind} | {what it settled, or "not read" and why} |
 | Resource discrepancies | {resource}: {what it says} | {what the source does} |
 
