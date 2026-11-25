@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pass if at least --min recorded `uip df records` calls match a regex.
+"""Pass if at least --min recorded `uip df records`/`uip df files` calls match a regex.
 
 `_cli_recorder/uip` logs each such call as a JSON line. A call is matched as the
 text `uip <argv joined by spaces>` followed by any `--file` or stdin body it
