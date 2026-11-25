@@ -4,7 +4,7 @@ Return ends the current path and binds the Flow's declared outputs.
 
 Signature: `.return({ outputName: expression, ... })`.
 
-Return a number as a number: never `.toString()` it. When the same output is a string on another path, type it `types.any`.
+Return a number as a number: never `.toString()` it. When another path returns a string for the same output, declare that output `types.any` ([author.md](author.md)).
 
 ```ts
 .branch('valid', out('check'),
