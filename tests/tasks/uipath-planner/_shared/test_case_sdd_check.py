@@ -127,3 +127,36 @@ def test_a_draft_off_the_template_fails_draft_mode(tmp_path):
     for line in ("first line is not '# SDD — <Case Name>'", "missing heading '## Section 2: Stages & Tasks'",
                  "no '### Stage <N>: <Name>' block", "a stage heading reads '### <N>. <Name>'"):
         assert line in done.stdout
+
+
+def test_a_task_without_its_type_detail_block_fails(check, sound):
+    rc, out = check(sound.replace("**Type:** api-workflow", "**Type:** http-request", 1))
+    assert rc == 1
+    assert "a http-request task needs its type detail block" in out
+
+
+def test_an_undeclared_variable_fails(check, sound):
+    rc, out = check(sound.replace("**Design Rationale:**", "**Design Rationale:** reads =vars.ghostVar;", 1))
+    assert rc == 1
+    assert "=vars not declared in § Case Variables: ghostVar" in out
+
+
+def test_a_secondary_stage_without_its_interrupting_line_fails(check, sound):
+    assert "**Interrupting:** Yes" in sound
+    rc, out = check(sound.replace("**Interrupting:** Yes", "", 1))
+    assert rc == 1
+    assert "no '**Interrupting:** Yes' line under its heading" in out
+
+
+def test_a_placeholder_variable_sla_row_fails(check, sound):
+    table = "##### Stage Variable SLA Rules\n\n| Expression | SLA | Unit | Display Name |\n|---|---|---|---|\n| — | 4 | h | — |\n\n#### Tasks"
+    rc, out = check(sound.replace("#### Tasks", table, 1))
+    assert rc == 1
+    assert "a Variable SLA Rules row has no expression" in out
+    assert "a Stage Variable SLA Rules row has no Display Name" in out
+
+
+def test_an_illegal_rule_for_its_gate_fails(check, sound):
+    rc, out = check(sound.replace("| required-stages-completed", "| required-tasks-completed", 1))
+    assert rc == 1
+    assert "is not a legal case complete rule" in out

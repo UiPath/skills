@@ -26,6 +26,28 @@ const HEADINGS = [
 ];
 const STAGE_MARKERS = ["**Type:**", "**Design Rationale:**", "#### Stage Entry Conditions", "#### Stage Exit Conditions", "#### Tasks"];
 const TASK_MARKERS = ["**Type:**", "**Activation Mode:**", "**Design Rationale:**", "**Entry Condition:**", "**Task envelope**"];
+const PROC = ["Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"];
+const CONN = ["Connector Task Detail", "**Connector:**", "**Resolved Resource:**"];
+const DETAIL = {
+  action: ["Action Task Detail", "**HITL Implementation:**"],
+  "wait-for-connector": ["Connector Task Detail", "**Connector:**", "**Trigger / Event:**"],
+  "execute-connector-activity": CONN, "external-agent": CONN, "external-workflow": CONN,
+  "wait-for-timer": ["Timer Task Detail", "**Timer Configuration:**", "**Duration:**", "**Timer:**"],
+  "case-management": ["Child Case Task Detail", "**Child Case:**"],
+  "http-request": ["HTTP Request Task Detail", "**Method:**", "**URL:**"],
+  script: ["Script Task Detail", "```js", "```javascript"],
+  "document-extraction": ["Document Extraction Task Detail", "**IXP Deployment:**", "**Model Name:**"],
+  process: PROC, agent: PROC, rpa: PROC, "api-workflow": PROC, function: PROC, "business-rule": PROC, "flow-process": PROC,
+};
+// legal rules per gate (the case schema's rule types)
+const GATE = {
+  "stage-entry": ["case-entered", "selected-stage-completed", "selected-stage-exited", "wait-for-connector", "user-selected-stage", "sla-status-change", "api-event"],
+  "task-entry": ["current-stage-entered", "selected-tasks-completed", "wait-for-connector", "adhoc", "runs-sequentially", "sla-status-change", "api-event"],
+  "stage-complete": ["required-tasks-completed", "wait-for-connector", "api-event"],
+  "stage-exit": ["selected-tasks-completed", "wait-for-connector", "api-event"],
+  "case-complete": ["required-stages-completed", "wait-for-connector", "api-event"],
+  "case-exit": ["selected-stage-completed", "selected-stage-exited", "wait-for-connector", "api-event"],
+};
 const RESPONSES = new Set(["notify-only", "start-task", "enter-stage", "exit-stage", "exit-case"]);
 const STAGE = /^###\s+(Stage\s+\d+|Secondary Stage|Exception Stage):\s*(.*?)\s*$/gm;
 const TASK = /^#####\s+Task\s+S?\d+\.\d+:\s*(.+?)\s*$/gm;
@@ -53,6 +75,10 @@ if (draftMode) {
   process.exit(0);
 }
 for (const h of HEADINGS) if (!has(h)) fails.push(`missing heading '${h}'`);
+const FAMILIES = ["Integration Service Connectors", "API Workflows", "Agents", "Processes & RPA", "Child Cases", "External Agents"];
+if (has("## Section 4: Integrations") && !FAMILIES.some((f) => has(`### ${f}`)) && !text.includes("> None.")) {
+  fails.push(`Section 4 has none of its family headings (${FAMILIES.map((f) => `### ${f}`).join(", ")}) and no '> None.'`);
+}
 
 // stage and task blocks
 const section3 = text.search(/^## Section 3: Personas & App Views\s*$/m);
@@ -71,6 +97,9 @@ stages.forEach((s, i) => {
     const tn = strip(t[1]);
     if (tn.includes(":")) fails.push(`task name '${tn}' holds a ':'`);
     for (const m of TASK_MARKERS) if (!tb.includes(m)) fails.push(`task '${tn}': missing ${m}`);
+    const ty = tb.match(/^\*\*Type:\*\*\s*`?([a-z-]+)/m)?.[1];
+    const detail = ty && DETAIL[ty];
+    if (detail && !detail.some((m) => tb.includes(m))) fails.push(`task '${tn}': a ${ty} task needs its type detail block — '#### ${detail[0]}' (case-sdd-task-details-template.md)`);
   });
 });
 
@@ -181,6 +210,101 @@ for (const { args, interrupting } of calls) {
   const declared = scoped.map((r) => (r.interrupting ?? "").toLowerCase());
   if (!declared.includes(interrupting)) fails.push(`sla-status-change(${args}): the entry row says Interrupting ${interrupting}, the SLA Response Map ${declared.join("/")}`);
 }
+
+// SLA durations and Variable SLA Rules rows: a conditional row carries its expression (and, on a stage, a title)
+{
+  let mode = null, titles = new Set();
+  const duration = (n, unit, at) => {
+    const c = Number(n);
+    if (Number.isNaN(c)) return;
+    if (c <= 0) fails.push(`${at}: an SLA count is positive`);
+    if (unit.trim().toLowerCase() === "min" && (c < 15 || c > 1000)) fails.push(`${at}: an SLA in minutes lies within 15–1000`);
+  };
+  text.split("\n").forEach((line, i) => {
+    const s = line.trim(), at = `line ${i + 1}`;
+    if (s === "#### Stage SLA") { mode = "stage-sla"; return; }
+    if (s === "### Variable SLA Rules") { mode = "var"; titles = new Set(); return; }
+    if (s === "##### Stage Variable SLA Rules") { mode = "stage-var"; titles = new Set(); return; }
+    if (s.startsWith("#")) { mode = null; return; }
+    const cs = s.match(/^\|\s*Case-Level SLA\s*\|\s*([0-9]+(?:\.[0-9]+)?)\s+([A-Za-z]+)/i);
+    if (cs) duration(cs[1], cs[2], at);
+    if (!s.startsWith("|")) return;
+    const c = s.replace(/^\||\|$/g, "").split("|").map((x) => x.trim());
+    if (mode === "stage-sla" && c.length >= 2 && /^\d+(\.\d+)?$/.test(c[0])) duration(c[0], c[1], at);
+    if ((mode === "var" || mode === "stage-var") && c.length >= 3 && /^\d+(\.\d+)?$/.test(c[1])) {
+      duration(c[1], c[2], at);
+      if (dash(c[0].replace(/^["']|["']$/g, ""))) fails.push(`${at}: a Variable SLA Rules row has no expression — a time-based SLA has no such row: delete it (the table reads '> None.')`);
+      if (mode === "stage-var") {
+        const title = strip((c[3] ?? "").replace(/^["']|["']$/g, ""));
+        if (!title || dash(title)) fails.push(`${at}: a Stage Variable SLA Rules row has no Display Name`);
+        else if (titles.has(title)) fails.push(`${at}: Display Name '${title}' repeats in its table`);
+        else titles.add(title);
+        if (title.includes(":")) fails.push(`${at}: Display Name '${title}' holds a ':'`);
+      }
+    }
+  });
+}
+
+// § Case Variables: every =vars.<name> is declared, and every consumed variable is produced
+const declared = new Map();
+for (const m of text.matchAll(/^\|\s*`?([A-Za-z]\w*)`?\s*\|\s*(In|Out|Variable)\s*\|\s*[^|]*\|\s*([^|]*?)\s*\|\s*[^|]*\|\s*([^|]*?)\s*\|/gm)) {
+  declared.set(m[1], { cat: m[2], trig: m[3].trim(), def: m[4].trim() });
+}
+if (!declared.size) fails.push("no § Case Variables rows '| <name> | In / Out / Variable | <type> | <source trigger> | <source field> | <default> | <description> |'");
+const refs = new Set([...text.matchAll(/=vars\.([A-Za-z]\w*)/g)].map((m) => m[1]));
+refs.delete("X");
+const undeclared = [...refs].filter((r) => !declared.has(r)).sort();
+if (declared.size && undeclared.length) fails.push(`=vars not declared in § Case Variables: ${undeclared.join(", ")} — add each row, or point the expression at the declared name`);
+const produced = new Set([...text.matchAll(/->\s*([A-Za-z]\w*)/g), ...text.matchAll(/\b([A-Za-z]\w*)\s*=\s*(?!=)/g)].map((m) => m[1]));
+const unproduced = [...refs].filter((r) => { const v = declared.get(r); return v && v.cat !== "In" && !v.def && !v.trig && !produced.has(r); }).sort();
+if (unproduced.length) fails.push(`variable(s) consumed but never produced: ${unproduced.join(", ")} — give each a source trigger, a default, or a task output '-> <name>'`);
+
+// gates: each WHEN is legal for its table; secondary stages interrupt; the case can complete
+let gate = null, cur = null, marksIdx = -1, etIdx = -1;
+const stageInfo = new Map();
+for (const line of text.split("\n")) {
+  const s = line.trim();
+  const st = s.match(/^###\s+(Stage \d+|Exception Stage|Secondary Stage):\s*(.*)/);
+  if (st) { cur = st[2].replace(/\(.*/, "").trim(); stageInfo.set(cur, { sec: !st[1].startsWith("Stage"), exits: new Set(), interrupting: null }); gate = null; continue; }
+  if (/^\*\*Stage Kind:\*\*\s*`?secondary/i.test(s) && cur) { stageInfo.get(cur).sec = true; continue; }
+  if (s.startsWith("### Case Exit Conditions")) { gate = "case-exit"; continue; }
+  if (s.startsWith("####") && s.includes("Entry Conditions")) { gate = "stage-entry"; continue; }
+  if (s.startsWith("####") && s.includes("Exit Conditions")) { gate = "stage-exit"; continue; }
+  if (s.startsWith("**Entry Condition")) { gate = "task-entry"; continue; }
+  const im = s.match(/^\*\*Interrupting:\*\*\s*(Yes|No)/);
+  if (im) { if (cur) stageInfo.get(cur).interrupting = im[1]; gate = null; continue; }
+  if (s.startsWith("#") || s === "---" || s.startsWith("**")) { gate = null; continue; }
+  if (!gate || !s.startsWith("|")) continue;
+  const cells = s.replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
+  if (cells[0] === "WHEN") {
+    const h = cells.map((c) => c.toLowerCase());
+    marksIdx = h.findIndex((x) => x.startsWith("marks"));
+    etIdx = h.findIndex((x) => x.includes("exit type"));
+    continue;
+  }
+  if (!cells[0] || /^[-: ]+$/.test(cells[0])) continue;
+  const rule = cells[0].match(/^`?\s*([a-z][a-z]+(?:-[a-z]+)*)/)?.[1];
+  if (!rule) continue;
+  const where = cur ?? "case";
+  let g = gate;
+  if (gate === "stage-exit" || gate === "case-exit") {
+    const marks = (marksIdx >= 0 && marksIdx < cells.length ? cells[marksIdx] : cells.at(-1)).toLowerCase().startsWith("yes");
+    if (marks) g = gate === "stage-exit" ? "stage-complete" : "case-complete";
+    if (gate === "stage-exit") {
+      const et = etIdx >= 0 && etIdx < cells.length ? cells[etIdx] : cells.length >= 4 ? cells.at(-2) : null;
+      if (et != null && cur) stageInfo.get(cur).exits.add(et);
+      if (et && !["exit-only", "wait-for-user", "return-to-origin"].includes(et)) fails.push(`${where}: exit type '${et}' is none of exit-only, wait-for-user, return-to-origin`);
+      if (et === "return-to-origin" && !(marks && ["required-tasks-completed", "wait-for-connector"].includes(rule))) fails.push(`${where}: a return-to-origin exit is required-tasks-completed or wait-for-connector with Marks Stage Complete Yes`);
+    }
+  }
+  if (!GATE[g].includes(rule)) fails.push(`${where}: '${rule}' is not a legal ${g.replace("-", " ")} rule — legal: ${GATE[g].join(", ")}`);
+}
+for (const [name, info] of stageInfo) {
+  if (!info.sec) continue;
+  if (!info.interrupting) fails.push(`secondary stage '${name}': no '**Interrupting:** Yes' line under its heading`);
+  else if (info.exits.has("return-to-origin") && info.interrupting !== "Yes") fails.push(`secondary stage '${name}' returns to its origin, so it is '**Interrupting:** Yes'`);
+}
+if (!text.includes("required-stages-completed")) fails.push("no required-stages-completed row in § Case Exit Conditions — the case can never complete");
 
 if (fails.length) {
   for (const f of fails) console.log(`FAIL: ${f}`);
