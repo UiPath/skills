@@ -30,7 +30,7 @@ UIPATH_NS = "http://uipath.org/schema/bpmn"
 # during discovery -- a mutation fixture sitting under this task's own
 # fixtures/ dir, or an installed node_modules/, must never be found instead
 # of the tree actually being graded.
-EXCLUDED_DIR_NAMES = {"node_modules", "fixtures", ".git"}
+EXCLUDED_DIR_NAMES = {"node_modules", "fixtures", ".git", ".flow-sdk"}
 
 GUID_RE = re.compile(
     r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
