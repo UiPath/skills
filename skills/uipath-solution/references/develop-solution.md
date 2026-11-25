@@ -69,6 +69,8 @@ A library is not a solution project: `projects add` refuses one with `A library 
 
 `add` is transactional: on success, both the `.uipx` entry and the matching `resources/solution_folder/{package,process}/<name>.json` files are created together; on failure, nothing is mutated.
 
+**`Data.ResourcesPending: true` means the project is registered but its resources are not created yet.** Some project types (a coded app, for example) pick their resource template from a file only their own tool can read. `projects add` and `projects import` then register the project, warn, and name the tool to install. The resources arrive at the next `resources refresh`, `pack` or `upload`. For a coded app, run `uip tools install codedapp` first.
+
 ## Step 3: Import External Projects
 
 Copy a project from outside the solution tree into the solution directory and register it.
@@ -162,6 +164,38 @@ Steps performed during refresh:
 4. **Sync external references** — for each cloud resource the solution depends on, calls Orchestrator/Apps APIs and writes:
    - The artefact files under `resources/solution_folder/<kind>/...`
    - A user-scoped debug overwrite at `userProfile/<userId>/debug_overwrites.json` linking the local skeleton to the cloud entity (key + folder + FQN). Studio Web's runtime needs the FQN populated to resolve "configured folder" lookups.
+
+### A Flow's bindings come from its `.flow`
+
+A Flow project declares its bindings in its `.flow` file, including bindings used only by subflow nodes. `uip maestro flow nodes create` / `delete` / `configure` also keep a derived `bindings_v2.json` beside the `.flow`, but `resources refresh`, `pack` and `upload` **ignore that file, even after a hand edit**. To change what a Flow binds, edit the `.flow` or run `uip maestro flow nodes configure`.
+
+- The `.flow` and every `$ref` chunk it pulls in must resolve inside the Flow's project folder (symlinks included). An outside source or chunk: refresh warns and adds no bindings; pack and upload stop. Move shared chunks into the project.
+- An unreadable `.flow` never falls back to an older binding file: refresh warns, pack and upload stop. Fix the named `.flow`, then retry.
+- A Flow project with no `.flow` may author `bindings_v2.json` instead; refresh reads it.
+
+### Refresh never removes a resource
+
+Delete the task or node that bound a process or app and its declaration stays in the solution, and deploy still provisions it. When every project's bindings were read, `refresh`, `pack` and `upload` warn about each process or app no binding names and no other resource depends on:
+
+```
+process "<name>" is declared in the solution but no project binds it, and deploy still provisions it. If nothing needs it, remove it: uip solution resources remove <key>
+```
+
+(`Data.Warnings` for refresh; stderr for all three.) Nothing is deleted for you. Run `uip solution resources remove <key> --output json` when the resource is no longer needed. A project's own resources and other kinds (queues, assets, …) are not checked.
+
+### A failed Resource Catalog lookup is not a "not found"
+
+`resources refresh`, `pack`, `upload`, `projects add` and `projects import` look each binding up in the Resource Catalog. When the lookup fails — 401/403, the catalog unreachable or throttling, or (on `pack`) no login — **nothing is created for the binding**: a local stub would deploy as a new, empty resource instead of the cloud one. A binding the solution already holds keeps its resource.
+
+| Command | On a failed lookup |
+|---|---|
+| `resources refresh` | Exits `0`; what it could not check is in `Data.Warnings` |
+| `projects add` / `import` | Logs a warning |
+| `pack`, `upload` | Fail when a binding the solution does **not** hold could not be resolved: `permission_denied` (`RetryWillNotFix`) for a refused login; `server_error` / `rate_limited` (`RetryLater`) for an outage or throttling; `authentication_required` with no login (`pack` only) |
+
+Read refresh's `Data.Warnings` before trusting a `Result: Success`. A case role is provisioned from the project's own files and never looked up, so a solution whose only unresolved bindings are case roles packs with no login.
+
+**CI on an external app:** the catalog may refuse the app's login. Run `uip solution resources refresh --output json` under a user login, commit the solution's `resources/` folder, and let the pipeline's `pack` use them as they are.
 
 ### App resources
 
@@ -286,8 +320,8 @@ uip solution resources add --source remote --kind Queue --name InvoiceQueue \
 |--------|--------|---------|
 | `--source <source>` | `local`, `remote` | **required** |
 | `--kind <kind>` | Any kind RCS indexes (e.g. Queue, Asset, Bucket, Process, Connection, App, Index, Trigger, Entity, ChoiceSet). Case-insensitive lookup; trimmed and lowerFirstChar-applied before persistence | **required** |
-| `--name <name>` | Resource name (max 256 chars; path separators, control chars, and `: * ? " < > |` are rejected). Per-kind Orchestrator limits are stricter — queues cap at 50 | **required** |
-| `--type <type>` | Resource subtype (e.g. `Text`/`Bool`/`Integer` for Asset, connector type for Connection). On `--source remote` it is inferred from the matched resource when omitted; pass it only to override | None |
+| `--name <name>` | Resource name (max 256 chars; path separators, control chars, and `: * ? " < > |` are rejected). Per-kind Orchestrator limits are stricter — queues cap at 50. Optional with `--cloud-key`, which takes the cloud name; if passed there it must match that name (case-insensitive), or the add fails with `invalid_argument` naming the real one | **required**, except with `--cloud-key` |
+| `--type <type>` | Resource subtype, case-insensitive (asset: `Text`/`Integer`/`Bool`/`Credential`/`Secret` or `stringAsset`/`integerAsset`/`booleanAsset`/`credentialAsset`/`secretAsset`; connection: connector type). Refused for a kind with no subtypes (Queue) and for a subtype the kind lacks (`Instructions` lists the valid ones). `--type ""` is refused for every kind — omit the option instead. On `--source remote` it must match the resource's own type: it only narrows same-name matches and never changes what is imported; omitted, the type comes from the match | None |
 | `--folder-path <path>` | Orchestrator folder for remote lookup. **Not valid with `--source local`** — virtual stubs live under the solution folder | None |
 | `--cloud-key <guid>` | Skip RCS search, import this exact resource key. Only valid with `--source remote`; must be a GUID | None |
 | `--solution-folder <path>` | Path to solution root (must directly contain a `.uipx`) | Current working directory |
@@ -315,6 +349,16 @@ uip solution resources add --source remote --kind Queue --name InvoiceQueue \
 `Status` is `"Added"` (newly created), `"Unchanged"` (the resource is already in the solution) or `"Updated"` (a remote import of a new resource that also changed resources already in the solution: their dependency links, or hidden resources). `add` never re-imports a resource already in the solution, even when its cloud definition changed: pull that change with [Step 11a](#step-11a-pull-a-changed-cloud-definition---source-remote). For local stubs `Folder` is always `solution_folder` and `Source` is `"local"`; for remote imports, the resource lands locally under `solution_folder` regardless of which cloud folder it came from (debug overwrites carry the cloud-folder context for deploy).
 
 A local stub starts from the kind's defaults: a queue has automatic retry on, `maxNumberOfRetries: 1` and `enforceUniqueReference: false`; an asset has an empty value, which deploy refuses until a value is set or an existing asset linked ([Local virtual asset § What happens at deploy](scenarios/virtual-resource.md#what-happens-at-deploy)). When the design needs other values, set them with [`resources edit`](#step-11-edit-a-resource) right after `add`.
+
+### `--source local` does not check the kind
+
+Only queues, assets, buckets and connections can be virtual (created by the deploy); a connection needs its `authenticationType` set ([Virtualizable vs non-virtualizable](#virtualizable-vs-non-virtualizable-resources)). Processes, apps, indexes and entities must already exist. `resources add --source local` does **not** enforce this: it prints `Result: Success` and writes a stub for any kind, and the deploy fails later. Catch it early:
+
+- Refresh does not check a stub `add --source local` wrote: it skips one that covers a binding, and an unbound process or app gets only the unused-declaration warning. Its `Link it before deploy: uip solution deploy config link <file> "<name>" --name <existing-name>` warning comes only for a stub refresh mints itself from a binding the Resource Catalog lacks: link that resource at deploy with `deploy config link` ([Link to an Existing Orchestrator Resource](pack-and-deploy.md#link-to-an-existing-orchestrator-resource)), or import it with `--source remote`. A connection never gets that warning: a declared connection gets `Connection <key> not found in Resource Catalog`, expected until the deploy creates it.
+- A local connection's stub has an empty `authenticationType`, which deploy refuses before install (`[CNS1055]`). Set it, with the connector, right after `add`: `uip solution resources edit <RESOURCE_KEY> --patch '{"authenticationType":"AuthenticateAfterDeployment","connectorKey":"<CONNECTOR_KEY>","connectorVersion":"<CONNECTOR_VERSION>"}' --output json` (`<CONNECTOR_VERSION>` is `Data[0].Version` from `uip is connectors metadata <CONNECTOR_KEY> --output json`). `AuthenticateAfterDeployment`: the deploy creates the connection unauthenticated and the deployment ends `NeedsSetupToActivate` (`[CNS1072]`). `ConfigurableByUsers`: the deploy creates no connection and the deployment activates.
+- For a kind Orchestrator owns, confirm the target exists first: `uip solution resources list --source remote --kind <kind> --output json`.
+
+Adding a name that already exists locally with a different `--type` fails; it does not return the existing resource.
 
 ### Data Fabric kinds
 
@@ -361,7 +405,7 @@ Two cases produce this:
 
 Distinguish this from a **transient lookup failure**: if the Orchestrator search itself errors (RCS/API outage), `add` reports a separate `"Failed to look up the resource in Orchestrator by key"` instead of the not-found message above. Treat that one as retry-able; treat `"No remote resource found with key …"` as a key/folder to fix.
 
-An *already-imported* key is not an error — the idempotency check runs first, so re-adding it returns `Status: "Unchanged"`. On a successful by-key import the resource's subtype is taken from the match automatically (same as the name-search path), so `--type` is only needed to override it.
+An *already-imported* key is not an error — the idempotency check runs first, so re-adding it returns `Status: "Unchanged"`. On a successful by-key import the resource's subtype is taken from the match automatically (same as the name-search path); a `--type` passed there must match it.
 
 ### How it relates to `refresh`
 
@@ -383,7 +427,17 @@ uip solution resources remove 8f3a1b2c-1234-4abc-9def-0123456789ab --output json
 uip solution resources remove 8f3a1b2c-... --solution-folder ./InvoiceAutomation --output json
 ```
 
-`<resource-key>` is positional and required, validated as a GUID. Use `resources list --source local` to discover keys.
+`<resource-key>` is positional and required: a GUID for imported cloud resources, or a compound key such as `MyFunction.api.MyFunction.1:1.0.0` for package resources. Pass the `Key` that `resources list --source local` prints.
+
+`remove` refuses three kinds of resource (exit `1`, `ErrorCode: invalid_argument`); retrying the same key never helps:
+
+| Refused | Do instead |
+|---|---|
+| A project's own resource (`DeletingProjectArtefactResourceIsNotAllowed`) | Remove the project: `uip solution projects remove <PROJECT_PATH>` |
+| A resource another resource still references, such as a `package` declaration a resource pins | Remove the referencing resources first; a `package` declaration goes with the resource that pins it |
+| A hidden resource the solution manages (`DeletingHiddenResourceIsNotAllowed`) | Leave it: the solution removes it with the resource that uses it, and no command removes it on its own |
+
+For a coded app, `resources remove` alone does not stick: the next `resources refresh` or `pack` adds the resource back from the app's `source/uipath_resources.ts`. Delete its `resource.<kind>(...)` call there too.
 
 | Option | Values | Default |
 |--------|--------|---------|
@@ -513,6 +567,20 @@ Four ways it refuses:
 
 > This replaces the old remove-and-re-add workaround. `resources remove <key>` followed by `refresh` still works, but it drops every local edit rather than the ones you were shown, and it needs the binding to still exist.
 
+## Debug or Run the Solution
+
+**Debugging is not deploying.** To debug, run or test a solution, run its lead project (the one the user names, or the one that starts the process and calls the others) with that project type's debug command, after a refresh:
+
+```bash
+uip solution resources refresh --output json
+uip maestro flow debug <PROJECT_DIR>                                   # Flow
+uip maestro case debug <PROJECT_DIR>                                   # Case
+uip agent debug <PROJECT_DIR>                                          # Agent
+uip rpa debug start --file-path <FILE> --project-dir <PROJECT_DIR>    # RPA
+```
+
+Flow, case and agent debugs upload to Studio Web and run in your Personal Workspace by default; the flow and case upload overwrites the Studio Web solution whose `SolutionId` the `.uipx` holds, so confirm with the user before debugging a solution downloaded from Studio Web. `rpa debug start` runs on this machine, in headless Studio by default (`--remote`: the configured unattended robot). None of them publishes a package or creates a deployment or folder. Use `pack` → `publish` → `deploy run` only when the user means to deploy.
+
 ## Step 12: Upload to Studio Web
 
 Upload the solution for browser-based editing. Accepts a directory, `.uipx` file, or `.uis` archive.
@@ -541,6 +609,16 @@ MyAgent/generated/
 ```
 
 A pattern that would drop a project the `.uipx` lists is refused with `ErrorCode: invalid_argument` — take the project out with `uip solution projects remove` instead. `uip codedapp push` reads the same `.uipignore`; `uip solution pack` does not.
+
+### When Studio Web refuses the upload
+
+| Failure | Cause | Fix |
+|---|---|---|
+| 401 or 403 whose `Instructions` name `invalid_token` | Studio Web rejected the token itself: expired, or issued for another environment or audience | Logging in again is worth one try (in CI, mint a new client-credentials token). Confirm the token was issued for the organization being called. If the same refusal comes back, treat it as the next row |
+| Any other 401 or 403 | The token is valid and not allowed to do this in Studio Web, so logging in again mints the same token and fails the same way. `ErrorCode` is `permission_denied`, except a user's 401, which keeps `authentication_required`; it is still not a login problem | Do not log in again. Read `Instructions`. For an external app, check its Studio Web (`StudioWebS2S`) grants, not only the Orchestrator and Solutions ones; for a user, check Studio Web access in the tenant. Confirm you are logged into the organization and tenant the solution belongs to |
+| HTTP 500 with `Context.ErrorCode: 20039` (`Path contains invalid characters`) on a `.uis` upload | A file inside a project folder has a control character or one of `: * ? " < > |` in its name; Studio Web does not say which | Retrying fails the same way. Rename the file, or upload the solution directory instead — the CLI then names the file (`invalid_argument`) before sending anything. `.uipignore` can also leave it out |
+
+A `SolutionId` from another tenant is not a 401/403: Studio Web answers 404 for an id the session cannot see. `upload` then imports it as a new solution (from a directory, it writes the new id to the `.uipx`); with `--force` it fails `ErrorCode: not_found` instead.
 
 > A project's target framework (platform) is fixed at creation and **cannot be mutated** — re-uploading or editing configuration will not change it. To target a different platform (e.g., Windows → Cross-platform), **recreate the project** with the correct target framework and upload that.
 
