@@ -31,16 +31,34 @@ def put_connector(root, key=checker.CONNECTOR_KEY):
     return root
 
 
-@pytest.mark.parametrize("folder", [".", "acme-chat-bridge", "nested/Acme Chat Bridge"])
-def test_finds_connector_in_chosen_directory(tmp_path, folder):
-    root = put_connector(tmp_path / folder)
+@pytest.mark.parametrize("folder", ["<root>", "acme-chat-bridge", "nested/Acme Chat Bridge"])
+@pytest.mark.parametrize("workspace_arg", ["<absolute>", "."])
+def test_finds_connector_in_chosen_directory(tmp_path, folder, workspace_arg):
+    # "<root>": the connector sits at the workspace root itself. ".": the form
+    # both task criteria pass, run from the workspace as the grader does.
+    relative = Path(".") if folder == "<root>" else Path(folder)
+    root = put_connector(tmp_path / relative)
     assert checker.resolve_connector_root(tmp_path) == root
+    absolute = workspace_arg == "<absolute>"
     result = subprocess.run(
-        [sys.executable, str(CHECKER), str(tmp_path), "--print-root"],
-        capture_output=True, text=True,
+        [sys.executable, str(CHECKER), str(tmp_path) if absolute else ".", "--print-root"],
+        capture_output=True, text=True, cwd=tmp_path,
     )
     assert result.returncode == 0, result.stderr
-    assert result.stdout.strip() == str(root)
+    assert result.stdout == f"{root if absolute else relative}\n"
+
+
+@pytest.mark.parametrize("flags", [
+    ["--print-roots"], ["--hook"], ["--hooks", "--verbose"], ["--hooks", "--print-root"],
+])
+def test_refuses_unknown_or_conflicting_flags(tmp_path, flags):
+    put_connector(tmp_path / "chosen")
+    result = subprocess.run(
+        [sys.executable, str(CHECKER), str(tmp_path), *flags], capture_output=True, text=True,
+    )
+    assert result.returncode == 2
+    assert result.stdout == f"{checker.__doc__}\n"
+    assert not result.stderr
 
 
 def test_ignores_other_connectors_and_dependency_copies(tmp_path):
@@ -97,7 +115,10 @@ def test_both_tasks_use_discovery_for_both_graders(task):
     criteria = yaml.safe_load((TASKS / task).read_text())["success_criteria"]
     commands = [entry["command"] for entry in criteria if entry["type"] == "run_command"]
     assert len(commands) == 2
-    assert '--print-root) &&' in commands[0]
-    assert '--connector-dir "$CONNECTOR_ROOT"' in commands[0]
+    assert commands[0] == (
+        'CONNECTOR_ROOT=$(python3 "$REFERENCE_DIR/check_byo_connector.py" . --print-root)'
+        ' && uip is connectors builder validate --connector-dir "$CONNECTOR_ROOT"'
+    )
+    assert all("\n" not in command for command in commands)
     assert '"$REFERENCE_DIR/check_byo_connector.py" .' in commands[1]
     assert ("--hooks" in commands[1]) == task.startswith("chat-bridge-e2e/")
