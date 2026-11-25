@@ -190,10 +190,24 @@ def sole_call_arguments(cell: str, model: str) -> str:
     calls = model_calls_in(cell, model)
     if not calls:
         fail(f"the cell {cell!r} does not call {model}(...)")
-    if cell.strip() not in (f"{model}({calls[0]})", f"{model} ({calls[0]})"):
+    bare = unwrapped(cell)
+    if bare not in (f"{model}({calls[0]})", f"{model} ({calls[0]})"):
         fail(f"the cell {cell!r} is not just the result of {model}(...); the prompt asks for that "
              f"result and nothing added to it")
     return calls[0]
+
+
+def unwrapped(text: str) -> str:
+    """`text` without parentheses that wrap the whole of it. `(f(x))` is the expression `f(x)`."""
+    bare = text.strip()
+    while bare.startswith("(") and bare.endswith(")"):
+        depth = 0
+        for cursor, char in enumerate(outside_strings(bare)):
+            depth += (char == "(") - (char == ")")
+            if depth == 0 and cursor < len(bare) - 1:
+                return bare  # the opening paren closes early, so it wraps only part of the text
+        bare = bare[1:-1].strip()
+    return bare
 
 
 def answering_cell(decision: ET.Element, inputs: dict) -> str:
@@ -211,6 +225,13 @@ def answering_cell(decision: ET.Element, inputs: dict) -> str:
         return (literal.findtext("dmn:text", default="", namespaces=NS) or "").strip()
     if table is None:
         fail(f"decision {decision.get('name')!r} carries neither a table nor a literal expression")
+    policy = table.get("hitPolicy", "UNIQUE")
+    # COLLECT and RULE ORDER answer with every matching row, so the first one is not the answer.
+    # `rules_check.evaluate` refuses them too; this path has to agree or a COLLECT table would be
+    # graded on a row that is only part of what it returns.
+    if policy not in ("FIRST", "UNIQUE", "ANY"):
+        fail(f"decision {decision.get('name')!r} has hit policy {policy}, which answers with more "
+             f"than one row; this check grades a decision that answers with one value")
     columns = input_columns(table)
     # Without a column the caller supplies, `all(...)` is vacuously true and the first row always
     # "fires" — so a table keyed on something else entirely would be graded on row one.

@@ -17,6 +17,7 @@ import re
 import shutil
 import sys
 import tempfile
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "_shared"))
@@ -27,6 +28,7 @@ from graph_check import (  # noqa: E402
     decision_for_output,
     engine_outputs,
     knowledge_models,
+    required,
     same_value,
 )
 from rules_check import NS, fail, find_project, load_graph  # noqa: E402
@@ -83,7 +85,7 @@ def _fee_follows_the_model(project: Path) -> None:
         copied = probe / project.name
         dmn_file = load_graph(copied)[0]
         before = dmn_file.read_text(encoding="utf-8")
-        mutated = _model_answers(before, PROBE_RATE)
+        mutated = _model_answers(before, _the_model_the_fee_calls(load_graph(copied)[1]), PROBE_RATE)
         dmn_file.write_text(mutated, encoding="utf-8")
         # One input from each band: a fee that calls the model for Large and hardcodes Small's
         # rate passes every case above and a probe that only exercises Large.
@@ -99,9 +101,27 @@ def _fee_follows_the_model(project: Path) -> None:
         shutil.rmtree(probe.parent, ignore_errors=True)
 
 
-def _model_answers(xml: str, rate: float) -> str:
-    """`xml` with the knowledge model's body replaced by a constant, its parameters untouched."""
-    body = re.search(r"(<(\w+:)?encapsulatedLogic\b[^>]*>)(.*?)(</(\w+:)?encapsulatedLogic>)", xml, re.S)
+def _the_model_the_fee_calls(root: ET.Element) -> str:
+    """The id of the one knowledge model the fee requires.
+
+    Not the first model in the file: a rule may declare a helper beside the rate model, and
+    replacing the helper's body would leave the fee unchanged and fail work that is correct.
+    """
+    needed = required(decision_for_output(root, "fee"), "requiredKnowledge")
+    if len(needed) != 1:
+        fail(f"the fee requires {len(needed)} knowledge models ({needed}); this probe varies the one "
+             f"the fee calls, and with several the fee it should answer is not determined")
+    return needed[0]
+
+
+def _model_answers(xml: str, model_id: str, rate: float) -> str:
+    """`xml` with that knowledge model's body replaced by a constant, its parameters untouched."""
+    model = re.search(rf"<(\w+:)?businessKnowledgeModel\b[^>]*\bid=\"{re.escape(model_id)}\".*?"
+                      rf"</(\w+:)?businessKnowledgeModel>", xml, re.S)
+    if model is None:
+        fail(f"the file holds no businessKnowledgeModel with id {model_id!r}")
+    body = re.search(r"(<(\w+:)?encapsulatedLogic\b[^>]*>)(.*?)(</(\w+:)?encapsulatedLogic>)",
+                     model.group(0), re.S)
     if body is None:
         fail("the knowledge model declares no <encapsulatedLogic>; check_knowledge_models should have said so")
     parameters = "".join(re.findall(r"<(?:\w+:)?formalParameter\b[^>]*/>", body.group(3)))
@@ -109,4 +129,6 @@ def _model_answers(xml: str, rate: float) -> str:
         fail("the knowledge model declares no <formalParameter>, so its callers pass nothing")
     constant = (f'<literalExpression id="literalExpression_probe" typeRef="number">'
                 f"<text>{rate}</text></literalExpression>")
-    return xml.replace(body.group(0), body.group(1) + parameters + constant + body.group(4), 1)
+    return xml.replace(model.group(0),
+                       model.group(0).replace(body.group(0),
+                                              body.group(1) + parameters + constant + body.group(4), 1), 1)

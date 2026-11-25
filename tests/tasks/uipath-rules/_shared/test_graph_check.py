@@ -615,3 +615,33 @@ class TestSoleCallArguments:
     def test_a_cell_that_does_not_call_the_model_is_refused(self):
         with pytest.raises(SystemExit):
             gc.sole_call_arguments("0", "discounted")
+
+
+class TestRedundantParentheses:
+    """`(f(x))` is the expression `f(x)`; refusing it failed correct FEEL."""
+
+    def test_one_pair_is_the_same_expression(self):
+        assert gc.sole_call_arguments("(discounted(50, tier))", "discounted") == "50, tier"
+
+    def test_nested_pairs_are_too(self):
+        assert gc.sole_call_arguments("((discounted(50, tier)))", "discounted") == "50, tier"
+
+    def test_parentheses_round_only_part_of_the_cell_stay_refused(self):
+        with pytest.raises(SystemExit):
+            gc.sole_call_arguments("(discounted(50, tier)) + (100)", "discounted")
+
+
+class TestHitPolicyIsRespected:
+    def test_a_collect_table_is_not_graded_on_one_row(self):
+        # COLLECT answers with every matching row, so the first is only part of the answer.
+        # `rules_check.evaluate` already refuses these policies; this path has to agree.
+        model = 'xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"'
+        decision = ET.fromstring(f'''<decision {model} name="freight">
+          <decisionTable hitPolicy="COLLECT">
+            <input><inputExpression typeRef="number"><text>tier</text></inputExpression></input>
+            <output name="freight" typeRef="number"/>
+            <rule><inputEntry><text>-</text></inputEntry><outputEntry><text>discounted(50, tier)</text></outputEntry></rule>
+            <rule><inputEntry><text>-</text></inputEntry><outputEntry><text>999</text></outputEntry></rule>
+          </decisionTable></decision>''')
+        with pytest.raises(SystemExit):
+            gc.answering_cell(decision, {"tier": 15})
