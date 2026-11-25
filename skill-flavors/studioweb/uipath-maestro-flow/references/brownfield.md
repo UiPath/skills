@@ -67,6 +67,10 @@ node and its code to the user.
   agent keeps that resource.
 <!--skill-flavor:resource-install:end-->
 
+<!--skill-flavor:swap-connection-finish:start-->
+After step 2, and step 3 when it applies, add the new connection to the solution: [the connector loop](../SKILL.md#the-connector-loop-in-studio-web), step 7. No other step: do not compile a scratch copy.
+<!--skill-flavor:swap-connection-finish:end-->
+
 <!--skill-flavor:draft-nodes:start-->
 A canvas-saved flow often holds **draft** nodes: a connector with no connection
 yet, a required input left empty, a generic operation with no object picked, a
