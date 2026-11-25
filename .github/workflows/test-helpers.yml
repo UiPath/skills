@@ -340,6 +340,9 @@ jobs:
       - name: Run BPMN contract guards
         run: pytest tests/scripts/test_bpmn_connector_request_contract.py tests/scripts/test_bpmn_doc_examples_parse.py tests/scripts/test_bpmn_draft_reply_contract.py tests/scripts/test_bpmn_project_scaffold_contract.py tests/scripts/test_bpmn_public_io_contract.py tests/scripts/test_bpmn_script_task_contract.py -v
 
+      - name: Run Flow contract guards
+        run: pytest tests/scripts/test_flow_draft_reply_contract.py -v
+
   catalog-build-guards:
     runs-on: uipath-ubuntu-latest
     name: catalog build integrity guards

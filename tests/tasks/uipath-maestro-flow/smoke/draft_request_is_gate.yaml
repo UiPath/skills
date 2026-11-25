@@ -1,0 +1,90 @@
+task_id: skill-flow-smoke-draft-request-is-gate
+description: >
+  The user writes a complete spec and one word, "draft", with no "show me
+  first". A request for a draft is the draft-mode trigger, so the agent builds
+  a mock skeleton and stops at the gate instead of building the real flow.
+  Counterpart of draft_word_is_not_gate.yaml, where "draft" names a step
+  inside the flow.
+tags: [uipath-maestro-flow, smoke, "mode:build", "lifecycle:generate", "shape:multi-node", "node:decision", "feature:approval-gate"]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 60
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  hey, can you create a flow draft for our expense claims? call it
+  "ExpenseClaims". someone submits a claim with an amount. if it's over 500 dollars
+  their manager has to approve it, otherwise it's approved automatically, then
+  our "Pay Expense" process pays it out and we email the employee that it's
+  been paid. don't upload it
+
+success_criteria:
+  - type: run_command
+    description: "The Flow is a skeleton: labelled mock boxes, a branch with labelled arms, a layout, and validate reports Valid"
+    command: "python3 $REFERENCE_DIR/smoke/check_draft_skeleton.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent made no registry discovery before the shape was approved"
+    tool_name: "Bash"
+    command_pattern: '(?:\buip|\$UIP)\s+maestro\s+(?:flow\s+)?registry\s+(?:pull|search|get|prepare)\b(?![^\n;&|]*\s(?:--help|-h)\b)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not upload, publish, deploy or run the flow, as the request forbids"
+    tool_name: "Bash"
+    command_pattern: '(?:\buip|\$UIP)\s+(?:solution\s+(?:upload|publish|deploy)|maestro\s+flow\s+(?:publish|debug(?!-)))\b(?![^\n;&|]*\s(?:--help|-h)\b)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The final message stops at the draft gate: the outline-ready line, the fixed question and its three options, and no built-flow report"
+    include_reference: false
+    include_agent_output: true
+    max_file_chars: 60000
+    weight: 3.0
+    pass_threshold: 1.0
+    prompt: |
+      The user asked for a flow draft and gave a complete spec. The word "draft" is
+      the request to see the shape first, so the agent must build an outline and
+      stop at the gate, not build the finished flow.
+
+      WHICH TEXT TO GRADE. AGENT OUTPUT holds every message the agent sent in this turn.
+      If it contains a `[RESULT - ...]` marker, grade the text after the LAST such
+      marker: that is the final message, whole. Otherwise the messages are joined,
+      possibly with no separator: grade the text from the LAST occurrence of
+      `ExpenseClaims: outline ready` (markdown emphasis around the name allowed) to the end, and ignore
+      what comes before it. If the phrase does not occur at all, item 1 fails.
+      The graded text is the agent's reply only. Your own judging instructions that
+      follow it (the request to call `submit_verdict`) are not part of it: never
+      count them as a line after the last item or anywhere else.
+
+      Check every item:
+
+      1. The first line starts with `ExpenseClaims: outline ready`.
+      2. The text contains the question `Is this the flow you want?` (markdown
+         emphasis allowed), and the options 1. Build it, 2. Change it and 3. Keep
+         it follow it. Nothing follows the third option.
+      3. The reply does not present ExpenseClaims as a built, working flow: no `built,
+         validated` line, no `Needs:`, `Assumed:` or `Unverified:` line, and no
+         claim that steps are wired or working.
+
+      Score 1.0 only if every item holds; otherwise 0.0. In findings, list each
+      failed item by number and quote the offending text.
+
+  # AskUserQuestion is Claude Code's tool and keeps the turn open. Other agents
+  # have no tool of that name, so this passes there. coder_eval cannot scope a
+  # criterion to one agent type: advisory, weight 0.
+  - type: command_not_executed
+    description: "Claude only (vacuous on other agents): the agent did not ask with AskUserQuestion"
+    tool_name: "AskUserQuestion"
+    command_pattern: '.*'
+    weight: 0
+    pass_threshold: 0

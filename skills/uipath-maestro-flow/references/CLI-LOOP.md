@@ -9,7 +9,7 @@ Choose one loop before any build command, as [SKILL.md — Lifecycle](../SKILL.m
 In eval/product mode, create the solution/project scaffold immediately after choosing the loop, before authoring. After the source first compiles, emit it into that nested project artifact—not `/tmp`—and keep the artifact current after every source edit.
 <!--skill-flavor:loop-choice:end-->
 
-Tenant discovery is not a loop phase. First choose the node ([SKILL.md, "Choose the node before writing it"](../SKILL.md)); `check` cannot flag a node never written, so a script or `mock()` substitution goes unflagged. Author from the task's words; source `check` names every owed tenant call—unresolved lookup, unmaterialized object, and out-of-snapshot field—with its exact `registry prepare` command. Spend that one expensive `registry prepare` call once, after the cheap pass finds all other errors.
+Tenant discovery is not a loop phase. First choose the node ([SKILL.md, "Choose the node before writing it"](../SKILL.md)), except in a [draft skeleton](draft-skeleton.md), which defers discovery to *Build it*; `check` cannot flag a node never written, so a script or `mock()` substitution goes unflagged. Author from the task's words; source `check` names every owed tenant call—unresolved lookup, unmaterialized object, and out-of-snapshot field—with its exact `registry prepare` command. Spend that one expensive `registry prepare` call once, after the cheap pass finds all other errors.
 
 Do not mix loops or use one mode as the other's probe; their output layouts and evidence contracts differ.
 

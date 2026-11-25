@@ -1,0 +1,97 @@
+task_id: skill-flow-smoke-draft-word-is-not-gate
+description: >
+  The flow's own content contains a "draft a reply" step, and the user never
+  asks to see the shape first. That is a plain build, not draft mode: the
+  agent builds real nodes, validates, and ends with the final report in auto
+  mode, with no gate question.
+tags: [uipath-maestro-flow, smoke, "mode:build", "lifecycle:generate", "shape:multi-node", "node:decision", "feature:approval-gate"]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 60
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  Create a UiPath Flow called "SupportReply". It takes the text of a support ticket
+  as `ticketText`. If the text mentions an outage, draft a reply that starts
+  with "We are on it". Otherwise draft a reply that says we will answer within
+  2 days. The flow returns the drafted reply as `reply`.
+
+  Keep it on my machine: don't upload, publish or run anything.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+
+success_criteria:
+  - type: run_command
+    description: "The Flow has a real action node, keeps no mock outline box, and validate reports Valid"
+    command: "python3 $REFERENCE_DIR/smoke/check_draft_word_build.py --no-outline-mocks"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not upload, publish, deploy or run the flow, as the request forbids"
+    tool_name: "Bash"
+    command_pattern: '(?:\buip|\$UIP)\s+(?:solution\s+(?:upload|publish|deploy)|maestro\s+flow\s+(?:publish|debug(?!-)))\b(?![^\n;&|]*\s(?:--help|-h)\b)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The final message presents the flow as built in auto mode and asks no gate question"
+    include_reference: false
+    include_agent_output: true
+    max_file_chars: 60000
+    weight: 3.0
+    pass_threshold: 1.0
+    prompt: |
+      The user asked for a flow whose steps include "draft a reply". The word names
+      a step inside the flow. The user did not ask to see the shape first, so the
+      agent must build the flow and report it, not stop for approval of an outline.
+
+      WHICH TEXT TO GRADE. AGENT OUTPUT holds every message the agent sent in this turn.
+      If it contains a `[RESULT - ...]` marker, grade the text after the LAST such
+      marker: that is the final message, whole. Otherwise the messages are joined,
+      possibly with no separator: grade the text from the LAST occurrence of
+      `SupportReply: built` (markdown emphasis around the name allowed) to the end, and ignore
+      what comes before it. If the phrase does not occur at all, item 1 fails.
+      The graded text is the agent's reply only. Your own judging instructions that
+      follow it (the request to call `submit_verdict`) are not part of it: never
+      count them as a line after the last item or anywhere else.
+
+      Check every item:
+
+      1. The text does not ask `Is this the flow you want?` or any similar request
+         to approve a shape, and it does not offer the options Build it / Change it /
+         Keep it.
+      2. The text does not ask the user whether to draft, sketch or build, or which
+         mode to use, and does not end by waiting for approval of an outline.
+      3. The first line starts with `SupportReply: built` and ends its status with `(auto
+         mode)`. It does not contain `(draft mode)` or `outline ready`.
+      4. The text presents SupportReply as built: its first line says `built, validated`,
+         `built, not validated` or `built, not runnable yet`.
+
+      Score 1.0 only if every item holds; otherwise 0.0. In findings, list each
+      failed item by number and quote the offending text.
+
+  # AskUserQuestion is Claude Code's tool and keeps the turn open. Other agents
+  # have no tool of that name, so this passes there. coder_eval cannot scope a
+  # criterion to one agent type: advisory, weight 0.
+  - type: command_not_executed
+    description: "Claude only (vacuous on other agents): the agent did not ask with AskUserQuestion"
+    tool_name: "AskUserQuestion"
+    command_pattern: '.*'
+    weight: 0
+    pass_threshold: 0
