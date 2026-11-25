@@ -265,7 +265,7 @@ const stageInfo = new Map();
 for (const line of text.split("\n")) {
   const s = line.trim();
   const st = s.match(/^###\s+(Stage \d+|Exception Stage|Secondary Stage):\s*(.*)/);
-  if (st) { cur = st[2].replace(/\(.*/, "").trim(); stageInfo.set(cur, { sec: !st[1].startsWith("Stage"), exits: new Set(), interrupting: null }); gate = null; continue; }
+  if (st) { cur = st[2].replace(/\(.*/, "").trim(); stageInfo.set(cur, { sec: !st[1].startsWith("Stage"), exits: new Set(), interrupting: null, rtc: new Set() }); gate = null; continue; }
   if (/^\*\*Stage Kind:\*\*\s*`?secondary/i.test(s) && cur) { stageInfo.get(cur).sec = true; continue; }
   if (s.startsWith("### Case Exit Conditions")) { gate = "case-exit"; continue; }
   if (s.startsWith("####") && s.includes("Entry Conditions")) { gate = "stage-entry"; continue; }
@@ -293,6 +293,12 @@ for (const line of text.split("\n")) {
     if (gate === "stage-exit") {
       const et = etIdx >= 0 && etIdx < cells.length ? cells[etIdx] : cells.length >= 4 ? cells.at(-2) : null;
       if (et != null && cur) stageInfo.get(cur).exits.add(et);
+      if (marks && rule === "required-tasks-completed" && cur) {
+        const cond = (cells[1] ?? "").replace(/^[—-]$/, "");
+        const seen = stageInfo.get(cur).rtc;
+        if (seen.has(cond)) fails.push(`${where}: two required-tasks-completed rows with the same IF mark the stage complete — keep one and change its Exit Type (e.g. to wait-for-user) instead of adding a second`);
+        seen.add(cond);
+      }
       if (et && !["exit-only", "wait-for-user", "return-to-origin"].includes(et)) fails.push(`${where}: exit type '${et}' is none of exit-only, wait-for-user, return-to-origin`);
       if (et === "return-to-origin" && !(marks && ["required-tasks-completed", "wait-for-connector"].includes(rule))) fails.push(`${where}: a return-to-origin exit is required-tasks-completed or wait-for-connector with Marks Stage Complete Yes`);
     }
