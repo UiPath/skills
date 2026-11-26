@@ -1,15 +1,14 @@
 task_id: skill-rules-operate-deployed-discovery
 description: >
-  Agent finds a deployed rule whose folder the user does not know and saves its
-  argument contract, against a mocked `uip`. FreightRates sits in a nested
-  folder and is still held by Orchestrator (`Source: Orchestrator`), so a
-  one-folder `list` of Shared does not show it; `list --all-folders` does. The
-  contract values exist only in the mocked `describe` answer. The mock bodies
-  follow real `uip rules` 1.208.0 output (built from UiPath/cli main, with
-  `Source`), with names, keys and dates replaced. Grades the all-folders
-  lookup, the `describe` in the right folder, and `contract.json` holding the
-  described schemas. Studio Web has no `record_cli` shim, so this task does
-  not run there (harness gap, not tagged).
+  Agent finds a deployed rule whose folder the user does not know and saves
+  its argument contract, against a mocked `uip`. FreightRates sits in a
+  nested folder and is still held by Orchestrator (`Source: Orchestrator`),
+  so a one-folder `list` of Shared does not show it; `list --all-folders`
+  does. The contract values exist only in the mocked `describe` answer. The
+  mock bodies follow real `uip rules` 1.208.0 output (built from UiPath/cli
+  main, with `Source`), with names, keys and dates replaced. Grades the
+  all-folders lookup, the `describe` in the right folder, and `contract.json`
+  holding the described schemas.
 tags: [uipath-rules, integration, "mode:operate", "lifecycle:discover"]
 
 sandbox:

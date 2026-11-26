@@ -1,14 +1,13 @@
 task_id: skill-rules-operate-retry-catalog-lag
 description: >
   Retry condition, against a mocked `uip`. The agent reads the contract of
-  ClaimLimits, deployed to Shared a minute ago, and `describe` answers that the
-  rule is not in the resource catalog yet. The failure modes guide says to wait
-  a minute and run the command again once, then stop and show the error. The
-  mock is stateless, so the retry fails too. Grades exactly two `describe`
-  calls and no login or tenant change. The body is the `not_found` error with
-  `RetryAfter60Seconds` that UiPath/cli main raises on a catalog miss, after
-  `get` finds the rule in its store. Studio Web has no `record_cli` shim, so
-  this task does not run there (harness gap, not tagged).
+  ClaimLimits, deployed to Shared a minute ago, and `describe` answers that
+  the rule is not in the resource catalog yet. The failure modes guide says
+  to wait a minute and run the command again once, then stop and show the
+  error. The mock is stateless, so the retry fails too. Grades exactly two
+  `describe` calls and no login or tenant change. The body is the `not_found`
+  error with `RetryAfter60Seconds` that UiPath/cli main raises on a catalog
+  miss, after `get` finds the rule in its store.
 tags: [uipath-rules, integration, "mode:operate", "lifecycle:discover"]
 
 run_limits:

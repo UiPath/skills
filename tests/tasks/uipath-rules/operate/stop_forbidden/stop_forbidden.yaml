@@ -7,8 +7,6 @@ description: >
   that `get` was not retried either, and that the agent did not change the
   login or tenant. The bodies are what UiPath/cli main prints for a 403 from
   the Business Rules service (`permission_denied`, `RetryWillNotFix`).
-  Studio Web has no `record_cli` shim, so this task does not run there
-  (harness gap, not tagged).
 tags: [uipath-rules, integration, "mode:operate", "lifecycle:discover"]
 
 sandbox:
