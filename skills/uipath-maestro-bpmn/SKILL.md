@@ -32,7 +32,7 @@ Author typed BPMN graphs in TypeScript and compile them to `.bpmn` XML. Read onl
 <!--skill-flavor:host-setup:end-->
 ## Workflow
 
-Discovery-only requests (discover types or save registry evidence, no authoring) skip this workflow and follow [Discovery only](references/bpmn-runtime.md#registry-extension-types). Draft, outline, and sketch requests stop at the [draft gate](#draft-first), which says which requests gate and which build.
+Discovery-only requests (discover types or save registry evidence, no authoring) skip this workflow and follow [Discovery only](references/bpmn-registry.md#registry-extension-types). Draft, outline, and sketch requests stop at the [draft gate](#draft-first), which says which requests gate and which build.
 
 <!--skill-flavor:workflow-scaffold:start-->
 1. **Before the first `init`, ask which solution to use when one already exists.**
@@ -110,7 +110,7 @@ Without `bpmn-api.md`, use `dist/api-members.md` by field/method and `dist/api-i
 | Surface | Builder/API | Reference | Example |
 |---|---|---|---|
 | Draft or pre-build shape | bare `task`, `choose` | [Draft first](references/draft-skeleton.md) | — |
-| Discovery only | `registry` pull, list, search, get | [Discovery only](references/bpmn-runtime.md#registry-extension-types) | — |
+| Discovery only | `registry` pull, list, search, get | [Discovery only](references/bpmn-registry.md#registry-extension-types) | — |
 | Build or draft from a given design: approved SDD, BPMN diagram, sketch, whiteboard photo, diagram screenshot | built 1:1 | [Critical Rule 8](#critical-rules); image: [Authoring from an image](references/image-transcription-guide.md) | — |
 | Process/nested scopes | `bpmn`, `subProcess` | [Builders](#api-index) | `examples/NotifyChannel.bpmn.ts` |
 | Variables/inputs/outputs | `vars`, `var`, `input`, `output`, `schemas`, `schema` | [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract) | `examples/NotifyChannel.bpmn.ts` |
@@ -130,9 +130,9 @@ Without `bpmn-api.md`, use `dist/api-members.md` by field/method and `dist/api-i
 | Connector event start/wait | `eventTrigger`, `waitForEvent` | [Connector events](references/connectors.md#6-connector-events) | — |
 | A connector step in a draft with no connection (offline, or no real ids allowed) | symbolic `connector` bindings or bare `task` | [Unresolved connector draft](references/connectors.md#7-draft-with-an-unresolved-connector) | — |
 | Data Fabric | `dataService` | [Connections](references/bpmn-runtime.md#connectors-and-bindings) | `examples/ContractRegistry.bpmn.ts` |
-| Any registry type, typed method or not | `activity` | [Registry extension types](references/bpmn-runtime.md#registry-extension-types) | `examples/InvoiceApproval.bpmn.ts` |
+| Any registry type, typed method or not | `activity` | [Registry extension types](references/bpmn-registry.md#registry-extension-types) | `examples/InvoiceApproval.bpmn.ts` |
 | Existing BPMN | `bpmn decompile`, `check`, `merge` | [Brownfield](references/bpmn-runtime.md#brownfield-editing) | `examples/NotifyChannel.bpmn.ts` |
-| Metadata/package/layout | `metadata`, project metadata, `bpmn format` | [Contract metadata](references/bpmn-runtime.md#contract-metadata) | `examples/NotifyChannel.bpmn.ts` |
+| Metadata/package/layout | `metadata`, project metadata, `bpmn format` | [Contract metadata](references/bpmn-packaging.md#contract-metadata) | `examples/NotifyChannel.bpmn.ts` |
 | Package/upload/publish/debug/run/manage | `uip maestro bpmn refresh` / `pack` / `debug` / `process run` / `instance …` | [Operate](references/operate.md) | — |
 <!--skill-flavor:evaluate-row:start-->
 | Evaluate a process: evaluators, eval sets, data points, simulations, eval runs | `uip maestro bpmn eval` | [Evaluate](references/evaluate.md) | — |

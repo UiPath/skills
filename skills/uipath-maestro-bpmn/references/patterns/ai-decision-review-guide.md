@@ -1,22 +1,16 @@
 # Pattern: `ai-decision-review`
 
-AI produces a decision, a confidence gate auto-actions the clear cases, and a human reviews the rest.
-Use it when some items are clear-cut, others need judgment, and someone must stay accountable for the non-trivial ones.
+AI makes a decision; one confidence gate auto-actions clear cases and sends the rest to human review. Use this when some items are clear-cut, others require judgment, and someone must stay accountable for the non-trivial ones.
 
 ## Why it works
 
 These four carry the shape.
 Change one and you are building something else.
 
-- **One tunable threshold owns the split.** A single confidence gate separates the auto-action path from the review path, so how much the AI handles on its own is one number, not a topology change.
-  The shape survives re-tuning.
-- **Validation runs before the gate.** Malformed output is not low confidence, it is invalid, and it must reach a reviewer carrying the reason.
-  Validating first lets one gate handle both "unsure" and "broken" without a second branch.
-- **One action step, reached two ways.** Both the auto path and the approved review converge on one join, whose single outgoing flow feeds the action node.
-  The action is implemented, bound, and configured once.
-  Send both routes straight into the action node instead (a `.goto('performAction')` from the review arm) and you have a fake join, which `check` warns about as `FAKE_JOIN` and `validate` does not report at all.
-- **Every item exits through a named outcome.** Auto-actioned, or rejected by a reviewer.
-  That is what makes the decision auditable afterwards.
+- One tunable confidence threshold owns the auto-action/review split.
+- Validation precedes the gate: malformed output is not low confidence, it is invalid, and it must reach a reviewer carrying the reason; one gate handles both "unsure" and "broken" without a second branch.
+- Auto and approved-review routes converge at one join, then one outgoing flow reaches one action node. Do not send both directly to the action (for example, `.goto('performAction')` from the review arm): that fake join produces `FAKE_JOIN` from `check`, while `validate` does not.
+- Every item exits through a named outcome: auto-actioned or reviewer-rejected.
 
 ## Shape
 
@@ -33,8 +27,7 @@ export default bpmn('claims-review')
   .startEvent('start', { name: 'Claim received', message: 'ClaimReceived' })
   .startAgent('analyze', { name: 'Score claim', process: 'ClaimScorer', folder: 'Shared', outputs: { aiDecision: '=Decision', aiConfidenceLevel: '=Confidence' } })
   .businessRule('validate', { name: 'Validate decision', process: 'ClaimDecisionRules', folder: 'Shared', outputs: { validationPassed: '=result.decision1.passed' } })
-  // Two routes reach the action: the confident arm falls through, and the review
-  // arm's Approve falls through. The join `confidenceGate_join` is merge_gate.
+  // Empty confident and approved arms fall through to the emitted merge join.
   .choose('confidenceGate', [
     { when: '=js:vars.aiConfidenceLevel >= 0.85 && vars.validationPassed', label: 'High confidence', body: (b) => b },
     {
@@ -53,9 +46,7 @@ export default bpmn('claims-review')
   .build();
 ```
 
-The join is not written: the confident arm is empty and the review arm's `Approved` arm is empty, so both fall through and the builder emits `confidenceGate_join` in front of `performAction`.
-That join is the merge gate.
-The `Rejected` arm ends, so it does not reach the join.
+The empty confident and approved arms emit `confidenceGate_join` before `performAction`, joining auto and approved-review routes; the rejected arm ends and cannot reach it.
 
 | Node | Builder | Role |
 | --- | --- | --- |
@@ -70,36 +61,29 @@ The `Rejected` arm ends, so it does not reach the join.
 | `endActioned` | `.endEvent()`, named | Mechanism |
 | `endRejected` | `.endEvent()`, named | Mechanism |
 
-`0.85` is an illustrative threshold.
-Set it from the cost asymmetry between a wrong auto-action and a needless review: that number is the pattern's tuning knob, not part of its definition.
+`0.85` is illustrative: tune it from wrong auto-action cost versus needless review; it is the tuning knob, not the definition.
 
 | Variable | Type | Default | Holds |
 | --- | --- | --- | --- |
-| `aiDecision` | string | | The categorical decision |
-| `aiRationale` | string | | Reasoning, where the analyzer produces it |
+| `aiDecision` | string | | Categorical decision |
+| `aiRationale` | string | | Analyzer reasoning, where produced |
 | `aiConfidenceLevel` | number | `0` | Confidence, 0–1 |
-| `validationPassed` | boolean | `false` | Did the output pass validation |
-| `validationFailures` | jsonSchema | | Why it did not |
+| `validationPassed` | boolean | `false` | Whether validation passed |
+| `validationFailures` | jsonSchema | | Why validation failed |
 | `reviewOutcome` | string | | `Approve` or `Reject` |
 | `reviewerRationale` | string | | Reviewer's free-text reasoning |
 
-The gate's defaults fail closed: `0` and `false` send an item to review when the analyzer or the rule did not write the variable (a wrong output path, a skipped node).
-A default that passes the gate, such as `0.95` or `true`, auto-actions every item whose mapping missed, which is the one failure this pattern exists to catch.
-
-`aiRationale`, `validationFailures` and `reviewerRationale` are not in the sketch: map them from the analyzer, the rule and a form field when the reviewer or the audit needs them.
-Names are recommended, not required: they keep processes comparable.
-When inserting into a process that already holds one of these under another name, bind to the existing one.
+Defaults fail closed: `0` and `false` send unmapped items to review (for example, a wrong output path or skipped node); `0.95` or `true` would auto-action every unmapped item. The sketch omits `aiRationale`, `validationFailures`, and `reviewerRationale`; map them from the analyzer, rule, and form field when needed for review or audit. Names are recommended, not required; when inserting into a process that already holds one under another name, bind to the existing one.
 
 ## Variants
 
-| Variant | Question it answers | Delta |
+| Variant | Question | Delta |
 | --- | --- | --- |
-| Single reviewer | — | The shape above |
-| Tiered reviewer | Do reviewers differ in authority? | A stakes gate and two reviewer paths |
-| Verification chain | Is a wrong auto-action costlier than a second AI call? | A second analyzer before validation |
+| Single reviewer | — | Shape above |
+| Tiered reviewer | Do reviewers differ in authority? | Stakes gate and two reviewer paths |
+| Verification chain | Is a wrong auto-action costlier than a second AI call? | Second analyzer before validation |
 
-**Tiered reviewer.** Two steps are now reached more than one way, so both joins are written as gateways: `seniorGate` in front of `seniorReview` (high stakes, or a junior `Escalate`) and `mergeGate` in front of `performAction` (confident, junior approve, or senior approve).
-Fall-through cannot express either, so declare each with `.exclusiveGateway(id)`, send every route to it with `.goto(id)`, and wire its one way out with `.sequenceFlow(id, next)`, since a bare gateway's outgoing flow is never implied:
+**Tiered reviewer.** Declare both gateways because each has multiple incoming routes: `seniorGate` before `seniorReview` (high stakes or junior `Escalate`) and `mergeGate` before `performAction` (confident, junior approve, or senior approve). Fall-through cannot express these: declare each with `.exclusiveGateway(id)`, route every path with `.goto(id)`, and wire its sole output with `.sequenceFlow(id, next)` because a bare gateway's outgoing flow is never implied.
 
 ```ts
   .choose('stakesGate', [
@@ -119,46 +103,28 @@ Fall-through cannot express either, so declare each with `.exclusiveGateway(id)`
   .sequenceFlow('mergeGate', 'performAction')
 ```
 
-Senior review has no `Escalate` outcome on purpose: a senior verdict that can escalate again loops.
-Adds `stakesValue` (number), a domain signal such as loan amount or claim value, and `seniorOutcome` (string); `5000` is illustrative.
+Senior review intentionally has no `Escalate` outcome: another escalation would loop. Add `stakesValue` (number), a domain signal such as loan amount or claim value, and `seniorOutcome` (string); `5000` is illustrative.
 
-**Verification chain.** Insert a second `.startAgent('verifier', …)` between `analyze` and `validate`, and extend the gate to require agreement:
+**Verification chain.** Insert `.startAgent('verifier', …)` between `analyze` and `validate`, and require agreement in the gate:
 `'=js:vars.aiConfidenceLevel >= 0.85 && vars.verifierConfidence >= 0.85 && vars.verifierDecision == vars.aiDecision && vars.validationPassed'`.
-Adds `verifierDecision` (string) and `verifierConfidence` (number).
-Bind the verifier to a **different model** than the analyzer; the same model has the same blind spots, so the second call verifies nothing.
+Add `verifierDecision` (string) and `verifierConfidence` (number). Bind the verifier to a **different model**: the same model shares blind spots and verifies nothing.
 
 ## What to bind
 
-- **`analyze`**: the node that produces the decision at runtime, a UiPath agent (`.startAgent()`), Document Understanding, or a chain of both.
-  Place and bind the node.
-  Never decide the categories or hardcode a result while authoring.
-  Its `outputs` keys are the process variables written (`aiDecision`, `aiConfidenceLevel`), and each value is an expression read against the agent's result (`'=Decision'`, `'=Confidence'`, the agent's output arguments).
-  The confidence gate reads those variables, so a key spelled as the agent's argument instead leaves them at their defaults.
-- **`performAction`**: the downstream target, an ERP, CRM, case system, or outbound message: `.connector()`, `.http()`, `.startProcess()`.
-- **`validate`**: `.businessRule()`, a deployed BusinessRules package addressed by name.
-  The result is keyed by the decision's `OutputArguments` property name (such as `decision1`), not its display name ([Work dispatch](../bpmn-runtime.md#http-and-orchestrator-work)).
-- **`humanReview`**: `.humanTask()`.
-  Route `postReviewGate` on the exact variable its `outputs` maps `=Action` into, not a copy.
-- **Review SLA**: the Task timer, a Studio Web task-panel setting `.humanTask()` cannot write; see [Human tasks](../bpmn-runtime.md#human-task-outcomes).
+- **`analyze`**: Bind the runtime decision producer: UiPath agent (`.startAgent()`), Document Understanding, or both. Never choose categories or hardcode a result while authoring. Its `outputs` keys are process variables (`aiDecision`, `aiConfidenceLevel`); values read the agent result (`'=Decision'`, `'=Confidence'`: the agent's output arguments). A key matching the agent argument but not the process variable leaves gate inputs at their defaults.
+- **`performAction`**: Bind the downstream ERP, CRM, case system, or outbound message with `.connector()`, `.http()`, or `.startProcess()`.
+- **`validate`**: Use `.businessRule()` for the deployed BusinessRules package addressed by name. Its result is keyed by the decision's `OutputArguments` property name (such as `decision1`), not display name ([Work dispatch](../bpmn-runtime.md#http-and-orchestrator-work)).
+- **`humanReview`**: Use `.humanTask()` and route `postReviewGate` on the exact variable its `outputs` maps `=Action` into, not a copy.
+- **Review SLA**: the Task timer, a Studio Web task-panel setting `.humanTask()` cannot write; the user sets it there. See [Human tasks](../bpmn-runtime.md#human-task-outcomes).
 
 ## Adapting it
 
-The commonest reduction: the process already scores the item.
-Insert only `validate` onward, gate on the existing score variable, and add no second analyzer.
+If the process already scores items, insert only `validate` onward, gate on its existing score, and do not add an analyzer.
 
-The action step already exists too.
-On an imported process, decompile it with `--style nested` ([Brownfield](../bpmn-runtime.md#brownfield-editing)) and put the new `confidenceGate` choose directly in front of the existing action, so the action becomes the statement after it.
-Keep the action's id: `merge` keys on it, and a renamed action reads as a delete plus an add.
-Do not route the existing flow into the action from both new routes; that is the fake join above.
+If the action already exists, decompile an imported process with `--style nested` ([Brownfield](../bpmn-runtime.md#brownfield-editing)), place `confidenceGate` directly before that action, and make the action the statement after it. Keep its id: `merge` keys on it, and renaming it is a delete plus an add. Do not route both new paths into the action; that creates the fake join described above.
 
-`validate` is the one load-bearing step you can remove, and only when its mechanism is vacuous rather than unwanted.
-If the analyzer's output is schema-constrained and cannot be malformed, there is no invalid case to route, so simplify the gate to the confidence term alone.
-If malformed output is merely unlikely, keep it.
-
-Keep both named end events regardless; that is the audit trail.
+`validate` is the only load-bearing step you can remove, and only when its mechanism is vacuous rather than unwanted: if schema-constrained analyzer output cannot be malformed, route on confidence alone. If malformed output is merely unlikely, keep validation. Keep both named end events regardless, for the audit trail.
 
 ## Composing
 
-Nested inside `high-volume-batch` this becomes the per-item sub-process.
-Pair it with `failure-escalation` so a failure in `analyze` or `performAction` does not vanish.
-See [composing-guide.md](composing-guide.md).
+Nested inside `high-volume-batch`, this becomes the per-item sub-process. Pair it with `failure-escalation` so failures in `analyze` or `performAction` do not vanish. See [composing-guide.md](composing-guide.md).

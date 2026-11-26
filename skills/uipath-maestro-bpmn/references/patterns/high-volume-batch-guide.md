@@ -1,23 +1,16 @@
 # Pattern: `high-volume-batch`
 
-Many independent items processed in one run, one sub-process instance per item, aggregated at the end.
-Use it when items do not depend on each other and some will fail without the run being a failure.
+Process independent items in one run with one sub-process instance per item, then aggregate; use this when one failure need not fail the run.
 
 ## Why it works
 
 These four carry the shape.
 Change one and you are building something else.
 
-- **Each item runs in its own sub-process instance.** A `loop` on a `.subProcess()`, not a loop drawn with `.goto()`.
-  The marker runs the body once per item, each with its own `iterator`; it does **not** by itself stop one item's failure ending the run.
-  An unhandled failure propagates outward, so containing it needs a `failure-escalation` net placed inside the iteration.
-  Isolation is the loop plus that net, never the loop alone.
-- **Every item leaves a result, and aggregation reads them once, after the block completes.** Both exits of the body, the normal end and the net, append the item's outcome to `itemResults` (Parallel: write it to the store).
-  The multi-instance sub-process does not exit until every instance has, which is what makes a single aggregation step correct rather than a race.
-- **The policy decision is separate from the aggregation.** Aggregating counts results; the gate decides whether those counts constitute success.
-  Best-effort, all-or-nothing, and quorum are then one condition apart.
-- **The summary is sent before the verdict.** The report sits ahead of the policy gate, so it runs on both outcomes.
-  A failed batch is the one you most need the numbers for.
+- **Each item runs in its own sub-process instance:** `loop` on a `.subProcess()`, never a `.goto()` loop. The marker runs once per item with its own `iterator` but does not contain failures; an unhandled failure propagates outward, so put a `failure-escalation` net directly inside the iteration.
+- **Every item leaves a result; aggregate once, after the block:** normal and net exits append to `itemResults` (Parallel: write to the store), and the multi-instance sub-process waits for all instances.
+- **Policy is separate from aggregation:** aggregation counts results; a policy gate decides success. Best-effort, all-or-nothing, and quorum differ only in that condition.
+- **Summary before verdict:** send the report ahead of the policy gate so it runs on both outcomes.
 
 ## Shape
 
@@ -33,9 +26,6 @@ export default bpmn('invoice-batch')
   .var('policySatisfied', 'boolean', { default: false })
   .startEvent('start', { name: 'Nightly', timer: { cycle: 'R/P1D' } })
   .scriptTask('fetchBatch', { name: 'Fetch invoices', script: 'return { items: [] };', outputs: { batchItems: '=result.response.items' } })
-  // One sub-process instance per item. The net INSIDE it is what keeps one bad item
-  // from ending the run: it ends only that iteration. Both exits append the item's
-  // result to `itemResults`, which is what `aggregate` counts.
   .subProcess(
     'processEach',
     (sp) =>
@@ -48,7 +38,6 @@ export default bpmn('invoice-batch')
         .eventSubProcess('itemFailures', { error: true, name: 'Item failure' }, (h) =>
           h.task('recordItemFailure', { name: 'Record failed invoice', set: { itemResults: '=js:vars.itemResults.concat([{ item: iterator[0].item, ok: false }])' } })
             .endEvent('itemFailed', { name: 'Invoice failed' })),
-    // Sequential, so each iteration appends to the list the one before left.
     { name: 'Process each invoice', loop: { collection: '=js:vars.batchItems', itemVar: 'iterator[0]', sequential: true } },
   )
   .scriptTask('aggregate', {
@@ -56,7 +45,6 @@ export default bpmn('invoice-batch')
     script: 'const ok = vars.itemResults.filter((r) => r.ok).length; return { summary: { total: vars.itemResults.length, ok }, met: ok === vars.itemResults.length };',
     outputs: { batchSummary: '=result.response.summary', policySatisfied: '=result.response.met' },
   })
-  // The report runs BEFORE the verdict, so finance gets it on both outcomes.
   .plainTask('sendReport', { name: 'Send summary to finance', element: 'bpmn:sendTask' })
   .choose('policyGate', [
     { when: '=js:vars.policySatisfied == false', label: 'Policy missed', body: (b) => b.endEvent('endFailed', { name: 'Batch failed' }) },
@@ -65,15 +53,12 @@ export default bpmn('invoice-batch')
   .build();
 ```
 
-`loop: { collection, itemVar }` on the sub-process's options is the multi-instance marker; `sequential: true` runs one at a time, which is what lets every iteration append to the same list (see [Getting results to `aggregate`](#getting-results-to-aggregate)).
-Name the loop the way Studio Web does: `itemVar: 'iterator[0]'`, `iterator[1]` for a loop nested inside it (the canvas gives every connected loop, ancestor, descendant or sibling, its own index).
-An expression (`set`, a condition, an `outputs` value) then reads the current item as `iterator[0].item` and its 1-based position as `iterator[0].loopCounter`.
-A looped sub-process Studio Web made, or one `decompile` seeded from it, already carries `itemVar: 'iterator[N]'`; keep its reads as they are.
-A looped task outside any looped sub-process carries no `inputElement` on the canvas and reads `iterator.item`; `decompile` seeds it as `itemVar: 'item'`, which recompiles to `inputElement="item"` and moves the item to `iterator["item"]["item"]` (next line), so rewrite its reads to that form.
-Any other `itemVar` (`'invoice'`) is the outer key, and the inner key stays `item`: `iterator["invoice"]["item"]`, while `iterator[0]` and `iterator["invoice"]["invoice"]` read `null`.
-A script does not see `iterator`: its scope holds only the `args` envelope, and the engine builds a script's `iterator` only from `iterator[N]` keys in it.
-To read the item in a script, pass it in with `inputs: { 'iterator[0]': '=iterator[0]' }`, which is what the designer writes, and read `iterator[0].item`; `validate` still warns that `iterator` is undefined, a false positive once the key is there.
-A wrong iterator read fails nothing: it yields `null` (or `"undefined"` after `String()`), every check passes and the run completes. Prove a loop by reading the per-item results with `debug-instances variables-all` after a Maestro debug run; local `flow-debug` reads loops differently ([offline checks](../operate.md#debug--a-controlled-studio-web-run)).
+`loop: { collection, itemVar }` on sub-process options is the multi-instance marker. `sequential: true` runs one at a time so each append sees the preceding list (see [Getting results to `aggregate`](#getting-results-to-aggregate)). Name the loop the way Studio Web does: `itemVar: 'iterator[0]'`, `iterator[1]` for nested loops; every connected loop, including ancestor, descendant, or sibling, has its own index. Expressions (`set`, conditions, and `outputs`) read the item as `iterator[0].item` and its 1-based position as `iterator[0].loopCounter`.
+
+Preserve `itemVar: 'iterator[N]'` and its reads for Studio Web-created or `decompile`-seeded looped sub-processes. A looped task outside a looped sub-process has no `inputElement` on the canvas and reads `iterator.item`; `decompile` seeds `itemVar: 'item'`, recompiling to `inputElement="item"` and moving the item to `iterator["item"]["item"]`, so rewrite its reads to that form. For another `itemVar`, such as `'invoice'`, the outer key is that value and the inner key stays `item`: `iterator["invoice"]["item"]`; `iterator[0]` and `iterator["invoice"]["invoice"]` read `null`.
+
+Scripts do not see `iterator` directly: their scope contains only the `args` envelope, and the engine builds script `iterator` entries only from `iterator[N]` keys in its inputs. Pass the item with `inputs: { 'iterator[0]': '=iterator[0]' }` and read `iterator[0].item`; `validate` still warns that `iterator` is undefined, a false positive when the key is present. A wrong iterator read fails nothing: it yields `null` (or `"undefined"` after `String()`), every check passes and the run completes. Prove a loop by reading per-item results with `debug-instances variables-all` after a Maestro debug run; local `flow-debug` reads loops differently ([offline checks](../operate.md#debug--a-controlled-studio-web-run)).
+
 The body is its own sequence scope: give it its own `.flowMode('sequence')`, start event and end event.
 
 | Node | Builder | Role |
@@ -102,60 +87,42 @@ The body is its own sequence scope: give it its own `.flowMode('sequence')`, sta
 
 ## Variants
 
-| Variant | Question it answers | Delta |
+| Variant | Question | Delta |
 | --- | --- | --- |
-| Sequential | — | The shape above |
-| Parallel | Must items run several at a time? | With a named store: drop `sequential`, record each result outside the process. No store named: stay sequential |
+| Sequential | — | Shape above |
+| Parallel | Must items run concurrently? | With a named store, drop `sequential` and record outside the process; without one, stay sequential |
 
-**Parallel.** Drop `sequential: true` and the items run concurrently, but the in-process append no longer collects them ([Getting results to `aggregate`](#getting-results-to-aggregate)).
-When the request names no store, do not invent an entity or connection, and do not stop to ask: keep `sequential: true`, which collects results correctly, and put on the final report's `Assumed:` line that items run one at a time because no store was named.
-With a store, write each item's outcome to it, one Data Fabric record per item: a `.dataService()` `op: 'create'` in place of `recordResult` (`ok: true`) and another in place of `recordItemFailure` (`ok: false`).
-Declare `.var('batchId', 'string')`, set it before the sub-process with `.task('newBatch', { set: { batchId: '=js:"BATCH-" + Date.now()' } })`, and write it on every record.
-After the sub-process, read the batch back with a `.dataService()` `query`, ``where: "=js:`batchId = '${vars.batchId}'`"``, with `limit` at or above the batch size (it defaults to 100 and silently drops the rest).
-Keep `aggregate` a `.scriptTask()` that totals the records from `vars.<queryId>_response` and writes `batchSummary` and `policySatisfied` through `outputs`, as the Shape does.
-A `.task()` without `set` compiles to a no-op `bpmn:task` and leaves `policySatisfied` at its `false` default.
-On a tenant entity the response is a bare array of records, `[]` when none (read `.length` and `.filter` on it directly).
-The total is `vars.batchItems.length`, not the record count: a record count below it is an item that left no result, so count it as a failure (`met` needs `ok === vars.batchItems.length`).
-This variant is not verified end to end.
+**Parallel.** Drop `sequential: true` for concurrent items, but do not append in-process ([Getting results to `aggregate`](#getting-results-to-aggregate)). If no store is named, do not invent an entity or connection, and do not stop to ask: keep `sequential: true` and put on the final report's `Assumed:` line that items run one at a time because no store was named.
+
+With a store, write each outcome as one Data Fabric record per item: use a `.dataService()` `op: 'create'` in place of `recordResult` (`ok: true`) and another in place of `recordItemFailure` (`ok: false`). Declare `.var('batchId', 'string')`; set it before the sub-process with `.task('newBatch', { set: { batchId: '=js:"BATCH-" + Date.now()' } })`; write it on every record. After the sub-process, read the batch with a `.dataService()` `query`, ``where: "=js:`batchId = '${vars.batchId}'`"``, and `limit` at or above the batch size; the default is 100 and silently drops the rest.
+
+Keep `aggregate` as a `.scriptTask()` that totals records from `vars.<queryId>_response` and writes `batchSummary` and `policySatisfied` through `outputs`, as in the Shape. A `.task()` without `set` compiles to a no-op `bpmn:task` and leaves `policySatisfied` false. On a tenant entity the response is a bare array of records, `[]` when none; read `.length` and `.filter` directly. The total is `vars.batchItems.length`, not the record count: fewer records means an item left no result and counts as failure, so `met` requires `ok === vars.batchItems.length`. This variant is not verified end to end.
 
 ## What to bind
 
-- **`fetchBatch`**: the source (database query, file, API list, queue); batch size and filters are decided here.
-- **The per-item work** inside `processEach`: a UiPath agent, an RPA job, Document Understanding, an API call.
-  Place and bind the node; the per-item work happens at runtime, not while authoring.
-- **`aggregate`**: a `.scriptTask()` that counts `itemResults` (Parallel: the query's records), applies the policy and sets `policySatisfied` through `outputs`.
-  Best-effort is always true; all-or-nothing is true only with zero failures; quorum is true above a threshold.
-  Evaluate it here, in a node, rather than as the loop's `completion` condition.
-  A completion condition stops the block early, which is a different thing from judging the run afterwards, and it cannot see the per-item results the policy needs.
-- **`sendReport`**: email, chat, dashboard, audit store.
+- **`fetchBatch`**: bind a database query, file, API list, or queue; batch size and filters belong to this node.
+- **Per-item work** inside `processEach`: bind a UiPath agent, RPA job, Document Understanding, or API call. Place and bind the node; it runs at runtime, not while authoring.
+- **`aggregate`**: a `.scriptTask()` that counts `itemResults` (Parallel: query records), applies policy, and sets `policySatisfied` through `outputs`. Best-effort is always true; all-or-nothing is true only with zero failures; quorum is true above its threshold. Evaluate it in a node, not the loop's `completion` condition: completion stops the block early and cannot see the results needed for post-run policy.
+- **`sendReport`**: bind email, chat, dashboard, or audit store.
 
 ## Adapting it
 
-Drop `fetchBatch` when the items arrive on the trigger rather than being pulled: point `collection` straight at the input variable.
-That is the common case when this pattern is nested inside another.
+If items arrive on the trigger, drop `fetchBatch` and point `collection` directly at the input variable; this is common when nested in another pattern.
 
-Drop `policyGate` and `endFailed` when every run succeeds by definition and only the counts matter.
-Keep `sendReport`.
+If every run succeeds by definition and only counts matter, drop `policyGate` and `endFailed`, but keep `sendReport`.
 
-Keep both `recordResult` and `recordItemFailure` (Parallel: their store writes) when you change the body: an item that leaves no result is one `aggregate` cannot count.
-Add fields to the record (a reason, a skipped flag) as the policy needs them.
+When changing the body, keep `recordResult` and `recordItemFailure` (Parallel: their store writes): an item with no result cannot be counted by `aggregate`. Add fields to the record, such as a reason or skipped flag, as policy requires.
 
 ## Getting results to `aggregate`
 
-The builder's `loop` has no output collection: `{ collection, itemVar, sequential, completion }` is all it takes, so nothing gathers the iterations' results for you.
-The sketch collects them itself: each iteration appends to `itemResults`, and `sequential: true` means each one sees the list as the one before left it.
-A Maestro debug run of this shape over `[1, -2, 3]` completed with three results, the `-2` one caught by the net, and `aggregate` counted 3 / 2 ok.
+The builder's `loop` has no output collection: `{ collection, itemVar, sequential, completion }` is all it accepts. The sketch collects results by appending in each iteration; `sequential: true` exposes the preceding list to the next iteration. A Maestro debug run over `[1, -2, 3]` completed with three results, caught `-2` in the net, and had `aggregate` count 3 / 2 ok.
 
-Parallel iterations overwrite each other's writes to one variable: the engine's variable store is last-writer-wins, and a Maestro run appending 12 items in parallel kept 11.
-Never append to one variable from parallel iterations; write to the parallel variant's external store, or keep `sequential: true` when none is named.
+Parallel iterations overwrite writes to one variable because the variable store is last-writer-wins; a Maestro run appending 12 parallel items kept 11. Never append to one variable in parallel: use the external store or keep `sequential: true` when no store is named.
 
-The append is a `set` expression because it reads `iterator` directly and validates clean.
-Declare the list as `array`, whose default is written as JSON; a `jsonSchema` default of `[]` does not arrive as a list.
+The append is a `set` expression because it reads `iterator` directly and validates clean. Declare the list as `array`, whose default is written as JSON; a `jsonSchema` default of `[]` does not arrive as a list.
 
 ## Composing
 
-The per-item work is the usual nesting point: `ai-decision-review` or `external-wait` becomes the body of `processEach`, giving every item its own decision or its own wait.
+The per-item work is the usual nesting point: `ai-decision-review` or `external-wait` becomes the body of `processEach`, giving every item its own decision or wait.
 
-Place the `failure-escalation` net **directly inside** `processEach`, as the example does, so a per-item failure ends that iteration and the run continues.
-A net at process level instead would catch the first failure and end the whole instance.
-See [composing-guide.md](composing-guide.md#scoping-the-failure-net).
+Place the `failure-escalation` net **directly inside** `processEach` so a per-item failure ends that iteration and the run continues. A net at process level instead catches the first failure and ends the whole instance. See [composing-guide.md](composing-guide.md#scoping-the-failure-net).
