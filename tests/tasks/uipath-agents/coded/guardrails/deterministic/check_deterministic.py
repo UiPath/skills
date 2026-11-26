@@ -4,7 +4,7 @@
 Validates (middleware or decorator style both accepted):
 - Either UiPathDeterministicGuardrailMiddleware or CustomValidator is used
 - The configured callable checks customer_id (directly or via a local variable
-  assigned from it) for the word "secret"
+  that only holds its value) for the word "secret"
 - BlockAction is configured on that guardrail
 - The guardrail targets or decorates the lookup_account_info tool
 """
@@ -95,21 +95,65 @@ def contains_substring_literal(node: ast.AST, value: str) -> bool:
     )
 
 
-def customer_id_names(node: ast.AST) -> set[str]:
-    """`customer_id` plus local names assigned from it, e.g. `cid = str(args.get("customer_id"))`."""
-    names = {"customer_id"}
-    assigns = [item for item in ast.walk(node) if isinstance(item, (ast.Assign, ast.AnnAssign)) and item.value]
-    for _ in assigns:  # enough rounds to follow alias chains
-        for item in assigns:
+def yields_customer_id(node: ast.AST, names: set[str]) -> bool:
+    """Whether `node` evaluates to the customer_id value: `args.get("customer_id")`,
+    `args["customer_id"]` or a name in `names`, optionally wrapped in `str()` /
+    `.lower()`-style calls, or first in an `or` fallback chain."""
+    if isinstance(node, ast.Name):
+        return node.id in names
+    if isinstance(node, ast.BoolOp) and isinstance(node.op, ast.Or):
+        return yields_customer_id(node.values[0], names)
+    if isinstance(node, ast.Subscript):
+        return isinstance(node.slice, ast.Constant) and node.slice.value == "customer_id"
+    if not isinstance(node, ast.Call):
+        return False
+    if call_name(node.func) == "get" and node.args:
+        return isinstance(node.args[0], ast.Constant) and node.args[0].value == "customer_id"
+    if isinstance(node.func, ast.Name) and node.func.id == "str" and len(node.args) == 1:
+        return yields_customer_id(node.args[0], names)
+    if isinstance(node.func, ast.Attribute) and node.func.attr in ("lower", "upper", "casefold", "strip"):
+        return yields_customer_id(node.func.value, names)
+    return False
+
+
+def customer_id_aliases(node: ast.AST) -> set[str]:
+    """Local names that can only hold the customer_id value, e.g. `cid = str(args.get("customer_id"))`.
+
+    Every binding of the name must be a plain assignment from that value (a self-update such
+    as `cid = cid.lower()` is allowed), so a name rebound from another key, or bound by a
+    parameter, loop, tuple or augmented assignment, is not an alias.
+    """
+    stores: dict[str, int] = {}
+    values: dict[str, list[ast.expr | None]] = {}
+    for item in ast.walk(node):
+        if isinstance(item, ast.arg):
+            stores[item.arg] = stores.get(item.arg, 0) + 1
+        elif isinstance(item, ast.Name) and not isinstance(item.ctx, ast.Load):
+            stores[item.id] = stores.get(item.id, 0) + 1
+        if isinstance(item, (ast.Assign, ast.AnnAssign)):
             for target in item.targets if isinstance(item, ast.Assign) else [item.target]:
-                if isinstance(target, ast.Name) and any(contains_reference(item.value, n) for n in names):
-                    names.add(target.id)
-    return names
+                if isinstance(target, ast.Name):
+                    values.setdefault(target.id, []).append(item.value)
+    aliases: set[str] = set()
+    changed = True
+    while changed:  # follow alias chains
+        changed = False
+        for name, bound in values.items():
+            known = {"customer_id"} | aliases
+            if (
+                name not in known
+                and len(bound) == stores[name]
+                and all(value is not None and yields_customer_id(value, known | {name}) for value in bound)
+                and any(yields_customer_id(value, known) for value in bound)
+            ):
+                aliases.add(name)
+                changed = True
+    return aliases
 
 
 def checks_secret_customer_id_membership(node: ast.AST) -> bool:
     """Return whether `node` contains `"secret" in <customer_id expression>`."""
-    names = customer_id_names(node)
+    aliases = customer_id_aliases(node)
     for item in ast.walk(node):
         if not isinstance(item, ast.Compare):
             continue
@@ -118,8 +162,9 @@ def checks_secret_customer_id_membership(node: ast.AST) -> bool:
         for index, operator in enumerate(item.ops):
             if not isinstance(operator, ast.In):
                 continue
-            if contains_string_literal(operands[index], "secret") and any(
-                contains_reference(operands[index + 1], name) for name in names
+            target = operands[index + 1]
+            if contains_string_literal(operands[index], "secret") and (
+                contains_reference(target, "customer_id") or yields_customer_id(target, aliases)
             ):
                 return True
     return False
@@ -131,7 +176,7 @@ def checks_secret_customer_id_regex(node: ast.AST) -> bool:
     `customer_id` — the regex-based equivalent of the membership check above (e.g.
     `re.search(r"\\bsecret\\b", str(tool_input.get("customer_id", "")), re.IGNORECASE)`).
     """
-    names = customer_id_names(node)
+    aliases = customer_id_aliases(node)
     for item in ast.walk(node):
         if not isinstance(item, ast.Call) or call_name(item.func) not in ("search", "match", "fullmatch"):
             continue
@@ -139,7 +184,9 @@ def checks_secret_customer_id_regex(node: ast.AST) -> bool:
         if len(args) < 2:
             continue
         pattern, target = args[0], args[1]
-        if contains_substring_literal(pattern, "secret") and any(contains_reference(target, n) for n in names):
+        if contains_substring_literal(pattern, "secret") and (
+            contains_reference(target, "customer_id") or yields_customer_id(target, aliases)
+        ):
             return True
     return False
 

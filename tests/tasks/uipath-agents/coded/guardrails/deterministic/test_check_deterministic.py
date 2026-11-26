@@ -7,6 +7,8 @@ import sys
 import textwrap
 from pathlib import Path
 
+import pytest
+
 CHECKER = Path(__file__).with_name("check_deterministic.py")
 
 
@@ -334,3 +336,32 @@ def test_rejects_local_alias_of_another_field(tmp_path: Path) -> None:
     )
 
     assert result.returncode != 0
+
+
+@pytest.mark.parametrize(
+    "lines",
+    [
+        ['x = args.get("name") if args.get("customer_id") else ""'],
+        ['x = args.get("customer_id")', 'x = args.get("name")'],
+        ['x = args.get("customer_id")', "if args:", '    x = args.get("query")'],
+        ['x = args.get("input") or args.get("customer_id")'],
+    ],
+)
+def test_rejects_alias_not_holding_customer_id(tmp_path: Path, lines: list[str]) -> None:
+    """The tested name must hold the customer_id value, not merely mention it."""
+    body = "\n            ".join(lines)
+    result = run_checker(
+        tmp_path,
+        f"""
+        def check_secret(args: dict) -> bool:
+            {body}
+            return "secret" in x
+
+        @guardrail(validator=CustomValidator(rule=check_secret), action=BlockAction())
+        def lookup_account_info(customer_id: str) -> str:
+            return customer_id
+        """,
+    )
+
+    assert result.returncode != 0
+    assert "checking customer_id" in result.stderr
