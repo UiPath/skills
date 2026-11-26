@@ -399,3 +399,40 @@ def test_declaring_the_resource_counts_refresh_or_add(pattern, call):
 )
 def test_declaring_the_resource_needs_add_of_the_same_kind(pattern, call):
     assert _hits(pattern, call) == {False}
+
+
+# --- uipath-agents: a published agent recorded via registry prepare ------------
+
+PUBLISHED_REFRESH = _pattern(
+    "uipath-agents/coded/coded_in_flow_published/coded_in_flow_published.yaml",
+    "Agent refreshed the flow registry or recorded the published agent via registry prepare --kind Process",
+)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "cd triage-flowSolution/triage-flow; uip maestro registry prepare --kind Process --name triage-agent 2>&1 | tail -20",
+        "uip maestro registry prepare --name triage-agent --kind=Process --output json",
+        "npx flow-sdk registry prepare --kind Process --name triage-agent",
+        "uip maestro flow registry pull --force",
+        "uip maestro flow registry search triage-agent",
+    ],
+)
+def test_published_refresh_accepts_prepare_or_registry_refresh(command):
+    assert _hits(PUBLISHED_REFRESH, command) == {True}
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "uip maestro registry prepare --kind ProcessX --name triage-agent",
+        "uip maestro registry prepare --kind Connector --name triage-agent",
+        # The kind belongs to a later command, not to this prepare.
+        "uip maestro registry prepare --entity X; echo --kind Process",
+        "uip maestro registry prepare --entity X && uip solution resources list --kind Process",
+        "uip maestro flow registry get triage-agent",
+    ],
+)
+def test_published_refresh_needs_prepare_of_kind_process(command):
+    assert _hits(PUBLISHED_REFRESH, command) == {False}
