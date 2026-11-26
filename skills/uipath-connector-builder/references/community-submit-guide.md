@@ -41,10 +41,38 @@ uip extension submit <PUBLISHER>.<NAME> --path <CONNECTOR_DIR> \
   --security-contact <EMAIL> --output json
 
 # A later version of a node the catalog already holds needs --bump.
-uip extension submit <PUBLISHER>.<NAME> --path <CONNECTOR_DIR> --bump patch --output json
+# Pick the level with "Choosing the bump" below, and confirm it with the user.
+uip extension submit <PUBLISHER>.<NAME> --path <CONNECTOR_DIR> --bump <LEVEL> --output json
 ```
 
 `submit` returns `Url` (the pull request), `ConnectorKey` and `Version`. Show all three to the user.
+
+## Choosing the bump
+
+The first submit of a node takes no `--bump` and is always `1.0.0`. Every later submit needs one. `submit` takes the highest version the catalog has approved and adds one step: from `1.2.0`, `patch` gives `1.2.1`, `minor` gives `1.3.0`, `major` gives `2.0.0`. The version in the folder plays no part.
+
+An upgrade changes every flow in a tenant that uses the connector, so pick the level from what changed since the catalog's version:
+
+| What changed | Level |
+|---|---|
+| A fix, a description, the icon. No activity, field, parameter or connection field is added, removed or renamed. | `patch` |
+| Something was added and nothing existing changed: a new activity, a new optional field or parameter, a new trigger. | `minor` |
+| Something a flow may already use changed: an activity, field or parameter was removed or renamed, an optional one became required, a type changed, or the auth type or a connection field changed. | `major` |
+
+When both an addition and a breaking change are present, the level is `major`.
+
+1. **Read the catalog's copy.** It is in the index repository under `nodes/<PUBLISHER>/<NAME>/`:
+   ```bash
+   gh api repos/UiPath/uipath-extensions/contents/nodes/<PUBLISHER>/<NAME>/app/element/element.json \
+     -H "Accept: application/vnd.github.raw"
+   ```
+   Read the other files under `app/element/` the same way: `standard-resources/<RESOURCE>.json` on the legacy route, `v4/activities.json` and `v4/objects/<RESOURCE>/metadata.json` on the community route.
+2. **Compare it with the folder.** Compare activities, methods, fields, parameters, triggers, the auth type and the connection fields. Ignore the key and the version: the catalog's copy holds `custom-community-…` and its own version, the folder holds `design-<ORG>-<NAME>` and the tenant's.
+3. **Propose a level** from the table, with the one change that decides it.
+4. **Ask the user to confirm** (`AskUserQuestion`) before `submit`. Never send `major` without a yes, and never lower a level the user chose.
+5. **If the catalog's copy cannot be read**, ask the user what changed since the last catalog version. Do not guess a level.
+
+Nothing checks the level today: `submit` accepts any of the three. A wrong `patch` on a breaking change breaks flows in every tenant that upgrades.
 
 ## Rules
 
@@ -54,7 +82,7 @@ uip extension submit <PUBLISHER>.<NAME> --path <CONNECTOR_DIR> --bump patch --ou
 4. **Fix findings in the folder.** A gate message may quote the catalog key. The file paths are the folder's own. Change the folder, test in your tenant if the change affects behavior, then run the same command again.
 5. **A failed or pending pull request is updated, not replaced.** Run the same `submit` command again. It updates the open pull request and keeps the same version, because an open pull request adds no approved version. Never edit the index branch by hand.
 6. **After a merge, the next submit needs `--bump`** and opens a new pull request.
-7. **`--bump` is for connectors only.** It takes `patch`, `minor` or `major`.
+7. **`--bump` is for connectors only.** It takes `patch`, `minor` or `major`, chosen as in [Choosing the bump](#choosing-the-bump).
 
 ## What the catalog does not do
 
@@ -67,4 +95,5 @@ uip extension submit <PUBLISHER>.<NAME> --path <CONNECTOR_DIR> --bump patch --ou
 2. Running `submit` before the connector is published and tested in a tenant.
 3. Passing `--bump` again and again to "retry" — a re-run with the same `--bump` keeps the same version while the pull request is open (Rule 5).
 4. Validating a fork without its node id, which checks the shared key instead (step 2).
-5. Reporting done on `validate` alone. `submit` also checks the index: the version, the fork rule and a key clash.
+5. Sending `--bump patch` out of habit, or any level without comparing the folder with the catalog's copy and asking the user.
+6. Reporting done on `validate` alone. `submit` also checks the index: the version, the fork rule and a key clash.
