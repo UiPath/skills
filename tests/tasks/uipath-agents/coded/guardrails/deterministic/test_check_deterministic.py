@@ -270,3 +270,67 @@ def test_rejects_middleware_targeting_another_tool(tmp_path: Path) -> None:
 
     assert result.returncode != 0
     assert "lookup_account_info" in result.stderr
+
+
+def test_accepts_rule_with_local_customer_id_alias(tmp_path: Path) -> None:
+    """A stored run's actual output: the rule copies customer_id into a local
+    variable and tests `"secret" in <alias>.lower()`."""
+    result = run_checker(
+        tmp_path,
+        """
+        def check_secret_customer_id(args: dict) -> bool:
+            if not isinstance(args, dict):
+                return "secret" in str(args).lower()
+            cid = str(args.get("customer_id") or args.get("input") or "")
+            return "secret" in cid.lower()
+
+        @guardrail(
+            validator=CustomValidator(rule=check_secret_customer_id),
+            action=BlockAction(),
+        )
+        def lookup_account_info(customer_id: str) -> str:
+            return customer_id
+        """,
+    )
+
+    assert result.returncode == 0, result.stderr
+
+
+def test_accepts_rule_with_chained_customer_id_alias(tmp_path: Path) -> None:
+    result = run_checker(
+        tmp_path,
+        """
+        def check_secret_customer_id(args: dict) -> bool:
+            raw = cid = str(args.get("customer_id") or "")
+            return "secret" in cid.lower()
+
+        @guardrail(
+            validator=CustomValidator(rule=check_secret_customer_id),
+            action=BlockAction(),
+        )
+        def lookup_account_info(customer_id: str) -> str:
+            return customer_id
+        """,
+    )
+
+    assert result.returncode == 0, result.stderr
+
+
+def test_rejects_local_alias_of_another_field(tmp_path: Path) -> None:
+    result = run_checker(
+        tmp_path,
+        """
+        def check_secret(args: dict) -> bool:
+            name = str(args.get("name") or "")
+            return "secret" in name.lower()
+
+        @guardrail(
+            validator=CustomValidator(rule=check_secret),
+            action=BlockAction(),
+        )
+        def lookup_account_info(customer_id: str) -> str:
+            return customer_id
+        """,
+    )
+
+    assert result.returncode != 0

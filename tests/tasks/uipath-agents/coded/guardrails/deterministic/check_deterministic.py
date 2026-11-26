@@ -3,7 +3,8 @@
 
 Validates (middleware or decorator style both accepted):
 - Either UiPathDeterministicGuardrailMiddleware or CustomValidator is used
-- The configured callable checks customer_id for the word "secret"
+- The configured callable checks customer_id (directly or via a local variable
+  assigned from it) for the word "secret"
 - BlockAction is configured on that guardrail
 - The guardrail targets or decorates the lookup_account_info tool
 """
@@ -94,8 +95,21 @@ def contains_substring_literal(node: ast.AST, value: str) -> bool:
     )
 
 
+def customer_id_names(node: ast.AST) -> set[str]:
+    """`customer_id` plus local names assigned from it, e.g. `cid = str(args.get("customer_id"))`."""
+    names = {"customer_id"}
+    assigns = [item for item in ast.walk(node) if isinstance(item, (ast.Assign, ast.AnnAssign)) and item.value]
+    for _ in assigns:  # enough rounds to follow alias chains
+        for item in assigns:
+            for target in item.targets if isinstance(item, ast.Assign) else [item.target]:
+                if isinstance(target, ast.Name) and any(contains_reference(item.value, n) for n in names):
+                    names.add(target.id)
+    return names
+
+
 def checks_secret_customer_id_membership(node: ast.AST) -> bool:
     """Return whether `node` contains `"secret" in <customer_id expression>`."""
+    names = customer_id_names(node)
     for item in ast.walk(node):
         if not isinstance(item, ast.Compare):
             continue
@@ -104,8 +118,8 @@ def checks_secret_customer_id_membership(node: ast.AST) -> bool:
         for index, operator in enumerate(item.ops):
             if not isinstance(operator, ast.In):
                 continue
-            if contains_string_literal(operands[index], "secret") and contains_reference(
-                operands[index + 1], "customer_id"
+            if contains_string_literal(operands[index], "secret") and any(
+                contains_reference(operands[index + 1], name) for name in names
             ):
                 return True
     return False
@@ -117,6 +131,7 @@ def checks_secret_customer_id_regex(node: ast.AST) -> bool:
     `customer_id` — the regex-based equivalent of the membership check above (e.g.
     `re.search(r"\\bsecret\\b", str(tool_input.get("customer_id", "")), re.IGNORECASE)`).
     """
+    names = customer_id_names(node)
     for item in ast.walk(node):
         if not isinstance(item, ast.Call) or call_name(item.func) not in ("search", "match", "fullmatch"):
             continue
@@ -124,7 +139,7 @@ def checks_secret_customer_id_regex(node: ast.AST) -> bool:
         if len(args) < 2:
             continue
         pattern, target = args[0], args[1]
-        if contains_substring_literal(pattern, "secret") and contains_reference(target, "customer_id"):
+        if contains_substring_literal(pattern, "secret") and any(contains_reference(target, n) for n in names):
             return True
     return False
 
