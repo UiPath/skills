@@ -51,6 +51,7 @@ Report each `validate` warning you kept as one clause in the user's words that n
 The path line belongs to this final message.
 A Studio Web link shown earlier in the turn, before a tool call, does not count: write it again here, on its own line.
 When the path line is the local path, write the plain path, such as InvoiceIntake/InvoiceIntake.bpmn, not a Markdown link with the file name as its text and not in backticks.
+The path line, link or path, is flush-left: no space or indent before it.
 
 <!--skill-flavor:final-path-rule:end-->
 Write every line in the user's words: say what each step now does.

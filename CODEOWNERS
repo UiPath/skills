@@ -1,5 +1,5 @@
 # Default owners for the entire repo
-* @gabrielavaduva @AlvinStanescu @marius-bughiu @RaduAna-Maria @uipreliga @dmetzgar @rockymadden @gozhang2 @smflorentino
+* @gabrielavaduva @AlvinStanescu @RaduAna-Maria @uipreliga @dmetzgar @rockymadden @gozhang2 @smflorentino
 
 # CI workflows and review config
 /.github/ @uipreliga @bai-uipath @akshaylive @CarlesUIPath
@@ -131,6 +131,8 @@
 /skills/uipath-planner/references/extract/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /skills/uipath-planner/references/edit/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /skills/uipath-planner/references/shared/genome-format-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/shared/genome-questions-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/shared/process-genome-sections-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /skills/uipath-planner/references/shared/skill-mapping-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /skills/uipath-planner/references/shared/transactional-shape-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /skills/uipath-planner/references/shared/defect-verification-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
@@ -284,6 +286,9 @@
 /skills/uipath-mcp-servers/ @cristipufu @UiPath/team-coded-agents
 /tests/tasks/uipath-mcp-servers/ @cristipufu @UiPath/team-coded-agents
 /tests/tasks/activation/uipath-mcp-servers.jsonl @cristipufu @UiPath/team-coded-agents
+/skills/uipath-a2a-agents/ @cristipufu @UiPath/team-coded-agents
+/tests/tasks/uipath-a2a-agents/ @cristipufu @UiPath/team-coded-agents
+/tests/tasks/activation/uipath-a2a-agents.jsonl @cristipufu @UiPath/team-coded-agents
 
 # Insights skill (job monitoring and analytics)
 /skills/uipath-insights/ @UiPath/insights
@@ -298,10 +303,12 @@
 # Automation Hub skills (Open API publish/read of processes via the user's cloud token)
 /skills/uipath-automationhub/ @UiPath/automationhub @parth-patil-uipath @abhiram-vad
 /tests/tasks/uipath-automationhub/ @UiPath/automationhub @parth-patil-uipath @abhiram-vad
+/tests/tasks/activation/uipath-automationhub.jsonl @UiPath/automationhub @parth-patil-uipath @abhiram-vad
 
 # StudioAdmin AOps skill (SourceControl + CICD pipelines)
 /skills/uipath-aops/ @AndreiRR24 @UiPath/xworks
 /tests/tasks/uipath-aops/ @AndreiRR24 @UiPath/xworks
+/tests/tasks/activation/uipath-aops.jsonl @AndreiRR24 @UiPath/xworks
 
 # Vertical Solutions skill (uip vss deploy)
 /skills/uipath-vertical-solutions/ @sandeeprao-uipath @UiPath/vertical-service-approvers

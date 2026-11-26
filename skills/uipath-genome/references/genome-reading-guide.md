@@ -15,7 +15,7 @@ Rules:
 2. **A component genome's `Part of:` line links its process genome**: the build reads the Source Map rows that describe the whole source — Source framework, Source export, Requested change, Inventory, Not covered, Unused and Related resources — from that process genome, and a standalone component genome carries them itself. A component reached through a process genome's links is inside it, with or without the line.
 3. **Detail lives at the lowest level that owns it.** The build reads a component's steps, rules, error handling and criteria in its component genome, and what spans components (process map, handoffs, shared platform dependencies, the transactional shape, cross-cutting rules, end-to-end criteria, deployment) in the process genome.
 4. **Every section is present**: a section the build cannot find is an edit for `uipath-planner` ([execution-guide.md § 1.1](execution-guide.md)), never a section to infer.
-5. **Shared behaviour is one library component**: a project of its own, published to a feed and installed in its consumers as a package, never a project of the solution (§ Deployment). The build packs it before its consumers, and each consumer's steps call it as they call any library; only the Library layout answer of execution's configuration questions folds it into a consumer. What one or a few activities do (close an application, append a line to the run's log, send one mail) stays a step of each consumer.
+5. **Shared behaviour is one library component**: a project of its own, published to a feed and installed in its consumers as a package — or, where its Build With rationale names a route without a feed (its modules copied into each consumer's project or into the package it packs, or imported by a path the consumer's build resolves), a folder of modules the build delivers that way — never a project of the solution (§ Deployment). The build packs a package library before its consumers, and each consumer's steps call it as they call any library; only the Library layout answer of execution's configuration questions folds it into a consumer. What one or a few activities do (close an application, append a line to the run's log, send one mail) stays a step of each consumer.
 
 ## File Naming and Location
 
@@ -68,7 +68,7 @@ Every point the genome leaves to a person, one numbered entry each: a component'
 - **business outcome:** what is written to a system of record, sent and to whom, which item is worked, skipped, charged or paid, an amount;
 - **run behaviour:** how a run counts, retries, recovers, stops, logs or reports;
 - **reading:** an inferred point with no outcome of its own;
-- **material:** an object or file the build needs that nobody has supplied.
+- **material:** an object or file the build needs that nobody has supplied, the expected results of logic over the tables the source ships included.
 
 An open entry builds what it says the genome `builds now`, otherwise its `recommended` option or its `reading`, until someone answers it; the build asks the business outcomes and the material ([configuration-questions-guide.md](configuration-questions-guide.md), Open decisions) and lists the others in the report as unconfirmed. A marked line names its entry: `*[Inferred: D3]*`, `*[Inferred: process D3]*`, or `*[Inferred: CQ2]*` for a value a Configuration Question asks.
 
@@ -76,7 +76,7 @@ An open entry builds what it says the genome `builds now`, otherwise its `recomm
 
 Each step `N. **{Step name}**` keys its row in the Source Map's step table by number and heads its Business Rules and Error Handling entries by name. A `###` heading is one entry point; a shared step under its own heading is built once, and each entry point continues into the step its last step names. A step that calls an automation the source does not hold calls a Platform Dependency the rebuild does not build. Substeps carry the fields, conditions, validations and transformations.
 
-**Test components** build one test case per numbered step (`N. **Test case: <title>**`), its substeps the case's steps and assertions. A **library** component's steps are its public workflows: independent entry points, not one execution.
+**Test components** build one test case per numbered step (`N. **Test case: <title>**`), its substeps the case's steps and assertions. A **library** component's steps are its public workflows, and a **coded app**'s its screens and modes: independent entry points, not one execution.
 
 **Composite UI interactions carry their full contract** in the substep (what is typed, how the option is matched, which key confirms, each path level, the row rule); execution builds each as a pattern ([composite-interactions-guide.md](composite-interactions-guide.md)).
 
@@ -106,7 +106,7 @@ One row per edge between components — mechanism, data schema passed, and what 
 
 ### Deployment
 
-Packaging and route, entry points, the runtime and the data kept out of the logs: the build creates the projects the packaging names and honours the runtime and the log rule; the buildable projects are named explicitly. The environments themselves (tenants and folders, robot accounts, machines) are not the genome's: the build asks what it needs and hands the rest over in the open items. A standalone component genome has no Deployment: its entry point and how it runs are in Interface, how it starts in the Triggers table. A library is listed with the feed it is published to, apart from the solution's projects. With test components, Deployment names exactly one test project and one Test Manager test set per test component.
+Packaging and route, entry points, the runtime and the data kept out of the logs: the build creates the projects the packaging names and honours the runtime and the log rule; the buildable projects are named explicitly. The environments themselves (tenants and folders, robot accounts, machines) are not the genome's: the build asks what it needs and hands the rest over in the open items. A standalone component genome has no Deployment: its entry point and how it runs are in Interface, how it starts in the Triggers table. A library is listed with the feed it is published to, or with its consumers and the route that delivers it to them, apart from the solution's projects. With test components, Deployment names exactly one test project and one Test Manager test set per test component.
 
 ## Design Links
 
@@ -134,7 +134,7 @@ Extracted genomes only: where every part of the genome came from. A genome witho
 
 **Unused parts.** A kept workflow nothing invokes is built like any other step. Parts in the `Not covered` or `Unused` row are left out of the build unless translated first.
 
-**The Source Map is the migration contract.** The build regenerates every catalog it needs — UI target locators, data rows, process inventory — from the export at its migration preflight ([source-migration-guide.md § Migration preflight](source-migration-guide.md)), into the build's working folder, never beside the genome. Rows the build reads:
+**The Source Map is the migration contract.** The build regenerates every catalog it needs — UI target locators, the data rows a run reads from outside its project, process inventory — from the export at its migration preflight ([source-migration-guide.md § Migration preflight](source-migration-guide.md)), into the build's working folder, never beside the genome. Rows the build reads:
 
 | Row | What the build does with it |
 |---|---|
@@ -148,7 +148,24 @@ Extracted genomes only: where every part of the genome came from. A genome witho
 
 ## Source values
 
-A genome is extracted through a rendering of the source, which can hide a typed value, and an extraction can paraphrase one. When the build reads the export, an empty value in a rendering is "not shown", never "not set": the value is read from the source object before it is built as unset. Before a group builds on a step, the build checks against the step's source objects every value of these kinds the genome cites ([source-migration-guide.md § Migration preflight](source-migration-guide.md) step 4): comparison literals, operators and case rules, spelled exactly; counts, attempts and loop bounds, and whether the loop tests before or after its body; lengths, positions and occurrences in text operations; waits, pauses and timeouts, in the source's unit; set or typed; flags that change control flow; date and number formats; values bound to a built-in; a parameter's unit, its default, and which of two filled parameters overrides the other; log texts, with their wording and substitutions; the kind of each file read or written, and the date or field a filter, sort or window uses.
+A genome is extracted through a rendering of the source, which can hide a typed value, and an extraction can paraphrase one. When the build reads the export, an empty value in a rendering is "not shown", never "not set": the value is read from the source object before it is built as unset. Before a group builds on a step, the build checks against the step's source objects every value of these kinds the genome cites ([source-migration-guide.md § Migration preflight](source-migration-guide.md) step 4):
+
+- comparison literals, operators and case rules, spelled exactly;
+- counts, attempts and loop bounds, and whether the loop tests before or after its body;
+- lengths, positions and occurrences in text operations;
+- waits, pauses and timeouts, in the source's unit;
+- set or typed;
+- flags that change control flow, and in a plan or graph each node's flags, mappings and conditions;
+- date and number formats;
+- values bound to a built-in;
+- a parameter's unit, its default, and which of two filled parameters overrides the other;
+- texts the run emits and its screens show (log lines, failure messages with their codes, reasons, message bodies and templates, a screen's titles, labels and notices), with their wording and substitutions;
+- field names of what it writes, sends or parses, with their fallbacks, the stored values behind named choices and statuses, and each service call's endpoint and method;
+- how a missing, null, empty, zero or unparsable value tests and what it becomes, and each check on an input;
+- the tables the logic ships with it (rule, lookup, threshold and seed rows, configuration), every row;
+- each computed value's formula (a hash with its algorithm and what it covers), rounding, and each sort's direction and tie-breaks;
+- the kind of each file read or written, the date or field a filter, sort or window uses, and the filter that selects a value's rows with the row it keeps;
+- each choice the genome states for a condition, computation, pick, handler, parse or written text, the plain ones included (untrimmed, case-sensitive, ties keep the order read, the errors a handler takes, a value's written form).
 
 Three readings decide what is built:
 

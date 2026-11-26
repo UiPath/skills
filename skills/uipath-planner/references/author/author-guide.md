@@ -15,13 +15,13 @@ The writing rules of [genome-format-guide.md § Writing Rules](../shared/genome-
 
 | Phase | Condition | Read |
 |---|---|---|
-| start | — | this guide; [genome-format-guide.md](../shared/genome-format-guide.md) every section before § Process Genome Sections |
+| start | — | this guide; [genome-format-guide.md](../shared/genome-format-guide.md) every section before § Design Links; [genome-questions-guide.md](../shared/genome-questions-guide.md) whole |
 | start | the input is not an agreed SDD | [skill-mapping-guide.md](../shared/skill-mapping-guide.md) whole |
 | the input is received | the input is an agreed SDD (Step 1b) | [genome-from-sdd-guide.md](genome-from-sdd-guide.md) whole; its § Read Plan names the rest of this path's reads |
 | the input is received | the input is a goal, not a process (Step 1a) | [scenario-proposal-guide.md](scenario-proposal-guide.md) whole; its § Read Plan names the rest of this path's reads |
 | the input is received | the input is a PDD (not an agreed SDD — inside `design` the input is the SDD) | [pdd-analysis-guide.md](../shared/pdd-analysis-guide.md) by section — every section except § Accepted process-knowledge sources and § Gap Detection Checklist; the genome's gaps follow genome-format-guide.md |
 | the level is chosen (Step 2) | — | the template of that level ([component](../../assets/templates/component-genome-template.md), [process](../../assets/templates/process-genome-template.md)) |
-| the level is chosen (Step 2) | a process genome | [genome-format-guide.md](../shared/genome-format-guide.md) § Process Genome Sections |
+| the level is chosen (Step 2) | a process genome | [process-genome-sections-guide.md](../shared/process-genome-sections-guide.md) |
 | products are selected (Step 5) | no SDD | [product-selection-guide.md](../shared/product-selection-guide.md) § Constraint Gate and [component-placement-guide.md](../shared/component-placement-guide.md) § Per-task component placement, opened by name (no heading list); [platform-availability-guide.md](../shared/platform-availability-guide.md) (both not re-read when scenario-proposal-guide.md already opened them); § Maestro disambiguation — BPMN vs Flow vs Case only when the genome has two or more components or a coordinator; component-placement-guide.md § Integration Service only when a step acts on a SaaS system |
 | products are selected (Step 5) | no SDD, a step repeats behaviour a deployed library may already hold, and the tenant is reachable | [tenant-library-search-guide.md](../shared/tenant-library-search-guide.md) |
 | the unit of work is assessed | no SDD, and the description iterates over items | [transactional-shape-guide.md](../shared/transactional-shape-guide.md) |
@@ -115,7 +115,7 @@ Populate every template section per the format guide's population matrix. Build 
 
 Process genomes: write the process file first (Components table, Process Map, Handoffs), then each component genome with its `Part of:` line and an Interface matching the Handoffs row.
 
-Interface by component type ([genome-format-guide.md § Interface](../shared/genome-format-guide.md)): a library component gets one argument table per public workflow; a test component gets its per-scenario row schema and, separately, its constants; credentials appear as asset names, never values. Platform Dependencies takes one table per kind of resource the description implies ([genome-format-guide.md § Platform Dependencies](../shared/genome-format-guide.md)). Deployment records that libraries pack before their consumers, and the environment the UI targets come from where [genome-format-guide.md § Deployment (process)](../shared/genome-format-guide.md) places it.
+Interface by component type ([genome-format-guide.md § Interface](../shared/genome-format-guide.md)): a library component gets one argument table per public workflow; a test component gets its per-scenario row schema and, separately, its constants; credentials appear as asset names, never values. Platform Dependencies takes one table per kind of resource the description implies ([genome-format-guide.md § Platform Dependencies](../shared/genome-format-guide.md)). Deployment records that libraries pack before their consumers, and the environment the UI targets come from where [genome-format-guide.md § Target Applications / Actors and Systems](../shared/genome-format-guide.md) places it.
 
 ## Step 8 — Write, then offer edits
 

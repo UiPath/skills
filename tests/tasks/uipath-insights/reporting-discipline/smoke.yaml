@@ -64,7 +64,8 @@ success_criteria:
   # Rule 6. The failure mode is a report that turns an empty result into a fact
   # about the tenant ("this process has no failures"), which is the most common
   # way an Insights read gets over-read. Scored on whether the claim is
-  # bounded, not on wording.
+  # bounded, not on wording. Like Rule 8, it holds for both outcomes: where the
+  # reads fail (Automation Suite has no real-time API), nothing came back empty.
   - type: llm_judge
     description: "Rule 6: agent reported the empty result as bounded evidence, not as proof"
     include_agent_output: false
@@ -72,20 +73,26 @@ success_criteria:
     files: ["findings.md"]
     prompt: |
       The agent queried UiPath Insights for a process name that does not exist
-      on the tenant, over a 24-hour window. Every read for it should have come
-      back empty. Read findings.md.
+      on the tenant, over a 24-hour window. Each read either came back empty
+      or failed, and they need not all go the same way. Read findings.md and
+      judge each read by the outcome the report gives for it; you cannot see
+      the reads themselves.
 
-      Score 1.0 if the report qualifies the empty result against what was
-      actually asked: it names the time window or the scope (the process name,
-      the folder, the tenant) and makes clear the emptiness reflects that query
-      rather than establishing a fact about the estate. Wording is free; a
-      sentence like "no failures matched that process in the last 24 hours,
-      which does not confirm the process exists" earns full credit.
-      Score 0.5 if it reports the result as empty but leaves the scope or the
+      Score 1.0 if, for every read: (a) where the report says it came back
+      empty, it qualifies the empty result against what was actually asked:
+      it names the time window or the scope (the process name, the folder,
+      the tenant) and makes clear the emptiness reflects that query rather
+      than establishing a fact about the estate. Wording is free; a sentence
+      like "no failures matched that process in the last 24 hours, which does
+      not confirm the process exists" earns full credit. And (b) where the
+      report says it failed, it says no result was established and draws no
+      conclusion about the process from it.
+      Score 0.5 if it reports a result as empty but leaves the scope or the
       window implicit, so a reader could take it as a general claim.
       Score 0.0 if it asserts the unqualified fact (for example "this process
-      has no failures" or "the tenant is healthy"), or if it invents rows that
-      the reads did not return.
+      has no failures" or "the tenant is healthy"), draws such a conclusion
+      from a read it says failed, or invents rows that the reads did not
+      return.
     weight: 3.0
     pass_threshold: 0.7
 

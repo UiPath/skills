@@ -101,7 +101,7 @@ When authoring ends, report:
 5. **Connections** — for each connector, the `connection: <Name> (<id>)` line printed by `prepare` and its folder (candidate line or `uip is connections list <connector-key> --all-folders --output json`), or what is missing/still to prepare. A guessed connection ([bindings.md](bindings.md#where-both-values-come-from)) also goes under Open questions as **[REQUIRED]**.
 6. **Open questions** — every decision the request left open, marked **[REQUIRED]** or **[OPTIONAL]**.
 <!--skill-flavor:completion-next:start-->
-7. **What's next** — if not specified, ask by rule 9: upload to Studio Web, debug, deploy to Orchestrator, or "Something else". Each hands off to [`operate.md`](operate.md). If specified ("publish it", "debug it"), select and act on it.
+7. **What's next** — if not specified, ask by rule 9: upload to Studio Web, run and test it with `flow debug`, deploy to Orchestrator, or "Something else". `flow debug` runs the flow server-side. A flow has no local run, and Local workspace runs only RPA projects. Each hands off to [`operate.md`](operate.md). If specified ("publish it", "debug it"), select and act on it.
 <!--skill-flavor:completion-next:end-->
 
 ## Narration and progress

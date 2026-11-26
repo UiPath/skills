@@ -13,20 +13,21 @@ Order (folder delete is what actually reclaims the tenant --
      delete those folders.
   3. Delete the run's `solutionName` package, latest version first, until
      `uip solution packages list --name` returns none.
-  4. Delete every Studio Web solution discoverable from a `.uipx` under the
-     sandbox CWD (mirrors `_shared`/`_setup/cleanup_solutions.py`'s glob),
-     deduped by SolutionId so the same id is never deleted twice even if
-     more than one `.uipx` under the tree points at it.
+  4. Delete the Studio Web solutions named exactly `solutionName` and created
+     within the last MAX_SOLUTION_AGE. The ids and creation times come from
+     `uip solution list`, not from a `.uipx` in the sandbox, so neither a
+     manifest copied in from another solution nor a seed.json edited to name
+     an older one can select it.
 """
 
 from __future__ import annotations
 
-import glob
 import json
 import logging
 import subprocess
 import sys
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, format="teardown: %(message)s")
@@ -39,6 +40,7 @@ FOLDER_DELETE_TIMEOUT = 60
 PACKAGES_LIST_TIMEOUT = 60
 PACKAGES_DELETE_TIMEOUT = 60
 SOLUTION_DELETE_TIMEOUT = 60
+SOLUTION_LIST_TIMEOUT = 60
 FOLDERS_LIST_TIMEOUT = 60
 
 UNINSTALL_EXIT_GRACE = 15
@@ -47,6 +49,10 @@ PAGE_SIZE = 100
 MAX_PAGES = 20
 MAX_PACKAGE_VERSIONS = 10
 SUCCESS = "Success"
+
+# Both tasks that mount this teardown cap the agent at 3900s and grading adds
+# under an hour, so a solution older than this was not created by this run.
+MAX_SOLUTION_AGE = timedelta(hours=4)
 
 # post_run is killed at 300s (api_workflow_composition.yaml); stop short so
 # later phases are skipped cleanly instead of killed mid-call.
@@ -152,23 +158,43 @@ def delete_package_versions(solution_name: str) -> None:
     logger.warning("stopped after %d package versions: %s", MAX_PACKAGE_VERSIONS, solution_name)
 
 
-def delete_studio_web_solutions() -> None:
-    paths = glob.glob("**/*.uipx", recursive=True)
-    seen: set[str] = set()
-    for path in paths:
-        try:
-            with open(path, encoding="utf-8") as handle:
-                data = json.load(handle)
-        except (OSError, json.JSONDecodeError) as error:
-            logger.warning("could not read %s: %s", path, error)
+def created_within_run_window(row: dict, now: datetime) -> bool:
+    try:
+        created = datetime.fromisoformat(str(row.get("CreationTime") or "").replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if created.tzinfo is None:
+        return False
+    return timedelta(minutes=-5) <= now - created <= MAX_SOLUTION_AGE
+
+
+def run_solution_ids(solution_name: str) -> list[str]:
+    rows = _list_all(["uip", "solution", "list", "--name", solution_name], SOLUTION_LIST_TIMEOUT)
+    now = datetime.now(timezone.utc)
+    ids = set()
+    for row in rows:
+        if not isinstance(row, dict) or not row.get("Id"):
             continue
-        solution_id = data.get("SolutionId")
-        if not solution_id or solution_id in seen:
+        if str(row.get("Name") or "").casefold() != solution_name.casefold():
             continue
-        seen.add(solution_id)
+        if created_within_run_window(row, now):
+            ids.add(str(row["Id"]))
+        else:
+            logger.warning(
+                "keep Studio Web solution %s (%s): CreationTime %s is not within this run",
+                row["Id"], solution_name, row.get("CreationTime"),
+            )
+    return sorted(ids)
+
+
+def delete_studio_web_solutions(solution_name: str) -> None:
+    solution_ids = run_solution_ids(solution_name)
+    if not solution_ids:
+        logger.info("no Studio Web solution named %s", solution_name)
+    for solution_id in solution_ids:
         result = _run(["uip", "solution", "delete", solution_id, "--yes"], SOLUTION_DELETE_TIMEOUT)
         status = result.get("Result") if isinstance(result, dict) else None
-        logger.info("delete Studio Web solution %s (from %s) -> %s", solution_id, path, status or "not uploaded")
+        logger.info("delete Studio Web solution %s (%s) -> %s", solution_id, solution_name, status or "unknown")
 
 
 def main() -> int:
@@ -177,14 +203,12 @@ def main() -> int:
     seed_path = Path("seed.json")
     if not seed_path.is_file():
         logger.info("no seed.json; nothing to reclaim")
-        delete_studio_web_solutions()
         return 0
 
     try:
         seed = json.loads(seed_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as error:
         logger.warning("seed.json is not valid JSON: %s", error)
-        delete_studio_web_solutions()
         return 0
 
     parent_folder_path = seed.get("parentFolderPath", "")
@@ -205,7 +229,8 @@ def main() -> int:
         logger.warning("orchestrator-side cleanup ignored error: %s", error)
 
     try:
-        delete_studio_web_solutions()
+        if solution_name:
+            delete_studio_web_solutions(solution_name)
     except Exception as error:  # noqa: BLE001 - teardown must never fail the run
         logger.warning("Studio Web cleanup ignored error: %s", error)
 

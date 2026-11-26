@@ -30,6 +30,13 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
+try:
+    from _shared.bpmn_check import vars_ref
+    from _shared.uip_auth import grader_env
+except ImportError:  # imported with _shared itself on sys.path (unit tests; stage_shared.sh pass 2)
+    from bpmn_check import vars_ref
+    from uip_auth import grader_env
+
 BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
 UIPATH_NS = "http://uipath.org/schema/bpmn"
 
@@ -175,6 +182,7 @@ def run_cli(
         text=True,
         timeout=effective_timeout,
         cwd=cwd,
+        env=grader_env(),
     )
 
 
@@ -632,10 +640,112 @@ def _debug_attempt(
     return completed
 
 
+DEPLOYED_POLL_SECONDS = 5
+DEPLOYED_MAX_FAILED_POLLS = 3
+DEPLOYED_TERMINAL_STATES = frozenset({"Successful", "Faulted", "Stopped"})
+
+
+def run_deployed(
+    folder_path: str,
+    inputs: dict,
+    log_file,
+    *,
+    timeout: int = DEBUG_BUDGET_DEFAULT_TIMEOUT,
+) -> tuple:
+    """Start the one Maestro process deployed in `folder_path` and wait for its
+    job; return (run_data, instance_id, folder_key).
+
+    `process run` returns only the job key, which is also the Maestro instance
+    id, so it addresses `instances ...` directly. Every call shares the one
+    `timeout` deadline, so test_criterion_budgets.py prices this like
+    `run_debug`.
+    """
+
+    deadline = time.monotonic() + timeout
+    log: list[str] = []
+
+    def call(arguments: list[str], label: str, *, quiet: bool = False) -> Any:
+        remaining = math.floor(deadline - time.monotonic())
+        if remaining <= 0:
+            raise CheckFailure(f"{label}: the {timeout}s deployed-run budget ran out")
+        try:
+            completed = run_cli(arguments, timeout=remaining)
+        except subprocess.TimeoutExpired:
+            raise CheckFailure(f"{label} did not answer within the {timeout}s budget") from None
+        if not quiet:
+            log.append(f"$ {' '.join(arguments)}\n{completed.stdout or ''}{completed.stderr or ''}")
+        return payload_data(completed, label)[1]
+
+    try:
+        folder_key = get_ci(call(["uip", "or", "folders", "get", folder_path], "folders get"), "Key")
+        if not isinstance(folder_key, str) or not folder_key:
+            raise CheckFailure(f"folder {folder_path} has no Key")
+
+        listed = call(
+            ["uip", "maestro", "bpmn", "process", "list", "--folder-key", folder_key], "process list"
+        )
+        rows = [row for row in listed or [] if isinstance(row, dict)]
+        if len(rows) != 1:
+            names = [get_ci(row, "Name") for row in rows]
+            raise CheckFailure(f"{folder_path} should hold one Maestro process to run, found {names}")
+        release = rows[0]
+        command = [
+            "uip", "maestro", "bpmn", "process", "run",
+            f"{get_ci(release, 'ProcessKey')}:{get_ci(release, 'ProcessVersion')}",
+            "--folder-key", folder_key,
+            "--release-key", str(get_ci(release, "ReleaseKey")),
+            "--inputs", json.dumps(inputs, separators=(",", ":")),
+        ]
+        if get_ci(release, "FeedId"):
+            command += ["--feed-id", str(get_ci(release, "FeedId"))]
+        job_key = get_ci(call(command, "process run"), "JobKey")
+        if not isinstance(job_key, str) or not job_key:
+            raise CheckFailure("process run returned no job key")
+
+        failed_polls = 0
+        while True:
+            try:
+                job = call(
+                    ["uip", "or", "jobs", "get", job_key, "--folder-key", folder_key], "jobs get", quiet=True
+                )
+                failed_polls = 0
+            except CheckFailure as error:
+                failed_polls += 1
+                log.append(f"job {job_key}: poll failed ({error})")
+                if failed_polls >= DEPLOYED_MAX_FAILED_POLLS or deadline - time.monotonic() <= DEPLOYED_POLL_SECONDS:
+                    raise
+                time.sleep(DEPLOYED_POLL_SECONDS)
+                continue
+            state = get_ci(job, "State")
+            log.append(f"job {job_key}: {state}")
+            if state in DEPLOYED_TERMINAL_STATES:
+                break
+            if deadline - time.monotonic() <= DEPLOYED_POLL_SECONDS:
+                raise CheckFailure(
+                    f"deployed job {job_key} was still {state!r} when the {timeout}s budget ran out"
+                    f"; {get_ci(job, 'Info') or ''}".rstrip("; ")
+                )
+            time.sleep(DEPLOYED_POLL_SECONDS)
+        log.append(json.dumps(job, indent=2, default=str))
+    finally:
+        _write_debug_log(log_file, "\n".join(log))
+
+    run_data = {
+        "FinalStatus": state,
+        "InstanceId": job_key,
+        "ProcessName": get_ci(release, "Name"),
+        "CreationTime": get_ci(job, "CreationTime"),
+        "Info": get_ci(job, "Info"),
+    }
+    return run_data, job_key, folder_key
+
+
 SOLUTION_INIT_TIMEOUT = 90
 SOLUTION_IMPORT_TIMEOUT = 180
 VARIABLES_ALL_TIMEOUT = 120
 INCIDENTS_TIMEOUT = 120
+ASSET_TIMEOUT = 120
+ELEMENT_EXECUTIONS_TIMEOUT = 120
 
 COMPLETED_STATUSES = frozenset({"Completed", "Successful"})
 
@@ -686,35 +796,69 @@ class DebugEvidence:
     incidents_raw: Any
 
 
-def fetch_variables(instance_id: str) -> tuple[Any, str]:
-    """`debug-instance variables-all`: (data, raw stdout)."""
+def _instance_command(verb: str, instance_id: str, folder_key: str | None) -> list[str]:
+    """A debug instance lives under `debug-instance`; a deployed one under
+    `instances`, which needs its folder."""
+    if folder_key is None:
+        return ["uip", "maestro", "bpmn", "debug-instance", verb, instance_id]
+    return ["uip", "maestro", "bpmn", "instances", verb, instance_id, "-f", folder_key]
+
+
+def fetch_variables(instance_id: str, folder_key: str | None = None) -> tuple[Any, str]:
+    """`variables-all`: (data, raw stdout)."""
 
     variables = run_cli(
-        ["uip", "maestro", "bpmn", "debug-instance", "variables-all", instance_id],
+        _instance_command("variables-all", instance_id, folder_key),
         timeout=VARIABLES_ALL_TIMEOUT,
     )
     _payload, variables_data = payload_data(variables, "variables-all")
     return variables_data, variables.stdout or ""
 
 
-def fetch_incidents(instance_id: str) -> tuple[list[Any] | None, Any]:
-    """`debug-instance incidents`: (records, raw data)."""
+def fetch_incidents(instance_id: str, folder_key: str | None = None) -> tuple[list[Any] | None, Any]:
+    """`incidents`: (records, raw data)."""
 
     incidents = run_cli(
-        ["uip", "maestro", "bpmn", "debug-instance", "incidents", instance_id],
+        _instance_command("incidents", instance_id, folder_key),
         timeout=INCIDENTS_TIMEOUT,
     )
     _payload, incidents_data = payload_data(incidents, "incidents")
     return incident_records(incidents_data), incidents_data
 
 
-def debug_evidence(instance_id: str) -> DebugEvidence:
+def debug_evidence(instance_id: str, folder_key: str | None = None) -> DebugEvidence:
     """Variables then incidents. A grader with side effects calls the two
-    fetches itself, journaling between them."""
+    fetches itself, journaling between them. `folder_key` reads a deployed
+    instance instead of a debug one."""
 
-    variables_data, variables_text = fetch_variables(instance_id)
-    incidents, incidents_data = fetch_incidents(instance_id)
+    variables_data, variables_text = fetch_variables(instance_id, folder_key)
+    incidents, incidents_data = fetch_incidents(instance_id, folder_key)
     return DebugEvidence(variables_data, variables_text, incidents, incidents_data)
+
+
+def fetch_asset(instance_id: str, folder_key: str) -> str:
+    """The BPMN XML a deployed instance ran (`instances asset`)."""
+
+    completed = run_cli(
+        _instance_command("asset", instance_id, folder_key), timeout=ASSET_TIMEOUT
+    )
+    _payload, data = payload_data(completed, "instances asset")
+    if not isinstance(data, str) or not data.strip():
+        raise CheckFailure(f"instances asset returned no BPMN for {instance_id}: {data!r}")
+    return data
+
+
+def fetch_element_executions(instance_id: str, folder_key: str) -> list[Any]:
+    """`instances element-executions`: one row per element, each with its runs
+    and the `JobKey` of any job a run started."""
+
+    completed = run_cli(
+        _instance_command("element-executions", instance_id, folder_key),
+        timeout=ELEMENT_EXECUTIONS_TIMEOUT,
+    )
+    _payload, data = payload_data(completed, "instances element-executions")
+    rows = get_ci(data, "ElementExecutions", [])
+    return rows if isinstance(rows, list) else []
 
 
 def require_clean_run(debug_data: Any, evidence: DebugEvidence) -> str:
@@ -828,10 +972,10 @@ def input_echo_ids(process: ET.Element) -> set[str]:
         if extensions is None:
             continue
         for mapping in extensions.iter(q(UIPATH_NS, "output")):
-            source = (mapping.attrib.get("source") or "").strip()
+            source = vars_ref(mapping.attrib.get("source"))
             var = mapping.attrib.get("var")
-            if source.startswith("=vars.") and var:
-                copies.append((source.removeprefix("=vars."), var, mapping.attrib.get("name")))
+            if source and var:
+                copies.append((source, var, mapping.attrib.get("name")))
 
     grew = True
     while grew:

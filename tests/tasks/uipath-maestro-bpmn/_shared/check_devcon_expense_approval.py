@@ -122,6 +122,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _shared.bpmn_assertions import has_source  # noqa: E402
 from _shared.bpmn_check import (  # noqa: E402
     declared_variable_elements,
     NS,
@@ -131,6 +132,7 @@ from _shared.bpmn_check import (  # noqa: E402
     has_uipath_extension,
     parse_bpmn,
     text_content,
+    vars_ref,
 )
 
 AMOUNT_RE = re.compile(r"amount", re.IGNORECASE)
@@ -196,14 +198,15 @@ def _vars_match(expr) -> re.Match | None:
     if not isinstance(expr, str):
         return None
     text = expr.strip()
-    if text.startswith("="):
-        text = text[1:]
-    return _VARS_EXPR.match(text)
+    if not text.startswith("="):
+        text = "=" + text
+    path = vars_ref(text, fields=True)
+    return _VARS_EXPR.match(f"vars.{path}") if path else None
 
 
 def expr_var_ref(expr) -> str | None:
-    """The base variable id an `=vars.<id>` or `=vars.<id>.<field>` value
-    expression references, or None."""
+    """The base variable id an `=vars.<id>` / `=js:vars.<id>` or
+    `=vars.<id>.<field>` value expression references, or None."""
     match = _vars_match(expr)
     return match.group(1) if match else None
 
@@ -334,10 +337,10 @@ def main() -> None:
     outputs = [
         o
         for o in hitl.findall("bpmn:extensionElements/uipath:activity/uipath:output", NS)
-        if o.attrib.get("var")
+        if o.attrib.get("var") and has_source(o)
     ]
     if not outputs:
-        fail("HITL activity has no output mapping (var=) capturing the reviewer's returned fields")
+        fail("HITL activity has no output mapping (var= and a source) capturing the reviewer's returned fields")
     if not any(o.attrib.get("type") for o in outputs):
         fail("HITL output mappings are untyped (no type= on any captured field)")
 

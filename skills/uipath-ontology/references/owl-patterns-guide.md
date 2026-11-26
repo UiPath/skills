@@ -188,7 +188,7 @@ Examples: `:Customer.customerName`, `:SalesOrder.orderId`, `:SalesOrder.status`
 AnnotationAssertion(rdfs:comment :SalesOrder.orderDate "The date and time the order was placed.")
 ```
 
-**Value domain** — a choice-set field: exact, complete, case-sensitive value names, read from the choice set (`uip df choice-sets list-values <CHOICE_SET> --local --output json`). Range is `xsd:string`:
+**Value domain** — a choice-set field: exact, complete, case-sensitive value names, read from the choice set (`uip df choice-sets list-values <CHOICE_SET> --local --output json`; in Artifacts-only mode, from the confirmed model). Range is `xsd:string`. The form is fixed: each value in single quotes, separated by ` | `, never a comma list or bare names:
 ```text
 AnnotationAssertion(rdfs:comment :SalesOrder.status "Values of choice set OrderStatus: 'Open' | 'Shipped' | 'Cancelled' (case-sensitive; copy exactly).")
 ```

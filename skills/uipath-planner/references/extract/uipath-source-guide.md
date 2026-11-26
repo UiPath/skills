@@ -50,7 +50,7 @@ A UiPath project is its own raw form. No inventory script renders it: extraction
 | `uipath.json` with a `functions` map | Coded Function component (Python if `pyproject.toml`, JS/TS if `package.json`). |
 | `package.json` depending on `@uipath/uipath-typescript` or `@uipath/coded-action-app`, plus `webAppManifest.json` or `.uipath/app.config.json` | Coded app component. |
 
-`.uipx` fields: `Projects[].{Id, Type, ProjectRelativePath}`, `SolutionId`, `StudioMinVersion`, `AutomationHubIdeaUrl`. `resources/solution_folder/**` mirrors `Projects[]`, generated — never read for logic.
+`.uipx` fields: `Projects[].{Id, Type, ProjectRelativePath}`, `SolutionId`, `StudioMinVersion`, `AutomationHubIdeaUrl`. A coded app project that holds only its project files (`project.uiproj`, `webAppManifest.json`) is built from source elsewhere in the repository and copied at build into its bundle path (`webAppManifest.json` `config.bundlePath`, default `source/dist`): read the folder the repository's build script or readme names.
 
 ## Inventory and Exclusions
 
@@ -73,9 +73,9 @@ A UiPath project is its own raw form. No inventory script renders it: extraction
 | `.templates/*.xaml`, `designOptions.fileInfoCollection[]` in `project.json` | Test execution template, test-case registrations | [uipath-rpa-signals-guide.md § Signals — Test projects](uipath-rpa-signals-guide.md) |
 | `AGENTS.md`, `README.md`, `.claude/rules/project-context.md` | Author-written intent, known gotchas, run instructions | evidence for Overview and Error Handling; verify every claim against code before use |
 
-Skip entirely: `.local/`, `.codedworkflows/`, `.storage/` (UI Automation's target-image and ancestry caches), `.tmh/`, `.screenshots/`, `.project/`, `node_modules/`, `dist/`, `source/dist/`, `.venv/`, `__pycache__/`, `resources/solution_folder/`, `userProfile/`, `.git/`, `.app/` (generated trigger XAML), `*.Generated.xaml`.
+Skip entirely: `.local/`, `.codedworkflows/`, `.storage/` (UI Automation's target-image and ancestry caches), `.tmh/`, `.screenshots/`, `.project/`, `node_modules/`, `dist/`, `source/dist/`, `.venv/`, `__pycache__/`, `userProfile/`, `.git/`, `.app/` (generated trigger XAML), `*.Generated.xaml`.
 
-Generated boilerplate, never a source of logic: `CodedWorkflow.cs`, `ConnectionsManager.cs`, `ConnectionsFactory.cs`, `ObjectRepository.cs`, `WorkflowRunnerService.cs`, `Triggers.Generated.xaml`, `AppsRequestTrigger.xaml`.
+Generated boilerplate, never a source of logic: `CodedWorkflow.cs`, `ConnectionsManager.cs`, `ConnectionsFactory.cs`, `ObjectRepository.cs`, `WorkflowRunnerService.cs`, `Triggers.Generated.xaml`, `AppsRequestTrigger.xaml`, a case's `caseplan.case.bpmn` (written from `caseplan.case` when the case is packed).
 
 ## Component Detection
 
@@ -91,6 +91,9 @@ Generated boilerplate, never a source of logic: `CodedWorkflow.cs`, `Connections
 | `uipath.json` `functions` map | Coded Function | `uipath-functions` | |
 | `project.uiproj` `ProjectType: "AppV2"` or standalone coded app markers | Coded app (Web or Action per `webAppManifest.json` `config.isActionApp`) | `uipath-coded-apps` | |
 | `element.json` + `element-metadata.json` | Custom connector | `uipath-connector-builder` | |
+| `resources/solution_folder/ixpDeployment/<name>.json` with the taxonomy file the repository builds that model from | IXP model (extraction or classification) | `uipath-ixp` | The taxonomy is the model's source: its fields, groups and instructions, read whole. Without one, the record is the deployed model's Platform Dependencies row |
+
+Shared code its consumers take without a package feed — a folder of modules that a script copies into each consumer project before it packs (the copies ignored by the repository, so the export holds the source folder only) or into the package each one packs, or that a consumer imports by a path its own build resolves (a path dependency, a relative import) — is one library component that the rebuild delivers the same way ([genome-format-guide.md § Two Levels](../shared/genome-format-guide.md) rule 6), read once from its source folder: each consumer's import of it is a call to it, an import inside it resolves where the route delivers its modules (a relative path counted from the copied layout, never from the source folder), a copy the export does hold is never read as the consumer's own code, and the Source Map names the script or the path that delivers it.
 
 The project folder is the part of a workflow's path the project stands for; the rest, the project-relative path the step table's Source objects cell carries (§ Provenance), is the workflow's path in the rebuild.
 
@@ -130,6 +133,7 @@ Check `project.json` `expressionLanguage` before reading XAML. VisualBasic: `And
 | Assets a REFramework configuration lists | One Platform Dependencies row per asset name; Credential when the configuration's description or the consuming activity says so, otherwise Text |
 | BPMN `<uipath:context>` inputs (`folderPath`, `releaseKey`, `appId`, `connection`) | Processes, HITL apps, connections |
 | `entry-points.json` | Interface inputs and outputs per component |
+| `resources/solution_folder/<kind>/…/<name>.json` (`resource.kind`, `resource.spec`): the solution's resource records, bundled at pack and provisioned at deploy | One row per `connection`, `bucket`, `asset` or `queue` record, its `spec` fields as source values (a connection's connector and its deploy-time sign-in mode, `authenticationType`; a bucket's description); an `ixpDeployment` record as § Component Detection says; a `package`, `process` or `app` record repeats a project the `.uipx` lists |
 | Triggers: `.flow` scheduled/connector trigger nodes, BPMN start event types, Case trigger `serviceType`, `bindings_v2.json` `HttpTrigger` | Deployment → Entry points and triggers |
 
 ## Deployed State
@@ -185,9 +189,10 @@ No inventory script derives a process inventory or a recordset list, so a UiPath
 6. API workflow HTTP tasks: the real verb and URL are in `with.bodyParameters`, not the outer `with`.
 7. `bindings.json` and `bindings_v2.json` are different files with different consumers; a coded agent may have both.
 8. `.app/` and `*.Generated.xaml` are generated trigger plumbing for apps and Action Center — skip.
-9. `resources/solution_folder/**` mirrors the manifest and is regenerated; read `.uipx` instead.
+9. The records under `resources/solution_folder/` look generated, and only some are: `package`, `process` and `app` records come from the projects, and a record for each resource a project's bindings name is written from those bindings when the project is added or the resources are refreshed. A record no binding names, and a setting no binding holds (a connection's deploy-time sign-in mode, a bucket's description), is the solution's own (§ Platform Resources).
 10. A `[TestCase]` `.cs` file or `Test` project beside the projects it tests is evidence, not a component (§ Component Detection).
 11. The REFramework template's sample values survive customisation: `ProcessABCQueue` in the settings sheet of a project whose item fetch reads rows, the template's own `Tests/` cases, `Exceptions_Screenshots/`. A queue is evidence only when the item fetch actually reads it ([uipath-rpa-signals-guide.md § Signals — XAML › REFramework projects](uipath-rpa-signals-guide.md)).
 12. Framework workflows look like logic and are the template: the state machine, the retry counter, the three status updates and the screenshot on exception describe the Transactional Shape, not steps — transcribing them doubles the shape in the genome.
 13. A `DisplayName` is a hint the author may have copied with the activity: a branch named after a sibling's test ("check if vendor form" on a test of another field) describes the sibling. The condition decides what the step does, and a container with no `DisplayName` (an `If` around a whole file) can hold its structure — a search by names misses it, a full read does not.
 14. The connection and folder names a connector activity shows are the ones it was designed with. The deployed process's overrides decide what runs (§ Deployed State).
+15. A value a deploy file asks for — an external application's client id and scope in a deploy manifest, a variable a pipeline sets — configures the deployment, not the automation. When no code reads it, the genome states what the code does, a sign-in the code never makes written as none, and the value is a setting each deployment makes ([process-genome-sections-guide.md § Deployment (process)](../shared/process-genome-sections-guide.md)): never a Configuration Question, Platform Dependency or Interface entry.

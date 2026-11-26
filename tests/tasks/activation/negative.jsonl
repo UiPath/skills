@@ -77,3 +77,7 @@
 {"id": "negative-078", "prompt": "Install the anthropic skills plugin into my Claude Code setup", "expected_skill": ""}
 {"id": "negative-083", "prompt": "Explain how a loan QA/QC review works in mortgage lending and what a post-closing audit checks", "expected_skill": ""}
 {"id": "negative-084", "prompt": "Deploy our loan origination web app to the staging Kubernetes cluster with Helm", "expected_skill": ""}
+{"id": "negative-081", "prompt": "Add this automation idea to our Jira Product Discovery board with an impact score of 4", "expected_skill": ""}
+{"id": "negative-082", "prompt": "Upload the signed vendor approval form PDF to the Finance SharePoint document library", "expected_skill": ""}
+{"id": "negative-079", "prompt": "Write an Azure DevOps YAML pipeline that builds our .NET 8 solution and runs the unit tests on every PR", "expected_skill": ""}
+{"id": "negative-080", "prompt": "Add a step to our GitHub Actions workflow that caches npm dependencies between runs", "expected_skill": ""}

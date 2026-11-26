@@ -69,7 +69,7 @@ Legend: ⏰ time trigger · 🔔 queue trigger · ⚡ event or API trigger · �
 
 ## Platform Dependencies
 
-{One table per kind of resource the process uses, in this order; leave out a kind it does not use. Added by, Worked by, Used by, Written by and Read by name components. A value the source or description does not show is classed as the format guide's § Open Decisions classes a point.}
+{One table per kind of resource the process uses, in this order; leave out a kind it does not use. Added by, Worked by, Used by, Written by and Read by name components. A value the source or description does not show is classed as the genome questions guide's § Open Decisions classes a point.}
 
 ### Queues
 
@@ -122,7 +122,7 @@ Legend: ⏰ time trigger · 🔔 queue trigger · ⚡ event or API trigger · �
 
 ## Open Decisions
 
-{Points left to a person that span components; each component's own live in its genome. Numbered once and never renumbered (format guide § Open Decisions); a component's marked line names one of these as `*[Inferred: process D1]*`.}
+{Points left to a person that span components; each component's own live in its genome. Numbered once and never renumbered (genome questions guide § Open Decisions); a component's marked line names one of these as `*[Inferred: process D1]*`.}
 
 1. {The decision as a question}? ({business outcome | run behaviour | reading | material}; answered by: {role}; {builds now | recommended | reading | until answered}: {…}; instead: {the other option}) — {the components and steps it spans}
 
@@ -232,7 +232,7 @@ UI targets: {the environment whose screens the targets describe}
 | Source export | {root path as read at extraction} | {identity: database or tenant, export date, process count — what recognises a moved copy} |
 | Requested change | {for a refactor or migration request: the user's words; otherwise —} | {each refactor-question decision — `Target: <component> → <product>`, `Retire: <entry point>`, `Fold: <reader> into <writer>`; a split decision is that flow's `Decided:` line alone} |
 | {Component} | {Source framework}: {project / solution / object} — `{Name}` ({id}) per object where names repeat | {the source units whose actions became its steps' activities; ambiguity or unresolved reference} |
-| Not covered | {live entry points, public workflows or test cases of the extracted projects that no step is built from — `{Name}` ({id})} | {what each does; left out because nothing reaches it and the Unused parts answer kept to what runs or it only works a technology UiPath's activities cover, or the request named others} |
+| Not covered | {live entry points, public workflows or test cases of the extracted projects that no step is built from — `{Name}` ({id})} | {what each does; left out because it is a public workflow nothing reaches and the Unused parts answer kept to what runs, or it only works a technology UiPath's activities cover, or the request named others} |
 | Unused | {workflows, pages and helpers no caller invokes that extraction left out — `{Name}` ({id})} | {what each does} |
 | Excluded / unreachable | {objects the source guide excludes; dead code, superseded copies, objects reached only through disabled calls — by name} | {why} |
 | Inventory | {processes, windows, controls (n without a locator), recordsets, rows, credential accounts} | {counts the inventory script reported; execution re-derives the catalogs from the export} |
