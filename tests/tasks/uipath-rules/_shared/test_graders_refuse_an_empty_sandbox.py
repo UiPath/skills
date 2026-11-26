@@ -18,11 +18,14 @@ from pathlib import Path
 import pytest
 
 TASKS = Path(__file__).resolve().parent.parent
-COMMAND = re.compile(r"command:\s*[\"']?(?P<cmd>[^\"'\n]*check_[a-z_]+\.py[^\"'\n]*)")
+# Any grader a criterion runs out of the reference tree, not only the per-task `check_*.py`.
+# The shared ones are scored on identically -- `graph_check.py chain LoanRules` is a weight-3.0
+# criterion -- and matching the `check_` prefix alone left every one of them unguarded.
+COMMAND = re.compile(r"command:\s*[\"']?(?P<cmd>[^\"'\n]*\$REFERENCE_DIR/[^\"'\n]*\.py[^\"'\n]*)")
 
 
 def graders() -> list[tuple[str, Path, list[str]]]:
-    """Every `check_*.py` a task's criteria run, with the arguments the task passes it."""
+    """Every grader a task's criteria run, with the arguments the task passes it."""
     found = []
     for task in sorted(TASKS.rglob("*.yaml")):
         for line in COMMAND.findall(task.read_text(encoding="utf-8")):

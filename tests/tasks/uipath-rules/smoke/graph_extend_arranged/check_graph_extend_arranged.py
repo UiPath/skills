@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """Grades a decision added to the LoanRules fixture, a graph whose shapes the user arranged by hand.
 
-`diagram` checks every shape the fixture placed is where the user left it, no
-two cards overlap, and the published entry points are kept. `behavior` checks
-the new `approved` decision and the two existing ones.
+`diagram` checks the added decision is drawn, every shape the fixture placed is
+where the user left it, no two cards overlap, and the published entry points are
+kept. `behavior` checks the new `approved` decision and the two existing ones.
 """
 
 from __future__ import annotations
 
 import os
 import sys
-import xml.etree.ElementTree as ET
 from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "_shared"))
@@ -22,9 +21,10 @@ from graph_check import (  # noqa: E402
     LOAN_PROJECT,
     check_chain,
     check_entry_points_kept,
+    check_new_elements_drawn,
     check_graph_cases,
+    check_diagram_kept,
     check_no_overlap,
-    check_shapes_kept,
     check_whole_file_contract,
 )
 from rules_check import fail, find_project, load_graph  # noqa: E402
@@ -40,10 +40,14 @@ CASES = [
 def check_diagram() -> None:
     project = find_project(LOAN_PROJECT)
     _, root = load_graph(project)
-    check_shapes_kept(ET.parse(FIXTURE / "Business rule.dmn").getroot(), root)
+    # First: the edit drew something. Kept-shapes, no-overlap and kept-entry-points are all
+    # true of the staged fixture, so without this the criterion scored a sandbox nobody touched.
+    check_new_elements_drawn(FIXTURE, root)
+    check_diagram_kept(FIXTURE, root)
     check_no_overlap(root)
     check_entry_points_kept(project, FIXTURE)
-    print("OK: the user's shapes are where they were, no cards overlap, and the entry points are kept")
+    print("OK: the new decision is drawn, the user's shapes are where they were, no cards "
+          "overlap, and the entry points are kept")
 
 
 def check_behavior() -> None:

@@ -12,8 +12,12 @@ tags: [uipath-rules, smoke, "mode:build", "lifecycle:generate"]
 sandbox:
   python: {}
   template_sources:
+    # One RiskRules fixture for the two tasks that start from it -- this one extends its table,
+    # graph_extend_table turns it into a graph. They staged byte-identical copies, each with the
+    # decision's magic ids repeated in its own grader; the ids now live beside the fixture in
+    # `_shared/rules_check.py`.
     - type: template_dir
-      path: fixtures
+      path: ../../_shared/fixtures
 
 reference:
   directory: ../..
