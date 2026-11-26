@@ -2,7 +2,7 @@ task_id: skill-troubleshoot-web-deserialize-xml-malformed
 description: >
   UiPath troubleshoot agent must diagnose a ParseDocument job fault
   (System.Xml.XmlException: Data at the root level is invalid. Line 1, position 1.) and match the
-  activity-packages/web-activities/playbooks/deserialize-malformed-input.md playbook.
+  activity-packages/web-activities/playbooks/deserialize-xml-malformed.md playbook.
   Replayed from a real staging faulted job.
 
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
