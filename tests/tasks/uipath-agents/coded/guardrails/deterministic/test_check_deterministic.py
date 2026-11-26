@@ -298,13 +298,21 @@ def test_accepts_rule_with_local_customer_id_alias(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stderr
 
 
-def test_accepts_rule_with_chained_customer_id_alias(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "lines",
+    [
+        ['raw = cid = str(args.get("customer_id") or "")', 'return "secret" in cid.lower()'],
+        ['cid = args.get("customer_id")', 'cid = cid.lower() if cid else ""', 'return "secret" in cid'],
+        ['cid = args.get("customer_id") or ""', 'return re.search(r"\\bsecret\\b", cid, re.I) is not None'],
+    ],
+)
+def test_accepts_rule_with_customer_id_alias(tmp_path: Path, lines: list[str]) -> None:
+    body = "\n            ".join(lines)
     result = run_checker(
         tmp_path,
-        """
+        f"""
         def check_secret_customer_id(args: dict) -> bool:
-            raw = cid = str(args.get("customer_id") or "")
-            return "secret" in cid.lower()
+            {body}
 
         @guardrail(
             validator=CustomValidator(rule=check_secret_customer_id),
@@ -345,6 +353,11 @@ def test_rejects_local_alias_of_another_field(tmp_path: Path) -> None:
         ['x = args.get("customer_id")', 'x = args.get("name")'],
         ['x = args.get("customer_id")', "if args:", '    x = args.get("query")'],
         ['x = args.get("input") or args.get("customer_id")'],
+        ['x = args.get("customer_id")', 'for x in ("a",): pass'],
+        ['x = args.get("customer_id")', "x *= 0"],
+        ['x = args.get("customer_id")', 'f = lambda x: "secret" in x'],
+        ['x = args.get("customer_id")', "try: pass", "except Exception as x: pass"],
+        ['x = args.get("customer_id")', "import json as x"],
     ],
 )
 def test_rejects_alias_not_holding_customer_id(tmp_path: Path, lines: list[str]) -> None:

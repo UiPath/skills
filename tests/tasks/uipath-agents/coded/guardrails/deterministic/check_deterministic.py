@@ -98,9 +98,11 @@ def contains_substring_literal(node: ast.AST, value: str) -> bool:
 def yields_customer_id(node: ast.AST, names: set[str]) -> bool:
     """Whether `node` evaluates to the customer_id value: `args.get("customer_id")`,
     `args["customer_id"]` or a name in `names`, optionally wrapped in `str()` /
-    `.lower()`-style calls, or first in an `or` fallback chain."""
+    `.lower()`-style calls, first in an `or` chain, or as `<value> if ... else "<str>"`."""
     if isinstance(node, ast.Name):
         return node.id in names
+    if isinstance(node, ast.IfExp) and isinstance(getattr(node.orelse, "value", None), str):
+        return yields_customer_id(node.body, names)
     if isinstance(node, ast.BoolOp) and isinstance(node.op, ast.Or):
         return yields_customer_id(node.values[0], names)
     if isinstance(node, ast.Subscript):
@@ -121,7 +123,8 @@ def customer_id_aliases(node: ast.AST) -> set[str]:
 
     Every binding of the name must be a plain assignment from that value (a self-update such
     as `cid = cid.lower()` is allowed), so a name rebound from another key, or bound by a
-    parameter, loop, tuple or augmented assignment, is not an alias.
+    parameter, loop, tuple, augmented assignment, `except ... as` or `import ... as`, is not
+    an alias.
     """
     stores: dict[str, int] = {}
     values: dict[str, list[ast.expr | None]] = {}
@@ -130,6 +133,9 @@ def customer_id_aliases(node: ast.AST) -> set[str]:
             stores[item.arg] = stores.get(item.arg, 0) + 1
         elif isinstance(item, ast.Name) and not isinstance(item.ctx, ast.Load):
             stores[item.id] = stores.get(item.id, 0) + 1
+        elif isinstance(item, (ast.ExceptHandler, ast.alias)):  # `except ... as x`, `import ... as x`
+            bound_name = getattr(item, "asname", None) or item.name
+            stores[bound_name] = stores.get(bound_name, 0) + 1
         if isinstance(item, (ast.Assign, ast.AnnAssign)):
             for target in item.targets if isinstance(item, ast.Assign) else [item.target]:
                 if isinstance(target, ast.Name):
