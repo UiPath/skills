@@ -822,3 +822,37 @@ jobs:
           fi
           echo "Validating $(printf '%s\n' "$YAMLS" | wc -l | xargs) task YAML(s) against coder_eval@main."
           printf '%s\n' "$YAMLS" | tr '\n' '\0' | xargs -0 coder-eval plan
+
+  # Every fixture the uipath-rules suite stages, through the CLI that will read it. A fixture
+  # is the starting point a task hands the agent: one `uip rules validate` refuses fails its
+  # task before the agent's edit is looked at, and nothing else in CI notices, because no test
+  # stages the fixtures. The two fixtures nothing read are exactly where the string-encoded
+  # `entry-points.json` sat (MST-18847).
+  #
+  # No `paths:` filter and no secret: `uip rules validate` is offline, so this needs the CLI
+  # and nothing else. Advisory for now, like validate-task-schema above, until it has run on a
+  # few PRs; drop `continue-on-error` to make it a gate. Not a required context — adding one
+  # means editing docs/REQUIRED-CHECKS.md in the same PR.
+  validate-rules-fixtures:
+    name: Validate uipath-rules fixtures (advisory)
+    runs-on: uipath-ubuntu-latest
+    timeout-minutes: 8
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: '22'
+
+      # @latest, matching the smoke runner's own install: a pinned CLI would validate the
+      # fixtures against a release the tasks never run under.
+      - name: Install the UiPath CLI
+        run: npm install -g @uipath/cli@latest
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Validate every staged fixture
+        run: python3 tests/tasks/uipath-rules/_shared/validate_fixtures.py

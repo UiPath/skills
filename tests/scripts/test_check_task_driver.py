@@ -367,3 +367,125 @@ def test_live_corpus_passes_every_gate():
     assert "Windows-reachable hook command(s) are single-line" in out
     assert "stage a skill directory" not in out
     assert "finish pumped probes" in out
+
+
+class TestHookVariableGate:
+    """Gate 5. coder_eval expands $REFERENCE_DIR for success_criteria only, so a hook that
+    reads it runs `python3 /_setup/x.py` — "No such file or directory", exit 2. Hook results
+    are informational, so the task still grades: the setup silently never ran. This is the
+    shape of blocker 3 in the skills#5066 review."""
+
+    @staticmethod
+    def _task(tmp_path: Path, hook: str, command: str) -> Path:
+        (tmp_path / "_setup").mkdir(exist_ok=True)
+        (tmp_path / "_setup" / "cleanup.py").write_text("print('ok')\n")
+        path = tmp_path / "task.yaml"
+        path.write_text(yaml.safe_dump({
+            "task_id": "t", "tags": ["uipath-rules"],
+            "sandbox": {"template_sources": [
+                {"type": "template_dir", "path": "_setup", "mount_point": "_setup"}]},
+            hook: [{"command": command, "timeout": 30}],
+        }, sort_keys=False))
+        return path
+
+    @pytest.mark.parametrize("hook", ["pre_run", "post_run"])
+    @pytest.mark.parametrize("spelling", [
+        "python3 $REFERENCE_DIR/_setup/cleanup.py",
+        "python3 ${REFERENCE_DIR}/_setup/cleanup.py",
+        "python3 $TASK_DIR/_setup/cleanup.py",
+    ])
+    def test_a_hook_reading_the_variable_fails(self, tmp_path, hook, spelling):
+        rc, out = _run(self._task(tmp_path, hook, spelling))
+        assert rc == 1
+        assert "not set for hooks" in out
+        assert hook in out
+
+    @pytest.mark.parametrize("hook", ["pre_run", "post_run"])
+    def test_the_mount_relative_spelling_passes(self, tmp_path, hook):
+        rc, out = _run(self._task(tmp_path, hook, "python3 _setup/cleanup.py record"))
+        assert rc == 0, out
+        assert "pre_run/post_run command(s) reads" in out
+
+    def test_a_criterion_may_read_it(self, tmp_path):
+        # The variable is defined for success_criteria. Flagging it there would ban the
+        # spelling every grader in the corpus uses.
+        (tmp_path / "check.py").write_text("print('ok')\n")
+        path = tmp_path / "task.yaml"
+        path.write_text(yaml.safe_dump({
+            "task_id": "t", "tags": ["uipath-rules"], "reference": {"directory": "."},
+            "success_criteria": [{"type": "run_command",
+                                  "command": "python3 $REFERENCE_DIR/check.py", "timeout": 30}],
+        }, sort_keys=False))
+        rc, out = _run(path)
+        assert rc == 0, out
+
+
+class TestNamedScriptGate:
+    """Gate 6. A criterion whose grader is missing or import-only exits non-zero for a reason
+    that is not the agent's, and the harness scores that exactly like a wrong answer."""
+
+    @staticmethod
+    def _task(tmp_path: Path, command: str) -> Path:
+        path = tmp_path / "task.yaml"
+        path.write_text(yaml.safe_dump({
+            "task_id": "t", "tags": ["uipath-rules"], "reference": {"directory": "."},
+            "success_criteria": [{"type": "run_command", "command": command, "timeout": 30}],
+        }, sort_keys=False))
+        return path
+
+    def test_a_grader_that_is_not_on_disk_fails(self, tmp_path):
+        rc, out = _run(self._task(tmp_path, "python3 $REFERENCE_DIR/check_gone.py"))
+        assert rc == 1
+        assert "does not exist" in out
+
+    def test_an_import_only_grader_fails(self, tmp_path):
+        (tmp_path / "check.py").write_text(textwrap.dedent('''
+            """A library, not a grader."""
+            import sys
+
+            TIMEOUT = 30
+
+            def main():
+                sys.exit("FAIL: nothing")
+        ''').lstrip())
+        rc, out = _run(self._task(tmp_path, "python3 $REFERENCE_DIR/check.py"))
+        assert rc == 1
+        assert "runs nothing when executed" in out
+
+    def test_a_main_guard_passes(self, tmp_path):
+        (tmp_path / "check.py").write_text(
+            'import sys\n\n\ndef main():\n    print("ok")\n\n\nif __name__ == "__main__":\n    main()\n')
+        rc, out = _run(self._task(tmp_path, "python3 $REFERENCE_DIR/check.py"))
+        assert rc == 0, out
+
+    def test_a_straight_line_grader_passes(self, tmp_path):
+        # Most graders in the corpus are top-level statements with no guard at all.
+        (tmp_path / "check.py").write_text('import json\n\nd = json.load(open("x.json"))\nprint(d)\n')
+        rc, out = _run(self._task(tmp_path, "python3 $REFERENCE_DIR/check.py"))
+        assert rc == 0, out
+
+    def test_a_script_the_sandbox_produces_is_not_this_gates_business(self, tmp_path):
+        # The agent is asked to write it, or a pre_run copies it in. Neither is on disk at the
+        # path the command spells, and neither is a defect.
+        rc, out = _run(self._task(tmp_path, "python3 ./verify_pagination.py"))
+        assert rc == 0, out
+
+    def test_several_sources_sharing_a_mount_point_merge(self, tmp_path):
+        # uipath-admin stages both the task's own `_setup` and the suite's at `_setup`. A
+        # resolver that kept only one of them read half the suite's hooks as missing.
+        (tmp_path / "suite").mkdir()
+        (tmp_path / "suite" / "shared.py").write_text("print('ok')\n")
+        (tmp_path / "own").mkdir()
+        (tmp_path / "own" / "local.py").write_text("print('ok')\n")
+        path = tmp_path / "task.yaml"
+        path.write_text(yaml.safe_dump({
+            "task_id": "t", "tags": ["uipath-rules"],
+            "sandbox": {"template_sources": [
+                {"type": "template_dir", "path": "own", "mount_point": "_setup"},
+                {"type": "template_dir", "path": "suite", "mount_point": "_setup"},
+            ]},
+            "pre_run": [{"command": "python3 _setup/shared.py && python3 _setup/local.py",
+                         "timeout": 30}],
+        }, sort_keys=False))
+        rc, out = _run(path)
+        assert rc == 0, out
