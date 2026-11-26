@@ -10,7 +10,7 @@ These rows add to the rows of [author-guide.md § Read Plan](author-guide.md) th
 |---|---|---|
 | the input is received | — | this guide whole; the SDD whole, with every child SDD a solution root lists; [skill-mapping-guide.md](../shared/skill-mapping-guide.md) § Rules, § Build Skills and § Platform Dependencies (not Build With) only — never § Decision Tree for Ambiguous Steps or § Common Combinations, because the SDD placed every project's skill. Nothing else: product-selection-guide.md, platform-availability-guide.md and pdd-analysis-guide.md stay closed, because the SDD decided what they decide |
 | the input is received | the SDD has a queue or a per-item loop | [transactional-shape-guide.md](../shared/transactional-shape-guide.md) § Layout and, under § Rules, § Applicability and roles, § Item store, § Outcomes, step groups, configuration and traceability and § Split options and evidence; § Levels when the genome is a process genome; § Flows and levels of items when the SDD hands items on from one stage to the next or its items nest |
-| the genome is written (item 7) | — | [genome-format-guide.md § Design Links](../shared/genome-format-guide.md); [sdd-from-genome-guide.md](../shared/sdd-from-genome-guide.md) item 6, for the SDD's Action Required (item 6) |
+| the genome is written (item 7) | — | [genome-format-guide.md § Design Links](../shared/genome-format-guide.md); [sdd-from-genome-guide.md](../shared/sdd-from-genome-guide.md) item 6 and [open-questions-guide.md](../shared/open-questions-guide.md) whole, for the SDD's Action Required (item 6) |
 
 ## Author from an agreed SDD
 

@@ -27,7 +27,6 @@ The writing rules of [genome-format-guide.md § Writing Rules](../shared/genome-
 | products are selected (Step 5) | no SDD, a step repeats behaviour a deployed library may already hold, and the tenant is reachable | [tenant-library-search-guide.md](../shared/tenant-library-search-guide.md) |
 | the unit of work is assessed | no SDD, and the description iterates over items | [transactional-shape-guide.md](../shared/transactional-shape-guide.md) |
 | the user names a preferences file (Step 6) | — | [genome-format-guide.md](../shared/genome-format-guide.md) § Design Links; the file itself, whole |
-| the genome is written (Step 8) | the input is an agreed SDD | [sdd-from-genome-guide.md](../shared/sdd-from-genome-guide.md) item 6; [open-questions-guide.md](../shared/open-questions-guide.md) whole |
 
 Each phase's reads go out in at most three turns: turn 1 every file read whole, every section this plan names, and the heading list of every other file read by section; turn 2 the sections chosen; turn 3 only what turn 2 routed to.
 

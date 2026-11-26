@@ -185,19 +185,38 @@ Usually answered by: as each item names.
 
 ### Business decisions
 
+#### <Process, or the component>
+
 **D<n>. <The entry's question>**
 - **Context:** Answered by: <the entry's `answered by:`>.
 - **See:** <the step the entry names>
 - **Options:**
-  - a. <what the genome builds now> (built now)
-  - b. <the entry's alternative, one per line>
+  - a. <what the genome builds now> (built now)<; (recommended) too when the entry recommends it>
+  - b. <each other option of the entry, one per line; (recommended) on the one it recommends>
+- **Answer:**
+
+### Material to supply
+
+#### <Process, or the component>
+
+**D<n>. <What to supply>**
+- **Context:** Answered by: <the entry's `answered by:`>.
+- **See:** <the step the entry names>
+- **Until answered:** <the entry's `until answered:`>
 - **Answer:**
 
 ### Configuration values
 
+#### <Process, or the component>
+
 **CQ<n>. <The Configuration Question>**
 - **Context:** Answered by: <the environment's owners for a setting, the process owner for a constant>.
-- **Default:** <the question's default, or none>
+- **Default:** <the question's default>
+- **Answer:**
+
+**CQ<n>. <A Configuration Question whose default the build cannot run with: none, or not in the export>**
+- **Context:** Answered by: <the environment's owners for a setting, the process owner for a constant>.
+- **Until answered:** <what the build does: asks it, or builds an empty setting the run stops on>
 - **Answer:**
 ````
 
