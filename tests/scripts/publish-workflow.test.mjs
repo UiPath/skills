@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import test from "node:test";
@@ -43,7 +44,8 @@ test("the dev channel does not depend on the release gate", () => {
 
 test("the packed tarball is the tarball that gets published", () => {
   assert.match(PUBLISH, /TARBALL=\$\(ls uipath-skills-\*\.tgz\)/);
-  assert.match(PUBLISH, /npm publish "\$\{\{ steps\.pack\.outputs\.tarball \}\}"/);
+  assert.match(PUBLISH, /TARBALL: \$\{\{ steps\.pack\.outputs\.tarball \}\}/);
+  assert.match(PUBLISH, /npm publish "\$TARBALL"/);
 });
 
 test("gate failure has no ungated fallback", () => {
@@ -85,4 +87,37 @@ test("the flavor publisher scans with its own copy of the gate, not the built co
     /^\s*run: python3 \.publisher\/scripts\/check-sensitive-content\.py "\$TARBALL"\s*$/m,
   );
   assert.doesNotMatch(flavorPublish, /python3 scripts\/check-sensitive-content\.py/);
+});
+
+// A dispatch runs the workflow file from the chosen ref, so the ref checks are
+// what keep `latest` on a release line and `dev` on main.
+test("latest publishes only from a release line, dev only from main", () => {
+  assert.match(gate("publish-npmjs"), /channel == 'latest' && startsWith\(github\.ref, 'refs\/heads\/release\/'\)/);
+  assert.match(gate("publish-dev"), /github\.ref == 'refs\/heads\/main'/);
+  assert.match(gate("publish-studioweb-dev"), /github\.ref == 'refs\/heads\/main'/);
+});
+
+test("the npmjs job runs in the npm-publish environment", () => {
+  assert.match(job("publish-npmjs"), /^\s*environment: npm-publish\s*$/m);
+});
+
+// Failing open handed `preview` to whichever line published during an outage.
+test("dist-tag resolution fails closed and never moves latest backwards", () => {
+  assert.doesNotMatch(PUBLISH, /npm view[^\n]*\|\| true/);
+  assert.match(PUBLISH, /would not move it forward/);
+});
+
+// npm 12 prints `npm view --json` as an array; `.preview` on it fails the publish.
+// Any other shape must stop the publish, not read as "no tags".
+test("dist-tag lookup reads npm 11 and npm 12 output and fails closed on anything else", () => {
+  const filter = PUBLISH.match(/TAGS=\$\(echo "\$TAGS" \| jq -cn '([^']+)'\)/)?.[1];
+  assert.ok(filter, "publish.yml normalizes the npm view output");
+  const tags = (out) =>
+    JSON.parse(execFileSync("jq", ["-cn", filter], { input: out, stdio: ["pipe", "pipe", "ignore"] }).toString());
+  const expected = { latest: "1.206.1", preview: "1.207.0-preview.1" };
+  assert.deepEqual(tags(JSON.stringify(expected)), expected);
+  assert.deepEqual(tags(JSON.stringify([expected])), expected);
+  for (const bad of ["", "[]", "null", '""', JSON.stringify([expected, expected])]) {
+    assert.throws(() => tags(bad), `${JSON.stringify(bad)} is refused`);
+  }
 });

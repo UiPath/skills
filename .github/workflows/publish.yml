@@ -31,6 +31,14 @@ name: Publish skills package
 # ever picks them. The version line tracks the CLI minor line so the CLI can
 # pin a compatible skills package.
 
+# The sprint cut finds the run it dispatched by its request_id, at the end of
+# the run name. Matching "the newest dispatch on the branch" could pick up a
+# maintainer's manual run instead.
+run-name: >-
+  ${{ github.event_name == 'workflow_dispatch'
+      && format('Publish {0} from {1} {2}', github.event.inputs.channel, github.ref_name, github.event.inputs.request_id)
+      || format('Publish from {0}', github.ref_name) }}
+
 on:
   push:
     # main       -> `dev` build on GitHub Packages
@@ -47,12 +55,21 @@ on:
           - preview
           - dev
           - latest
+      request_id:
+        description: "Set by the sprint cut to find its own run. Leave empty."
+        required: false
+        default: ""
 
 # Serialize publishes by effective channel so equivalent automatic and manual
 # runs cannot race on the same dist-tag. A main push and manual dev dispatch
 # share `publish-dev`; a release push and manual preview dispatch share
 # `publish-preview`; manual latest uses `publish-latest`. Never cancel an
 # in-flight publish.
+#
+# Keyed by channel only, across branches: the dist-tag is the shared state. A
+# newer run in a group cancels the one queued behind it, which is why `dev` is
+# main-only and the sprint cut dispatches only preview: a push to main can no
+# longer cancel a run the cut queued on a release branch.
 concurrency:
   group: publish-${{ github.event_name == 'workflow_dispatch' && github.event.inputs.channel || (github.ref == 'refs/heads/main' && 'dev' || 'preview') }}
   cancel-in-progress: false
@@ -83,9 +100,12 @@ jobs:
     # Auto on every push to main; also re-runnable via dispatch (channel=dev).
     # release/v* pushes route to preview on npmjs (publish-npmjs), not here.
     # The repo guard stops forks from attempting to publish on their own main.
+    # `dev` tracks main only: a dev build dispatched on a release branch would
+    # move the tag back to an older line.
     if: >-
       github.repository == 'UiPath/skills'
-      && ((github.event_name == 'push' && github.ref == 'refs/heads/main')
+      && github.ref == 'refs/heads/main'
+      && (github.event_name == 'push'
           || (github.event_name == 'workflow_dispatch' && github.event.inputs.channel == 'dev'))
     runs-on: uipath-ubuntu-latest
     permissions:
@@ -131,7 +151,9 @@ jobs:
       github.repository == 'UiPath/skills'
       && ((github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/'))
           || (github.event_name == 'workflow_dispatch'
-              && (github.event.inputs.channel == 'latest' || github.event.inputs.channel == 'preview')))
+              && ((github.event.inputs.channel == 'latest' && startsWith(github.ref, 'refs/heads/release/'))
+                  || (github.event.inputs.channel == 'preview'
+                      && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))))))
     runs-on: uipath-ubuntu-latest
     # Pins the OIDC subject to `repo:UiPath/skills:environment:release-gate`,
     # so one Entra federated credential covers every release line.
@@ -167,18 +189,26 @@ jobs:
     needs: [guard, release-gate]
     # dispatch channel=latest              -> `latest`  (committed version).
     # release/v* push / dispatch preview   -> `preview` (stamped pre-release).
+    # Stable ships only from a release line; preview from main or a release
+    # line. The ref check fails fast; the real gate is the environment below.
     if: >-
       github.repository == 'UiPath/skills'
       && ((github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/'))
           || (github.event_name == 'workflow_dispatch'
-              && (github.event.inputs.channel == 'latest' || github.event.inputs.channel == 'preview')))
+              && ((github.event.inputs.channel == 'latest' && startsWith(github.ref, 'refs/heads/release/'))
+                  || (github.event.inputs.channel == 'preview'
+                      && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))))))
     runs-on: uipath-ubuntu-latest
+    # A branch cannot remove this by editing the workflow: GitHub enforces the
+    # environment's deployment-branch policy (main, release/*), and once the
+    # npmjs trusted publisher requires this environment, an OIDC token minted
+    # without it, from a copy of this file, is refused.
+    environment: npm-publish
     permissions:
       contents: read
       # OIDC trusted publishing — no NPM_TOKEN. The npmjs trusted publisher
-      # for @uipath/skills must name this repo (UiPath/skills) and workflow
-      # (publish.yml); it is not restricted to a single ref, so release/v*
-      # pushes publish through the same OIDC exchange as tags on main.
+      # for @uipath/skills must name this repo (UiPath/skills), this workflow
+      # (publish.yml) and the npm-publish environment.
       id-token: write
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
@@ -207,8 +237,21 @@ jobs:
       # `--tag preview` on a pre-release version never moves `latest`, so
       # `npm install @uipath/skills` still resolves the last stable release.
       #
-      # Which preview tag depends on the line: only the highest release line
-      # owns the bare `preview`. See the guard in the step body.
+      # Every tag only moves forward:
+      #   - `latest` refuses a version that is not higher than the current one.
+      #     Promoting a hotfix on an older line (1.208.1 after 1.209.0 went
+      #     stable) would otherwise point every untagged install back at it.
+      #   - Only the highest release line owns the bare `preview`. `--tag
+      #     preview` used to be unconditional, so whichever line published LAST
+      #     took it regardless of version: on 2026-09-06, run 637
+      #     (release/v1.201) landed after run 635 (release/v1.202) and pointed
+      #     `preview` back at the older line. A lower line publishes to
+      #     `preview-v<M.N>` and leaves `preview` alone.
+      #
+      # Fails closed: if npmjs cannot be read, the publish stops. Treating an
+      # unreachable registry as "no tag yet" handed `preview` to whichever line
+      # published during the outage. Only E404 (package never published) is
+      # "no tags".
       - name: Resolve dist-tag and stamp version
         id: dist
         env:
@@ -217,37 +260,45 @@ jobs:
           CHANNEL: ${{ github.event.inputs.channel }}
           RUN_NUMBER: ${{ github.run_number }}
         run: |
+          set -euo pipefail
+          if ! TAGS=$(npm view @uipath/skills dist-tags --json --@uipath:registry=https://registry.npmjs.org/ 2>"$RUNNER_TEMP/npm-view.err"); then
+            if grep -qE '^npm (error|ERR!) code E404$' "$RUNNER_TEMP/npm-view.err"; then
+              TAGS='{}'
+            else
+              cat "$RUNNER_TEMP/npm-view.err"
+              echo "::error::Could not read the current dist-tags from npmjs; refusing to guess."
+              exit 1
+            fi
+          fi
+          # npm 12 wraps `npm view --json` in an array; npm 11 printed the object.
+          # Any other shape, or no output, stops the publish rather than reading as "no tags".
+          if ! TAGS=$(echo "$TAGS" | jq -cn 'input | if type == "array" and length == 1 then .[0] else . end | if type == "object" then . else error("unrecognized npm view output") end'); then
+            echo "::error::Unrecognized dist-tags output from npmjs; refusing to guess."
+            exit 1
+          fi
+          BASE=$(node -p "require('./package.json').version")
+          # Highest of two versions by M.N.P, ignoring any pre-release stamp.
+          highest() { printf '%s\n%s\n' "${1%%-*}" "${2%%-*}" | sort -V | tail -1; }
+
           if [ "$CHANNEL" = "preview" ] || { [ "$EVENT_NAME" = "push" ] && [[ "$PUBLISH_REF" == refs/heads/release/* ]]; }; then
-            BASE=$(node -p "require('./package.json').version")
             PREVIEW="${BASE}-preview.${RUN_NUMBER}"
             npm version "$PREVIEW" --no-git-tag-version --allow-same-version
             node scripts/sync-version.mjs
-
-            # Only the highest release line owns the bare `preview` tag.
-            # `--tag preview` used to be unconditional, so whichever line
-            # published LAST took it regardless of version: on 2026-09-06,
-            # run 637 (release/v1.201) landed after run 635 (release/v1.202)
-            # and pointed `preview` back at the older line. That gets worse
-            # once a line goes stable while the next one previews -- every
-            # 1.201.x hotfix push would take `preview` from 1.202. A lower
-            # line publishes to `preview-v<M.N>` and leaves `preview` alone.
-            #
-            # Fails open: an unset tag or an unreachable registry keeps
-            # `preview`, which is the behaviour this guard replaced.
             TAG=preview
-            CURRENT=$(npm view "@uipath/skills@preview" version --@uipath:registry=https://registry.npmjs.org/ 2>/dev/null || true)
-            if [ -n "$CURRENT" ]; then
-              # Compare release lines only; strip the -preview.<run> suffix.
-              HIGHEST=$({ echo "${CURRENT%%-*}"; echo "$BASE"; } | sort -V | tail -1)
-              if [ "$HIGHEST" != "$BASE" ]; then
-                TAG="preview-v${BASE%.*}"
-              fi
+            CURRENT=$(echo "$TAGS" | jq -r '.preview // empty')
+            if [ -n "$CURRENT" ] && [ "$(highest "$CURRENT" "$BASE")" != "$BASE" ]; then
+              TAG="preview-v${BASE%.*}"
             fi
             echo "tag=$TAG" >> "$GITHUB_OUTPUT"
             echo "Publishing $PREVIEW to dist-tag $TAG (preview is at ${CURRENT:-unset})"
           else
+            CURRENT=$(echo "$TAGS" | jq -r '.latest // empty')
+            if [ -n "$CURRENT" ] && { [ "$CURRENT" = "$BASE" ] || [ "$(highest "$CURRENT" "$BASE")" != "$BASE" ]; }; then
+              echo "::error::latest is at $CURRENT; publishing $BASE would not move it forward."
+              exit 1
+            fi
             echo "tag=latest" >> "$GITHUB_OUTPUT"
-            echo "Publishing $(node -p "require('./package.json').version") to dist-tag latest"
+            echo "Publishing $BASE to dist-tag latest (latest is at ${CURRENT:-unset})"
           fi
 
       # Pack first and publish that exact tarball, so the bytes verified below
@@ -282,11 +333,15 @@ jobs:
       # npmjs; credentials come from the OIDC exchange. `--provenance` attaches
       # a signed build attestation (allowed because the repo is public and the
       # job has id-token: write); package.json `repository.url` must match.
+      # Step outputs reach the shell through env, never through ${{ }} in the script.
       - name: Publish to npmjs (OIDC trusted publishing)
+        env:
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+          DIST_TAG: ${{ steps.dist.outputs.tag }}
         run: |
           npm config set @uipath:registry https://registry.npmjs.org/
-          npm publish "${{ steps.pack.outputs.tarball }}" \
-            --access public --provenance --tag ${{ steps.dist.outputs.tag }}
+          npm publish "$TARBALL" \
+            --access public --provenance --tag "$DIST_TAG"
 
   announce-latest:
     # `npm publish` returns before npmjs serves the version; the called
@@ -304,7 +359,8 @@ jobs:
     needs: [guard]
     if: >-
       github.repository == 'UiPath/skills'
-      && ((github.event_name == 'push' && github.ref == 'refs/heads/main')
+      && github.ref == 'refs/heads/main'
+      && (github.event_name == 'push'
           || (github.event_name == 'workflow_dispatch' && github.event.inputs.channel == 'dev'))
     permissions:
       contents: read
