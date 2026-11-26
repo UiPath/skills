@@ -4,7 +4,7 @@ A rule holds one `.dmn`, and that file may hold more than one decision. Decision
 
 DMN calls that graph a **Decision Requirements Diagram (DRD)** — hence this file's name. The designer's canvas *is* the DRD, and `dmndi:DMNDI` is where its layout lives. "Decision graph" and "DRD" mean the same thing throughout.
 
-Read this when a request needs more than one answer, or when one answer feeds another. One answer still needs the right shape: a set of cases is a decision table and needs nothing here, one formula is a [literal expression](#literal-expressions), a calculation run over different arguments in more than one place is a [knowledge model](#knowledge-models), and a note for a reader is a [text annotation](#text-annotations).
+Read this when a request needs more than one answer, or when one answer feeds another. **A rule that is one decision table needs nothing from this file** — author the table, and leave the `surface` attribute `uip rules init` wrote alone ([The authoring marker](#the-authoring-marker)). One answer still needs the right shape: a set of cases is a decision table, one formula is a [literal expression](#literal-expressions), a calculation run over different arguments in more than one place is a [knowledge model](#knowledge-models), and a note for a reader is a [text annotation](#text-annotations).
 
 ## When to split
 
@@ -22,7 +22,7 @@ Do not split a single answer across tables to make each table smaller. Each deci
 
 ## Skeleton
 
-A two-decision graph. `rate` reads the band `risk` decides.
+A two-decision graph. `rate` reads the band `risk` decides. It carries `surface="decision-graph"` **because it holds two decisions** — a rule with one table does not, and copying this skeleton into one is the most common way that attribute goes wrong.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8" ?>
@@ -151,7 +151,22 @@ Give `name` a plain identifier — no spaces, no leading digit. Put the readable
 
 `<uipath:authoring surface="decision-graph" />` in the `definitions` `extensionElements` says the file is a graph. Declare `xmlns:uipath="http://uipath.com/schema/1.0/dmn/authoring"` on `definitions` — a prefix bound anywhere else is not read.
 
-It matters because a graph that holds one decision is byte-identical to a plain decision table; without the marker that file opens as a bare table. Write it on any file authored as a graph, whatever its decision count.
+The other value is `decision-table`, and it is the one `uip rules init` scaffolds. Which to write:
+
+| The file holds | `surface` |
+|---|---|
+| One decision whose logic is a decision table, and nothing else | `decision-table` — what `init` already wrote, so change nothing |
+| Two or more decisions | `decision-graph` |
+| A business knowledge model or a text annotation, at any decision count | `decision-graph` — only the canvas draws them |
+
+It matters in both directions. A graph that holds one decision is byte-identical to a plain
+decision table, so without the marker that file opens as a bare table and the requirement edges
+are invisible. And `decision-graph` on a rule that is one decision table opens it on the canvas
+instead of the table editor — a worse editor for the thing the user asked for. `validate` reports
+neither, so nothing tells you.
+
+**Do not copy the skeleton above into a single-decision rule.** It is a two-decision graph, so it
+carries `decision-graph`; a rule with one table keeps the surface `init` gave it.
 
 Each decision carries `<uipath:authoring editor="…" />` naming the editor its logic opens in: `decision-table` or `literal-expression`. Attributes only — the marshaller drops the text body of an extension element it does not model.
 
