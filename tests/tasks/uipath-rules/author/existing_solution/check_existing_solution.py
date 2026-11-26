@@ -4,7 +4,8 @@
 `new`: ReturnsRules joins Logistics. The sandbox still holds exactly one `.uipx`, that
 manifest lists the new project once, the project sits in the solution folder, and its
 return window matches the policy. `existing`: the request names ShippingRules, which already
-exists, so its files must stay as they were. Both rows require ShippingRules unchanged.
+exists, so its files must stay as they were and Logistics must still list it once. Where else
+the agent puts the new policy is its choice. Both rows require ShippingRules unchanged.
 """
 
 from __future__ import annotations
@@ -60,9 +61,12 @@ def grade_new() -> None:
 
 
 def grade_existing() -> None:
-    folder, projects = solution()
-    check_shipping_unchanged(folder, projects)
-    print("OK: one solution, and the existing ShippingRules is unchanged")
+    manifest = Path("Logistics") / "Logistics.uipx"
+    if not manifest.is_file():
+        fail("Logistics/Logistics.uipx is gone")
+    projects = json.loads(manifest.read_text(encoding="utf-8")).get("Projects") or []
+    check_shipping_unchanged(manifest.parent, projects)
+    print("OK: the existing ShippingRules is unchanged and still in Logistics")
 
 
 if __name__ == "__main__":

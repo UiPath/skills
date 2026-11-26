@@ -6,9 +6,10 @@ description: >
   lists ReturnsRules once, that the project sits in the solution folder, and
   that its return window matches the policy. Row `existing`: the request names
   ShippingRules, which already exists. Its files must stay byte-identical,
-  because `uip rules init` refuses the name and `--force` keeps the `.dmn`.
-  Both rows grade ShippingRules unchanged, and `uip rules validate` and
-  `uip rules format` run by the grader.
+  because `uip rules init` refuses the name and `--force` keeps the `.dmn`;
+  where the agent puts the new policy is its choice. Both rows grade
+  ShippingRules unchanged, and `uip rules validate` and `uip rules format`
+  run by the grader.
 tags: [uipath-rules, integration, "mode:build", "lifecycle:generate"]
 
 sandbox:

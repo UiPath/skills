@@ -61,3 +61,12 @@ def test_overwritten_existing_rule_fails(tmp_path: Path, mode: str) -> None:
     dmn.write_text(dmn.read_text(encoding="utf-8").replace("Freight", "Pallet"), encoding="utf-8")
     result = run(tmp_path, mode)
     assert result.returncode != 0 and "ShippingRules/Business rule.dmn changed" in result.stdout
+
+
+def test_new_policy_beside_the_existing_rule_passes_existing(tmp_path: Path) -> None:
+    # Creating the new policy in a solution of its own leaves the user's rule alone, which is all
+    # the `existing` row asks.
+    sandbox(tmp_path, "ShippingRulesSolution/ShippingRules", register=False)
+    (tmp_path / "ShippingRulesSolution" / "ShippingRulesSolution.uipx").write_text('{"Projects": []}', encoding="utf-8")
+    result = run(tmp_path, "existing")
+    assert result.returncode == 0, result.stdout

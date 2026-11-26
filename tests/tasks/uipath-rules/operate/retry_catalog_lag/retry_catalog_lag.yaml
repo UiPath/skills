@@ -35,6 +35,7 @@ sandbox:
         - when:
             verb: "rules describe"
             positional: ["ClaimLimits"]
+            value_flags: [output, folder-path, folder-key, inputs, limit, offset, output-filter, log-level, log-file, profile]
           exit_code: 1
           stdout: >-
             {"Result":"Failure","ErrorCode":"not_found",
@@ -45,6 +46,7 @@ sandbox:
         - when:
             verb: "rules get"
             positional: ["ClaimLimits"]
+            value_flags: [output, folder-path, folder-key, inputs, limit, offset, output-filter, log-level, log-file, profile]
           stdout: >-
             {"Result":"Success","Code":"RulesGet","Data":{"Key":"00000000-0000-4000-8000-000000000301",
             "Name":"ClaimLimits","FolderPath":"Shared","FolderKey":"00000000-0000-4000-8000-000000000001",
@@ -54,6 +56,7 @@ sandbox:
         - when:
             verb: "rules versions"
             positional: ["ClaimLimits"]
+            value_flags: [output, folder-path, folder-key, inputs, limit, offset, output-filter, log-level, log-file, profile]
           stdout: >-
             {"Result":"Success","Code":"RulesVersionList","Pagination":{"Returned":1,"Limit":50,"Offset":0,"HasMore":false},
             "Data":[{"Version":"1.0.0","IsActive":true,"CreationTime":"2026-06-02T09:14:05.112Z"}]}
@@ -81,15 +84,16 @@ success_criteria:
     tool: uip
     verb: "rules describe"
     positional: ["ClaimLimits"]
+    value_flags: [output, folder-path, folder-key, inputs, limit, offset, output-filter, log-level, log-file, profile]
     min_count: 2
     max_count: 2
     weight: 3.0
     pass_threshold: 1.0
 
   - type: cli_called
-    description: "Agent did not switch tenants"
+    description: "Agent did not switch tenants (login tenant set)"
     tool: uip
-    verb: "login tenant"
+    verb: "login tenant set"
     min_count: 0
     max_count: 0
     weight: 1.0

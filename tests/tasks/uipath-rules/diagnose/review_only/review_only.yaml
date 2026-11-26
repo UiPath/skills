@@ -28,7 +28,8 @@ initial_prompt: |
   Save your findings to `review.json` in this folder: under `gaps`, a list of
   example inputs that match no row, and under `overlaps`, a list of example
   inputs that match more than one row. Each example is an object with
-  `annualSpend` and `riskLevel`, as the caller sends them.
+  `annualSpend` and `riskLevel`, as the caller sends them: `annualSpend` is 0
+  or more, and `riskLevel` is "Low", "Medium" or "High".
 
   There is no tenant to evaluate against, so do not run `uip rules debug`.
   Do not ask for confirmation.

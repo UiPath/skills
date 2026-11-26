@@ -87,9 +87,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: cli_called
-    description: "Agent did not switch tenants itself; the user decides that"
+    description: "Agent did not switch tenants itself (login tenant set); the user decides that"
     tool: uip
-    verb: "login tenant"
+    verb: "login tenant set"
     min_count: 0
     max_count: 0
     weight: 2.0
