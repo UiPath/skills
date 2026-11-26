@@ -73,7 +73,10 @@ def run_uip(*args: str, input_text: str | None = None, timeout: int = UIP_TIMEOU
         return 124, "", f"timed out after {timeout}s"
     except FileNotFoundError:
         return 127, "", "uip CLI not on PATH"
-    return result.returncode, result.stdout, result.stderr
+    err = result.stderr
+    if result.returncode != 0 and not err.strip():
+        err = result.stdout.strip()[-500:]  # `--output json` reports the failure on stdout
+    return result.returncode, result.stdout, err
 
 
 def count_records(entity_id: str) -> int:
