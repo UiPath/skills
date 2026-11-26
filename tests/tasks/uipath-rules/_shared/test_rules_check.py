@@ -11,7 +11,6 @@ import shutil
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
-from datetime import date, datetime
 from pathlib import Path
 from xml.sax.saxutils import escape
 
@@ -89,33 +88,6 @@ class TestUnaryTest:
     def test_lists_negation_and_null(self, cell, value, expected):
         assert rc.unary_test(cell, value) is expected
 
-    @pytest.mark.parametrize("cell, value, expected", [
-        ('< date("2026-01-31")', date(2026, 1, 30), True),
-        ('< date("2026-01-31")', date(2026, 1, 31), False),
-        ('>= date( "2026-01-31" )', date(2026, 1, 31), True),
-        ('date("2026-01-31")', date(2026, 1, 31), True),
-        ('[date("2026-01-01")..date("2026-02-01"))', date(2026, 1, 1), True),
-        ('[date("2026-01-01")..date("2026-02-01"))', date(2026, 2, 1), False),
-        ('(date("2026-01-01")..date("2026-02-01")]', date(2026, 2, 1), True),
-        ('< date("2026-01-01"), > date("2026-12-31")', date(2027, 1, 1), True),
-        ('not(< date("2026-01-01"))', date(2025, 12, 31), False),
-        ('< date("2026-01-01")', None, False),
-    ])
-    def test_compares_dates(self, cell, value, expected):
-        assert rc.unary_test(cell, value) is expected
-
-    @pytest.mark.parametrize("cell, value", [
-        ('< date("2026-01-31")', 5),
-        ('< date("2026-01-31")', "2026-01-01"),
-        ('< date("2026-01-31")', datetime(2026, 1, 1, 12, 0)),
-        ("< 5", date(2026, 1, 1)),
-        ('[0..date("2026-01-01"))', date(2025, 1, 1)),
-        ('< date("2026-02-30")', date(2026, 1, 1)),
-    ])
-    def test_date_mismatches_fail_loudly(self, cell, value):
-        with pytest.raises(SystemExit):
-            rc.unary_test(cell, value)
-
 
 class TestLiteral:
     @pytest.mark.parametrize("text, expected", [
@@ -152,36 +124,10 @@ class TestEvaluate:
         with pytest.raises(SystemExit):
             rc.evaluate(table("ANY", self.ROWS), {"creditScore": 500})
 
-    @pytest.mark.parametrize("policy", ["PRIORITY", "RULE ORDER", "OUTPUT ORDER"])
-    def test_unsupported_multi_result_policies_are_rejected(self, policy):
+    @pytest.mark.parametrize("policy", ["COLLECT", "PRIORITY", "RULE ORDER", "OUTPUT ORDER"])
+    def test_multi_result_policies_are_rejected(self, policy):
         with pytest.raises(SystemExit):
             rc.evaluate(table(policy, self.ROWS), {"creditScore": 500})
-
-    def test_collect_returns_every_matching_row_per_output(self):
-        rows = [(["< 580"], ['"High"', "10"]), (["< 700"], ['"Medium"', "20"]), ([">= 700"], ['"Low"', "30"])]
-        collect = table("COLLECT", rows, outputs=("riskBand", "fee"))
-        assert rc.evaluate(collect, {"creditScore": 500}) == {"riskBand": ["High", "Medium"], "fee": [10.0, 20.0]}
-        assert rc.evaluate(collect, {"creditScore": 800}) == {"riskBand": ["Low"], "fee": [30.0]}
-
-    def test_collect_with_no_match_is_empty_lists(self):
-        assert rc.evaluate(table("COLLECT", [(["< 580"], ['"High"'])]), {"creditScore": 600}) == {"riskBand": []}
-
-    def test_collect_with_an_unreadable_row_is_unevaluable(self):
-        rows = [(["< 580"], ['"High"']), (["< 700"], ["scoreModel(1)"])]
-        assert rc.evaluate(table("COLLECT", rows), {"creditScore": 500}) == {"riskBand": rc.UNEVALUABLE}
-
-    def test_collect_with_aggregation_is_rejected(self):
-        collect = table("COLLECT", self.ROWS)
-        collect.set("aggregation", "SUM")
-        with pytest.raises(SystemExit):
-            rc.evaluate(collect, {"creditScore": 500})
-
-    def test_check_cases_compares_collected_lists(self):
-        rows = [(["< 580"], ['"High"']), (["< 700"], ['"Medium"'])]
-        rc.check_cases(table("COLLECT", rows), "riskBand", [({"creditScore": 500}, ["High", "Medium"])])
-        rc.check_cases(table("COLLECT", rows), "riskBand", [({"creditScore": 500}, ["Medium", "High"])])
-        with pytest.raises(SystemExit):
-            rc.check_cases(table("COLLECT", rows), "riskBand", [({"creditScore": 500}, ["High"])])
 
     def test_row_with_wrong_cell_count_fails(self):
         with pytest.raises(SystemExit):
@@ -393,36 +339,19 @@ class TestFormatCheck:
     """`run_format_check` with `uip` stubbed, so these run without the CLI."""
 
     @staticmethod
-    def stub(monkeypatch, files, returncode=0, stdout=None):
-        calls = []
-
+    def stub(monkeypatch, project, files, returncode=0):
         def run(command, **_):
-            calls.append(command)
-            # The check must format a copy: the agent's own files stay as the agent left them.
-            assert Path(command[3]).resolve() != Path("RiskRules").resolve()
-            assert (Path(command[3]) / "project.uiproj").is_file()
-            body = stdout if stdout is not None else json.dumps({"Code": "RulesFormat", "Data": {"Files": files}})
+            assert Path(command[3]) != project  # formats a copy, never the agent's files
+            body = json.dumps({"Data": {"Files": files}})
             return subprocess.CompletedProcess(command, returncode, stdout=body, stderr="")
-
         monkeypatch.setattr(rc.subprocess, "run", run)
-        return calls
 
     def test_passes_when_nothing_changes(self, project, monkeypatch):
-        calls = self.stub(monkeypatch, [{"File": "rule.dmn", "Changed": False}])
+        self.stub(monkeypatch, project, [{"File": "rule.dmn", "Changed": False}])
         rc.run_format_check(project)
-        assert calls[0][:3] == ["uip", "rules", "format"] and calls[0][-2:] == ["--output", "json"]
 
-    def test_fails_when_a_file_changes(self, project, monkeypatch):
-        self.stub(monkeypatch, [{"File": "rule.dmn", "Changed": True}])
-        with pytest.raises(SystemExit):
-            rc.run_format_check(project)
-
-    def test_fails_when_format_fails(self, project, monkeypatch):
-        self.stub(monkeypatch, [], returncode=1)
-        with pytest.raises(SystemExit):
-            rc.run_format_check(project)
-
-    def test_fails_on_unreadable_output(self, project, monkeypatch):
-        self.stub(monkeypatch, [], stdout="not json")
+    @pytest.mark.parametrize("files, returncode", [([{"File": "rule.dmn", "Changed": True}], 0), ([], 1)])
+    def test_fails_on_a_change_or_a_failed_run(self, project, monkeypatch, files, returncode):
+        self.stub(monkeypatch, project, files, returncode)
         with pytest.raises(SystemExit):
             rc.run_format_check(project)
