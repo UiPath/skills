@@ -169,7 +169,7 @@ Build prerequisites: sdd-writing-guide.md § Writing Rules.
 
 ### Business Rules
 
-<!-- Every rule the agent applies, numbered BR-01, BR-02, …: the conditions, thresholds, mappings and limits its code applies, and the rules its instructions state. Classification and homes: [Business Rules Guide](../../references/design/business-rules-guide.md). -->
+<!-- Every rule the agent applies, under the source's own rule ID (BR-01, BR-02, … only when the source numbers none), carried in the source's words: the conditions, thresholds, mappings and limits its code applies, and the rules its instructions state. Classification and homes: [Business Rules Guide](../../references/design/business-rules-guide.md). -->
 
 | ID | Rule Name | Applied by (code / instructions) | Description | Affected Steps |
 |---|---|---|---|---|

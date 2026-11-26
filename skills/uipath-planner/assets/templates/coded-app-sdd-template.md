@@ -1,7 +1,7 @@
 # Solution Design Document — <APP_NAME>
 
 <!-- Template: Coded Apps (web applications). When the PDD lacked UI details, Phase 1 gap-filling Q&A fills framework, app type, pages/routes and the data the app keeps.
-     Phase 2 sections: §2, §3, §4, §5, §6, §10. Phase 3 sections: all others. -->
+     Phase 2 sections: §2, §3, §4, §5, §6, §11. Phase 3 sections: all others. -->
 
 ---
 
@@ -23,7 +23,7 @@
 | **Execution autonomy** | <autonomous \| interactive> |
 | **Delivery model** | <cloud \| automation-suite <VERSION_IF_KNOWN> \| standalone \| unspecified> |
 | **SDD scope** | <single-product \| solution> |
-| **Project list section** | §10 Project Structure + §9 Integrated Components |
+| **Project list section** | §11 Project Structure + §10 Integrated Components |
 | **Solution root SDD** | <PATH_TO_SOLUTION_ROOT_SDD — solution scope only; for single-product omit this row and the three below it (Solution ID, Project SDD role, Independently executable) — every other row stays> |
 | **Solution ID** | <SOLUTION_NAME_KEBAB> |
 | **Project SDD role** | child |
@@ -103,10 +103,11 @@ Build prerequisites: sdd-writing-guide.md § Writing Rules.
 6. API Integration
 7. User Flows
 8. Error Handling
-9. Integrated Components
-10. Project Structure
-11. Testing Strategy
-12. Next Steps
+9. Business Rules
+10. Integrated Components
+11. Project Structure
+12. Testing Strategy
+13. Next Steps
 
 ---
 
@@ -246,7 +247,63 @@ flowchart LR
 
 ---
 
-## 9. Integrated Components
+## 9. Business Rules
+
+<!-- Every rule the source states has one home here: [Business Rules Guide](../../references/design/business-rules-guide.md) § Homes per template.
+     - Keep the source's rule IDs verbatim (`BR-001`, `BR-F01`); only a source that numbers none gets `BR-01`, `BR-02`, …. A rule the design adds takes the next free ID and its `[DEFAULT]` or `[SME REVIEW]` marker.
+     - Each row carries the rule in the source's words, never the ID alone. The element that applies a rule (page) names its ID there; this row stays its one definition.
+     - Every subsection but Rules Not Carried stays: an empty one holds its `None.` line.
+     - Before the ready flip, `br-coverage.mjs` prints `OK` against the source (business-rules-guide.md § 4). -->
+
+### Validation Rules
+
+<!-- A rule that checks a value's form. Empty: `None. No rule checks a value's form.` -->
+
+| ID | Rule | Field | Check (regex / range / type / allowed values) | Checked at |
+|---|---|---|---|---|
+| <BR_ID> | <RULE> | <FIELD> | <CHECK> | <PAGE_OR_COMPONENT> |
+
+### Decision Tables
+
+<!-- business-rules-guide.md → Decision tables. Runs in: the page, component or backend call that evaluates it. Empty: `None. No rule decides an outcome.` -->
+
+#### DT1 — <DECISION_NAME>
+**Hit policy:** <UNIQUE / FIRST / COLLECT>
+**Inputs:** `<INPUT_NAME>` (<string / number / boolean / date>), …
+**Output:** `<OUTPUT_NAME>` (<TYPE_AND_ALLOWED_VALUES>)
+**Runs in:** <RUNS_IN>
+
+| # | <INPUT_NAME> | <INPUT_NAME> | → <OUTPUT_NAME> | Rule |
+|---|---|---|---|---|
+| 1 | <ENTRY> | <ENTRY> | <OUTPUT> | <BR_ID>: <RULE> |
+
+### Rules Applied in the App
+
+<!-- A rule that sets what the app does when a condition holds: a fallback when a system is down or a check cannot run, a deadline or reminder, a route, what is shown, sent or kept. Applied by: the page — a page, component or §8 error row — that applies it. Empty: `None. Every rule is a validation, a decision or a reasoning rule.` -->
+
+| ID | Rule | When | What happens | Applied by |
+|---|---|---|---|---|
+| <BR_ID> | <RULE> | <CONDITION> | <OUTCOME> | <APPLIED_BY> |
+
+### Rules That Need Reasoning
+
+<!-- business-rules-guide.md → Rules that need reasoning. Agent: the backend call to the agent. Person: the user of the page that asks for the judgment. Empty: `None. Every rule is deterministic.` -->
+
+| ID | Rule | Applied by | Inputs → Output | Where it runs |
+|---|---|---|---|---|
+| <BR_ID> | <RULE> | <Agent / Person> | <INPUTS> → <OUTPUT> | <WHERE_IT_RUNS> |
+
+### Rules Not Carried
+
+<!-- OPTIONAL subsection — omit entirely when the design applies every rule the source states (exempt from the template-superset check). A source rule this design does not apply: another SDD of the solution applies it (name it), or the source's future state retires it. Any other reason is an [SME REVIEW] item. -->
+
+| ID | Rule | Why not here |
+|---|---|---|
+| <BR_ID> | <RULE> | <REASON> |
+
+---
+
+## 10. Integrated Components
 
 ### Called By (if Action app)
 
@@ -274,7 +331,7 @@ flowchart LR
 
 ---
 
-## 10. Project Structure
+## 11. Project Structure
 
 <!-- The app project is scaffolded by uipath-coded-apps, which owns its files and folders: never draw a file tree here. -->
 
@@ -326,7 +383,7 @@ flowchart LR
 
 ---
 
-## 11. Testing Strategy
+## 12. Testing Strategy
 
 ### Canonical Test Cases
 
@@ -344,7 +401,7 @@ flowchart LR
 
 ---
 
-## 12. Next Steps
+## 13. Next Steps
 
 This SDD captures architecture and decisions. To build it, load `uipath-planner` with this SDD path:
 

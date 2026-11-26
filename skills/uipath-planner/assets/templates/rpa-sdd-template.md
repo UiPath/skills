@@ -210,7 +210,7 @@ flowchart TD
 
 | ID | Rule Name | Description | Trigger Condition | Validation (regex / range / type / allowed values) | Affected Steps |
 |---|---|---|---|---|---|
-| BR-01 | <RULE_NAME> | <DESCRIPTION> | <WHEN_DOES_IT_APPLY> | <REGEX_OR_RANGE_OR_TYPE_OR_ENUM> | <STEP_NUMBERS> |
+| <BR_ID> | <RULE_NAME> | <DESCRIPTION> | <WHEN_DOES_IT_APPLY> | <REGEX_OR_RANGE_OR_TYPE_OR_ENUM> | <STEP_NUMBERS> |
 
 ### Decision Tables
 

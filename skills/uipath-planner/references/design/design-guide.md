@@ -46,7 +46,7 @@ Never put Task 1 / Task N templates or *implementation* tasks created with the t
 | Phase 1 Step 10 | `Execution autonomy` is `interactive` and the request carries no `planner-design-request: v1` block | [interview-guide.md](../interview/interview-guide.md) whole |
 | Phase 2 Step 1 | — | scope-recommendation-guide.md § Template Mapping; then the SDD template(s) it names, in `../assets/templates/` |
 | Phase 2 Step 2 | filling §14 Packages or its equivalent | [package-selection-guide.md](package-selection-guide.md) |
-| Phase 2 Step 2 or Phase 3 | filling RPA §4 Business Rules or BPMN §3 Business Rules and Decisions | [business-rules-guide.md](business-rules-guide.md) |
+| Phase 2 Step 2 or Phase 3 | filling the template's Business Rules section (every template has one) | [business-rules-guide.md](business-rules-guide.md) |
 | Phase 3 | Phase 2 Step 5 is approved (or skipped in autonomous mode) | [sdd-writing-guide.md](sdd-writing-guide.md) whole; its § Read Plan names Phase 3's reads |
 
 ## Anti-patterns

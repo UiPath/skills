@@ -111,7 +111,7 @@ punctuation except `-` and `_`, and turn each space into a hyphen.
 Example: the heading `### Stage 1: Intake (`stage_1`)` links as `#stage-1-intake-stage_1`.
 -->
 
-1. [Case Definition](#section-1-case-definition) — Metadata, SLA, Triggers, Exit Conditions, Variables, Business Events
+1. [Case Definition](#section-1-case-definition) — Metadata, SLA, Triggers, Exit Conditions, Variables, Business Events, Business Rules
 2. [Stages & Tasks](#section-2-stages--tasks)
    - [Stage <N>: <STAGE_NAME>](#stage--stage_name-stage_id) — <N> tasks
    - [Secondary Stage: <SECONDARY_STAGE_NAME>](#secondary-stage-secondary_stage_name-stage_id) — <N> tasks
@@ -245,6 +245,60 @@ medium review item `Business events need canvas-enableCaseEventSender`. -->
 | Name | Description | Payload |
 |------|-------------|---------|
 | <event name, exactly as api-event cells quote it> | <what the event signals, or —> | <`{"type":"object","properties":{…}}` or —> |
+
+### Business Rules
+
+<!-- Every rule the source states has one home here: [Business Rules Guide](../../references/design/business-rules-guide.md) § Homes per template.
+     - Keep the source's rule IDs verbatim (`BR-001`, `BR-F01`); only a source that numbers none gets `BR-01`, `BR-02`, …. A rule the design adds takes the next free ID and its `[DEFAULT]` or `[SME REVIEW]` marker.
+     - Each row carries the rule in the source's words, never the ID alone. The element that applies a rule (a task block, a condition row, an SLA rule) names its ID there; this row stays its one definition.
+     - Every subsection but Rules Not Carried stays: an empty one holds its `None.` line.
+     - Before the ready flip, `br-coverage.mjs` prints `OK` against the source (business-rules-guide.md § 4). -->
+
+#### Validation Rules
+
+<!-- A rule that checks a value's form. Empty: `None. No rule checks a value's form.` -->
+
+| ID | Rule | Field | Check (regex / range / type / allowed values) | Checked at |
+|---|---|---|---|---|
+| <BR_ID> | <RULE> | <FIELD> | <CHECK> | <TASK_OR_CASE_VARIABLE> |
+
+#### Decision Tables
+
+<!-- business-rules-guide.md → Decision tables. Runs in: the `business-rule` task that evaluates it, or the `=js:` condition that routes on it, its `=js:` cell written from the table. Empty: `None. No rule decides an outcome.` -->
+
+##### DT1 — <DECISION_NAME>
+**Hit policy:** <UNIQUE / FIRST / COLLECT>
+**Inputs:** `<INPUT_NAME>` (<string / number / boolean / date>), …
+**Output:** `<OUTPUT_NAME>` (<TYPE_AND_ALLOWED_VALUES>)
+**Runs in:** <RUNS_IN>
+
+| # | <INPUT_NAME> | <INPUT_NAME> | → <OUTPUT_NAME> | Rule |
+|---|---|---|---|---|
+| 1 | <ENTRY> | <ENTRY> | <OUTPUT> | <BR_ID>: <RULE> |
+
+#### Rules Applied in the Case
+
+<!-- A rule that sets what the case does when a condition holds: a fallback when a system is down or a check cannot run, a deadline or reminder, a route, what is shown, sent or kept. Applied by: the task (`<Stage>.<Task>`), stage or task entry or exit condition, SLA rule or secondary stage that applies it. Empty: `None. Every rule is a validation, a decision or a reasoning rule.` -->
+
+| ID | Rule | When | What happens | Applied by |
+|---|---|---|---|---|
+| <BR_ID> | <RULE> | <CONDITION> | <OUTCOME> | <APPLIED_BY> |
+
+#### Rules That Need Reasoning
+
+<!-- business-rules-guide.md → Rules that need reasoning. Agent: an `agent` task. Person: an `action` task whose Persona is that role. Empty: `None. Every rule is deterministic.` -->
+
+| ID | Rule | Applied by | Inputs → Output | Where it runs |
+|---|---|---|---|---|
+| <BR_ID> | <RULE> | <Agent / Person> | <INPUTS> → <OUTPUT> | <WHERE_IT_RUNS> |
+
+#### Rules Not Carried
+
+<!-- OPTIONAL subsection — omit entirely when the design applies every rule the source states (exempt from the template-superset check). A source rule this design does not apply: another SDD of the solution applies it (name it), or the source's future state retires it. Any other reason is an [SME REVIEW] item. -->
+
+| ID | Rule | Why not here |
+|---|---|---|
+| <BR_ID> | <RULE> | <REASON> |
 
 ---
 
@@ -776,7 +830,7 @@ CONFORMANCE CHECKLIST — 21 items.
  Shape
   1. No summary-only top-level heading (`## Source`, `## Case Objective`, `## Actors And Systems`,
      `## Case Trigger`, `## Stages`, `## Business Rules`, `## Task Plan`, `## Resource Resolution`,
-     `## Acceptance Scenarios`); no literal `\n` escape in block content; `<UNRESOLVED>` never backtick-wrapped.
+     `## Acceptance Scenarios`) — the rules live in Section 1's `### Business Rules`; no literal `\n` escape in block content; `<UNRESOLVED>` never backtick-wrapped.
   2. `### Case Variables` holds exactly one table, whose header is literally
      `| Name | Category | Type | sourceTriggers | sourceFields | Default | Description |` — never the draft's own
      columns — and no second table, `####` sub-heading or sibling `###` section of variables (only the first
@@ -848,7 +902,8 @@ CONFORMANCE CHECKLIST — 21 items.
      then the defect (case-product-guide.md § Repairing a `user-selected-stage` lane). Source silent on who
      launches the lane → keep what is authored.
  Mechanical gate — the template markers, the task types and the SLA Response Map rows PASS only after
- `case-sdd-check.mjs` prints `OK`; quote that line
+ `case-sdd-check.mjs` prints `OK`, and § Business Rules only after `br-coverage.mjs` prints `OK` against the
+ source; quote both lines
  Draft parity (finalizing a draft only) — items 16, 19 and 20 PASS only after `case-draft-parity.mjs` prints `OK`;
  quote that line
  19. The ordered stage and task inventory equals the draft's — names verbatim, only letter prefixes renumbered —

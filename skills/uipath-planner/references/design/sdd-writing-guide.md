@@ -6,7 +6,7 @@ Phase 3 of `design` writes the full SDD to disk incrementally, resolves the SME 
 
 | Phase | Condition | Read |
 |---|---|---|
-| Step 2 | filling RPA §4 Business Rules or BPMN §3 Business Rules and Decisions, and [business-rules-guide.md](business-rules-guide.md) is not yet open from Phase 2 | [business-rules-guide.md](business-rules-guide.md) |
+| Step 2 | filling the template's Business Rules section (RPA §4, BPMN §3, Case § Business Rules, Flow §9, API workflow §7, Coded app §9, Agent §2), and [business-rules-guide.md](business-rules-guide.md) is not yet open from Phase 2 | [business-rules-guide.md](business-rules-guide.md) |
 | Step 4 item 4 | an `[SME REVIEW]` item remains | [open-questions-guide.md](../shared/open-questions-guide.md) whole |
 | Step 5, next turn | the SDD is `Status: ready` and no build skill handed the design over | [author-guide.md](../author/author-guide.md) whole — the `author` verb; its § Read Plan names the rest |
 <!--skill-flavor:client-word-read-row:start-->
@@ -102,7 +102,7 @@ Fill in all sections of the chosen template not covered in Phase 1 or Phase 2. S
 **Phase 2 produces:** See [design-guide.md](design-guide.md) Phase 2 Step 2 (template-specific architectural core)
 
 **Phase 3 produces:** All remaining sections — typically:
-- Business Rules (RPA §4, BPMN §3): [Business Rules Guide](business-rules-guide.md)
+- Business Rules (every template; its home per rule type: [Business Rules Guide § Homes per template](business-rules-guide.md#homes-per-template))
 - Value Mappings (RPA)
 - Exception / Error Handling (all)
 - Credentials & Assets (RPA)
@@ -218,7 +218,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
    3. **How:** read the written file once. Answer every item PASS or FAIL with one verbatim quote from the file — the line that violates (FAIL) or the line that satisfies (PASS). Judge structure by the role and position of a block (which heading level, which table, which column), not by prose wording.
    4. **Repair:** fix every FAIL with a targeted edit, then answer only the failed items again — at most 3 rounds, then stop and present what remains.
 
-   `Template validation: passed` needs every heading present and every checklist item PASS.
+   `Template validation: passed` needs every heading present, every checklist item PASS and `br-coverage.mjs` printing `OK` (below).
 
    The SDD's own Table of Contents then lists exactly the H2 sections the SDD has: an omitted conditional section leaves no entry behind.
 
@@ -231,9 +231,11 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
    2. If the template's contents for that section depend on a Phase 1 / Phase 2 input that is genuinely absent (e.g. §4 Business Rules but the PDD has zero rule signals), emit the section with an explicit "No business rules extracted from the PDD" note. With that note, add an `[SME REVIEW]` row asking the user to supply any.
    3. Never silently drop a section.
 
-   RPA §4 / BPMN §3: a source with no dedicated rules section still holds rules (remarks, step descriptions, screenshots — the PDD analysis guide's "Embedded business rules"), so zero extracted rules is a regeneration trigger, not a finished section.
+   **Business rules, in the same pass.** Run `node "<SKILL_DIR>/scripts/br-coverage.mjs" --source "<PDD_PATH>" "<SDD_PATH>" [<CHILD_SDD_PATH> ...]` on every SDD file of the design ([business-rules-guide.md](business-rules-guide.md) § 4); each `FAIL:` line is a rule lost, cited by its ID alone or renumbered: repair it in its home and run it again until it prints `OK`. `Template validation: passed` needs it, in every template. A source that is not a text file takes the guide's check by hand.
 
-9. **Ready flip — the final write of `design`.** When every required heading is present and every remaining `[SME REVIEW]` item is classified `default-carried` (Step 3 rule 5), update the handoff: `Status: ready` (`Template validation: passed` is already set — item 2). Open default-carried items do NOT block ready — they gate production sign-off, not the genome or the build. Any `blocking` item keeps `Status: draft` with `Template validation: passed`; the item 10 summary names it and asks. Skipping the flip leaves the file at `draft` and `author` will refuse to write its genome.
+   Every template: a source with no dedicated rules section still holds rules (remarks, step descriptions, screenshots — the PDD analysis guide's "Embedded business rules"), so zero extracted rules is a regeneration trigger, not a finished section.
+
+9. **Ready flip — the final write of `design`.** When every required heading is present, `br-coverage.mjs` prints `OK`, and every remaining `[SME REVIEW]` item is classified `default-carried` (Step 3 rule 5), update the handoff: `Status: ready` (`Template validation: passed` is already set — item 2). Open default-carried items do NOT block ready — they gate production sign-off, not the genome or the build. Any `blocking` item keeps `Status: draft` with `Template validation: passed`; the item 10 summary names it and asks. Skipping the flip leaves the file at `draft` and `author` will refuse to write its genome.
 
 10. Output a summary in the conversation. A caller's design request replaces it with the `planner-design-result` block, its prose in the request's `audience` ([caller-request-guide.md](caller-request-guide.md) § The Result):
 
