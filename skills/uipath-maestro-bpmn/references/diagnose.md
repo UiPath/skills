@@ -26,8 +26,6 @@ For a **debug** run, use the `instanceId` returned by the debug command as the h
 
 ## Step 2 — read incidents
 
-Run:
-
 ```bash
 uip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json
 uip maestro bpmn incident get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json
