@@ -1497,13 +1497,24 @@ jobs:
           )
           values = [os.environ[n] for n in names if len(os.environ.get(n, "")) >= 8]
 
-          auth = pathlib.Path(os.environ.get("DELEGATE_AUTH_FILE", ""))
-          if auth.name and auth.is_file():
+          # Both logins on this host: the delegate mint and the uip CLI's
+          # ~/.uipath/.auth. Each holds an access token and an offline_access
+          # refresh token, and tasks run on this host, so either can land in a
+          # transcript.
+          auth_files = [
+              pathlib.Path(os.environ.get("DELEGATE_AUTH_FILE", "")),
+              pathlib.Path.home() / ".uipath" / ".auth",
+          ]
+          for auth in auth_files:
+              if not (auth.name and auth.is_file()):
+                  continue
               for line in auth.read_text(encoding="utf-8", errors="ignore").splitlines():
-                  # Token only — redacting the org/tenant SLUGS would garble every
+                  # Tokens only — redacting the org/tenant SLUGS would garble every
                   # report that legitimately names the tenant.
-                  if line.startswith("UIPATH_ACCESS_TOKEN=") and len(line) > 28:
-                      values.append(line.split("=", 1)[1])
+                  key, _, value = line.partition("=")
+                  if key in ("UIPATH_ACCESS_TOKEN", "UIPATH_REFRESH_TOKEN") and len(value) >= 8:
+                      print(f"::add-mask::{value}")
+                      values.append(value)
 
           if not values:
               raise SystemExit(0)
