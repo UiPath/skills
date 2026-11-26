@@ -2,7 +2,8 @@
 """Shared grading for the uipath-rules tasks.
 
 `rules_check.py validate` passes when `uip rules validate` passes on the
-RiskRules project. `rules_check.py policy` grades a freshly authored RiskRules
+RiskRules project. `rules_check.py format` passes when `uip rules format`, run
+on a copy, changes no file. `rules_check.py policy` grades a freshly authored RiskRules
 rule: the authoring profile `validate` does not enforce, the entry-point
 contract `uip rules refresh` writes, and the table's risk band for each POLICY
 case. `rules_check.py names` passes when every rule carries a non-empty
@@ -12,10 +13,13 @@ ElementTree.
 
 from __future__ import annotations
 
+import datetime
 import json
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -34,6 +38,21 @@ POLICY = [
     ({"creditScore": 820, "income": 20000}, "Low"),
 ]
 NUMBER = r"-?\d+(?:\.\d+)?"
+DATE = r'date\(\s*"[^"]*"\s*\)'
+# One end of a comparison or a range: a number, or a FEEL date literal.
+ENDPOINT = rf"(?:{NUMBER}|{DATE})"
+
+
+def endpoint(text: str) -> float | datetime.date:
+    """A comparison end as the value it names. `date("2026-01-31")` is a calendar date."""
+    if re.fullmatch(NUMBER, text):
+        return float(text)
+    iso = re.fullmatch(r'date\(\s*"([^"]*)"\s*\)', text).group(1)
+    try:
+        return datetime.date.fromisoformat(iso)
+    except ValueError:
+        fail(f"date({iso!r}) is not an ISO 8601 calendar date YYYY-MM-DD")
+        raise AssertionError
 
 
 def fail(message: str) -> None:
@@ -69,6 +88,34 @@ def run_validate(project: Path) -> None:
     )
     if completed.returncode != 0:
         fail(f"`uip rules validate {project}` failed: {(completed.stdout or completed.stderr)[-1500:]}")
+
+
+def run_format_check(project: Path) -> None:
+    """Fails when `uip rules format` would still change the project's diagram.
+
+    `format` adds a shape for each drawn element that has none and drops the shapes of
+    deleted ones, and writes only the files it changes. Run on a copy, so the agent's
+    files stay as the agent left them, a reported change means the agent added or
+    removed a drawn element and did not run `format` after it. A shape the agent placed
+    by hand is a placed shape to `format`, so this check does not catch that.
+    """
+    with tempfile.TemporaryDirectory() as scratch:
+        copy = Path(scratch) / project.name
+        shutil.copytree(project, copy)
+        completed = subprocess.run(
+            ["uip", "rules", "format", str(copy), "--output", "json"],
+            capture_output=True, text=True, timeout=120,
+        )
+    if completed.returncode != 0:
+        fail(f"`uip rules format {project}` failed: {(completed.stdout or completed.stderr)[-1500:]}")
+    try:
+        files = json.loads(completed.stdout)["Data"]["Files"]
+    except (ValueError, KeyError, TypeError):
+        fail(f"`uip rules format` printed no Data.Files: {completed.stdout[-1500:]}")
+        raise AssertionError
+    changed = [f.get("File") for f in files if f.get("Changed")]
+    if changed:
+        fail(f"`uip rules format` still changes {changed}; the diagram lags the model, so run `uip rules format` after adding or removing an element")
 
 
 def load_graph(project: Path) -> tuple[Path, ET.Element]:
@@ -199,8 +246,19 @@ def check_contract(project: Path, dmn_file: Path, root: ET.Element, inputs: dict
     return entry
 
 
+def comparable(cell: str, bound: float | datetime.date, value: object) -> None:
+    """Fails unless `value` is the kind of value `bound` is. FEEL compares a number only with a
+    number and a date only with a date; any other pair is null, never a match."""
+    if isinstance(bound, datetime.date):
+        # `datetime` is a `date` subclass, but FEEL keeps `date` and `date and time` apart.
+        if isinstance(value, datetime.datetime) or not isinstance(value, datetime.date):
+            fail(f"cell {cell!r} tests a non-date value {value!r}")
+    elif isinstance(value, bool) or not isinstance(value, (int, float)):
+        fail(f"cell {cell!r} tests a non-numeric value {value!r}")
+
+
 def unary_test(cell: str, value: object) -> bool:
-    """Evaluates the FEEL unary tests a numeric, boolean, or string column uses."""
+    """Evaluates the FEEL unary tests a numeric, date, boolean, or string column uses."""
     cell = cell.strip()
     if cell in ("", "-"):
         return True
@@ -217,16 +275,18 @@ def unary_test(cell: str, value: object) -> bool:
         return value is (cell == "true")
     if re.fullmatch(r'"[^"]*"', cell):
         return value == cell[1:-1]
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        fail(f"cell {cell!r} tests a non-numeric value {value!r}")
-    match = re.fullmatch(rf"(<=|>=|<|>|=)?\s*({NUMBER})", cell)
+    match = re.fullmatch(rf"(<=|>=|<|>|=)?\s*({ENDPOINT})", cell)
     if match:
-        op, number = match.group(1) or "=", float(match.group(2))
-        return {"<": value < number, "<=": value <= number, ">": value > number,
-                ">=": value >= number, "=": value == number}[op]
-    match = re.fullmatch(rf"([\[\(\]])\s*({NUMBER})\s*\.\.\s*({NUMBER})\s*([\]\)\[])", cell)
+        op, bound = match.group(1) or "=", endpoint(match.group(2))
+        comparable(cell, bound, value)
+        return {"<": value < bound, "<=": value <= bound, ">": value > bound,
+                ">=": value >= bound, "=": value == bound}[op]
+    match = re.fullmatch(rf"([\[\(\]])\s*({ENDPOINT})\s*\.\.\s*({ENDPOINT})\s*([\]\)\[])", cell)
     if match:
-        low, high = float(match.group(2)), float(match.group(3))
+        low, high = endpoint(match.group(2)), endpoint(match.group(3))
+        if type(low) is not type(high):
+            fail(f"range {cell!r} mixes a number and a date")
+        comparable(cell, low, value)
         above = value >= low if match.group(1) == "[" else value > low
         below = value <= high if match.group(4) == "]" else value < high
         return above and below
@@ -286,16 +346,24 @@ def read_name(names: dict, text: str) -> tuple[bool, object]:
 
 
 def evaluate(table: ET.Element, inputs: dict, names: dict | None = None) -> dict | None:
-    """The single result the table's hit policy returns, keyed by output name.
+    """The result the table's hit policy returns, keyed by output name.
 
     An output entry that is one of `names` returns that name's value, as a
     decision that passes an upstream result through does.
+
+    FIRST, UNIQUE and ANY answer with one row, or None when no row matches. COLLECT
+    answers with every matching row in rule order, so each output holds a list, empty
+    when no row matches. That is what FEEL gives a reader of `name.column`, a path over
+    a list of rows. DMN leaves COLLECT order unspecified, so compare those lists as
+    multisets unless the order is part of the policy.
     """
     names = names or {}
     columns = input_columns(table)
     policy = table.get("hitPolicy", "UNIQUE")
-    if policy not in ("FIRST", "UNIQUE", "ANY"):
-        fail(f"hit policy {policy} is outside the single-result policies this check evaluates")
+    if policy not in ("FIRST", "UNIQUE", "ANY", "COLLECT"):
+        fail(f"hit policy {policy} is outside the policies this check evaluates")
+    if policy == "COLLECT" and table.get("aggregation"):
+        fail(f"COLLECT with aggregation {table.get('aggregation')} is outside what this check evaluates")
     hits = []
     for rule in table.findall("dmn:rule", NS):
         cells = [(e.findtext("dmn:text", default="", namespaces=NS) or "") for e in rule.findall("dmn:inputEntry", NS)]
@@ -317,6 +385,10 @@ def evaluate(table: ET.Element, inputs: dict, names: dict | None = None) -> dict
         fail(f"{inputs} matches {len(hits)} rows of a UNIQUE table")
     if policy == "ANY" and any(hit != hits[0] for hit in hits):
         fail(f"{inputs} matches rows of an ANY table with different outputs")
+    if policy == "COLLECT":
+        collected = {name: [hit[name] for hit in hits] for name in output_names(table)}
+        # One unreadable row makes the whole list unknown; callers test for UNEVALUABLE itself.
+        return {name: UNEVALUABLE if UNEVALUABLE in values else values for name, values in collected.items()}
     return hits[0] if hits else None
 
 
@@ -325,6 +397,9 @@ def check_cases(table: ET.Element, output: str, cases: list) -> None:
         actual = (evaluate(table, inputs) or {}).get(output)
         if actual is UNEVALUABLE:
             fail(f"output {output} for {inputs} is a call or a formula; grade it with 'graph_check.py engine'")
+        # A list is a COLLECT result, whose order DMN leaves to the engine.
+        if isinstance(actual, list) and isinstance(expected, list):
+            actual, expected = sorted(actual, key=repr), sorted(expected, key=repr)
         if actual != expected:
             fail(f"{inputs} returned {actual!r}, expected {expected!r}")
 
@@ -346,6 +421,9 @@ if __name__ == "__main__":
     if mode == "validate":
         run_validate(find_project(name))
         print("OK: uip rules validate passes")
+    elif mode == "format":
+        run_format_check(find_project(name))
+        print("OK: uip rules format changes nothing; the diagram matches the model")
     elif mode == "policy":
         grade_policy()
     elif mode == "names":

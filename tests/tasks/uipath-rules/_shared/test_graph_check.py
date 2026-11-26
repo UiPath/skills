@@ -19,8 +19,8 @@ import graph_check as gc  # noqa: E402
 import rules_check as rc  # noqa: E402
 
 TASKS = Path(__file__).resolve().parent.parent
-FIXTURE = TASKS / "smoke" / "graph_extend_arranged" / "fixtures" / "LoanRules"
-BROKEN = TASKS / "smoke" / "graph_repair" / "fixtures" / "LoanRules"
+FIXTURE = Path(__file__).resolve().parent / "fixtures" / "LoanRules"
+BROKEN = TASKS / "diagnose" / "repair_graph" / "fixtures" / "LoanRules"
 DMN = "Business rule.dmn"
 
 

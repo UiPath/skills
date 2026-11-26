@@ -1,0 +1,58 @@
+name: Rules contract matches uip rules refresh
+
+# The Case and BPMN suites bind a Business Rules rule through saved copies of
+# its contract: a project's entry-points.json, or a saved describe result.
+# tests/tasks/uipath-rules/_shared/test_contract.py compares those copies with
+# what `uip rules refresh` writes. The required `uipath-rules checker unit tests`
+# job runs that file without `uip`, so the comparison skips there; this job
+# installs the published CLI and runs it.
+#
+# Advisory, not required: it installs `@latest` from npmjs, so a CLI release
+# can turn it red with no change in this repository. That is the signal it
+# exists for, which is also why it runs daily and not only on PRs. Keep it out
+# of test-helpers.yml, whose jobs are all required (docs/REQUIRED-CHECKS.md).
+
+on:
+  pull_request:
+    paths:
+      - 'tests/tasks/uipath-rules/**'
+      - 'tests/tasks/uipath-maestro-case/**'
+      - 'tests/tasks/uipath-maestro-bpmn/**'
+      - '.github/workflows/rules-contract.yml'
+  schedule:
+    - cron: '15 5 * * *' # daily at 05:15 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: uipath-ubuntu-latest
+    name: uipath-rules contract matches uip rules refresh
+    env:
+      UIPATH_CLI_DISABLE_VERSION_SYNC: "1"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: '22.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Install uip and the rules tool
+        run: |
+          npm install -g @uipath/cli@latest @uipath/rules-tool@latest
+          uip --version
+          pip install pytest
+
+      # RULES_CONTRACT_REQUIRE_UIP turns a skip into a failure, so a broken
+      # install cannot pass this job by skipping the comparison it runs.
+      - name: Run pytest
+        env:
+          RULES_CONTRACT_REQUIRE_UIP: '1'
+        run: pytest tests/tasks/uipath-rules/_shared/test_contract.py -v -rs
