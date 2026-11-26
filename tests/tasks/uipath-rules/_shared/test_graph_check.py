@@ -685,3 +685,51 @@ class TestFeelEqualityInsideAList:
 
     def test_lists_of_different_length_do_not_match(self):
         assert not gc.same_value([1], [1, 2])
+
+
+class TestTheEngineModeReadsTheFileFirst:
+    """`graph_check.py engine` is the only outcome grader of `lifecycle/import_and_debug`.
+
+    It called `find_project` and the engine and nothing else, so that task never went through
+    `load_graph` — and therefore never through `check_authoring_surface`. A two-decision rule
+    marked `decision-table` answered every engine case correctly and passed every criterion while
+    opening in the wrong editor. That task imports a two-decision file, so it is exactly where the
+    gap bit.
+    """
+
+    @pytest.fixture
+    def answered(self, monkeypatch):
+        """The engine answering every case correctly, so only the file checks can fail."""
+        monkeypatch.setattr(gc, "engine_outputs",
+                            lambda project, inputs: dict(
+                                next(e for i, e in gc.ENGINE_CASES if i == inputs)))
+
+    def test_a_correct_project_passes(self, project, answered, capsys):
+        gc.grade_engine()
+
+        assert "the engine returns the expected" in capsys.readouterr().out
+
+    def test_a_graph_marked_as_a_table_is_refused(self, project, answered, capsys):
+        # The defect, through this entry point: the values are right and the surface is not.
+        path = project / DMN
+        path.write_text(path.read_text(encoding="utf-8").replace(
+            f'surface="{rc.GRAPH_SURFACE}"', f'surface="{rc.TABLE_SURFACE}"'), encoding="utf-8")
+
+        with pytest.raises(SystemExit):
+            gc.grade_engine()
+
+        assert "holds several decisions" in capsys.readouterr().out
+
+    def test_the_engine_is_not_called_when_the_file_is_refused(self, project, monkeypatch):
+        # Reading the file first also means a tenant round trip is not spent on a rule the
+        # grader was going to refuse anyway.
+        called = []
+        monkeypatch.setattr(gc, "engine_outputs", lambda p, i: called.append(i) or {})
+        path = project / DMN
+        path.write_text(path.read_text(encoding="utf-8").replace(
+            f'surface="{rc.GRAPH_SURFACE}"', f'surface="{rc.TABLE_SURFACE}"'), encoding="utf-8")
+
+        with pytest.raises(SystemExit):
+            gc.grade_engine()
+
+        assert called == []
