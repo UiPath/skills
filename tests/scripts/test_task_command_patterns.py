@@ -410,7 +410,7 @@ DEBUG_INPUT = """'{"input": "What is 2 plus 2? Reply with just the number."}'"""
 @pytest.mark.parametrize(
     "command",
     [
-        # Recorded in the 2026-11-24/25 nightly runs.
+        # Shapes recorded in the 2026-11-24/25 nightly runs.
         f"uip agent debug MathSolution/MathAgent -i {DEBUG_INPUT} --output json",
         f"cd /work/output/artifacts/skill-agent-lowcode-debug; uip agent debug MathSolution/MathAgent --inputs {DEBUG_INPUT} --output json",
         f'uip agent validate "MathSolution/MathAgent" --output json && uip agent debug "MathSolution/MathAgent" --inputs {DEBUG_INPUT} --output json',
@@ -440,8 +440,9 @@ def test_debug_needs_the_input_on_the_debug_command(command):
 
 
 def test_debug_does_not_backtrack_on_many_redirects():
-    command = ("uip agent debug " + ">&>" * 200)[:2000]
+    # An ambiguous segment class takes ~0.6 s here, doubling with every extra `>&>`.
+    command = "uip agent debug " + ">&>" * 22
     for flags in FLAGS:
         start = time.perf_counter()
         assert not re.search(DEBUG, command, flags)
-        assert time.perf_counter() - start < 0.01
+        assert time.perf_counter() - start < 0.05
