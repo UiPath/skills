@@ -87,11 +87,13 @@ success_criteria:
   # Tied to the path the prompt names, so the json_check below reads the
   # file this flag wrote. A read the agent sent to the same path first is
   # fine: the copy runs after it and overwrites the file with the
-  # definition as sent.
+  # definition as sent. The absolute form ending in
+  # skill-insights-smoke-dashboard-copy/copied.json is the same file
+  # json_check reads; it relies on the run folder being named after task_id.
   - type: command_executed
     description: "Agent kept the sent definition through --output-file at the named path"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+dashboards\s+copy\b(?!\s+(?:--help|-h)\b)(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--output-file[\s=]+"?\.?/?copied\.json'
+    command_pattern: 'uip\s+insights\s+dashboards\s+copy\b(?!\s+(?:--help|-h)\b)(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--output-file[\s=]+"?(?:\.?/?|/(?:[\w.-]+/)*skill-insights-smoke-dashboard-copy/)copied\.json'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
