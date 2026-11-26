@@ -31,22 +31,22 @@ sandbox:
             "Message":"Run 9a3f6c58-1e2d-4b7a-b0c4-6f8d2e5a7c13 polling timed out",
             "Instructions":"The run was still running and keeps going on the server; do not start it again. Check it with: uip documents runs get 9a3f6c58-1e2d-4b7a-b0c4-6f8d2e5a7c13 --folder-path 'Finance' --wait --output json",
             "Retry":"RetryLater","Data":{
-            "runId":"9a3f6c58-1e2d-4b7a-b0c4-6f8d2e5a7c13","capability":"digitize","status":"running",
-            "engine":null,"result":null,"digitization":null,"warnings":[],"error":null,
-            "createdAt":"2026-01-15T09:30:05Z","completedAt":null}}
+            "RunId":"9a3f6c58-1e2d-4b7a-b0c4-6f8d2e5a7c13","Capability":"Digitize","Status":"Running",
+            "Engine":null,"Result":null,"Digitization":null,"Error":null,
+            "CreatedAt":"2026-01-15T09:30:05Z","CompletedAt":null}}
 
         - when:
             verb: "documents runs get"
           stdout: >-
             {"Result":"Success","Code":"DocumentsRunsGet","Data":{
-            "runId":"9a3f6c58-1e2d-4b7a-b0c4-6f8d2e5a7c13","capability":"digitize","status":"succeeded",
-            "engine":{"modelId":null,"ocr":{"engine":"auto","applyOnPdf":"auto"},"layout":{"engine":null}},
-            "result":{"pageCount":1,
-            "markdown":"<!-- page: 1 -->\n\n# Service Agreement SA-7731\n\nBetween Northwind Traders and Contoso Ltd.",
-            "pages":[{"number":1,"width":1700,"height":2200}]},
-            "digitization":{"runId":"9a3f6c58-1e2d-4b7a-b0c4-6f8d2e5a7c13"},
-            "warnings":[],"error":null,
-            "createdAt":"2026-01-15T09:30:05Z","completedAt":"2026-01-15T09:36:40Z"}}
+            "RunId":"9a3f6c58-1e2d-4b7a-b0c4-6f8d2e5a7c13","Capability":"Digitize","Status":"Succeeded",
+            "Engine":{"Ocr":{"Engine":"auto","ApplyOnPdf":"Auto"},"Layout":{"Engine":null}},
+            "Result":{"PageCount":1,
+            "Markdown":"<!-- page: 1 -->\n\n# Service Agreement SA-7731\n\nBetween Northwind Traders and Contoso Ltd.",
+            "Pages":[{"Number":1,"Width":1700,"Height":2200}]},
+            "Digitization":{"RunId":"9a3f6c58-1e2d-4b7a-b0c4-6f8d2e5a7c13"},
+            "Error":null,
+            "CreatedAt":"2026-01-15T09:30:05Z","CompletedAt":"2026-01-15T09:36:40Z"}}
 
 initial_prompt: |
   Document 7c1d9e42-3b5a-4f68-8a0e-5d2c6b1f9a37 is already uploaded in the

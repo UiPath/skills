@@ -13,7 +13,7 @@ Turn documents into text with `uip documents`: upload a file to a folder, digiti
 - User wants OCR with a specific engine (non-Latin scripts), a PDF's text layer re-OCR'd, or layout parsing (HTML tables, forms, figures)
 - User wants one page of a digitized document as text, markdown, or words with their boxes
 - User asks which document capabilities or digitization engines a tenant has
-- User holds a `runId` or `documentId` from an earlier call and wants its result or pages
+- User holds a `RunId` or `DocumentId` from an earlier call and wants its result or pages
 
 ## When NOT to Use This Skill
 
@@ -24,14 +24,14 @@ Turn documents into text with `uip documents`: upload a file to a folder, digiti
 ## Critical Rules
 
 1. **Verify `uip documents` syntax in the [CLI Reference](references/cli-reference.md) before running a command.** Copy the exact subcommand and options; never guess. Do NOT call the REST API with curl, and do NOT read CLI source. The tool ships in **preview builds of `uip` only**: if `uip documents` answers `unknown command`, report that this `uip` build has no Documents tool and stop.
-2. **Always pass `--output json`** and parse the envelope: `Result`, `Code`, `Data`, plus `Message`, `Instructions`, `Warning`, `ErrorCode`, `Retry` and `Context` when present. `Data` keeps the API's camelCase keys (`runId`, `result.markdown`), so `--output-filter` expressions use those exact names. The examples under `--help` print the same keys capitalised; trust the real output.
+2. **Always pass `--output json`** and parse the envelope: `Result`, `Code`, `Data`, plus `Message`, `Instructions`, `ErrorCode`, `Retry` and `Context` when present. `Data` keeps the API's PascalCase keys and values (`RunId`, `Result.Markdown`, `Status: "Succeeded"`), so `--output-filter` expressions use those exact names.
 3. **Name the folder on every folder-scoped call, and keep it the same.** `uploads create`, `digitize`, `runs get` and `pages get` need `--folder-path "<FOLDER_PATH>"` or `--folder-key "<FOLDER_KEY>"` (one, never both); without it they fail locally with `ValidationError` (`No folder given.`). An upload and its runs are visible only from their folder. When the user has not named a folder, ask; do not guess one.
-4. **Upload a file once and reuse its `documentId`.** Another page range or another engine is a new `digitize` on the same `documentId`, in the same folder. An upload cannot be read back or deleted from the CLI.
+4. **Upload a file once and reuse its `DocumentId`.** Another page range or another engine is a new `digitize` on the same `DocumentId`, in the same folder. An upload cannot be read back or deleted from the CLI.
 5. **Start a run once, with `--wait`, and resume it with `runs get`. Never start it again.** Every `digitize` call starts a new digitization. On `Result: TimeoutError` the run is still going on the server: run the `runs get` command printed in `Instructions`, which already carries the folder.
 6. **Keep `--timeout` under your shell's own command timeout.** `--wait` gives up after 300 seconds by default; a tool runner that kills commands sooner loses the output. Pass a lower `--timeout <SECONDS>` and resume as in Rule 5. Never poll in a shell loop.
 7. **Read engine names from `discovery digitization-engines get`; never guess one.** The defaults (OCR `auto`, `--apply-on-pdf auto`, no layout engine) suit most documents. Change them only when the user asks or the text comes back wrong. A layout engine runs on OCR output, so `--layout-engine` cannot be combined with `--apply-on-pdf never`.
 8. **Act on a failure by its `Retry` and `ErrorCode`, not by guessing.** The map is in [Results Guide § Errors](references/results-guide.md#errors). Never send a `RetryWillNotFix` request again unchanged, and send a `RetryLater` one again only once. A run succeeds or fails for the whole document; there is no partial status.
-9. **Read large documents page by page.** `Data.result.markdown` holds every page and grows with the page count. Read the count first (`--output-filter "result.pageCount"`), then one page at a time with `pages get`, or write a page to disk with `--output-file`.
+9. **Read large documents page by page.** `Data.Result.Markdown` holds every page and grows with the page count. Read the count first (`--output-filter "Result.PageCount"`), then one page at a time with `pages get`, or write a page to disk with `--output-file`.
 10. **Report the text as it was digitized.** Do not correct, complete or translate OCR output unless the user asks. When the text looks wrong, say so and offer another engine or `--apply-on-pdf always`.
 
 ## Quick Start
@@ -44,18 +44,18 @@ uip documents digitize --document-id "<DOCUMENT_ID>" --folder-path "<FOLDER_PATH
 uip documents pages get <PAGE_NUMBER> --run-id "<RUN_ID>" --format markdown --folder-path "<FOLDER_PATH>" --output json
 ```
 
-1. **Upload** → keep `Data.documentId`. Skip this step when the user already gave a `documentId`.
-2. **Digitize** → check `Result` and `Data.status` ([Results Guide § Run envelope](references/results-guide.md#run-envelope)). `Data.result.markdown` is the whole document, each page opening with `<!-- page: N -->`. Keep `Data.runId` for the pages.
+1. **Upload** → keep `Data.DocumentId`. Skip this step when the user already gave a `DocumentId`.
+2. **Digitize** → check `Result` and `Data.Status` ([Results Guide § Run envelope](references/results-guide.md#run-envelope)). `Data.Result.Markdown` is the whole document, each page opening with `<!-- page: N -->`. Keep `Data.RunId` for the pages.
 3. **Read pages** (optional) → one page as `text`, `markdown` or `dom` (Critical Rule 9).
-4. **On `TimeoutError`** → the `runs get` command in `Instructions`, repeated while it keeps timing out (cap: 10 tries, then report the `runId` and stop).
+4. **On `TimeoutError`** → the `runs get` command in `Instructions`, repeated while it keeps timing out (cap: 10 tries, then report the `RunId` and stop).
 
 ## Task Navigation
 
 | User request | Action |
 |---|---|
-| "What can I do here?" / "Is digitize available?" | `uip documents discovery capabilities list --output json`. Each row's `status` is `available`, `preview`, `deprecated`, `not-available` (with `reason`) or `planned`. Call only `available` and `preview` ones. |
+| "What can I do here?" / "Is digitize available?" | `uip documents discovery capabilities list --output json`. Each row's `Status` is `Available`, `Preview`, `Deprecated`, `NotAvailable` (with `Reason`) or `Planned`. Call only `Available` and `Preview` ones. |
 | "Get the text / markdown of this document" / "OCR this" | [Quick Start](#quick-start). |
-| "It's in Japanese / Arabic / Chinese" / "Use another OCR engine" | `uip documents discovery digitization-engines get --kind ocr --output json`, pick the engine whose `description` covers the script, then digitize with `--ocr-engine <ENGINE>`. The default `auto` already picks an engine per page by its alphabet. |
+| "It's in Japanese / Arabic / Chinese" / "Use another OCR engine" | `uip documents discovery digitization-engines get --kind ocr --output json`, pick the engine whose `Description` covers the script, then digitize with `--ocr-engine <ENGINE>`. The default `auto` already picks an engine per page by its alphabet. |
 | "The PDF's text is garbled" / "OCR the PDF instead of its text layer" | Digitize with `--apply-on-pdf always`. `never` reads the text layer only, so a scanned page yields no text. |
 | "Keep the tables" / "I need the form structure" | Digitize with `--layout-engine uipath`: tables come as HTML `<table>` with row and column spans, plus forms and tagged figures. Without it, tables come as lines of text. |
 | "Only pages 2 to 4" | Add `--page-range 2-4` (syntax `1-3,5,8-`; the order given is the order digitized). |
@@ -68,7 +68,7 @@ uip documents pages get <PAGE_NUMBER> --run-id "<RUN_ID>" --format markdown --fo
 |---|---|---|
 | `ValidationError`: `No folder given.` | A folder-scoped command ran without a folder | Add `--folder-path` or `--folder-key` (Critical Rule 3). |
 | `pages get` shows the wrong page after `--page-range 5-6` | Page numbers count within the digitization, from 1 in the order digitized | Page `1` is the file's page 5; map back from the range you passed. |
-| `--output-filter "Result.Markdown"` returns nothing | `Data` keeps camelCase keys | Use `result.markdown`, `result.pageCount`, … as printed. |
+| `--output-filter "result.markdown"` returns nothing | `Data` keys are PascalCase | Use `Result.Markdown`, `Result.PageCount`, … as printed. |
 | `Result: Failure` with a code in `Context.ErrorCode` (`run-not-found`, `document-not-found`, `settings-invalid`, …) | The API rejected the request or failed the run | Look the code up in [Results Guide § Errors](references/results-guide.md#errors). |
 
 ## Unsupported Capabilities
@@ -77,13 +77,13 @@ Recognise the request, give the response, stop. Do NOT go looking for an endpoin
 
 | User request | Response |
 |---|---|
-| "Extract the fields" / "Classify this" / "Split this packet" | `uip documents` has no such command. Run `discovery capabilities list` and report that capability's `status`. Offer the digitized text instead; never present values you read from it as a model's extraction. |
+| "Extract the fields" / "Classify this" / "Split this packet" | `uip documents` has no such command. Run `discovery capabilities list` and report that capability's `Status`. Offer the digitized text instead; never present values you read from it as a model's extraction. |
 | "Train / label / publish / deploy a model" | Out of this skill: hand off to `uipath-ixp`. |
 | "Cancel this run" | No cancel exists; the run finishes on its own. Do not start a new one to replace it. |
-| "List my runs" / "List my uploads" | No list exists: a run is read only by its `runId`. Ask for the id. |
+| "List my runs" / "List my uploads" | No list exists: a run is read only by its `RunId`. Ask for the id. |
 | "Download / delete the uploaded file" | Not possible from the CLI. |
 
 ## Reference Navigation
 
 - [CLI Reference](references/cli-reference.md) — every `uip documents` command, its options and output
-- [Results Guide](references/results-guide.md) — the run envelope, the digitize result, page formats, warnings, errors and the retry map
+- [Results Guide](references/results-guide.md) — the run envelope, the digitize result, page formats, errors and the retry map

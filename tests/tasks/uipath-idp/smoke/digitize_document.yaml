@@ -1,7 +1,7 @@
 task_id: skill-idp-digitize-document-smoke
 description: >
   Smoke: a local PDF and an Orchestrator folder. The agent must upload the
-  file, digitize the returned documentId once, in the same folder, with
+  file, digitize the returned DocumentId once, in the same folder, with
   --wait, and save the markdown the run returned. Offline: `uip` is a
   record_cli mock that answers the upload and the digitization, so the
   document id on the digitize call and the page marker in the saved file are
@@ -30,28 +30,28 @@ sandbox:
             verb: "documents uploads create"
           stdout: >-
             {"Result":"Success","Code":"DocumentsUploadsCreate","Data":{
-            "documentId":"0b6f2d7e-5a1c-4c3e-9f0a-2d8e4b7c1a90","name":"invoice.pdf","size":672,
-            "createdAt":"2026-01-15T09:30:00Z","expiresAt":"2026-01-22T09:30:00Z"}}
+            "DocumentId":"0b6f2d7e-5a1c-4c3e-9f0a-2d8e4b7c1a90","Size":672,
+            "CreatedAt":"2026-01-15T09:30:00Z","ExpiresAt":"2026-01-22T09:30:00Z"}}
 
         - when:
             verb: "documents digitize"
           stdout: >-
             {"Result":"Success","Code":"DocumentsDigitize","Data":{
-            "runId":"48b40c24-6af2-416e-a371-91ee9f1cd2d5","capability":"digitize","status":"succeeded",
-            "engine":{"modelId":null,"ocr":{"engine":"auto","applyOnPdf":"auto"},"layout":{"engine":null}},
-            "result":{"pageCount":1,
-            "markdown":"<!-- page: 1 -->\n\n# Invoice INV-2041\n\nBill to: Northwind Traders\n\nTotal due: 1,250.00 EUR",
-            "pages":[{"number":1,"width":1700,"height":2200}]},
-            "digitization":{"runId":"48b40c24-6af2-416e-a371-91ee9f1cd2d5"},
-            "warnings":[],"error":null,
-            "createdAt":"2026-01-15T09:30:05Z","completedAt":"2026-01-15T09:30:09Z"}}
+            "RunId":"48b40c24-6af2-416e-a371-91ee9f1cd2d5","Capability":"Digitize","Status":"Succeeded",
+            "Engine":{"Ocr":{"Engine":"auto","ApplyOnPdf":"Auto"},"Layout":{"Engine":null}},
+            "Result":{"PageCount":1,
+            "Markdown":"<!-- page: 1 -->\n\n# Invoice INV-2041\n\nBill to: Northwind Traders\n\nTotal due: 1,250.00 EUR",
+            "Pages":[{"Number":1,"Width":1700,"Height":2200}]},
+            "Digitization":{"RunId":"48b40c24-6af2-416e-a371-91ee9f1cd2d5"},
+            "Error":null,
+            "CreatedAt":"2026-01-15T09:30:05Z","CompletedAt":"2026-01-15T09:30:09Z"}}
 
         - when:
             verb: "documents pages get"
           stdout: >-
             {"Result":"Success","Code":"DocumentsPagesGet","Data":{
-            "runId":"48b40c24-6af2-416e-a371-91ee9f1cd2d5","page":1,"format":"markdown",
-            "content":"<!-- page: 1 -->\n\n# Invoice INV-2041\n\nBill to: Northwind Traders\n\nTotal due: 1,250.00 EUR"}}
+            "RunId":"48b40c24-6af2-416e-a371-91ee9f1cd2d5","Page":1,"Format":"markdown",
+            "Content":"<!-- page: 1 -->\n\n# Invoice INV-2041\n\nBill to: Northwind Traders\n\nTotal due: 1,250.00 EUR"}}
 
 initial_prompt: |
   Digitize ./invoice.pdf with UiPath in the Orchestrator folder "Finance" and
@@ -81,7 +81,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: cli_called
-    description: "Digitized the documentId the upload returned, in the same folder, waiting for the result"
+    description: "Digitized the DocumentId the upload returned, in the same folder, waiting for the result"
     tool: uip
     verb: "documents digitize"
     flags:

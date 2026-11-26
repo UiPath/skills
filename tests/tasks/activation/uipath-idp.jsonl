@@ -15,7 +15,7 @@
 {"id": "uipath-idp-015", "prompt": "Convert this scanned image to markdown using UiPath document digitization", "expected_skill": "uipath-idp"}
 {"id": "uipath-idp-016", "prompt": "uip documents uploads create fails with unsupported-media-type — what do I do?", "expected_skill": "uipath-idp"}
 {"id": "uipath-idp-017", "prompt": "Is digitize available in my UiPath folder? Check the document capabilities", "expected_skill": "uipath-idp"}
-{"id": "uipath-idp-018", "prompt": "I have a documentId from uip documents uploads create — digitize it and wait for the result", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-018", "prompt": "I have a DocumentId from uip documents uploads create — digitize it and wait for the result", "expected_skill": "uipath-idp"}
 {"id": "uipath-idp-019", "prompt": "Read my UiPath digitization run one page at a time with uip documents pages get", "expected_skill": "uipath-idp"}
 {"id": "uipath-idp-020", "prompt": "Save page 2 of my UiPath digitization run to a markdown file", "expected_skill": "uipath-idp"}
 {"id": "uipath-idp-021", "prompt": "Use uip documents to get the text of statement.pdf in the Shared folder", "expected_skill": "uipath-idp"}

@@ -28,18 +28,18 @@ sandbox:
               kind: "ocr"
           stdout: >-
             {"Result":"Success","Code":"DocumentsDiscoveryDigitizationEnginesGet","Data":[
-            {"engine":"uipath","description":"Latin, Cyrillic and Greek scripts"},
-            {"engine":"uipath_extended","description":"Adds Chinese, Japanese, Korean and Arabic scripts"},
-            {"engine":"auto","description":"Picks an engine for each page by the page's alphabet"}]}
+            {"Engine":"uipath","Description":"Latin, Cyrillic and Greek scripts"},
+            {"Engine":"uipath_extended","Description":"Adds Chinese, Japanese, Korean and Arabic scripts"},
+            {"Engine":"auto","Description":"Picks an engine for each page by the page's alphabet"}]}
 
         - when:
             verb: "documents discovery digitization-engines get"
           stdout: >-
-            {"Result":"Success","Code":"DocumentsDiscoveryDigitizationEnginesGet","Data":{"ocr":[
-            {"engine":"uipath","description":"Latin, Cyrillic and Greek scripts"},
-            {"engine":"uipath_extended","description":"Adds Chinese, Japanese, Korean and Arabic scripts"},
-            {"engine":"auto","description":"Picks an engine for each page by the page's alphabet"}],
-            "layout":[{"engine":"uipath","description":"UiPath layout model: tables, forms, figures and reading order"}]}}
+            {"Result":"Success","Code":"DocumentsDiscoveryDigitizationEnginesGet","Data":{"Ocr":[
+            {"Engine":"uipath","Description":"Latin, Cyrillic and Greek scripts"},
+            {"Engine":"uipath_extended","Description":"Adds Chinese, Japanese, Korean and Arabic scripts"},
+            {"Engine":"auto","Description":"Picks an engine for each page by the page's alphabet"}],
+            "Layout":[{"Engine":"uipath","Description":"UiPath layout model: tables, forms, figures and reading order"}]}}
 
         - when:
             verb: "documents digitize"
@@ -47,28 +47,28 @@ sandbox:
               ocr-engine: "uipath_extended"
           stdout: >-
             {"Result":"Success","Code":"DocumentsDigitize","Data":{
-            "runId":"5e8b1d07-4c26-4f9a-9d3e-7a1c0b6f2e84","capability":"digitize","status":"succeeded",
-            "engine":{"modelId":null,"ocr":{"engine":"uipath_extended","applyOnPdf":"auto"},"layout":{"engine":null}},
-            "result":{"pageCount":1,
-            "markdown":"<!-- page: 1 -->\n\n# Service Agreement SA-7731\n\nBetween Northwind Traders and Contoso Ltd.",
-            "pages":[{"number":1,"width":1700,"height":2200}]},
-            "digitization":{"runId":"5e8b1d07-4c26-4f9a-9d3e-7a1c0b6f2e84"},
-            "warnings":[],"error":null,
-            "createdAt":"2026-01-15T09:30:05Z","completedAt":"2026-01-15T09:30:11Z"}}
+            "RunId":"5e8b1d07-4c26-4f9a-9d3e-7a1c0b6f2e84","Capability":"Digitize","Status":"Succeeded",
+            "Engine":{"Ocr":{"Engine":"uipath_extended","ApplyOnPdf":"Auto"},"Layout":{"Engine":null}},
+            "Result":{"PageCount":1,
+            "Markdown":"<!-- page: 1 -->\n\n# Service Agreement SA-7731\n\nBetween Northwind Traders and Contoso Ltd.",
+            "Pages":[{"Number":1,"Width":1700,"Height":2200}]},
+            "Digitization":{"RunId":"5e8b1d07-4c26-4f9a-9d3e-7a1c0b6f2e84"},
+            "Error":null,
+            "CreatedAt":"2026-01-15T09:30:05Z","CompletedAt":"2026-01-15T09:30:11Z"}}
 
         # Any other engine reads the page as the default did.
         - when:
             verb: "documents digitize"
           stdout: >-
             {"Result":"Success","Code":"DocumentsDigitize","Data":{
-            "runId":"2f4a9c61-7d38-4e05-b1a2-8c6e3d0f5b97","capability":"digitize","status":"succeeded",
-            "engine":{"modelId":null,"ocr":{"engine":"auto","applyOnPdf":"auto"},"layout":{"engine":null}},
-            "result":{"pageCount":1,
-            "markdown":"<!-- page: 1 -->\n\n# 5ervice Agr33ment 5A-77E1\n\nB3tw33n N0rthw1nd Trad3rs",
-            "pages":[{"number":1,"width":1700,"height":2200}]},
-            "digitization":{"runId":"2f4a9c61-7d38-4e05-b1a2-8c6e3d0f5b97"},
-            "warnings":[],"error":null,
-            "createdAt":"2026-01-15T09:30:05Z","completedAt":"2026-01-15T09:30:11Z"}}
+            "RunId":"2f4a9c61-7d38-4e05-b1a2-8c6e3d0f5b97","Capability":"Digitize","Status":"Succeeded",
+            "Engine":{"Ocr":{"Engine":"auto","ApplyOnPdf":"Auto"},"Layout":{"Engine":null}},
+            "Result":{"PageCount":1,
+            "Markdown":"<!-- page: 1 -->\n\n# 5ervice Agr33ment 5A-77E1\n\nB3tw33n N0rthw1nd Trad3rs",
+            "Pages":[{"Number":1,"Width":1700,"Height":2200}]},
+            "Digitization":{"RunId":"2f4a9c61-7d38-4e05-b1a2-8c6e3d0f5b97"},
+            "Error":null,
+            "CreatedAt":"2026-01-15T09:30:05Z","CompletedAt":"2026-01-15T09:30:11Z"}}
 
 initial_prompt: |
   Document 7c1d9e42-3b5a-4f68-8a0e-5d2c6b1f9a37 is already uploaded in the

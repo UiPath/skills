@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Verify the digitize lifecycle e2e against the tenant.
 
-Takes the runId the agent saved in run.json, reads that run back with the CLI,
+Takes the RunId the agent saved in run.json, reads that run back with the CLI,
 and requires a succeeded one-page digitization whose text is the fixture's and
 a page1.md identical to the page-1 markdown the service returns for that run.
 """
@@ -31,9 +31,9 @@ def saved_run_id() -> str:
     except json.JSONDecodeError as exc:
         fail(f"run.json is not valid JSON: {exc}")
     run = blob.get("Data", blob) if isinstance(blob, dict) else None
-    run_id = run.get("runId") if isinstance(run, dict) else None
+    run_id = run.get("RunId") if isinstance(run, dict) else None
     if not isinstance(run_id, str) or not run_id:
-        fail("run.json has no runId")
+        fail("run.json has no RunId")
     return run_id
 
 
@@ -68,17 +68,17 @@ def require_text(text: str, source: str) -> None:
 def main() -> None:
     run_id = saved_run_id()
     run = uip_data("runs", "get", run_id)
-    if run.get("capability") != "digitize" or run.get("status") != "succeeded":
-        fail(f"run is {run.get('capability')}/{run.get('status')}, expected digitize/succeeded")
-    result = run.get("result") or {}
-    if result.get("pageCount") != 1:
-        fail(f"pageCount is {result.get('pageCount')}, expected 1")
-    require_text(result.get("markdown") or "", "the run's markdown")
+    if run.get("Capability") != "Digitize" or run.get("Status") != "Succeeded":
+        fail(f"run is {run.get('Capability')}/{run.get('Status')}, expected Digitize/Succeeded")
+    result = run.get("Result") or {}
+    if result.get("PageCount") != 1:
+        fail(f"PageCount is {result.get('PageCount')}, expected 1")
+    require_text(result.get("Markdown") or "", "the run's markdown")
 
     page = Path.cwd() / "page1.md"
     if not page.exists():
         fail("page1.md not found")
-    expected = uip_data("pages", "get", "1", "--run-id", run_id, "--format", "markdown").get("content")
+    expected = uip_data("pages", "get", "1", "--run-id", run_id, "--format", "markdown").get("Content")
     if not isinstance(expected, str) or not expected.strip():
         fail("pages get returned no markdown for page 1")
     if normalized(page.read_text(encoding="utf-8")) != normalized(expected):

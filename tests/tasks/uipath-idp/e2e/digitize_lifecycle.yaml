@@ -2,7 +2,7 @@ task_id: skill-idp-e2e-digitize-lifecycle
 description: >
   Live lifecycle against the tenant: upload the bundled one-page invoice to
   the Shared folder, digitize it, and read page 1 back as markdown. The
-  checker reads the run back from the service by the runId the agent saved,
+  checker reads the run back from the service by the RunId the agent saved,
   so it grades what the tenant holds, not what the agent reported.
   Skipped in CI: `uip documents` is not in a published CLI build yet and the
   service does not digitize an uploaded document yet. Run it with
