@@ -40,6 +40,10 @@ import json
 import subprocess
 import sys
 
+# Sibling copy: _setup is mounted alone into task sandboxes (no _shared next to it).
+# sys.path[0] is this directory, so a bare import resolves in every load mode.
+from uip_auth import grader_env  # noqa: E402
+
 
 def _connections(key: str) -> list[dict]:
     try:
@@ -48,6 +52,7 @@ def _connections(key: str) -> list[dict]:
             capture_output=True,
             text=True,
             timeout=90,
+            env=grader_env(),
         )
     except subprocess.TimeoutExpired as exc:
         # Fatal, unlike a ping timeout: without the candidate list there is
@@ -87,6 +92,7 @@ def _ping(connection_id: str) -> str | None:
                 capture_output=True,
                 text=True,
                 timeout=PING_TIMEOUT_S,
+                env=grader_env(),
             )
         except subprocess.TimeoutExpired:
             last = f"ping did not answer within {PING_TIMEOUT_S}s ({attempt} of {PING_ATTEMPTS} attempts)"

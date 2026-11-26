@@ -126,6 +126,7 @@ simulation:
   goal: |
     Get an approved sdd.md carrying the SLA Response Map, then stop before any build.
   constraints:
+    - "Every file the agent writes belongs in its working directory, under the name it reports. Never ask it to move, copy, or rename a file to another folder or path."
     - "Answer concisely and accept reasonable defaults that do not change the stated stages, SLA targets, or the three SLA responses."
     - "When shown the design confirmation, approve it on the first pass and ask the assistant to stop at the approved sdd.md."
     - "Do not authorize creating a case plan, scaffolding a solution, running, publishing, or deploying."

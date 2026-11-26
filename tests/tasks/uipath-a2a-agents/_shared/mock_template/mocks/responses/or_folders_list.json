@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "OrFoldersList",
+  "Data": [
+    {
+      "Key": "0f0f0f0f-0000-4000-8000-0000000000f1",
+      "DisplayName": "Shared",
+      "FullyQualifiedName": "Shared",
+      "FolderType": "Standard"
+    },
+    {
+      "Key": "folder-mock-jane-ws",
+      "DisplayName": "jane.doe@example.com's workspace",
+      "FullyQualifiedName": "Personal/jane.doe@example.com",
+      "FolderType": "Personal"
+    }
+  ]
+}

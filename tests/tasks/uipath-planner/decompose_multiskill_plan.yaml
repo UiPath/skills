@@ -54,8 +54,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Mandatory Testing task present for the generation skills (a Task heading carrying Testing ... (MANDATORY), wording-insertions tolerated)"
-    command: "grep -qE '^#+ *Task T[0-9]+.*Testing.*\\(MANDATORY\\)' solution-plan.md"
+    description: "Mandatory Testing task present for the generation skills (a Task heading carrying Test or Testing ... (MANDATORY), wording-insertions tolerated)"
+    command: "grep -qE '^#+ *Task T[0-9]+.*Test(ing)?\\b.*\\(MANDATORY\\)' solution-plan.md"
     timeout: 5
     expected_exit_code: 0
     weight: 2.0

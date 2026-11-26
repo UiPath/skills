@@ -35,10 +35,10 @@ The two flags are mutually exclusive. Passing neither keeps the stored mode. Swi
 ### Live Authoring Known Limitations
 
 1. Live Authoring is unavailable on Serverless robots.
-2. Live Authoring is unavailable on attended-only robots.
+2. Live Authoring is unavailable on attended robots.
 3. Live Authoring is unavailable on robots that can run only background jobs.
 
-For a Serverless robot, tell the user Live Authoring is not supported on it and ask for a different target (Rule 3). A background-only robot becomes a target once prepared — ask the user whether to prepare it (Rule 11). A Robot signed in with interactive sign-in without unattended credentials becomes a target only when the user asks to convert that user account (§ Interactive Sign-In Robot with a User Account (On Request Only)); one that already has them (`hasCredentials: true`) is a target as is, while that account is signed in on the machine (§ Interactive Sign-In Robot with a User Account (On Request Only) item 5).
+For a Serverless or attended robot, tell the user Live Authoring is not supported on it and ask for a different target (Rule 3). A background-only robot becomes a target once prepared — ask the user whether to prepare it (Rule 11).
 
 ## Critical Rules
 
@@ -51,8 +51,8 @@ For a Serverless robot, tell the user Live Authoring is not supported on it and 
 7. **The remote filesystem is not directly accessible — transfer first.** To read a remote file, `download-file` it and read the local copy. To use a local file on the remote machine, `upload-file` it first and reference the remote path. Always use absolute remote paths.
 8. **`exec` verdict = the trailing JSON envelope.** The command's stdout and stderr stream to local stdout ahead of the envelope; read the command output from the streamed lines and the verdict from `Result` / `Message` only (§ Execute a Shell Command on the Remote).
 9. **Use `--output json`** on every command whose output is parsed, and **pass `--project-dir "<PROJECT_DIR>"` on every `uip rpa remote` command.** The target is stored per project; without the flag the current directory is used, and outside a project folder every command fails with `Not a UiPath project at '<DIR>': project.json is missing.`
-10. **Run/debug verdict = outer `Result` / inner `HasErrors`** — same as local runs, never log-entry levels (SKILL.md Common Rule 8a).
-11. **No usable target → ask the user whether to prepare one in Orchestrator. Never prepare one unasked.** **Offer an Unattended Robot with a robot account — the preferred approach.** Use a user account (Interactive Sign-In Robot) only on the user's request. User agrees → § Prepare a Remote Target in Orchestrator. User declines → ask for another folder or target, or stop.
+10. **Judge a `--remote` run/debug verdict exactly like a local one — by `Data`'s backend shape (SKILL.md Common Rule 8a, [debugging.md § Output Format](debugging.md#output-format)), never by the outer `Result`, never by log-entry levels.** For the same failure the outer `Result` differs between backends: a faulted remote Helm `debug start` returns `Result: "Success"` with `hasErrors: false`.
+11. **No usable target → ask the user whether to prepare an unattended robot in Orchestrator. Never prepare one unasked.** User agrees → § Prepare a Remote Target in Orchestrator. User declines → ask for another folder or target, or stop.
 
 ## Session Lifecycle
 
@@ -118,54 +118,29 @@ For a Serverless robot, tell the user Live Authoring is not supported on it and 
 
 ## Prepare a Remote Target in Orchestrator
 
-Prepare a target only when the user asks for it or agrees when asked (Rule 11). Ask when § Discovering Option Values finds no usable robot or host, or when the intended robot shows `hasCredentials: false`. Pick the scenario:
-
-| Scenario | Robot identity | Machine | Use | Checklist |
-|---|---|---|---|---|
-| Unattended Robot with a robot account (**preferred**) | Robot account; Robot connected as unattended (machine key or client credentials) | Dedicated VM or server | Default — the one to offer | § Unattended Robot with a Robot Account (Recommended) |
-| Interactive Sign-In Robot with a user account (on request only) | User account — the user's own or any other user account; Robot signed in with interactive sign-in | The machine where that account signs in to the Robot | Only when the user asks to convert a user account to unattended | § Interactive Sign-In Robot with a User Account (On Request Only) |
+Prepare a target only when the user asks for it or agrees when asked (Rule 11). Ask when § Discovering Option Values finds no usable robot or host, or when the intended robot shows `hasCredentials: false`. The target is an unattended robot: a robot account on a dedicated machine (VM or server) whose Robot connects to Orchestrator as unattended (machine key or client credentials). Attended robots are not supported (§ Live Authoring Known Limitations).
 
 ### Rules for Preparing a Target
 
 1. **Run every Orchestrator check and change through the `uipath-platform` skill** — it owns the commands for folders, users, robots, machines, and licenses. Skill unavailable → walk the user through the same changes in the Orchestrator web UI.
 2. **Check each item before changing it.** Change only items that fail.
 3. **Confirm each change with the user before making it** — every change alters shared tenant configuration. No free unattended license in the tenant → stop and tell the user; never take a license from another machine.
-4. **Never ask the user for a password.** Unattended Robot → the user or an administrator enters the Windows credentials in the Orchestrator web UI. Interactive Sign-In Robot → password is the fixed value `password`; username per OS (§ Interactive Sign-In Robot with a User Account (On Request Only) item 4).
+4. **Never ask the user for a password.** The user or an administrator enters the Windows credentials in the Orchestrator web UI.
 5. **Shared folder only (e.g. `Shared`)** — never prepare a target only in a Personal Workspace.
 6. **Robot 26.10.0 or later** — the floor for every remote target (§ Discovering Option Values, step 3). Older → ask the user to upgrade the Robot; stop until done.
-7. **Steps on the machine belong to the user** — installing or upgrading the Robot, connecting it to Orchestrator, signing in. Tell the user what to do and wait for confirmation.
+7. **Steps on the machine belong to the user** — installing or upgrading the Robot, connecting it to Orchestrator as unattended. Tell the user what to do and wait for confirmation.
 
-### Unattended Robot with a Robot Account (Recommended)
+### Unattended Robot Checklist
 
 1. **Robot account assigned directly to the shared folder**, with a role that can run jobs. No robot account → ask the user whether to create one; robot accounts are created in Identity (the `uipath-admin` skill), then assigned to the folder (`uipath-platform`).
 2. **Foreground automation enabled** — the robot's unattended setup holds the real Windows credentials of the account it runs as, so the Robot can start a Windows session or join an existing one; the remote session runs in it. Without them the robot is background-only: `hasCredentials: false` in `remote targets`, and the session fails with `Foreground process requires you to have an unattended robot with credentials defined`. Credentials come from the user or an administrator (item 4 of § Rules for Preparing a Target).
 3. **Machine in the same folder with an unattended license** — the machine or machine template is assigned to the folder and has at least one unattended runtime.
 4. **Robot 26.10.0+ connected as unattended** — its host shows `Available` in `remote targets`.
 
-### Interactive Sign-In Robot with a User Account (On Request Only)
-
-Only when the user asks to convert a user account to unattended — the user's own account or any other user account in the tenant; never propose or start it otherwise. Orchestrator registers a machine whose Robot is signed in with a user account in that account's Personal Workspace.
-
-Before the first change:
-
-- **Another user's account** → the signed-in user must be an Orchestrator administrator — check through the `uipath-platform` skill. Not an administrator → stop and tell the user an Orchestrator administrator has to make the changes.
-- **Any account** → tell the user that once prepared, the machine accepts the folder's unattended jobs and remote shell commands run as that account on it (§ Execute a Shell Command on the Remote), until its unattended license and folder assignment are removed.
-
-1. **Machine assigned to the shared folder** — assign that account's Personal Workspace machine to the shared folder too; it stays in the Personal Workspace.
-2. **User account assigned directly to that folder** with a role that can run jobs (e.g. Automation User). Access through a group is not enough — the robot appears in `remote targets` only after a direct assignment.
-3. **Unattended license allocated to the machine** — at least one unattended runtime. While the Robot is online, Orchestrator licenses the machine right away.
-4. **The account's `Enterprise robot setup` = `Custom Windows Credentials`**, password `password` — a fixed value: the Robot joins the account's existing session (item 5) and does not use the password. Never ask the user or the account owner for the real password. Username by the machine's OS:
-   - **macOS** → `.\user`, every time.
-   - **Windows** → the Windows account that account is signed in to Windows with, as `DOMAIN\user`: the output of `whoami` in a terminal on that machine while that account is signed in to Windows. Agent runs on that machine under that account → run `whoami` itself; otherwise ask the user (or the account owner) to run it and share the output.
-   - **OS unknown** → ask the user.
-
-   Orchestrator rejects `.` as the username.
-5. **Robot 26.10.0+ signed in with that account, and that account signed in on the machine** — on Windows, signed in to Windows. The Robot does not start a session for this account; it joins the open one, so the account stays signed in for as long as remote work runs. Signed out → ask the user (or the account owner) to sign in on the machine before any remote session starts. Another user's account → its owner signs in on their machine (item 7 of § Rules for Preparing a Target). Its host shows `Available` in `remote targets`.
-
 ### Verify the Prepared Target
 
 1. Re-run `remote targets` for the folder (§ Discovering Option Values, step 2): the robot shows `enabled: true` and `hasCredentials: true`; the machine has an `Available` host.
-2. Item still failing → re-check it against its checklist. Same item failing after two re-checks → stop and report what is missing.
+2. Item still failing → re-check it against § Unattended Robot Checklist. Same item failing after two re-checks → stop and report what is missing.
 3. Continue with § Configure a Remote Target and § Validate After Configuring.
 
 ## Configure a Remote Target
@@ -264,7 +239,7 @@ Then apply Rule 3: present the candidates and ask the user which to use. Offer o
 | `Robot/user '<ROBOT_NAME>' not found in folder '<FOLDER_PATH>'.` | Re-list the robots in that folder (§ Discovering Option Values, step 2) |
 | `Connected runtime '<RUNTIME_NAME>' not found for machine '<MACHINE_NAME>'. Available runtimes: …` | Pick from the listed runtimes. An empty list means no host of that machine is connected — handle as the "no available unattended session" row |
 | `--live-authoring and --remote-run-only are the two modes of one connection; pass at most one.` | Pass exactly one mode flag |
-| `Could not start remote debug session. Foreground process requires you to have an unattended robot with credentials defined` — from `configure` in Live Authoring, or from later operations in Remote Run Only | `--robot` omitted → reconfigure with it (Rule 2). `--robot` passed → the robot has no credentials (background-only): ask the user whether to fix it (Rule 11) — § Unattended Robot with a Robot Account (Recommended) item 2; for a user account the user asked to convert, § Interactive Sign-In Robot with a User Account (On Request Only) item 4 |
+| `Could not start remote debug session. Foreground process requires you to have an unattended robot with credentials defined` — from `configure` in Live Authoring, or from later operations in Remote Run Only | `--robot` omitted → reconfigure with it (Rule 2). `--robot` passed → the robot has no credentials (background-only): ask the user whether to fix it (Rule 11) — § Unattended Robot Checklist item 2 |
 | Later operations fail: `Remote debugging is not configured for an unattended robot…` | No target is stored — run `configure` |
 | Any `remote` command: `…HelmProjectLoadException: "Not a UiPath project at '<DIR>': project.json is missing…"` | `--project-dir` is missing or wrong — pass the folder containing `project.json` (Rule 9) |
 
@@ -302,7 +277,7 @@ uip rpa execution cancel --output json
 - **Live Authoring** — run/debug travel over the open session. After a `stop`, run `remote start` before the next `--remote` run.
 - **Remote Run Only** — every `--remote` run or debug session is an Orchestrator job of its own; nothing to start or stop.
 - The debug loop is unchanged from local debugging — breakpoints by `activityIdRef`, `DebugState` branching (`Paused` / `Suspended` / `Completed` / `Running`), locals in `DebugDetails`. Full loop: [debugging.md](debugging.md).
-- Works with both Studio and Helm backends.
+- Works with both Studio and Helm backends. Read the verdict by backend shape (Rule 10).
 - `--profiling-mode stream` is ignored when running remote; end-of-run profiling delivery still applies.
 - To read files the run produced on the robot (logs, screenshots, reports), download them (§ Transfer Files).
 
@@ -402,11 +377,8 @@ uip rpa remote upload-file \
 - **Guessing folder/machine/robot/runtime names** — look them up from Orchestrator and ask the user (Rule 3).
 - **Configuring a machine whose host is not connected** — `configure` rejects it; pick a machine with a connected, responsive host.
 - **Preparing a target without asking the user** — when no usable target exists, ask whether to prepare one; never start on your own (Rule 11).
-- **Converting a user account to unattended without the user's request, or another user's account without being an Orchestrator administrator** — recommend an Unattended Robot with a robot account (Rule 11); for another user's account, check the administrator role first (§ Interactive Sign-In Robot with a User Account (On Request Only)).
 - **Preparing a target only in a Personal Workspace** — remote sessions need the robot and machine in a shared folder (§ Rules for Preparing a Target).
-- **Relying on group access for an Interactive Sign-In Robot** — assign the user account directly to the folder; otherwise the robot does not appear in `remote targets`.
 - **Configuring a robot with `hasCredentials: false`** — it runs only background processes and the session fails; ask the user whether to enable foreground automation first (Rule 11).
-- **Asking for the real password for an Interactive Sign-In Robot, or guessing the username** — password is always `password`; username is `.\user` on macOS and the `whoami` output (`DOMAIN\user`) on Windows, never `.` (§ Interactive Sign-In Robot with a User Account (On Request Only) item 4).
 - **Omitting `--runtime` on a multi-host machine when the application exists on only one host** — the session may open on a host without it (§ When to Pass `--runtime`).
 - **Setting `--runtime` for a serverless machine** — the flag is ignored there; it only pins a session on a classic machine.
 - **Wrapping `configure --live-authoring` in a short timeout** — it blocks until the session job runs, tens of seconds.

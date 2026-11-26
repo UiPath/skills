@@ -146,7 +146,7 @@
       "last_synced": null
     },
     "uipath-maestro-bpmn": {
-      "status": "in-development",
+      "status": "stable",
       "confluence": {
         "page_id": null,
         "url": null
@@ -163,6 +163,14 @@
     },
     "uipath-maestro-flow": {
       "status": "stable",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
+    "uipath-a2a-agents": {
+      "status": "in-development",
       "confluence": {
         "page_id": null,
         "url": null

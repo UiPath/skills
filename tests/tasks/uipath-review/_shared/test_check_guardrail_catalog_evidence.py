@@ -15,6 +15,8 @@ import sys
 import textwrap
 from pathlib import Path
 
+import pytest
+
 HERE = Path(__file__).resolve().parent
 CHECKER = HERE / "check_guardrail_catalog_evidence.py"
 
@@ -148,3 +150,30 @@ def test_unavailability_prose_outside_rules_skipped_does_not_count(tmp_path):
     misplaced = "# R\n\nThe guardrails catalog was unavailable, so I guessed.\n\n## Rules Skipped\n\nNone.\n"
     r = run(tmp_path, misplaced, uip)
     assert r.returncode != 0
+
+
+# --- negated unavailability terms --------------------------------------------
+
+def _rules_skipped_says(sentence: str) -> str:
+    return SILENT_REPORT.replace(
+        "None. The live guardrail catalog was available.",
+        f"| Guardrail catalog single-fetch/cache procedure | A second fetch recovered "
+        f"exact evidence. {sentence} |")
+
+
+@pytest.mark.parametrize("sentence", [
+    "The catalog was never unavailable.",
+    "The catalog wasn't unavailable.",
+])
+def test_reachable_and_report_negates_unavailable_passes(tmp_path, sentence):
+    """A negated term says the catalog WORKED; it must not read as the claim."""
+    r = run(tmp_path, _rules_skipped_says(sentence), _fake_uip(tmp_path, CATALOG_OK))
+    assert r.returncode == 0, r.stderr
+    assert "catalog is reachable" in r.stdout
+
+
+def test_negated_term_does_not_hide_a_plain_one(tmp_path):
+    report = _rules_skipped_says("The catalog was not unavailable, but the fetch failed.")
+    r = run(tmp_path, report, _fake_uip(tmp_path, CATALOG_OK))
+    assert r.returncode != 0
+    assert "declares the guardrail catalog unavailable" in r.stderr

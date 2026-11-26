@@ -53,7 +53,8 @@ def check(root: Path, process: str, taken: str) -> str:
     bpmns = [
         path.resolve()
         for path in root.rglob("*.bpmn")
-        if path.name.lower() == f"{process}.bpmn".lower()
+        if ".flow-sdk" not in path.relative_to(root).parts
+        and path.name.lower() == f"{process}.bpmn".lower()
     ]
     if not bpmns:
         fail(f"no {process}.bpmn was created")
