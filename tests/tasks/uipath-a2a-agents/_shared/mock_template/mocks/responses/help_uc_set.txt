@@ -1,0 +1,37 @@
+Usage: uip agenthub remote-a2a-agent-user-connections set [options]
+
+Set a user's connection on a remote A2A agent, replacing any they have.
+
+The connection must be Enabled. Your own needs Connections.Edit in the
+agent's folder; another user's also needs McpServers.Edit there.
+
+Options:
+  --connection-id <id>        Integration Service connection, by id, that the
+                              user's calls authenticate with: an OAuth
+                              connection of the Agent 2 Agent connector, from
+                              `uip is connections list uipath-google-agent2agent
+                              --all-folders`, made for the endpoint the agent's
+                              card names.
+  --connection-name <name>    The connection by name instead of --connection-id:
+                              one of the Agent 2 Agent connector's connections
+                              you can see.
+  --me                        Set your own connection.
+  --user-id <id>              Set this user's connection. `uip admin users list`
+                              shows each user's id beside their email.
+  --user-email <email>        Set the connection of the organization's user with
+                              this email. Looking it up needs permission to read
+                              the organization's users.
+  --user-name <name>          Name `list` shows for the user. Defaults to the
+                              --user-email; your own shows the email of your
+                              login when it has one.
+  --dry-run                   Print the mutation plan without setting it.
+  --agent <slug>              Remote A2A agent slug, not its display name.
+  --folder-key <key>          Orchestrator folder key (GUID). Use --folder-path
+                              for the folder name or fully-qualified path.
+  --folder-path <path>        Orchestrator folder display name or
+                              fully-qualified path (e.g. 'Shared' or
+                              'Foo/Shared'). Resolved to the folder key via the
+                              Orchestrator SDK.
+  --login-validity <minutes>  Override the interactive-login token lifetime for
+                              this call.
+  -h, --help                  display help for command

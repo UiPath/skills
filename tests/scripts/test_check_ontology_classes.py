@@ -1,4 +1,4 @@
-"""Tests for the offline `classes` and `relates` checks of the ontology task grader (check_ontology.py).
+"""Tests for the offline `classes`, `relates`, `depends` and `fieldtype` checks of the ontology task grader (check_ontology.py).
 
 The check reads `<WORKDIR>/<NAME>.ofn` offline: every expected class is
 declared, and every declared class has rdfs:label, rdfs:comment and at least
@@ -133,3 +133,50 @@ def test_relates_fails_without_native_entities(tmp_path):
     result = run_relates(tmp_path)
     assert result.returncode == 1
     assert "no local native entity" in result.stdout
+
+
+# --- `depends` and `fieldtype`: one built native entity, read offline ------------------------------------
+
+def write_built_entity(solution: Path, name: str, deps: list[tuple[str, str]], fields: dict[str, str]) -> None:
+    folder = solution / "resources/solution_folder/entity/native"
+    folder.mkdir(parents=True, exist_ok=True)
+    resource_json = json.dumps({"Fields": [{"Name": n, "FieldDisplayType": t} for n, t in fields.items()]})
+    (folder / f"{name}.json").write_text(json.dumps({"resource": {
+        "name": name,
+        "dependencies": [{"kind": k, "name": n} for k, n in deps],
+        "spec": {"resourceJson": resource_json},
+    }}))
+
+
+def run_check(command: str, solution: Path, entity: str, *items: str) -> subprocess.CompletedProcess:
+    return subprocess.run([sys.executable, "-I", str(GRADER), command, str(solution), entity, *items],
+                          text=True, capture_output=True)
+
+
+def test_depends_matches_kind_and_name(tmp_path):
+    write_built_entity(tmp_path, "WorkOrder", [("ChoiceSet", "WorkOrderPriority"), ("Entity", "Asset")], {})
+    assert run_check("depends", tmp_path, "WorkOrder", "ChoiceSet:WorkOrderPriority", "Entity:Asset").returncode == 0
+    wrong_kind = run_check("depends", tmp_path, "WorkOrder", "Entity:WorkOrderPriority")
+    assert wrong_kind.returncode == 1
+    assert "WorkOrder does not depend on Entity:WorkOrderPriority" in wrong_kind.stdout
+
+
+def test_depends_fails_for_a_missing_entity(tmp_path):
+    result = run_check("depends", tmp_path, "WorkOrder", "ChoiceSet:WorkOrderPriority")
+    assert result.returncode == 1
+    assert "WorkOrder is not a local native entity" in result.stdout
+
+
+def test_fieldtype_reads_the_built_display_type(tmp_path):
+    write_built_entity(tmp_path, "Asset", [], {"manual": "File", "assetTag": "Basic"})
+    assert run_check("fieldtype", tmp_path, "Asset", "manual:File").returncode == 0
+    wrong = run_check("fieldtype", tmp_path, "Asset", "assetTag:File")
+    assert wrong.returncode == 1
+    assert "Asset.assetTag has display type Basic, expected File" in wrong.stdout
+
+
+def test_fieldtype_fails_for_a_missing_field(tmp_path):
+    write_built_entity(tmp_path, "Asset", [], {"assetTag": "Basic"})
+    result = run_check("fieldtype", tmp_path, "Asset", "manual:File")
+    assert result.returncode == 1
+    assert "Asset has no field manual" in result.stdout

@@ -45,7 +45,8 @@ uip solution restore ./MySolution --output json
 |--------|-------------|---------|
 | `<solution-path>` | Solution directory (containing a `.uipx`) or a `.uis` file (required) | -- |
 | `--login-validity <minutes>` | Minimum minutes left on the access token before the CLI refreshes it before restore starts | 10 |
-| `--nuget-sources-config-path <path>` | Local `NuGet.config` that sets the package sources used for resolution | -- |
+| `--nuget-sources-config-path <path>` | Local `NuGet.config` whose sources are added to the default ones | -- |
+| `--feed-folder <name>` / `--exclude-configured-sources` | Add a folder feed or drop the built-in feeds — see [Dependency feeds](pack-build-guide.md#dependency-feeds) | -- |
 
 `restore` resolves dependencies on disk and does **not** produce a package. It needs an authenticated session (`uip login`) to reach private Orchestrator feeds. `pack` already restores internally, so this step is an **optimization, not a requirement** — its value is in CI, where running `login → restore → pack` fails fast on a missing or unreachable feed before the heavier pack step runs. Skip it for a plain local pack.
 
@@ -64,16 +65,26 @@ uip solution pack ./MySolution ./output --name "MySolution" --version "2.0.0" --
 |--------|-------------|---------|
 | `<solution-path>` | Directory containing a `.uipx` or `.uis` file (required) | -- |
 | `<output-path>` | Directory where the .zip will be written (required unless `--dry-run`) | -- |
-| `--name <name>` | Override the package name | Name from `.uipx` |
+| `--name <name>` | Override the package name. Renames the solution archive only; member package ids keep the `.uipx` name ([Member package ids](pack-build-guide.md#member-package-ids)) | Solution folder name (or `.uis` file name) |
 | `--version <version>` | Set the package version | `1.0.0` |
-| `--nuget-sources-config-path <path>` | Local `NuGet.config` that sets the package sources used for resolution | -- |
-| `--author <author>` | Set the package author | `UiPath` |
-| `--description <text>` | Set the package description | `Created by UiPath` |
+| `--nuget-sources-config-path <path>` | Local `NuGet.config` whose sources are added to the default ones | -- |
+| `--feed-folder <name>` / `--exclude-configured-sources` | Add a folder feed or drop the built-in feeds — see [Dependency feeds](pack-build-guide.md#dependency-feeds) | -- |
+| `--skip-analyze` / `--ignored-rules` / `--governance-file-path` / `--governance-product` | Workflow analyzer and governance — see [Workflow analyzer and governance](pack-build-guide.md#workflow-analyzer-and-governance) | Analyzer on |
+| `--skip-build` | Pack each coded app's existing build output instead of building it — see [Coded apps](pack-build-guide.md#coded-apps-pack-builds-them) | Build |
+| `--signing-certificate-path <path>` | Sign each project `.nupkg` — see [Package signing](pack-build-guide.md#package-signing) | Unsigned |
+| `--author <author>` | Set the package author on every member | The member's own, else `UiPath` |
+| `--description <text>` | Set the package description on every member | The member's own, else `Created by UiPath` |
 | `--dry-run` | Run the full pack pipeline against a temporary directory and discard the output — proves the solution packs without producing a package | off |
 
 The output is a `.zip` file named `<name>_<version>.zip` — **underscore between name and version, not a dot** — written under `<output-path>/` (e.g., `MySolution_2.0.0.zip`). Don't guess the filename: read it from the command's `Data.Packages` field, or list `<output-path>/`. Run `solution resources refresh` first (from inside the solution dir, or with `--solution-folder <path>`) to ensure the solution's artefact files and debug overwrites are up to date — they're bundled into the package.
 
-**Controlling package sources.** In offline or air-gapped environments, or when packages must be resolved from specific feeds, pass `--nuget-sources-config-path <path>` pointing at a local `NuGet.config`. Both `pack` and `restore` accept the flag; the sources declared in that file determine where each project's dependencies are resolved from, giving you precise control over feed selection.
+**A failed pack names the broken file in `Data.Projects`, not in `Message`.** Read it per project — fields in [Read `Data.Projects` on a failed pack](pack-build-guide.md#read-dataprojects-on-a-failed-pack).
+
+**Controlling package sources.** Before using `--exclude-configured-sources`, read [Dependency feeds](pack-build-guide.md#dependency-feeds): bare, it can fail the restore of official activity packages. `pack`, `restore` and `cleanup` all take these options.
+
+**Governance does not gate:** `pack` can exit `0` without the tenant policy — see [Governance does not gate a build](pack-build-guide.md#governance-does-not-gate-a-build).
+
+**Coded apps are built by `pack`** (install, then the `build` script). Git-ignore the `.uipath-build.json` it writes; see [Coded apps](pack-build-guide.md#coded-apps-pack-builds-them).
 
 ## Step 2: Publish to the Solution Feed
 
@@ -310,9 +321,15 @@ uip solution deploy list --folder-path "Shared" --limit 20 --sort-by "Name" --so
 uip solution deploy list --limit 50 --offset 50 --output json   # page 2
 ```
 
-Options: `--folder-path`, `--limit` (default 50), `--offset` (default 0), `--sort-by`, `--sort-order` (`Ascending`/`Descending`).
+Options: `--folder-path` / `--folder-key`, `--operation-status`, `--activation-status`, `--limit` (default 50), `--offset` (default 0), `--sort-by`, `--sort-order` (`Ascending`/`Descending`), plus `--feed` / `--personal-workspace`.
 
-The response's `Pagination` block reports `Total` and `HasMore`; when `HasMore` is `true`, fetch the next page with `--offset`. Note that `--folder-path` filters client-side after the fetch, so with that flag `Returned` counts the filtered rows while `Offset`/`Total` stay server-side — page with `--offset` first, then filter.
+All filters run server-side, so `--limit`, `--offset` and `Pagination.Total` count matching deployments. When `Pagination.HasMore` is `true`, fetch the next page with `--offset <previous Offset + Returned>`.
+
+**Folder filters match the folder a deployment was installed *into*:**
+
+- `--folder-path` takes the folder's **full path** (`Shared/Finance`, not `Finance`); exact match, not case-sensitive.
+- Subfolders are **not** included. List each subfolder with its own call.
+- `--folder-key` takes the key of the row's `FolderPath` folder. A row's own `FolderKey` is the deployment's solution folder one level below it, so passing it to `--folder-key` matches nothing. Resolve the `FolderPath` folder's key (`uip or folders list --output json`) or use `--folder-path`.
 
 ---
 
@@ -405,7 +422,7 @@ uip solution deploy config link config.json MyQueue \
 | `--keep-installed-copy` | `"deleteInstalledCopy": false` | Kept, as with no flag; states the default explicitly |
 | `--delete-installed-copy` | `"deleteInstalledCopy": true` | Permanently deleted with its data |
 
-The two flags cannot be combined (exit `3`, file unchanged). A first install has no installed copy, and `deploy upgrade` takes no config file, so the flags have no effect there. `config link` replaces the whole link, so re-linking without a flag resets an earlier `--delete-installed-copy` to keep; `Data.LinkedTo.DeleteInstalledCopy` in the output shows what was written. `deploy run` also sends `false` for a link in the file with no `deleteInstalledCopy` key (hand-edited, or written by an older CLI), without changing the file. So deleting a copy always needs an explicit `--delete-installed-copy` or `"deleteInstalledCopy": true`. Newer servers do not ask for consent here, because the link is the choice. Older servers cannot keep the copy, see [When a deploy would permanently delete resources](#when-a-deploy-would-permanently-delete-resources).
+The two flags cannot be combined (exit `3`, file unchanged). A first install has no installed copy, so the flags have no effect there; they apply when the file goes to `deploy run --config-file` or `deploy upgrade --config-file` for an existing deployment ([Change a live deployment's configuration](activate-and-manage.md#change-a-live-deployments-configuration)). `config link` replaces the whole link, so re-linking without a flag resets an earlier `--delete-installed-copy` to keep; `Data.LinkedTo.DeleteInstalledCopy` in the output shows what was written. `deploy run` also sends `false` for a link in the file with no `deleteInstalledCopy` key (hand-edited, or written by an older CLI), without changing the file. So deleting a copy always needs an explicit `--delete-installed-copy` or `"deleteInstalledCopy": true`. Newer servers do not ask for consent here, because the link is the choice. Older servers cannot keep the copy, see [When a deploy would permanently delete resources](#when-a-deploy-would-permanently-delete-resources).
 
 Four refusals come from such links. Errors `5028` and `5002` stop the install call before anything runs: nothing is scheduled, but the attempt is kept as a pending draft, see [A deploy that stops in `Draft`](#a-deploy-that-stops-in-draft). `deploy run` reports `ErrorCode: invalid_argument`, `Retry: RetryWillNotFix`.
 
@@ -457,13 +474,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: npm install -g @uipath/cli
+      - run: |   # install the CLI the repo's freeze pins; fails the job when the file is missing or versions.cli is not an exact version
+          CLI_PIN=$(node -p "let v; try { v = JSON.parse(require('fs').readFileSync('.uipath/config.json', 'utf8').replace(/^\uFEFF/, '')).versions?.cli; } catch {} if (typeof v !== 'string' || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-(0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*)?$/.test(v)) { console.error('versions.cli in .uipath/config.json is missing or not an exact version'); process.exit(1); } v") || exit 1
+          npm install -g "@uipath/cli@$CLI_PIN"
+      - run: uip --version 2>&1 | grep "frozen at"   # fails when the pinned CLI is too old to read the freeze
+      - run: uip update   # puts each pinned tool on its pin; exits 1 when the CLI or a pinned tool stays off its pin
       - run: uip login --client-id "${{ secrets.UIPATH_CLIENT_ID }}" --client-secret "${{ secrets.UIPATH_CLIENT_SECRET }}" --tenant "${{ secrets.UIPATH_TENANT }}" --output json
       - run: uip solution restore ./MySolution --output json   # optional: fail fast on a missing feed before pack
       - run: uip solution pack ./MySolution ./output --version "1.0.${{ github.run_number }}" --output json
       - run: uip solution publish ./output/MySolution_*.zip --output json
       - run: uip solution deploy run -n "MySolution-${{ github.run_number }}" --package-name "MySolution" --package-version "1.0.${{ github.run_number }}" --folder-name "MySolution" --config-file deploy-config.json --output json
 ```
+
+This job expects the repo to commit a frozen `.uipath/config.json`, so every run uses the same CLI and tools. Make the freeze once on a dev machine, inside the repo: `npm install -g @uipath/cli@<CLI_VERSION>`; if the repo has no `.uipath/config.json` yet, create an empty one (`mkdir -p .uipath && touch .uipath/config.json`) so the freeze goes to the repo and not to your home config; then install only the tools the job needs with `UIPATH_CLI_DISABLE_VERSION_SYNC=1 uip tools install <TOOL>` (here `solution`, plus the tool of each project type in the solution) and run `uip config freeze`; then commit `.uipath/config.json`. `uip config freeze --all` also works, but it pins every tool, and `uip update` then installs all of them on every run. Read the file before you commit it: everything in it goes into the repo. In a frozen repo, do **not** install the newest CLI (`npm install -g @uipath/cli` or `@latest`; `npm`'s `latest` tag for `@uipath/cli` can be a dev build): it is off the CLI pin, and every command except `uip update`, `uip config`, `uip tools list`, help and `uip --version` is refused until the CLI is back on its pin. Do not run `uip update --force` to get past a refusal: it updates past the freeze and rewrites the pins in `.uipath/config.json`. `uip update` installs no skills on a runner that has none, and this job needs none. One runner holds one freeze at a time: on a self-hosted runner, two jobs with other pins move the same global install. For details, run `uip config freeze --help` and `uip update --help`.
+
+With no freeze in the repo, replace the three steps after checkout with one step: `npm install -g @uipath/cli@<CLI_VERSION>`, an exact version you chose.
 
 ---
 
@@ -492,6 +517,14 @@ uip solution deploy run -n "MySolution-Prod" --package-name "MySolution" --packa
 ## Version Bumping
 
 Always increment the version when republishing (patch for fixes, minor for features, major for breaking changes). The solution feed rejects duplicate name+version pairs.
+
+**Publish 409 means the version is taken.** Publish the same package under a new version:
+
+```bash
+uip solution publish <PACKAGE_ZIP> --package-version <NEW_VERSION> --output json
+```
+
+`--package-version` rewrites the version inside a packed `.zip`. With the solution source at hand, you can instead pack again with `--version <NEW_VERSION>` and publish that package. Never delete the published version to reuse its number: deployments made from it depend on it ([Delete a Package Version](activate-and-manage.md#step-6-delete-a-package-version)).
 
 ---
 
@@ -560,9 +593,9 @@ Some resources reference others through `configuration` fields (an index's `stor
 
 The `--all` flag on `config set` only works with `conflictFixingAction`. It cannot be used to set arbitrary properties across all resources.
 
-### `deploy list --limit` and Folder Filtering
+### `deploy list` Folder Filtering
 
-Folder filtering with `--folder-path` happens **after** fetching `--limit` results. If your deployment is missing from the list, increase `--limit` to ensure the server returns enough results before filtering.
+`--folder-path` / `--folder-key` filter server-side on the folder the deployment was installed into: full path, no subfolders, and not the row's own `FolderKey`. An empty result usually means a short path, a subfolder, or the wrong key — see [Step 6](#step-6-list-deployments).
 
 ### Units Mismatch
 

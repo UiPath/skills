@@ -44,7 +44,7 @@ Every term in a later file must exist in the schema.
 - The mapping links a class to its entity by name only (`table: <EntityName>`). The service resolves the name in the deployment folder at install.
 - System fields are `Id`, `CreateTime`, `UpdateTime`, `CreatedBy` and `UpdatedBy`. Never model them as domain properties. `$(Id)` is the subject key.
 - A relationship is one `RELATIONSHIP` field on the referencing entity. The mapping joins it with `equal(str1=$(customer), str2=$(Id))`.
-- A choice-set field is mapped by value name (`xsd:string`), and the schema comment lists its values (a constraints file, when written, lists them with `sh:in`).
+- A choice-set field is mapped by value name (`xsd:string`), and the schema comment lists its values in this exact form: `Values of choice set <CHOICE_SET>: 'A' | 'B' | 'C' (case-sensitive; copy exactly).` Each value is in single quotes and the separator is ` | `, never a comma list or bare names (a constraints file, when written, lists them with `sh:in`).
 
 ## Do not
 

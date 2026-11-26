@@ -9,6 +9,7 @@ tags: [activation, classification]
 
 dataset:
   paths:
+    - uipath-a2a-agents.jsonl
     - uipath-activity-migrator.jsonl
     - uipath-admin.jsonl
     - uipath-agents.jsonl
@@ -39,11 +40,13 @@ dataset:
     - uipath-connector-builder.jsonl
     - uipath-bundles.jsonl
     - uipath-vertical-solutions.jsonl
+    - uipath-automationhub.jsonl
+    - uipath-aops.jsonl
     - negative.jsonl
 
 initial_prompt: "${row.prompt}"
 
-# 30 skill_triggered criteria — one per skill. Each derives expected internally
+# 33 skill_triggered criteria — one per skill. Each derives expected internally
 # from `expected_skill == skill_name`. Heavy class imbalance (~50 yes / ~1100 no
 # per skill) means recall.yes is the meaningful gate; recall.no is trivially high.
 success_criteria:
@@ -160,6 +163,13 @@ success_criteria:
     stop_early:
       on_pass: stop
   - type: skill_triggered
+    description: "uipath-a2a-agents activation"
+    skill_name: uipath-a2a-agents
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
+  - type: skill_triggered
     description: "uipath-planner activation"
     skill_name: uipath-planner
     expected_skill: "${row.expected_skill}"
@@ -253,6 +263,20 @@ success_criteria:
   - type: skill_triggered
     description: "uipath-vertical-solutions activation"
     skill_name: uipath-vertical-solutions
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
+  - type: skill_triggered
+    description: "uipath-automationhub activation"
+    skill_name: uipath-automationhub
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
+  - type: skill_triggered
+    description: "uipath-aops activation"
+    skill_name: uipath-aops
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
     stop_early:

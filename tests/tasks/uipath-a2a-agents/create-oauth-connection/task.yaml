@@ -1,0 +1,56 @@
+task_id: skill-a2a-agents-create-oauth-connection
+description: |
+  Register a Foundry-style remote A2A agent whose card sits behind Entra ID at a non-.well-known path, with the OAuth Agent 2 Agent connection. Two connections exist for it and `is connections list` cannot tell their types apart: "Foundry Agent" is a Personal Access Token connection, "Foundry Agent #2" OAuth client credentials (the simulated user says so when asked). Exercises Critical Rule 3 and Registering an Agent: `create --agent-card-url <card path> --connection-id <the OAuth id>`, never the PAT connection, never `--agent-card-json`. Graded from the uip mock's call log. Uses the manifest-driven uip mock — no real tenant call.
+tags: [uipath-a2a-agents, smoke, 'mode:build', 'lifecycle:setup']
+agent:
+  type: claude-code
+  allowed_tools: [Skill, Bash, Read, Write, AskUserQuestion]
+sandbox:
+  python: {}
+  template_sources:
+  - {type: template_dir, path: ../_shared/mock_template}
+  - {type: template_dir, path: fixtures}
+  mock_path_dirs: [mocks]
+reference:
+  directory: .
+initial_prompt: |
+  Use the `uip` CLI as if it were the real UiPath CLI (it is mocked in this
+  sandbox; manifest-driven canned responses).
+
+  TASK: Register our Microsoft Foundry agent in Agent Gateway, in the Shared
+  folder, with the name and slug foundry-agent. Its agent card is at
+  https://agent.example.com/api/a2a/agentCard/v1.0, and like every Foundry
+  endpoint, the card included, it accepts only Microsoft Entra ID tokens. We
+  already created Agent 2 Agent connections for it in Integration Service.
+success_criteria:
+- type: run_command
+  description: 'A successful `remote-a2a-agent create --slug foundry-agent --agent-card-url <the card path> --connection-id <the OAuth connection>` in the Shared folder; no write sent the PAT connection; no create from --agent-card-json'
+  command: python3 $REFERENCE_DIR/check_create_oauth_connection.py
+  timeout: 30
+  expected_exit_code: 0
+  weight: 3.0
+- type: command_not_executed
+  description: Agent did NOT create, edit or delete an Integration Service connection
+  tool_name: Bash
+  command_pattern: 'uip\s+is\s+connections\s+(create|edit|delete|rename|set-default)\b'
+- type: command_not_executed
+  description: Agent did NOT delete a remote A2A agent
+  tool_name: Bash
+  command_pattern: 'uip\s+agenthub\s+remote-a2a-agent\s+delete\b(?![^\n]*--(dry-run|help))'
+run_limits: {max_turns: 60}
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath admin who asked for the Foundry agent to be registered.
+    You created both Agent 2 Agent connections yourself: "Foundry Agent" uses a
+    Personal Access Token you pasted in, and "Foundry Agent #2" uses OAuth 2.0
+    client credentials with your Entra ID app registration (scope
+    https://ai.azure.com/.default). You know nothing else about them.
+  goal: |
+    Get the agent registered. Answer the agent's questions from what you know.
+  constraints:
+    - "If the agent asks which connection to use, or what type a connection is, say which one is which, as in your persona."
+    - "Never provide a token, a secret or a connection id; say you don't have them at hand."
+    - "Keep replies short (one or two sentences, or pick a numbered option)."
+    - "Approve the agent's plan when it proposes one that registers foundry-agent."
+  max_turns: 6
