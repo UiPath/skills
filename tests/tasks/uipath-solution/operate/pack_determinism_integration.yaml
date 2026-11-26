@@ -11,7 +11,9 @@ description: >
   `uip solution pack` at grade time (the grading subprocess resolves CLI tool
   packages from its own environment — on the 2026-07-10 nightly that env had
   no solution-tool, failing the check for reasons unrelated to determinism).
-  The command_executed criterion pins that the agent really packed twice.
+  The command_executed criterion pins that the agent used `uip solution pack`;
+  the checker proves two real packs via distinct packageVersionKey values
+  (command_executed counts tool calls, so two packs in one Bash call count once).
 tags: [uipath-solution, integration, mode:build, lifecycle:generate, solution]
 
 agent:
@@ -44,10 +46,10 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent packed the solution twice with uip solution pack"
+    description: "Agent packed the solution with uip solution pack"
     tool_name: "Bash"
     command_pattern: 'uip\s+solution\s+pack\b(?!\s+(?:--help|-h)\b)'
-    min_count: 2
+    min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
