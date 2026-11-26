@@ -1,0 +1,34 @@
+task_id: skill-a2a-agents-relay-on
+description: |
+  Route a remote A2A agent that moved into a private network through UiPath Relay. Exercises Relay: `remote-a2a-agent update <slug> --use-relay` in the agent's folder, which carries both the card fetch and every call, without re-creating or deleting the agent. Graded from the uip mock's call log. Uses the manifest-driven uip mock — no real tenant call.
+tags: [uipath-a2a-agents, smoke, 'mode:build', 'lifecycle:setup']
+agent:
+  type: claude-code
+  allowed_tools: [Skill, Bash, Read, Write]
+sandbox:
+  python: {}
+  template_sources:
+  - {type: template_dir, path: ../_shared/mock_template}
+  - {type: template_dir, path: fixtures}
+  mock_path_dirs: [mocks]
+reference:
+  directory: .
+initial_prompt: |
+  Use the `uip` CLI as if it were the real UiPath CLI (it is mocked in this
+  sandbox; manifest-driven canned responses).
+
+  TASK: Our vendor moved the A2A agent vendor-agent, registered in Agent
+  Gateway in the Shared folder, inside the customer's private network. A UiPath
+  Relay client already runs there. Make Agent Gateway reach the agent again.
+success_criteria:
+- type: run_command
+  description: 'The last successful update of vendor-agent that changed Relay passed --use-relay, every write in the Shared folder'
+  command: python3 $REFERENCE_DIR/check_relay_on.py
+  timeout: 30
+  expected_exit_code: 0
+  weight: 3.0
+- type: command_not_executed
+  description: Agent did NOT delete or re-create the agent
+  tool_name: Bash
+  command_pattern: 'uip\s+agenthub\s+remote-a2a-agent\s+(delete|create)\b(?![^\n]*--(dry-run|help|print-schema))'
+run_limits: {max_turns: 60}

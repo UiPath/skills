@@ -839,3 +839,66 @@ def test_sticky_note_moves_only_with_the_node_it_covers(tmp_path: Path, note_x: 
     # placeAddedNodes' own output on UiPath/builder-sdk#1501 8a0fedc2: the loop grows, z moves 192 and its note with it.
     final = flow({"classify": at(144), "dedupe": at(336), "record": at(528)}, 752, 1292, note_x)
     assert layout_of(tmp_path, original, final) == expected
+
+
+SWAP_FIXTURE = HERE / "fixture_ticket_triage" / "TicketTriageSolution" / "TicketTriage"
+NEW_CONNECTION = "c0ffee00-1111-4222-8333-944445555666"
+NEW_FOLDER_KEY = "f01de200-aaaa-4bbb-8ccc-dddddddddddd"
+
+
+def swap_detail(flow: dict) -> None:
+    detail = node(flow, edit.SWAP_NODE)["inputs"]["detail"]
+    detail["connectionId"] = detail["connectionResourceId"] = NEW_CONNECTION
+    detail["connectionFolderKey"] = NEW_FOLDER_KEY
+
+
+def swapped(flow: dict) -> None:
+    swap_detail(flow)
+    flow["bindings"] = [
+        {"resource": "connection", "propertyAttribute": "ConnectionId", "resourceKey": NEW_CONNECTION, "default": NEW_CONNECTION},
+        {"resource": "connection", "propertyAttribute": "FolderKey", "resourceKey": NEW_CONNECTION, "default": NEW_FOLDER_KEY},
+    ]
+
+
+@pytest.fixture
+def swap_project(tmp_path: Path, monkeypatch) -> Path:
+    target = tmp_path / SWAP_FIXTURE.name
+    shutil.copytree(SWAP_FIXTURE, target)
+    monkeypatch.setattr(edit, "folder_connections", lambda: {NEW_CONNECTION: NEW_FOLDER_KEY})
+    return target
+
+
+def swap_mutate(project: Path, change) -> None:
+    path = project / f"{SWAP_FIXTURE.name}.flow"
+    flow = json.loads(path.read_text())
+    change(flow)
+    path.write_text(json.dumps(flow, indent=2))
+
+
+def swap_check(project: Path) -> int:
+    return edit.main(["connection-swap", "--original", str(SWAP_FIXTURE), "--project", str(project)])
+
+
+def test_swap_fixture_starts_without_bindings() -> None:
+    flow = json.loads((SWAP_FIXTURE / f"{SWAP_FIXTURE.name}.flow").read_text())
+    assert "bindings" not in flow
+
+
+def test_connection_swap_passes_with_rows(swap_project: Path) -> None:
+    swap_mutate(swap_project, swapped)
+    assert swap_check(swap_project) == 0
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        lambda flow: None,
+        swap_detail,
+        lambda flow: (swapped(flow), flow["bindings"][1].update(default=edit.OLD_FOLDER_KEY)),
+    ],
+    ids=["untouched", "detail-only-hand-edit", "stale-folder-row"],
+)
+def test_connection_swap_fails(swap_project: Path, change, capsys) -> None:
+    swap_mutate(swap_project, change)
+    assert swap_check(swap_project) == 1
+    assert "FAIL:" in capsys.readouterr().out

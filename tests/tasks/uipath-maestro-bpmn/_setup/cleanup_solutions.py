@@ -30,6 +30,9 @@ import os
 import subprocess
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from uip_auth import AuthExpired, grader_env  # noqa: E402
+
 logging.basicConfig(level=logging.INFO, format="cleanup_solutions: %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -82,11 +85,18 @@ def main() -> int:
             preserved.append(sid)
             continue
 
+        try:
+            env = grader_env()
+        except AuthExpired as e:
+            logger.warning("cannot delete %s: %s", sid, e)
+            failed.append(sid)
+            continue
         r = subprocess.run(
             ["uip", "solution", "delete", sid, "--yes", "--output", "json"],
             capture_output=True,
             text=True,
             timeout=60,
+            env=env,
         )
         if r.returncode == 0:
             logger.info("deleted %s (from %s)", sid, path)

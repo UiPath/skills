@@ -146,6 +146,7 @@ simulation:
   goal: |
     Get sdd.draft.md finalized into an approved sdd.md, then stop.
   constraints:
+    - "Every file the agent writes belongs in its working directory, under the name it reports. Never ask it to move, copy, or rename a file to another folder or path."
     - "If asked how to proceed with the existing draft, say to use it as-is and finalize it — you do not want to be re-interviewed."
     - "Approve the finalized sdd.md on the first pass. Approve anyway if it warns about the unresolved api-workflow identities or raises review items."
     - "Confirm that choosing Reject on the Reviewer Decision routes to Application Rejected automatically, and that nobody picks that lane by hand."

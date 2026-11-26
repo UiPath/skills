@@ -1,0 +1,34 @@
+{"id": "uipath-automationhub-001", "prompt": "push vendor onboarding to automation hub, pdd's in ./docs", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-002", "prompt": "publish this to AH as a business process, PDD and SDD are both in docs/", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-003", "prompt": "Process Scribe captured our expense-claim process and it's signed off. Get it into Automation Hub", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-004", "prompt": "add payroll reconciliation to automation hub, put me as owner", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-005", "prompt": "upload the PDD in ./output to automation hub", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-006", "prompt": "publish to automation hub but the SDD is on sharepoint, just link it dont upload", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-007", "prompt": "publish Freight Invoice Audit to AH under finance, pdd + sdd are in this folder", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-008", "prompt": "Publish 'Supplier Master Data Update' to Automation Hub with the SDD we just finished attached", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-009", "prompt": "dont have an AH api token, can you still create the process using my uip login", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-010", "prompt": "Publish to Automation Hub, but Coupa from the PDD isn't in our application list", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-011", "prompt": "get the process scribe output in ./scribe into AH and fill in the assessment from it", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-012", "prompt": "new Automation Hub idea: vendor statement checks", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-013", "prompt": "show me AH process 4182", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-014", "prompt": "Is there already something in Automation Hub for purchase order three-way matching? Don't want to publish a duplicate", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-015", "prompt": "any AH ideas about employee offboarding?", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-016", "prompt": "what docs are on the claims intake process in AH", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-017", "prompt": "grab the PDD from AH process 2207", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-018", "prompt": "need the sdd for bank statement recon from automation hub", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-019", "prompt": "what's the owner and current phase of the 'Vendor Payments' automation in AH?", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-020", "prompt": "which invoice processes in AH already have a pdd uploaded", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-021", "prompt": "did the pdd actually attach to the process i published to AH yesterday?", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-022", "prompt": "make AH idea 'Timesheet Reminders' a Business Process", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-023", "prompt": "my process landed in AH as an employee-driven idea instead of business process, can you move it", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-024", "prompt": "move AH idea 5120 over to the business process flow", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-025", "prompt": "what are people saying in the comments on the AP exceptions idea in AH", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-026", "prompt": "comment on AH 2207: PDD v2 attached", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-027", "prompt": "Delete my last comment on Automation Hub automation 4182, I posted it on the wrong one", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-028", "prompt": "can you check I can reach our Automation Hub with my login?", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-029", "prompt": "fix the typo in my comment on the vendor payments idea in AH", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-030", "prompt": "submit this as an automation idea for the team", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-031", "prompt": "pull the PDD attached to the invoice process idea we submitted last week", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-032", "prompt": "move AH idea 4182 to the Assessment phase", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-033", "prompt": "archive the failed vendor onboarding automation in AH", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-034", "prompt": "reply to the last comment on AH idea 3301", "expected_skill": "uipath-automationhub"}

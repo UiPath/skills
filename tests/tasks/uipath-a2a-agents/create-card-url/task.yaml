@@ -1,0 +1,39 @@
+task_id: skill-a2a-agents-create-card-url
+description: |
+  Register a remote A2A agent from its public card URL, authenticated with an API key kept in an Orchestrator asset. Exercises Registering an Agent and Authentication: the header named by the card's apiKey scheme (X-API-Key) with the value exactly `%ASSETS/VendorKey%`, no connection, the Shared folder on every write. From a CLI login a create from a card URL with an asset-backed header fails with a 403 (the mock answers it so), so the header lands with `remote-a2a-agent update --header` after a create without it. Graded from the uip mock's call log. Uses the manifest-driven uip mock — no real tenant call.
+tags: [uipath-a2a-agents, smoke, 'mode:build', 'lifecycle:setup']
+agent:
+  type: claude-code
+  allowed_tools: [Skill, Bash, Read, Write]
+sandbox:
+  python: {}
+  template_sources:
+  - {type: template_dir, path: ../_shared/mock_template}
+  - {type: template_dir, path: fixtures}
+  mock_path_dirs: [mocks]
+reference:
+  directory: .
+initial_prompt: |
+  Use the `uip` CLI as if it were the real UiPath CLI (it is mocked in this
+  sandbox; manifest-driven canned responses).
+
+  TASK: Register our vendor's A2A agent in Agent Gateway, in the Shared folder,
+  with the name and slug vendor-agent. Its agent card is public at
+  https://agent.example.com/.well-known/agent-card.json. The agent wants an API
+  key, which is stored in the Orchestrator asset VendorKey in Shared.
+success_criteria:
+- type: run_command
+  description: 'One successful `remote-a2a-agent create --slug vendor-agent --agent-card-url <card URL>` without a connection, and a successful create or update that sent the header X-API-Key=%ASSETS/VendorKey% exactly, every write in the Shared folder'
+  command: python3 $REFERENCE_DIR/check_create_card_url.py
+  timeout: 30
+  expected_exit_code: 0
+  weight: 3.0
+- type: command_not_executed
+  description: Agent did NOT delete a remote A2A agent
+  tool_name: Bash
+  command_pattern: 'uip\s+agenthub\s+remote-a2a-agent\s+delete\b(?![^\n]*--(dry-run|help))'
+- type: command_not_executed
+  description: Agent did NOT create, change or delete an Orchestrator asset
+  tool_name: Bash
+  command_pattern: 'uip\s+or\s+assets\s+(create|update|delete|set)\b(?![^\n]*--help)'
+run_limits: {max_turns: 60}
