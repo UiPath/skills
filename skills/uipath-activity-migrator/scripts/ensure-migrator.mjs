@@ -1,17 +1,29 @@
 #!/usr/bin/env node
-// ensure-migrator.mjs — locate and verify the UiPath Activity Migrator (UiPath.Upgrade.exe); install it only when asked.
+// ensure-migrator.mjs — locate and verify the UiPath Activity Migrator: Helm's, through uip, else UiPath.Upgrade.exe;
+// download the archive only when asked.
 //
 // Usage: node ensure-migrator.mjs [--install] [--force]
-//   (no flag)  locate a cached tool, verify it, and report whether UiPath published a newer archive; never download.
-//              Exit 3 with status "missing" when nothing is cached: the caller asks the user before installing.
-//   --install  download and extract when nothing is cached; replace the cache when the archive changed
-//   --force    re-download and re-extract even when cached (implies --install)
-// Env:   UIPATH_ACTIVITY_MIGRATOR_DIR      install/cache root (default %LOCALAPPDATA%\UiPath\ActivityMigrator)
-//        UIPATH_ACTIVITY_MIGRATOR_URL      archive URL (default https://download.uipath.com/upgrade/UiPath.Upgrade.Cli.zip)
-//        UIPATH_ACTIVITY_MIGRATOR_OFFLINE  set to 1 to never touch the network; wins over --install and --force
-//        UIPATH_TELEMETRY_DISABLED         read only: a value other than true/false that crashes the tool is reported
+//   (no flag)  ask uip, else locate a cached archive tool, verify it, and report whether UiPath published a newer
+//              archive; never download. Exit 3 with status "missing" when nothing is cached: the caller asks the user
+//              before installing.
+//   --install  archive fallback: download and extract when nothing is cached; replace the cache when the archive changed
+//   --force    archive fallback: re-download and re-extract even when cached (implies --install)
+// Env:   UIPATH_ACTIVITY_MIGRATOR_DIR      archive fallback: a folder holding UiPath.Upgrade.exe, used as is; also the
+//                                          cache root (default %LOCALAPPDATA%\UiPath\ActivityMigrator). Skips uip
+//        UIPATH_ACTIVITY_MIGRATOR_URL      archive fallback: the archive URL. Skips uip
+//                                          (default https://download.uipath.com/upgrade/UiPath.Upgrade.Cli.zip)
+//        UIPATH_ACTIVITY_MIGRATOR_OFFLINE  archive fallback: set to 1 to never touch the network; wins over --install
+//                                          and --force
+//        UIPATH_TELEMETRY_DISABLED         archive fallback, read only: a value other than true/false that crashes the
+//                                          25.10 builds is reported
 // Output: the last stdout line is one JSON object; see references/acquisition-guide.md § Script output contract.
 // Exit:  0 ok, 1 error, 3 missing. No dependencies. Node 18+.
+//
+// The migrator ships inside Helm, which uip installs with rpa-tool: `uip rpa project migrate analyze|upgrade|bulk|version`
+// forwards its arguments to `UiPath.Upgrade.exe` in Helm's folder (Helm's apphost under another name), on the dotnet
+// uip resolves for Helm. The script asks
+// `uip rpa project migrate version`. The public archive of the standalone UiPath.Upgrade.exe is the fallback for a
+// machine without uip, a uip without `project migrate`, a uip without Helm (helm-missing), or a Helm without the verb.
 //
 // Node runs the whole flow so no .ps1 or .sh file is executed: script execution policies and hosts that gate
 // PowerShell script invocations never apply. Network and archive work is delegated to the Windows tools that
@@ -30,8 +42,10 @@ const args = process.argv.slice(2);
 const FORCE = args.includes('--force') && !OFFLINE;
 const INSTALL = !OFFLINE && (FORCE || args.includes('--install'));
 
+// Why uip could not supply the migrator, once the script fell back to the archive; reported with every later result.
+let uipMessage = '';
 const emit = (obj, code) => {
-  process.stdout.write(JSON.stringify(obj) + '\n');
+  process.stdout.write(JSON.stringify({ ...obj, ...(uipMessage && { uipMessage }) }) + '\n');
   process.exit(code);
 };
 const fail = (code, message) => emit({ status: 'error', code, message }, 1);
@@ -68,8 +82,51 @@ if (process.platform !== 'win32') {
   fail('not-windows', 'The Activity Migrator is a Windows-only .NET desktop tool. Run this skill from a Windows machine that holds the project.');
 }
 
-// --- 2. Resolve install root and any existing exe --------------------------
+// --- 2. Ask uip ------------------------------------------------------------
+// `uip rpa project migrate version` prints Helm's version as its last stdout line: the migrator is there. It downloads
+// nothing, so a plain run and offline mode ask it too; the first run of a Helm version copies Helm into its run slot,
+// which can take a while. The command line is fixed text, so the shell (needed for the uip.cmd shim) sees no input.
+// uip's own failures are a JSON FailureOutput with a Code, on stdout or stderr. not-windows ends the run; helm-missing,
+// an unknown command (a uip older than `project migrate`), no uip at all, or a Helm without the verb fall back.
+const lastLine = (s) => s.split(/\r?\n/).map((l) => l.trim()).findLast(Boolean) || '';
+const uipFailure = (text) => {
+  for (let start = text.indexOf('{'); start >= 0; start = text.indexOf('{', start + 1)) {
+    for (let end = text.lastIndexOf('}'); end > start; end = text.lastIndexOf('}', end - 1)) {
+      try {
+        const reply = JSON.parse(text.slice(start, end + 1));
+        if (reply && reply.Result === 'Failure') return reply;
+      } catch {
+        // not this span
+      }
+    }
+  }
+  return null;
+};
+const UIP_COMMAND = 'uip rpa project migrate';
+const fromUip = () => {
+  const env = { ...process.env };
+  delete env.UIPATH_STUDIO_PID;
+  const r = run(`${UIP_COMMAND} version`, [], { shell: true, env, timeout: 5 * 60 * 1000 });
+  const reply = uipFailure(r.out) || uipFailure(r.err);
+  if (reply) {
+    const message = [reply.Message, reply.Instructions].filter(Boolean).join(' ');
+    if (reply.Code === 'not-windows') fail('not-windows', `${UIP_COMMAND}: ${message}`);
+    uipMessage = `${UIP_COMMAND} version: ${reply.Code ? `${reply.Code}: ` : ''}${message}`;
+    return;
+  }
+  // The last line that reads as a version: a notice uip prints after Helm's output does not hide it.
+  const version = r.out.split(/\r?\n/).map((l) => l.trim()).findLast((l) => /^\d+\.\d+/.test(l)) || '';
+  if (r.ok && version) emit({ status: 'ok', source: 'uip', command: UIP_COMMAND, version }, 0);
+  // No uip on PATH, a uip without the command, or a Helm that does not know `migrate`: their own error text.
+  const detail = head(r.err, 300) || head(r.out, 300) || (r.status == null ? 'no output' : `exit code ${r.status}, no output`);
+  uipMessage = `${UIP_COMMAND} version: ${detail}`;
+};
+
+if (!process.env.UIPATH_ACTIVITY_MIGRATOR_DIR && !process.env.UIPATH_ACTIVITY_MIGRATOR_URL) fromUip();
+
+// --- 3. Archive fallback: resolve install root and any existing exe -------
 let source = '';
+let exe = '';
 let root;
 if (process.env.UIPATH_ACTIVITY_MIGRATOR_DIR) {
   root = toWin(process.env.UIPATH_ACTIVITY_MIGRATOR_DIR);
@@ -80,7 +137,6 @@ if (process.env.UIPATH_ACTIVITY_MIGRATOR_DIR) {
 }
 const current = join(root, 'current');
 const stamp = join(root, '.last-modified');
-let exe = '';
 if (isFile(join(root, 'UiPath.Upgrade.exe'))) exe = join(root, 'UiPath.Upgrade.exe');
 else if (isFile(join(current, 'UiPath.Upgrade.exe'))) exe = join(current, 'UiPath.Upgrade.exe');
 if (!source) source = 'cached';
@@ -91,7 +147,7 @@ if (!exe && OFFLINE) {
 // Nothing cached and nobody consented to a download: report, so the caller can ask the user.
 if (!exe && !INSTALL) emit({ status: 'missing', dir: root, url: ARCHIVE_URL }, 3);
 
-// --- 3. Decide whether to download ----------------------------------------
+// --- 3b. Decide whether to download ---------------------------------------
 let needDownload = !exe || FORCE;
 let isUpdate = false;
 let updateAvailable = false;
@@ -196,7 +252,6 @@ if (needDownload) {
 // and what a roll-forward setting lets it accept are the launcher's rules; a copy of them here would name the wrong
 // runtime for a build that targets another .NET, and refuse a tool that starts.
 const ver = run(exe, ['version'], { timeout: 60000 });
-const lastLine = (s) => s.split(/\r?\n/).map((l) => l.trim()).findLast(Boolean) || '';
 const version = lastLine(ver.out);
 
 // .NET's launcher exits with these codes before any tool code runs. FRAMEWORK_MISSING: it found a .NET install without
@@ -253,6 +308,6 @@ if (!ver.ok || !version) {
   fail('verify-failed', `${exe} did not print a version (${detail}). When that names a missing runtime or framework, fix it as it says; otherwise the install may be incomplete: rerun with --force.`);
 }
 
-const result = { status: 'ok', exe, version, source };
+const result = { status: 'ok', source, command: exe, exe, version };
 if (updateAvailable) result.update = true;
 emit(result, 0);
