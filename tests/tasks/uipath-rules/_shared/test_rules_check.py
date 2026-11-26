@@ -19,6 +19,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import rules_check as rc  # noqa: E402
 
 TASKS = Path(__file__).resolve().parent.parent
+# Read from the module under test, not retyped: see the note in test_graph_check.py.
+MODEL_NS = f'xmlns="{rc.DMN_NS}"'
+
 FIXTURE = TASKS / "integration" / "diagnose_wrong_output" / "fixtures" / "RiskRules"
 
 
@@ -258,7 +261,7 @@ class TestProject:
         assert rc.literal("true") is True
 
     def test_a_single_decision_case_still_fails_loudly_on_a_call(self):
-        model = 'xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"'
+        model = MODEL_NS
         table = ET.fromstring(f'''<decisionTable {model} hitPolicy="UNIQUE">
           <input><inputExpression typeRef="number"><text>amount</text></inputExpression></input>
           <output name="fee" typeRef="number"/>
@@ -322,7 +325,7 @@ def test_first_stops_at_its_first_match():
     """A FIRST table never evaluates the rows below the one that answers."""
     # With `literal()` refusing a call, reading every matching row let an unused fallback row
     # abort grading on an expression the engine would never have looked at.
-    model = 'xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"'
+    model = MODEL_NS
     table = ET.fromstring(f'''<decisionTable {model} hitPolicy="FIRST">
       <input><inputExpression typeRef="number"><text>amount</text></inputExpression></input>
       <output name="fee" typeRef="number"/>

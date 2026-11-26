@@ -21,7 +21,12 @@ import rules_check as rc  # noqa: E402
 TASKS = Path(__file__).resolve().parent.parent
 FIXTURE = TASKS / "smoke" / "graph_extend_arranged" / "fixtures" / "LoanRules"
 BROKEN = TASKS / "smoke" / "graph_repair" / "fixtures" / "LoanRules"
-DMN = "Business rule.dmn"
+DMN = gc.FIXTURE_DMN
+# The namespace the graders bind on, read from the module under test rather than retyped. It was
+# spelled out at ten sites here and two in test_rules_check.py, beside a constant that already
+# held it -- so a namespace bump would have passed every test while the graders failed.
+MODEL_NS = f'xmlns="{rc.DMN_NS}"'
+
 
 
 def fixture_root(folder=FIXTURE):
@@ -176,7 +181,7 @@ class TestDiagram:
 class TestLiteralExpressionDecisions:
     """A decision whose logic is a literal expression has no output columns of its own."""
 
-    GRAPH = ('<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" id="d" name="F" namespace="urn:f">'
+    GRAPH = (f'<definitions {MODEL_NS} id="d" name="F" namespace="urn:f">'
              '<decision id="d_band" name="band"><variable id="v1" name="band" typeRef="string" />'
              '<decisionTable id="t1"><output id="o1" name="band" typeRef="string" />'
              '<rule id="r1"><outputEntry id="oe1"><text>"Large"</text></outputEntry></rule></decisionTable></decision>'
@@ -212,7 +217,7 @@ class TestLiteralExpressionDecisions:
 class TestMultiOutputUpstream:
     """A decision with two outputs answers with a structure; a reader names one field of it."""
 
-    GRAPH = ('<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" id="d" name="C" namespace="urn:c">'
+    GRAPH = (f'<definitions {MODEL_NS} id="d" name="C" namespace="urn:c">'
              '<inputData id="in_amount" name="amount"><variable id="va" name="amount" typeRef="number" /></inputData>'
              '<decision id="d_assess" name="assessment"><variable id="v1" name="assessment" />'
              '<informationRequirement id="ir0"><requiredInput href="#in_amount" /></informationRequirement>'
@@ -364,7 +369,6 @@ class TestProject:
             gc.check_whole_file_contract(project, dmn_file, gc.LOAN_INPUTS, {"approved": "boolean"})
 
 
-MODEL_NS = 'xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"'
 
 
 def decision_xml(body: str) -> ET.Element:
@@ -446,7 +450,7 @@ class TestUnevaluatedDecisions:
 
     @staticmethod
     def graph() -> ET.Element:
-        model = 'xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"'
+        model = MODEL_NS
         return ET.fromstring(f'''<definitions {model}>
           <inputData id="in_a" name="a"><variable name="a" typeRef="number"/></inputData>
           <decision id="d_lit" name="lit"><variable name="lit" typeRef="number"/>
@@ -477,7 +481,7 @@ class TestAnUnsupportedCellIsLocal:
 
     @staticmethod
     def graph() -> ET.Element:
-        model = 'xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"'
+        model = MODEL_NS
         return ET.fromstring(f'''<definitions {model}>
           <inputData id="in_a" name="a"><variable name="a" typeRef="number"/></inputData>
           <businessKnowledgeModel id="bkm_rate" name="rate"><variable name="rate"/>
@@ -520,7 +524,7 @@ class TestUnsupportedIsPerOutput:
 
     @staticmethod
     def graph() -> ET.Element:
-        model = 'xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"'
+        model = MODEL_NS
         return ET.fromstring(f'''<definitions {model}>
           <inputData id="in_a" name="a"><variable name="a" typeRef="number"/></inputData>
           <businessKnowledgeModel id="bkm_rate" name="rate"><variable name="rate"/>
@@ -554,7 +558,7 @@ class TestAnsweringCell:
 
     @staticmethod
     def freight(gold_cell: str, rest_cell: str) -> ET.Element:
-        model = 'xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"'
+        model = MODEL_NS
         return ET.fromstring(f'''<decision {model} name="freight">
           <decisionTable hitPolicy="FIRST">
             <input><inputExpression typeRef="number"><text>tier</text></inputExpression></input>
@@ -581,7 +585,7 @@ class TestAnsweringCell:
     def test_a_table_keyed_on_nothing_the_check_supplies_is_refused(self):
         # `all(...)` over no column is vacuously true, so the first row would always "fire" and
         # a table keyed on something else entirely would be graded on row one.
-        model = 'xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"'
+        model = MODEL_NS
         decision = ET.fromstring(f'''<decision {model} name="freight">
           <decisionTable hitPolicy="FIRST">
             <input><inputExpression typeRef="number"><text>listPrice</text></inputExpression></input>
@@ -592,7 +596,7 @@ class TestAnsweringCell:
             gc.answering_cell(decision, {"tier": 10})
 
     def test_a_decision_carrying_both_kinds_of_logic_is_refused(self):
-        model = 'xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"'
+        model = MODEL_NS
         decision = ET.fromstring(f'''<decision {model} name="freight">
           <literalExpression><text>discounted(50, tier)</text></literalExpression>
           <decisionTable hitPolicy="FIRST">
@@ -635,7 +639,7 @@ class TestHitPolicyIsRespected:
     def test_a_collect_table_is_not_graded_on_one_row(self):
         # COLLECT answers with every matching row, so the first is only part of the answer.
         # `rules_check.evaluate` already refuses these policies; this path has to agree.
-        model = 'xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"'
+        model = MODEL_NS
         decision = ET.fromstring(f'''<decision {model} name="freight">
           <decisionTable hitPolicy="COLLECT">
             <input><inputExpression typeRef="number"><text>tier</text></inputExpression></input>
@@ -652,7 +656,7 @@ class TestANoteIsAboutSomething:
 
     @staticmethod
     def document(source: str, target: str, second_note: bool = False) -> ET.Element:
-        model = 'xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"'
+        model = MODEL_NS
         other = '<textAnnotation id="n2"><text>another note</text></textAnnotation>' if second_note else ""
         return ET.fromstring(f'''<definitions {model}>
           <decision id="d" name="d"><decisionTable/></decision>

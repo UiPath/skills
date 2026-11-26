@@ -34,6 +34,21 @@ POLICY = [
     ({"creditScore": 820, "income": 20000}, "Low"),
 ]
 NUMBER = r"-?\d+(?:\.\d+)?"
+# Every element kind the skill refuses to author, in one place. `load_graph` refuses all of
+# them, so a task that is *about* an unsupported element imports this rather than re-listing
+# a subset -- three partial lists drifted apart, and `decisionService` was asserted twice.
+UNSUPPORTED_ELEMENTS = ("knowledgeSource", "decisionService", "import", "group")
+
+# The RiskRules fixture under `_shared/fixtures/`, which brownfield_extend and graph_extend_table
+# both stage -- one extends its table, the other turns it into a graph, and both grade that the
+# decision a consumer is bound to kept its identity. The ids are the fixture's, so they live
+# beside it rather than in each grader: two copies of the fixture carrying two copies of its
+# magic ids is two things to keep in step, and neither copy says it has a twin.
+FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures"
+RISK_FIXTURE = FIXTURE_DIR / PROJECT_NAME
+RISK_DECISION_ID = "decision_25a2c471-1c6f-46cb-a22a-f4b2dfdb7ee7"
+RISK_DECISION_NAME = "decision1"
+RISK_ANNOTATIONS = ["Subprime", "Near-prime, sufficient income", "Near-prime, low income", "Prime"]
 
 
 def fail(message: str) -> None:
@@ -84,9 +99,9 @@ def load_graph(project: Path) -> tuple[Path, ET.Element]:
     root = ET.fromstring(text)
     if root.tag != f"{{{DMN_NS}}}definitions":
         fail(f"{dmn_files[0]} is not a DMN 1.5 <definitions>")
-    for unsupported in ("knowledgeSource", "decisionService"):
+    for unsupported in UNSUPPORTED_ELEMENTS:
         if root.findall(f"dmn:{unsupported}", NS):
-            fail(f"{dmn_files[0]} declares a {unsupported}")
+            fail(f"{dmn_files[0]} declares a {unsupported}, which the skill does not author")
     decisions = root.findall("dmn:decision", NS)
     if not decisions:
         fail(f"{dmn_files[0]} holds no decision")
@@ -175,16 +190,34 @@ def read_entry_points(project: Path) -> list:
 
 
 def output_properties(schema: dict) -> dict:
-    """Output argument schemas by name; a decision-keyed schema nests them under each decision."""
+    """Output argument schemas by name; a decision-keyed schema nests them under each decision.
+
+    A decision whose logic is a decision table contributes its output columns, nested under the
+    decision. A decision that answers with one value may instead publish that value's schema
+    directly under its own name, with no nested `properties` -- flattening only the nested ones
+    dropped it, and the contract check then blamed `uip rules refresh` for a contract it had
+    written correctly. `uip rules refresh` 1.208 nests a literal expression too, under a key of
+    the decision's own name, so both shapes read the same way here.
+    """
     properties = schema.get("properties") or {}
     if not schema.get("x-uipath-decision-keyed"):
         return properties
-    return {name: prop for decision in properties.values() for name, prop in (decision.get("properties") or {}).items()}
+    flattened: dict = {}
+    for decision_name, decision in properties.items():
+        nested = (decision or {}).get("properties")
+        if nested:
+            flattened.update(nested)
+        else:
+            flattened[decision_name] = decision
+    return flattened
 
 
-def check_contract(project: Path, dmn_file: Path, root: ET.Element, inputs: dict, outputs: dict, whole_file: bool = False) -> dict:
-    """The entry point addressing the decision (or, with `whole_file`, the file), carrying the contract `uip rules refresh` writes; returns it."""
-    file_path = f"/{dmn_file.name}" if whole_file else f"/{dmn_file.name}#{decision_of(root).get('id')}"
+def check_contract(project: Path, dmn_file: Path, root: ET.Element, inputs: dict, outputs: dict) -> dict:
+    """The entry point addressing the decision, carrying the contract `uip rules refresh` writes; returns it.
+
+    For the whole-file entry point a graph publishes, use `graph_check.check_whole_file_contract`.
+    """
+    file_path = f"/{dmn_file.name}#{decision_of(root).get('id')}"
     entry = next((e for e in read_entry_points(project) if e.get("filePath") == file_path), None)
     if entry is None:
         fail(f"no entry point addresses {file_path}; the decision id or file name changed")
@@ -269,9 +302,11 @@ def literal(text: str) -> object:
 def read_name(names: dict, text: str) -> tuple[bool, object]:
     """`text` as a name the table may read, plain or dotted, resolved against `names`.
 
-    A decision whose table has one output answers with that value, so a reader names it bare.
-    A decision with several answers with a structure, so a reader names one field of it —
-    `risk.riskBand`, which the guide documents. Without this the dotted form fell through to
+    A decision whose table has one output answers with that value, so a reader names it bare:
+    a `risk` decision whose one column is `riskBand` is read as `risk`, never `risk.riskBand`
+    (drd-guide.md marks that one wrong). Only a decision with several outputs answers with a
+    structure, and only then does a reader name one field of it — `pricing.fee` for a `pricing`
+    decision returning `fee` beside `surcharge`. Without this the dotted form fell through to
     `literal` and graded as its own source text, which is a wrong value and never an error.
     """
     parts = text.strip().split(".")
@@ -349,7 +384,16 @@ if __name__ == "__main__":
     elif mode == "policy":
         grade_policy()
     elif mode == "names":
-        check_named_rules(table_of(load_rule(find_project())[1]))
+        # `check_named_rules` returns for a tableless decision, because a literal expression
+        # carries no rules to name and `graph_check.check_all_named` walks a graph that may hold
+        # one. This mode grades a single-decision rule the task asked for as a table, so there a
+        # missing table is the finding: without this the whole check asserted nothing about any
+        # rule and its task lost its only check of the file's shape.
+        table = table_of(load_rule(find_project(name))[1])
+        if table is None:
+            fail("the decision's logic is a literal expression, so it carries no rules to name; "
+                 "this check grades a rule whose decision is a decision table")
+        check_named_rules(table)
         print("OK: every rule carries an annotation")
     else:
         fail(f"unknown mode {mode!r}")

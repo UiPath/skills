@@ -49,6 +49,17 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # The engine answers the same whether the rate still requires the band or the agent collapsed
+  # the two decisions into one table. Without this, flattening the graph -- which is what the
+  # import task is about not doing -- graded clean.
+  - type: run_command
+    description: "The imported file is still two chained decisions and the contract covers the whole file"
+    command: "python3 $REFERENCE_DIR/_shared/graph_check.py chain LoanRules"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
   - type: run_command
     description: "The rules engine returns the policy's risk band and interest rate for every case"
     command: "python3 $REFERENCE_DIR/_shared/graph_check.py engine"
