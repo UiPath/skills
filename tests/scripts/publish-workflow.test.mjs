@@ -86,3 +86,19 @@ test("the flavor publisher scans with its own copy of the gate, not the built co
   );
   assert.doesNotMatch(flavorPublish, /python3 scripts\/check-sensitive-content\.py/);
 });
+
+// The directory lists what it finds on the branch. A push from any channel but
+// stable would put an unreleased tree in front of directory users.
+test("the Claude directory edition follows the stable npmjs publish", () => {
+  assert.match(job("publish-claude-directory"), /needs: \[publish-npmjs\]/);
+  assert.match(gate("publish-claude-directory"), /github\.event_name == 'workflow_dispatch' && github\.event\.inputs\.channel == 'latest'$/);
+});
+
+// `release/*` rulesets require a pull request, so a generated commit pushed
+// there is refused; and no other job needs to write repository contents.
+test("only the directory job writes contents, and never to a release branch", () => {
+  assert.equal(PUBLISH.match(/contents: write/g)?.length, 1);
+  const directory = job("publish-claude-directory");
+  assert.match(directory, /contents: write/);
+  assert.match(directory, /BRANCH: dist\/claude-directory/);
+});

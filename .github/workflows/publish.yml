@@ -299,6 +299,61 @@ jobs:
     uses: ./.github/workflows/announce-stable.yml
     secrets: inherit
 
+  publish-claude-directory:
+    # The Claude plugin directory tracks `dist/claude-directory` and scans each
+    # new commit. It lists stable only, so this follows a `latest` publish.
+    # The branch sits outside `release/*` on purpose: the rulesets there
+    # require a pull request, which a generated commit cannot have. Nothing
+    # else writes it (docs/RELEASE.md § Claude plugin directory edition).
+    name: Publish Claude directory edition
+    needs: [publish-npmjs]
+    if: >-
+      github.repository == 'UiPath/skills'
+      && github.event_name == 'workflow_dispatch' && github.event.inputs.channel == 'latest'
+    runs-on: uipath-ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: "22.x"
+
+      - name: Build the directory edition
+        run: node scripts/build-claude-directory.mjs build/claude-directory
+
+      # One commit per stable release, on top of the previous one, holding the
+      # whole edition. A re-run of the same release finds the tree unchanged
+      # and pushes nothing.
+      - name: Push dist/claude-directory
+        env:
+          BRANCH: dist/claude-directory
+          GIT_AUTHOR_NAME: github-actions[bot]
+          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+        run: |
+          set -euo pipefail
+          EDITION="$PWD/build/claude-directory"
+          export GIT_INDEX_FILE="$RUNNER_TEMP/claude-directory.index"
+          git --git-dir="$PWD/.git" --work-tree="$EDITION" -C "$EDITION" add --all .
+          TREE=$(git write-tree)
+          PARENT=""
+          if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null; then
+            git fetch --no-tags --depth=1 origin "refs/heads/$BRANCH"
+            PARENT=$(git rev-parse FETCH_HEAD)
+            if [ "$(git rev-parse "$PARENT^{tree}")" = "$TREE" ]; then
+              echo "$BRANCH already holds this edition at $PARENT"
+              exit 0
+            fi
+          fi
+          VERSION=$(node -p "require('./package.json').version")
+          COMMIT=$(git commit-tree "$TREE" ${PARENT:+-p "$PARENT"} \
+            -m "Claude directory edition $VERSION" \
+            -m "Built from $GITHUB_SHA in $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID")
+          git push origin "$COMMIT:refs/heads/$BRANCH"
+          echo "Pushed $COMMIT to $BRANCH"
+
   publish-studioweb-dev:
     name: Publish Studio Web dev to GitHub Packages
     needs: [guard]
