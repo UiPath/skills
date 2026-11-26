@@ -6,9 +6,11 @@ description: >
   so a one-folder `list` of Shared does not show it; `list --all-folders`
   does. The contract values exist only in the mocked `describe` answer. The
   mock bodies follow real `uip rules` 1.208.0 output (built from UiPath/cli
-  main, with `Source`), with names, keys and dates replaced. Grades the
-  all-folders lookup, the `describe` in the right folder, and `contract.json`
-  holding the described schemas.
+  main, with `Source`), with names, keys and dates replaced. The one
+  exception is the catch-all `not_found` for a folder the mock does not list:
+  a static mock cannot name the folder the agent passed, so its wording is
+  the mock's own. Grades the all-folders lookup, the `describe` in the right
+  folder, and `contract.json` holding the described schemas.
 tags: [uipath-rules, integration, "mode:operate", "lifecycle:discover"]
 
 sandbox:
@@ -22,8 +24,12 @@ sandbox:
             verb: "login status"
           stdout: >-
             {"Result":"Success","Code":"LoginStatus","Data":{"Status":"Logged in",
-            "BaseUrl":"https://cloud.uipath.com","Organization":"example-org",
-            "Tenant":"DefaultTenant","Identity":"analyst@example.com","IdentityType":"User"}}
+            "Identity":"analyst@example.com","IdentityType":"User","AuthFlow":"Interactive",
+            "CredentialSource":"SavedLogin","Provider":"File","UserId":"00000000-0000-4000-8000-000000000901",
+            "UserEmail":"analyst@example.com","UserName":"Example Analyst","BaseUrl":"https://cloud.uipath.com",
+            "Organization":"example-org","OrganizationId":"00000000-0000-4000-8000-000000000902",
+            "Tenant":"DefaultTenant","TenantId":"00000000-0000-4000-8000-000000000903",
+            "ExpirationDate":"2026-06-02T10:14:05.000Z"}}
 
         - when:
             verb: "rules list"
@@ -102,7 +108,7 @@ sandbox:
             "Message":"Business rule 'FreightRates' was not found in folder 'Shared'.",
             "Instructions":"Run 'uip rules list --folder-path \"Shared\"' to see the rules in this folder.",
             "Retry":"RetryWillNotFix",
-            "Context":{"Session":{"Profile":"default","Organization":"example-org","Tenant":"DefaultTenant"}}}
+            "Context":{"Session":{"Profile":"default","Organization":"example-org","Tenant":"DefaultTenant","Hint":"The default login was used. If the resource is in another organization or tenant, re-run with --profile <profile-name>."}}}
 
         - when:
             verb: "rules"
@@ -112,7 +118,7 @@ sandbox:
             "Message":"Business rule was not found in that folder.",
             "Instructions":"Run 'uip rules list --all-folders' to find the folder a rule is in.",
             "Retry":"RetryWillNotFix",
-            "Context":{"Session":{"Profile":"default","Organization":"example-org","Tenant":"DefaultTenant"}}}
+            "Context":{"Session":{"Profile":"default","Organization":"example-org","Tenant":"DefaultTenant","Hint":"The default login was used. If the resource is in another organization or tenant, re-run with --profile <profile-name>."}}}
 
 reference:
   directory: ../..

@@ -25,8 +25,12 @@ sandbox:
             verb: "login status"
           stdout: >-
             {"Result":"Success","Code":"LoginStatus","Data":{"Status":"Logged in",
-            "BaseUrl":"https://cloud.uipath.com","Organization":"example-org",
-            "Tenant":"DefaultTenant","Identity":"analyst@example.com","IdentityType":"User"}}
+            "Identity":"analyst@example.com","IdentityType":"User","AuthFlow":"Interactive",
+            "CredentialSource":"SavedLogin","Provider":"File","UserId":"00000000-0000-4000-8000-000000000901",
+            "UserEmail":"analyst@example.com","UserName":"Example Analyst","BaseUrl":"https://cloud.uipath.com",
+            "Organization":"example-org","OrganizationId":"00000000-0000-4000-8000-000000000902",
+            "Tenant":"DefaultTenant","TenantId":"00000000-0000-4000-8000-000000000903",
+            "ExpirationDate":"2026-06-02T10:14:05.000Z"}}
 
         - when:
             verb: "rules describe"
@@ -36,7 +40,7 @@ sandbox:
             {"Result":"Failure","ErrorCode":"not_found",
             "Message":"Business rule 'ClaimLimits' is not in the resource catalog for folder 'Shared' yet.",
             "Instructions":"The rule exists but the resource catalog does not list it yet, which is normal right after a deploy. Run the command again shortly.",
-            "Retry":"RetryAfter60Seconds"}
+            "Retry":"RetryAfter60Seconds","Context":{"Session":{"Profile":"default","Organization":"example-org","Tenant":"DefaultTenant","Hint":"The default login was used. If the resource is in another organization or tenant, re-run with --profile <profile-name>."}}}
 
         - when:
             verb: "rules get"

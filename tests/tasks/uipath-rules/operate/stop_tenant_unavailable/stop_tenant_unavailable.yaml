@@ -24,8 +24,12 @@ sandbox:
             verb: "login status"
           stdout: >-
             {"Result":"Success","Code":"LoginStatus","Data":{"Status":"Logged in",
-            "BaseUrl":"https://cloud.uipath.com","Organization":"example-org",
-            "Tenant":"DefaultTenant","Identity":"analyst@example.com","IdentityType":"User"}}
+            "Identity":"analyst@example.com","IdentityType":"User","AuthFlow":"Interactive",
+            "CredentialSource":"SavedLogin","Provider":"File","UserId":"00000000-0000-4000-8000-000000000901",
+            "UserEmail":"analyst@example.com","UserName":"Example Analyst","BaseUrl":"https://cloud.uipath.com",
+            "Organization":"example-org","OrganizationId":"00000000-0000-4000-8000-000000000902",
+            "Tenant":"DefaultTenant","TenantId":"00000000-0000-4000-8000-000000000903",
+            "ExpirationDate":"2026-06-02T10:14:05.000Z"}}
 
         - when:
             verb: "rules validate"
@@ -53,7 +57,7 @@ sandbox:
             {"Result":"ConfigError","ErrorCode":"configuration_error",
             "Message":"Business Rules is not available on tenant 'DefaultTenant': it is not enabled there, or not offered in the tenant's region.",
             "Instructions":"Switch to a tenant that has Business Rules with 'uip login tenant set <tenant-name>', or ask your UiPath representative to enable it for this tenant.",
-            "Retry":"RetryWillNotFix","Context":{"httpStatus":404}}
+            "Retry":"RetryWillNotFix","Context":{"HttpStatus":404,"Session":{"Profile":"default","Organization":"example-org","Tenant":"DefaultTenant","Hint":"The default login was used. If the resource is in another organization or tenant, re-run with --profile <profile-name>."}}}
 
 reference:
   directory: ../..

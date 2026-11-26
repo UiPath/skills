@@ -20,8 +20,12 @@ sandbox:
             verb: "login status"
           stdout: >-
             {"Result":"Success","Code":"LoginStatus","Data":{"Status":"Logged in",
-            "BaseUrl":"https://cloud.uipath.com","Organization":"example-org",
-            "Tenant":"DefaultTenant","Identity":"analyst@example.com","IdentityType":"User"}}
+            "Identity":"analyst@example.com","IdentityType":"User","AuthFlow":"Interactive",
+            "CredentialSource":"SavedLogin","Provider":"File","UserId":"00000000-0000-4000-8000-000000000901",
+            "UserEmail":"analyst@example.com","UserName":"Example Analyst","BaseUrl":"https://cloud.uipath.com",
+            "Organization":"example-org","OrganizationId":"00000000-0000-4000-8000-000000000902",
+            "Tenant":"DefaultTenant","TenantId":"00000000-0000-4000-8000-000000000903",
+            "ExpirationDate":"2026-06-02T10:14:05.000Z"}}
 
         - when:
             verb: "rules describe"
@@ -30,7 +34,7 @@ sandbox:
             {"Result":"AuthenticationError","ErrorCode":"permission_denied",
             "Message":"Failed to describe business rule",
             "Instructions":"Forbidden (403). The account lacks permission for this operation, or the token carries no scope for this API. Run `uip login status --detailed` to see the token's scopes.",
-            "Retry":"RetryWillNotFix"}
+            "Retry":"RetryWillNotFix","Context":{"Session":{"Profile":"default","Organization":"example-org","Tenant":"DefaultTenant"}}}
 
         - when:
             verb: "rules get"
@@ -39,7 +43,7 @@ sandbox:
             {"Result":"AuthenticationError","ErrorCode":"permission_denied",
             "Message":"Failed to get business rule",
             "Instructions":"Forbidden (403). Reading business rules needs the BusinessRules.View permission in the folder, on an environment with Business Rules turned on.",
-            "Retry":"RetryWillNotFix"}
+            "Retry":"RetryWillNotFix","Context":{"Session":{"Profile":"default","Organization":"example-org","Tenant":"DefaultTenant"}}}
 
         - when:
             verb: "rules versions"
@@ -48,7 +52,7 @@ sandbox:
             {"Result":"AuthenticationError","ErrorCode":"permission_denied",
             "Message":"Failed to list business rule versions",
             "Instructions":"Forbidden (403). Reading business rules needs the BusinessRules.View permission in the folder, on an environment with Business Rules turned on.",
-            "Retry":"RetryWillNotFix"}
+            "Retry":"RetryWillNotFix","Context":{"Session":{"Profile":"default","Organization":"example-org","Tenant":"DefaultTenant"}}}
 
         - when:
             verb: "rules list"
@@ -57,7 +61,7 @@ sandbox:
             {"Result":"AuthenticationError","ErrorCode":"permission_denied",
             "Message":"Failed to list business rules",
             "Instructions":"Forbidden (403). Reading business rules needs the BusinessRules.View permission in the folder, on an environment with Business Rules turned on.",
-            "Retry":"RetryWillNotFix"}
+            "Retry":"RetryWillNotFix","Context":{"Session":{"Profile":"default","Organization":"example-org","Tenant":"DefaultTenant"}}}
 
 reference:
   directory: ../..
