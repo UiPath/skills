@@ -1,20 +1,26 @@
 <!--skill-flavor:lifecycle-rules:start-->
-6. **Create with `uip rules init`, which the host serves, or the `CreateProjects` host tool; after every edit, `format`, `refresh` then `validate`.** Fix what `validate` reports. Never hand-write or delete `project.uiproj`, `entry-points.json`, or `bindings_v2.json`; keep the seeded `.dmn` file and its root element.
-7. **A rule is done when `validate` passes and a run returns what the reviewed design expects, from every decision and not only the last.** Run it with `uip rules debug`, which the host serves, or the `RunProject` host tool. Stop after 3 fix rounds and show the user the tables and the failing inputs.
+6. **Scaffold a new project with `uip rules init`; after every edit, `format`, `refresh` then `validate`.** An existing project needs no `init`: edit its `.dmn` and run `refresh`. Fix what `validate` reports. Never hand-write or delete `project.uiproj`, `entry-points.json`, or `bindings_v2.json`; keep the seeded `.dmn` file and its root element.
+7. **A rule is done when `validate` passes and `uip rules debug` returns what the reviewed design expects, from every decision and not only the last.** On a wrong output, read the trace with `uip traces spans get <TRACE_ID>`. Stop after 3 fix rounds and show the user the tables and the failing inputs.
 <!--skill-flavor:lifecycle-rules:end-->
 <!--skill-flavor:scaffold:start-->
 ```bash
 uip rules init <RULE_NAME>
 ```
 
-The host serves this command: it creates a BusinessRules project in the open solution and prints text, not the CLI's JSON envelope. Pass the name alone; template flags, `--force` and `--skip-solution-registration` have no effect. The `CreateProjects` host tool, project type BusinessRules, creates the same project. The rule is the one `.dmn` file in `/solution/<RULE_NAME>/`, `Business rule.dmn`; never create or rename to another `.dmn`. Treat whatever table the seeded `.dmn` holds as a placeholder; step 3 replaces it.
+Run `init` from `/solution`, the Studio Web solution the user has open; never create another. Studio Web creates the project in it at `/solution/<RULE_NAME>/`. The intercepted command prints plain text; `--output json` is ignored. The rule is `Business rule.dmn` in that folder; never create or rename to another `.dmn`. Treat whatever table the seeded `.dmn` holds as a placeholder; step 3 replaces it.
 <!--skill-flavor:scaffold:end-->
 <!--skill-flavor:verify:start-->
 ```bash
 uip rules debug "<RULE_NAME>" --inputs '<INPUTS_JSON>'
 ```
 
-The host serves this command: it runs the project `<RULE_NAME>` saved in the open solution and prints the status, trace id, run logs and execution trace as text, not the CLI's JSON envelope. Pass the project name, never a path. `--inputs` takes one inline JSON object keyed by input-argument name; `@<FILE>` is not supported, and without `--inputs` the run uses the arguments saved in the designer. When the command reports it is unavailable, run the project with the `RunProject` host tool and the same input object. Either way the whole rule is evaluated, so compare every decision's outputs with the expected values. On a mismatch, read the run's trace to see which rules fired.
+Evaluates the rule saved in the open solution. Pass the project name, never a path. Always pass `--inputs`, one inline JSON object keyed by input-argument name; `@<FILE>` is not supported, and without `--inputs` the run uses the arguments saved in the designer. The reply is plain text: the status, the `Trace ID`, the run logs and the execution trace. Compare every decision's outputs with the expected values. On a mismatch, read the trace:
+
+```bash
+uip traces spans get <TRACE_ID> --output json
+```
+
+`<TRACE_ID>` is the `Trace ID` the reply prints. The trace shows which rules fired. When the reply prints none, compare the inputs against each row by hand.
 <!--skill-flavor:verify:end-->
 <!--skill-flavor:deployed-rules:start-->
 ```bash
