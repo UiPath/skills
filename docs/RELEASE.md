@@ -207,7 +207,12 @@ Off-cadence or ad-hoc cut: dispatch manually with `minor_override` (e.g. `1.198`
 
 ## Claude plugin directory edition
 
-The Claude plugin directory tracks the generated branch `dist/claude-directory`, never `main`: `main` exceeds the directory's 10,000-entry archive limit and holds repository tooling the directory reads as plugin content. After every `channel=latest` publish, the `publish-claude-directory` job in `publish.yml` runs `scripts/build-claude-directory.mjs` on the release ref, scans the result with `scripts/check-sensitive-content.py` (the same gate as the npmjs tarball), and pushes it as one commit on top of the previous edition. Only the push step holds the write token. A re-run of the same release pushes nothing. Never edit the branch by hand; the next stable release replaces it.
+The Claude plugin directory tracks the generated branch `dist/claude-directory`, never `main`: `main` exceeds the directory's 10,000-entry archive limit and holds repository tooling the directory reads as plugin content. After every `channel=latest` publish, two jobs in `publish.yml` run:
+
+1. `build-claude-directory` (read-only token) runs `scripts/build-claude-directory.mjs` on the release ref, scans the result with `scripts/check-sensitive-content.py` (the same gate as the npmjs tarball), and uploads it as an artifact.
+2. `publish-claude-directory` (write token) checks nothing out and runs no repository code. It commits the artifact in a fresh git directory on top of the previous edition and pushes it. A re-run of the same release pushes nothing.
+
+Never edit the branch by hand; the next stable release replaces it.
 
 The edition is the default plugin reduced to what the directory accepts from an organization that is not Verified:
 
@@ -231,7 +236,7 @@ The branch sits outside `release/*` because the rulesets there require a pull re
 - [ ] **Studio Web Internal package bootstrap** — manually create `@uipath/skills-studioweb`, set it to Internal, confirm it does not inherit access from the public source repository, grant `UiPath/skills` Actions write access, and only then set `ENABLE_SKILL_FLAVOR_PUBLISH=true` as described above.
 - [x] Package name/scope confirmed: **`@uipath/skills`** (published).
 - [x] **Version source confirmed** — `package.json` and `version-manifest.json` are authoritative for the current CLI minor line; do not copy a volatile version number into this checklist. The ongoing CLI↔skills lockstep is automated by `sprint-release-cut.yml` (Sunday 06:00 UTC, 6 h before the CLI's own cut, on the same 14-day cadence anchored at `2026-06-14`).
-- [ ] **`dist/claude-directory` push restriction** — add a ruleset on `refs/heads/dist/claude-directory` that blocks updates, deletion, and force pushes, with GitHub Actions as the only bypass actor, so only `publish-claude-directory` can write it.
+- [ ] **`dist/claude-directory` push restriction** — add a ruleset on `refs/heads/dist/claude-directory` that blocks updates, deletion, and force pushes, with GitHub Actions as the only bypass actor, so only the `publish-claude-directory` job can write it.
 - [ ] **Claude directory submission** — connect GitHub in the Claude organization with an account that can push to `UiPath/skills`, then submit the plugin with branch `dist/claude-directory` and an empty plugin path.
 
 > The `dev` channel also needs no secret — `publish-dev` uses the built-in `GITHUB_TOKEN` with `packages: write`.
