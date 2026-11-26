@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "PricingRules",
+    "kind": "businessRule",
+    "apiVersion": "orchestrator.uipath.com/v2",
+    "projectKey": "f161157b-dd9a-4cf6-9591-3c1e776af2ac",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "PricingRules"
+    },
+    "locks": [],
+    "key": "6a59f968-2ffc-4176-b20d-c2647bae297e",
+    "files": []
+  }
+}

@@ -2,7 +2,8 @@
 """Shared grading for the uipath-rules tasks.
 
 `rules_check.py validate` passes when `uip rules validate` passes on the
-RiskRules project. `rules_check.py policy` grades a freshly authored RiskRules
+RiskRules project. `rules_check.py format` passes when `uip rules format`, run
+on a copy, changes no file. `rules_check.py policy` grades a freshly authored RiskRules
 rule: the authoring profile `validate` does not enforce, the entry-point
 contract `uip rules refresh` writes, and the table's risk band for each POLICY
 case. `rules_check.py names` passes when every rule carries a non-empty
@@ -14,8 +15,10 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -69,6 +72,23 @@ def run_validate(project: Path) -> None:
     )
     if completed.returncode != 0:
         fail(f"`uip rules validate {project}` failed: {(completed.stdout or completed.stderr)[-1500:]}")
+
+
+def run_format_check(project: Path) -> None:
+    """Fails when `uip rules format`, run on a copy, would change a file: the diagram lags the model."""
+    with tempfile.TemporaryDirectory() as scratch:
+        copy = Path(scratch) / project.name
+        shutil.copytree(project, copy)
+        completed = subprocess.run(["uip", "rules", "format", str(copy), "--output", "json"],
+                                   capture_output=True, text=True, timeout=120)
+    if completed.returncode != 0:
+        fail(f"`uip rules format {project}` failed: {(completed.stdout or completed.stderr)[-1500:]}")
+    try:
+        changed = [f.get("File") for f in json.loads(completed.stdout)["Data"]["Files"] if f.get("Changed")]
+    except (ValueError, KeyError, TypeError):
+        fail(f"`uip rules format` printed no Data.Files: {completed.stdout[-1500:]}")
+    if changed:
+        fail(f"`uip rules format` still changes {changed}; run it after adding or removing an element")
 
 
 def load_graph(project: Path) -> tuple[Path, ET.Element]:
@@ -346,6 +366,9 @@ if __name__ == "__main__":
     if mode == "validate":
         run_validate(find_project(name))
         print("OK: uip rules validate passes")
+    elif mode == "format":
+        run_format_check(find_project(name))
+        print("OK: uip rules format changes nothing")
     elif mode == "policy":
         grade_policy()
     elif mode == "names":

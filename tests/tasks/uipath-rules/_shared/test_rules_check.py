@@ -6,7 +6,9 @@ decision-keyed contract, and the DMN profile checks. A regression here passes
 a wrong table or fails a right one in every task that imports it.
 """
 
+import json
 import shutil
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -19,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import rules_check as rc  # noqa: E402
 
 TASKS = Path(__file__).resolve().parent.parent
-FIXTURE = TASKS / "integration" / "diagnose_wrong_output" / "fixtures" / "RiskRules"
+FIXTURE = TASKS / "diagnose" / "wrong_output" / "fixtures" / "RiskRulesSolution" / "RiskRules"
 
 
 def table(hit_policy, rows, inputs=("creditScore",), outputs=("riskBand",)):
@@ -331,3 +333,25 @@ def test_first_stops_at_its_first_match():
     </decisionTable>''')
 
     assert rc.evaluate(table, {"amount": 10}) == {"fee": 1}
+
+
+class TestFormatCheck:
+    """`run_format_check` with `uip` stubbed, so these run without the CLI."""
+
+    @staticmethod
+    def stub(monkeypatch, project, files, returncode=0):
+        def run(command, **_):
+            assert Path(command[3]) != project  # formats a copy, never the agent's files
+            body = json.dumps({"Data": {"Files": files}})
+            return subprocess.CompletedProcess(command, returncode, stdout=body, stderr="")
+        monkeypatch.setattr(rc.subprocess, "run", run)
+
+    def test_passes_when_nothing_changes(self, project, monkeypatch):
+        self.stub(monkeypatch, project, [{"File": "rule.dmn", "Changed": False}])
+        rc.run_format_check(project)
+
+    @pytest.mark.parametrize("files, returncode", [([{"File": "rule.dmn", "Changed": True}], 0), ([], 1)])
+    def test_fails_on_a_change_or_a_failed_run(self, project, monkeypatch, files, returncode):
+        self.stub(monkeypatch, project, files, returncode)
+        with pytest.raises(SystemExit):
+            rc.run_format_check(project)
