@@ -605,6 +605,8 @@ jobs:
           CODEX_API_KEY: ${{ secrets.CODEX_API_KEY }}
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
         # Cover every uploaded file, including arbitrary agent artifact bytes.
+        # Redacts these keys plus the UiPath tokens the mint step wrote to
+        # ~/.uipath/.auth, which every sandbox can read through its mount.
         # Keep task fields intact: both quality gates below still read them.
         run: python3 .github/scripts/redact-smoke-artifacts.py /tmp/runs
 
