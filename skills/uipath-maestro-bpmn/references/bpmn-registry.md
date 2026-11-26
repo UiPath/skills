@@ -11,7 +11,7 @@ Registry discovery and `.activity()` for types without a typed method.
 - Find types with `uip maestro bpmn registry search <term> --output json`, then inspect with `registry get <Type.Name> --output json`. Typed methods cover only the committed snapshot; ask the registry before concluding a type cannot be authored.
 
 <!-- RULE:bpmn.activity.discovery-only -->
-- **Discovery only:** when the request only asks to discover types or save registry evidence, or says not to author yet, run no `init`, write no `.bpmn.ts`, and read no other reference. Save raw JSON one file per command in named `<EVIDENCE_DIR>`, otherwise `registry-evidence/` outside `<Project>` (Studio Web: `/tmp/registry-evidence/`).
+- **Discovery only:** when the request only asks to discover types or save registry evidence, or says not to author yet, run no `init`, write no `.bpmn.ts`, and read no other reference. Save raw JSON, one file per command, in the directory the request names (`<EVIDENCE_DIR>`), otherwise `registry-evidence/` outside `<Project>` (Studio Web: `/tmp/registry-evidence/`).
   ```bash
   E=<EVIDENCE_DIR>
   mkdir -p "$E"
