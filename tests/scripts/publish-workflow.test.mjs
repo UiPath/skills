@@ -102,3 +102,17 @@ test("only the directory job writes contents, and never to a release branch", ()
   assert.match(directory, /contents: write/);
   assert.match(directory, /BRANCH: dist\/claude-directory/);
 });
+
+// The edition is public the moment it is pushed: it passes the same customer
+// gate as the npmjs tarball first, and the build that produces it never holds
+// the write token.
+test("the directory edition is scanned before push and built without the write token", () => {
+  const directory = job("publish-claude-directory");
+  assert.match(directory, /persist-credentials: false/);
+  const build = directory.indexOf("node scripts/build-claude-directory.mjs build/claude-directory");
+  const scan = directory.indexOf("python3 scripts/check-sensitive-content.py build/claude-directory");
+  const token = directory.indexOf("GH_TOKEN: ${{ github.token }}");
+  const push = directory.indexOf('git push origin "$COMMIT:refs/heads/$BRANCH"');
+  assert.ok(build !== -1 && build < scan && scan < token && token < push, "build, scan, then token, then push");
+  assert.equal(directory.match(/github\.token|secrets\.GITHUB_TOKEN/g)?.length, 1);
+});

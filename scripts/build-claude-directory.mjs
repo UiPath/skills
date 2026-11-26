@@ -27,7 +27,7 @@
  * The output (default `build/claude-directory`) must be absent or empty.
  */
 
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -128,15 +128,30 @@ function stableSkillNames(repoRoot) {
   );
 }
 
+/**
+ * Root files, read only when they are regular files: the edition is pushed to
+ * a public branch, so following a link could publish `.git/config` (where
+ * checkout keeps its token) or any other file on the runner.
+ */
 function rootFiles(repoRoot, findings) {
-  const relativePaths = [...ROOT_FILES];
+  const relativePaths = [];
+  const regular = (relativePath) => {
+    const stats = lstatSync(path.join(repoRoot, ...relativePath.split("/")), { throwIfNoEntry: false });
+    if (stats?.isFile()) return true;
+    findings.push(`${relativePath}: ${stats ? "must be a regular file, not a link or special file" : "is missing"}`);
+    return false;
+  };
+  for (const relativePath of ROOT_FILES) if (regular(relativePath)) relativePaths.push(relativePath);
   for (const tree of ROOT_TREES) {
-    const root = path.join(repoRoot, tree);
-    if (!existsSync(root)) continue;
-    for (const entry of readdirSync(root, { recursive: true, withFileTypes: true })) {
+    const stats = lstatSync(path.join(repoRoot, tree), { throwIfNoEntry: false });
+    if (!stats) continue;
+    if (!stats.isDirectory()) {
+      findings.push(`${tree}: must be a directory, not a link or file`);
+      continue;
+    }
+    for (const entry of readdirSync(path.join(repoRoot, tree), { recursive: true, withFileTypes: true })) {
       const relativePath = path.relative(repoRoot, path.join(entry.parentPath, entry.name)).split(path.sep).join("/");
-      if (entry.isSymbolicLink()) findings.push(`${relativePath}: symbolic links are refused`);
-      else if (entry.isFile()) relativePaths.push(relativePath);
+      if (!entry.isDirectory() && regular(relativePath)) relativePaths.push(relativePath);
     }
   }
   return relativePaths.map((relativePath) => ({
@@ -217,7 +232,7 @@ function planClaudeDirectory(repoRoot) {
     if (bytes.subarray(0, 2).toString("latin1") === "#!") findings.push(`${relativePath}: files starting with #! are refused`);
   }
 
-  const manifest = JSON.parse(files.get(MANIFEST).toString("utf8"));
+  const manifest = files.has(MANIFEST) ? JSON.parse(files.get(MANIFEST).toString("utf8")) : {};
   if ("hooks" in manifest) findings.push(`${MANIFEST}: declares hooks, which the directory refuses`);
   for (const agent of [manifest.agents ?? []].flat()) {
     const agentPath = path.posix.normalize(agent);

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import test from "node:test";
@@ -131,6 +131,26 @@ test("refuses a manifest that declares hooks or an agent it does not ship", (t) 
     assert.match(error.message, /agent \.\/skills\/uipath-preview\/agents\/a\.md is not in the directory edition/);
     return true;
   });
+});
+
+// The edition is pushed to a public branch; a followed link would publish
+// whatever it points at, such as the token checkout keeps in .git/config.
+test("refuses a symbolic link in the plugin root and reads nothing through it", (t) => {
+  const repo = fixtureRepo(t);
+  const secret = join(tempDir(t, "claude-directory-secret-"), "config");
+  writeFileSync(secret, "AUTHORIZATION: basic token\n");
+  rmSync(join(repo, "README.md"));
+  symlinkSync(secret, join(repo, "README.md"));
+  rmSync(join(repo, "commands"), { recursive: true });
+  symlinkSync(dirname(secret), join(repo, "commands"));
+  const out = join(tempDir(t, "claude-directory-out-"), "edition");
+  assert.throws(() => buildClaudeDirectory(repo, out), (error) => {
+    assert.match(error.message, /README\.md: must be a regular file, not a link/);
+    assert.match(error.message, /commands: must be a directory, not a link/);
+    assert.doesNotMatch(error.message, /AUTHORIZATION/);
+    return true;
+  });
+  assert.ok(!existsSync(out));
 });
 
 test("refuses a link the citation rewrite cannot reach", (t) => {

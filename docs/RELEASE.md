@@ -207,7 +207,7 @@ Off-cadence or ad-hoc cut: dispatch manually with `minor_override` (e.g. `1.198`
 
 ## Claude plugin directory edition
 
-The Claude plugin directory tracks the generated branch `dist/claude-directory`, never `main`: `main` exceeds the directory's 10,000-entry archive limit and holds repository tooling the directory reads as plugin content. After every `channel=latest` publish, the `publish-claude-directory` job in `publish.yml` runs `scripts/build-claude-directory.mjs` on the release ref and pushes the result as one commit on top of the previous edition. A re-run of the same release pushes nothing. Never edit the branch by hand; the next stable release replaces it.
+The Claude plugin directory tracks the generated branch `dist/claude-directory`, never `main`: `main` exceeds the directory's 10,000-entry archive limit and holds repository tooling the directory reads as plugin content. After every `channel=latest` publish, the `publish-claude-directory` job in `publish.yml` runs `scripts/build-claude-directory.mjs` on the release ref, scans the result with `scripts/check-sensitive-content.py` (the same gate as the npmjs tarball), and pushes it as one commit on top of the previous edition. Only the push step holds the write token. A re-run of the same release pushes nothing. Never edit the branch by hand; the next stable release replaces it.
 
 The edition is the default plugin reduced to what the directory accepts from an organization that is not Verified:
 
