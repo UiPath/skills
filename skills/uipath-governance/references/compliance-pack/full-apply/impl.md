@@ -32,14 +32,14 @@ Every decision below is the admin's. Ask, wait for the answer, and never fill on
 
 ### Step 1 — Ask how the standard should run
 
-The admin chooses from coverage's [Enable view](../coverage/impl.md#enable-view): its APPLICATION MODE block (what each mode covers), YOUR DEPLOYED POLICIES, WHAT HAPPENS TO YOUR AOPS POLICIES and the conflicts by requirement. Ask the mode with `AskUserQuestion` ([SKILL.md Critical Rule 13](../../../SKILL.md#critical-rules)) right after the Enable view, as its first and only question; when the view isn't in view (or the template was shown instead: older server, no `CheckerSummary`), show the blocks first, then ask:
+The admin chooses from coverage's [Enable view](../coverage/enable-view.md#enable-view): its APPLICATION MODE block (what each mode covers), YOUR DEPLOYED POLICIES, WHAT HAPPENS TO YOUR AOPS POLICIES and the conflicts by requirement. Ask the mode with a selectable prompt ([SKILL.md Critical Rule 13](../../../SKILL.md#critical-rules)) right after the Enable view, as its first and only question; when the view isn't in view (or the template was shown instead: older server, no `CheckerSummary`), show the blocks first, then ask:
 
 - Question `How should <packName> run on <tenantName>?`, header `Mode`.
 - Option `Enforce`, description `Block violations across the whole tenant. For each conflict (C1–C<N>) you then keep the current value or update to the standard's recommendation.` (no conflicts: drop the second sentence).
 - Option `Observe`, description `Monitor and report without blocking anything. Nothing changes in your AOps policies; you can enforce later.`
 - Option `Show full details`, description `Every setting in each requirement, then this question again.`
 - No option is marked recommended: the mode is the admin's choice.
-- Without `AskUserQuestion`: the numbered list `1. Enforce — …` / `2. Observe — …`, then `Reply 1 or 2.`, and END YOUR REPLY.
+- Without a selectable prompt: the numbered list `1. Enforce — …` / `2. Observe — …`, then `Reply 1 or 2.`, and END YOUR REPLY.
 
 **When the mode is already chosen, don't ask it.** The admin picked `Enforce <packName>` or `Observe <packName>` from a posture view's next actions, or the request names the mode ("enforce ISO 42001", "turn on ISO 42001 in Observe"): go straight to step 2 (Enforce) or step 4 (Observe), and still show the Enable view's blocks if they are not in view.
 
@@ -52,11 +52,11 @@ Observe → go to step 4 (no choices: Observe changes none of the conflicting va
 
 ### Step 2 — Show the conflicts
 
-The conflicts were shown with coverage (CONFLICTS TO RESOLVE, by requirement, in the Enable view). Don't print them again in the same reply; if they are no longer in view, render them again as in [coverage § Enable view](../coverage/impl.md#enable-view). 0 conflicts → step 4.
+The conflicts were shown with coverage (CONFLICTS TO RESOLVE, by requirement, in the Enable view). Don't print them again in the same reply; if they are no longer in view, render them again as in [coverage § Enable view](../coverage/enable-view.md#enable-view). 0 conflicts → step 4.
 
 ### Step 3 — Ask, for every conflict: keep the current value or update to the standard's recommendation
 
-Print the list below as text, then ask with `AskUserQuestion` (Critical Rule 13). The question and the two options use the Governance portal's words, so the CLI and the portal ask the same thing. The admin answers with **keep** and **update**; `keep` / `pack` are only the values sent to the service, never shown.
+Print the list below as text, then ask with a selectable prompt (Critical Rule 13). The question and the two options use the Governance portal's words, so the CLI and the portal ask the same thing. The admin answers with **keep** and **update**; `keep` / `pack` are only the values sent to the service, never shown.
 
 ```
 Keep the current value or update to the standard's recommendation?
@@ -96,19 +96,19 @@ A.9.2  Processes for responsible use of AI systems
 …   one group per requirement with conflicts, as in the Enable view (C1 to C<N>)
 ```
 
-**Asking it.** First `AskUserQuestion` call, one question:
+**Asking it.** First prompt, one question:
 
 - Question `How do you want to resolve the <N> conflicts?`, header `Conflicts`.
 - Options `Update all` (`Every conflict takes the standard's recommendation.`), `Keep all` (`Every conflict keeps its current value; <packName> reports those settings as not met.`), `Choose for each conflict` (`Pick keep or update for C1–C<N>, four at a time.`). No option is marked recommended.
 - One conflict only: skip this question and ask that conflict directly, as below.
 
-`Choose for each conflict` → one more `AskUserQuestion` call per four conflicts, in C order, one question per conflict:
+`Choose for each conflict` → one more prompt per four conflicts, in C order, one question per conflict:
 
 - Question `C<k> <ControlDisplayName> — keep or update?`, header `C<k>`.
 - Option `Update`, description `<Recommended>` (the Update line's value); option `Keep`, description `<Current>` (the Keep line's value).
 - A conflict in several policies (license-type groups) adds option `Choose per license type`; picking it asks that conflict once more, one question per license type, with the same two options.
 
-The tool's Other field (and, without `AskUserQuestion`, the numbered fallback) takes a typed answer in any of these forms; read it with the rules below:
+The tool's Other field (and, without a selectable prompt, the numbered fallback) takes a typed answer in any of these forms; read it with the rules below:
 
 ```
   all update                         all keep
@@ -116,7 +116,7 @@ The tool's Other field (and, without `AskUserQuestion`, the numbered fallback) t
   all update except C3, C5           C4 update for RPA Developer, keep for Automation Developer
 ```
 
-- **Groups** follow the Enable view's conflict blocks: one per requirement (`ClauseId` and catalog `ClauseName`), in the same order, with the same conflict numbers. Above the groups, one short paragraph per deployed policy with conflicts (`P<i>`, live `PolicyName`, product, license types) says what enforce does to it, from the slot's `ApplyPlan[]` entry: when its `PolicyId` is P<i>'s own `PolicyId` (P<i> was created by this standard), write `On enforce, P<i> "<name>" (<product> · <license types>) itself is updated with the choices below.`; otherwise use the replace wording in the template, naming the policy enforce deploys in that slot: the `ApplyPlan[]` entry's `PolicyName` for that product and license type, or the catalog's `DeploymentPolicies[].PolicyName` when it is absent (same rule as coverage's [WHAT HAPPENS TO YOUR AOPS POLICIES](../coverage/impl.md#if-you-apply--if-you-enforce) table). Never "the standard's policy" or "the new policy".
+- **Groups** follow the Enable view's conflict blocks: one per requirement (`ClauseId` and catalog `ClauseName`), in the same order, with the same conflict numbers. Above the groups, one short paragraph per deployed policy with conflicts (`P<i>`, live `PolicyName`, product, license types) says what enforce does to it, from the slot's `ApplyPlan[]` entry: when its `PolicyId` is P<i>'s own `PolicyId` (P<i> was created by this standard), write `On enforce, P<i> "<name>" (<product> · <license types>) itself is updated with the choices below.`; otherwise use the replace wording in the template, naming the policy enforce deploys in that slot: the `ApplyPlan[]` entry's `PolicyName` for that product and license type, or the catalog's `DeploymentPolicies[].PolicyName` when it is absent (same rule as coverage's [WHAT HAPPENS TO YOUR AOPS POLICIES](../coverage/apply-and-conflicts.md#if-you-apply--if-you-enforce) table). Never "the standard's policy" or "the new policy".
 - **Keep / Update values** = the conflict's `Lines[]` `Current` / `Recommended`, per the [line rules](../coverage/impl.md#line-rules). A conflict with sub-settings (`↳` rows in the conflict table) lists them after the main value, joined with ` · `. One or two short lines after the list may say what the choices turn on or off ("updating C1–C9 turns on AI features that are off today"); never more.
 - **Reading a typed reply.** `keep`, `current`, `mine`, `today` → keep · `update`, `standard`, `pack`, `recommended` → pack. `all <choice>` sets every conflict; `except C…` gives the listed ones the other choice; `rest` / `others` / `remaining` sets every conflict not named earlier in the same reply; ranges `C1–C9`, `C1-C9`, `C1 to C9`. A per-license-type answer applies only to the license types it names.
 - **Nothing is filled in by the skill.** After reading the reply, every conflict (and, for a conflict in several policies, every license type of it) must have a choice the admin gave, directly or through `all` / `rest` / a range. Ask again only for what is still open, listing those conflicts. Ask too when a reply is contradictory (a conflict given both choices) or names a conflict that doesn't exist. Never use the service's "no entry means pack".
@@ -150,7 +150,7 @@ WHAT HAPPENS TO YOUR AOPS POLICIES
   • <controlDisplayName>  — <plain-English prompt for the value>
 ```
 
-Then ask with `AskUserQuestion` (Critical Rule 13): question `<Enforce | Apply in Observe> <packName> on <tenantName>?`, header `Confirm`, options `Yes, enforce` / `Yes, apply in Observe` (the chosen mode's), `Change my conflict choices` (Enforce with conflicts only: back to step 3), `Cancel`. Without the tool: `Proceed? (y/n)` and END YOUR REPLY.
+Then ask with a selectable prompt (Critical Rule 13): question `<Enforce | Apply in Observe> <packName> on <tenantName>?`, header `Confirm`, options `Yes, enforce` / `Yes, apply in Observe` (the chosen mode's), `Change my conflict choices` (Enforce with conflicts only: back to step 3), `Cancel`. Without the tool: `Proceed? (y/n)` and END YOUR REPLY.
 
 - **CONFLICT CHECK is its own block, first in the confirmation, always shown** — the admin sees whether this apply changes any of their values before reading anything else. Pick it by what coverage reported and the mode:
 
@@ -226,7 +226,7 @@ The service's code is in the failure's `Message` (`HTTP 409: {"error":"coverage_
 
 Build this table from `catalog.clauses[].editorialPolicies[].controls[]` filtered to products where `coverage.deploymentPolicies[].status == "new"`. Group settings by impact. List the settings that will still need user-supplied values after apply — coverage `Clauses[].Controls[]` with `StatusAfterApply == "manual"`, with the `ManualConfigChecks[]` expectation as the plain-English prompt (fall back to `synthesize-formdata` notEmpty warnings only when `StatusAfterApply` is absent).
 
-Always add the conflict banner to the confirmation (below the ⚠ section), so the admin sees the conflict count right before `y` — ✓ `0 CONFLICTS` when there are none. With modes off every conflicting setting is replaced with the standard's value. Render it exactly as [coverage § Conflicts with your existing policies](../coverage/impl.md#conflicts-with-your-existing-policies), with the modes-off footer.
+Always add the conflict banner to the confirmation (below the ⚠ section), so the admin sees the conflict count right before `y` — ✓ `0 CONFLICTS` when there are none. With modes off every conflicting setting is replaced with the standard's value. Render it exactly as [coverage § Conflicts with your existing policies](../coverage/apply-and-conflicts.md#conflicts-with-your-existing-policies), with the modes-off footer.
 
 ```
 Configure <packName> settings on <tenantName>?
@@ -251,7 +251,7 @@ Configure <packName> settings on <tenantName>?
 <conflict banner from coverage — ⚠ <N> CONFLICTS with its per-policy blocks and footer, or ✓ 0 CONFLICTS — unchanged>
 ```
 
-Then ask with `AskUserQuestion` (Critical Rule 13): question `Apply <packName> on <tenantName>?`, options `Yes, apply` / `Cancel`. Without the tool: `Proceed? (y/n)`. Require `Yes, apply` (or `y`). Halt on anything else.
+Then ask with a selectable prompt (Critical Rule 13): question `Apply <packName> on <tenantName>?`, options `Yes, apply` / `Cancel`. Without the tool: `Proceed? (y/n)`. Require `Yes, apply` (or `y`). Halt on anything else.
 
 ```bash
 TENANT_ID=$(uip login status --output json | sed -n 's/.*"TenantId": *"\([^"]*\)".*/\1/p')
@@ -270,7 +270,7 @@ Parse `Data.Active` (must be `true`), `Data.Mode` (modes on: the mode the admin 
 
 ## Report
 
-**Modes on, Enforce:** report with [coverage § Enforced view](../coverage/impl.md#enforced-view), built from `catalog.json` and the coverage read again in Verify. Open with one line, `<packName> is now enforced on <tenantName> ✓`, then the view, then the `Applied by` and `Note` lines below. The view's own offers (correct drifted settings, configure manual ones, restore an Unverifiable policy) follow it, asked as one pick list as in [coverage § Next action](../coverage/impl.md#posture-plan-presentation), with `Show full details` last. The Observe and modes-off reports end with the same pick list.
+**Modes on, Enforce:** report with [coverage § Enforced view](../coverage/views.md#enforced-view), built from `catalog.json` and the coverage read again in Verify. Open with one line, `<packName> is now enforced on <tenantName> ✓`, then the view, then the `Applied by` and `Note` lines below. The view's own offers (correct drifted settings, configure manual ones, restore an Unverifiable policy) follow it, asked as one pick list as in [coverage § Next action](../coverage/posture-view.md#next-action), with `Show full details` last. The Observe and modes-off reports end with the same pick list.
 
 Otherwise (Observe, or modes off):
 
@@ -333,7 +333,7 @@ Tenants to configure:
 <totalTenantsToConfig> tenants will be configured. Your auditor determines compliance status.
 ```
 
-Then ask with `AskUserQuestion` (Critical Rule 13): question `Configure <packName> on these <totalTenantsToConfig> tenants?`, options `Yes, configure all` / `Cancel`. Without the tool: `Continue? (y/n)`. Require `Yes, configure all` (or `y`). Halt on anything else. Skip tenants where `NewCount == 0` (all settings already Applied).
+Then ask with a selectable prompt (Critical Rule 13): question `Configure <packName> on these <totalTenantsToConfig> tenants?`, options `Yes, configure all` / `Cancel`. Without the tool: `Continue? (y/n)`. Require `Yes, configure all` (or `y`). Halt on anything else. Skip tenants where `NewCount == 0` (all settings already Applied).
 
 ### Step 4 — Enable per tenant
 

@@ -48,7 +48,7 @@ The standards' policies stay in Policy Library, so applying a standard later reu
 
 ```
 
-Ask with `AskUserQuestion` ([SKILL.md Critical Rule 13](../../../SKILL.md#critical-rules)): question `Turn off all <N> standards on <tenantName>?`, options `Yes, turn off all <N>` / `Cancel`. Without the tool: `Turn off all <N> standards? (y/n)`.
+Ask with a selectable prompt ([SKILL.md Critical Rule 13](../../../SKILL.md#critical-rules)): question `Turn off all <N> standards on <tenantName>?`, options `Yes, turn off all <N>` / `Cancel`. Without the tool: `Turn off all <N> standards? (y/n)`.
 
 - `RestoredPolicyId` null → `no policy`. A missing `PolicyName` / `RestoredPolicyName` → `a standard's policy` / `your earlier policy`; never print an id.
 - `Data.PackIds` empty → nothing is active: say so and stop.
@@ -73,7 +73,7 @@ Policies that will be removed:
 
 ```
 
-Ask with `AskUserQuestion` (Critical Rule 13): question `Turn off <packName> on <tenantName>?`, options `Yes, turn off` / `Cancel`. Without the tool: `Are you sure? (y/n)`. Require `Yes, turn off` (or `y`). Halt on anything else.
+Ask with a selectable prompt (Critical Rule 13): question `Turn off <packName> on <tenantName>?`, options `Yes, turn off` / `Cancel`. Without the tool: `Are you sure? (y/n)`. Require `Yes, turn off` (or `y`). Halt on anything else.
 
 ### Disable
 
