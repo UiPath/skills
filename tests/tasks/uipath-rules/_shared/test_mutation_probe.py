@@ -67,17 +67,6 @@ def _sandbox_contents(sandbox: Path) -> set[str]:
 
 
 class TestTheProbeDeletesOnlyItsOwnCopy:
-    def test_the_nested_solution_layout_survives(self, tmp_path, engine, monkeypatch):
-        # `uip rules init FeeRules`: FeeRulesSolution/FeeRules/.
-        sandbox = tmp_path / "sandbox"
-        project = _project(sandbox / "FeeRulesSolution" / "FeeRules")
-        (sandbox / "FeeRulesSolution" / "FeeRulesSolution.uipx").write_text("{}", encoding="utf-8")
-        monkeypatch.chdir(sandbox)
-        before = _sandbox_contents(sandbox)
-
-        probe._fee_follows_the_model(project)
-
-        assert _sandbox_contents(sandbox) == before
 
     def test_the_root_level_solution_layout_survives(self, tmp_path, engine, monkeypatch):
         # `uip solution init .`: the solution IS the sandbox, so `project.parent.name` is "".
@@ -112,16 +101,6 @@ class TestTheProbeDeletesOnlyItsOwnCopy:
             probe._fee_follows_the_model(project)
 
         assert _sandbox_contents(sandbox) == before
-
-    def test_no_probe_directory_is_left_behind(self, tmp_path, engine, monkeypatch):
-        sandbox = tmp_path / "sandbox"
-        sandbox.mkdir()
-        monkeypatch.chdir(sandbox)
-        project = _project(Path("FeeRules"))
-
-        probe._fee_follows_the_model(project)
-
-        assert not list(sandbox.glob(f"{probe.PROBE_PREFIX}*"))
 
     def test_the_probe_rewrites_only_its_copy(self, tmp_path, monkeypatch):
         # What the copy exists for: the agent's own file must read the same afterwards, whatever

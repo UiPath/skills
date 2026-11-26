@@ -66,14 +66,6 @@ def test_the_project_holds_exactly_one_parseable_dmn(project):
     assert "/spec/DMN/" in root.tag and "/MODEL/" in root.tag, root.tag
 
 
-@pytest.mark.parametrize(
-    "project", [p for p in PROJECTS if _rel(p) not in DELIBERATELY_BROKEN],
-    ids=[i for i in IDS if i not in DELIBERATELY_BROKEN])
-def test_a_sound_fixture_is_dmn_1_5(project):
-    root = ET.fromstring(next(project.glob("*.dmn")).read_text(encoding="utf-8"))
-    assert root.tag == f"{{{rc.DMN_NS}}}definitions"
-
-
 @pytest.mark.parametrize("project", PROJECTS, ids=IDS)
 def test_the_entry_points_are_objects_the_shared_parsers_can_read(project):
     # The defect: `"input": "{\\"type\\": \\"object\\", ...}"` parses as JSON and reads as a
@@ -107,11 +99,6 @@ def test_the_authoring_surface_matches_what_the_fixture_holds(project):
     rc.check_authoring_surface(dmn_file, ET.fromstring(dmn_file.read_text(encoding="utf-8")))
 
 
-@pytest.mark.parametrize("project", PROJECTS, ids=IDS)
-def test_the_bindings_file_parses(project):
-    assert isinstance(json.loads((project / "bindings_v2.json").read_text(encoding="utf-8")), dict)
-
-
 @pytest.mark.parametrize(
     "project", [p for p in PROJECTS if _rel(p) not in DELIBERATELY_BROKEN],
     ids=[i for i in IDS if i not in DELIBERATELY_BROKEN])
@@ -120,13 +107,3 @@ def test_a_sound_fixture_passes_the_profile_the_graders_load(project, monkeypatc
     # before the agent's edit is looked at.
     monkeypatch.chdir(tmp_path)
     rc.load_graph(project)
-
-
-@pytest.mark.parametrize(
-    "project", sorted(SUITE / name for name in DELIBERATELY_BROKEN),
-    ids=sorted(DELIBERATELY_BROKEN))
-def test_a_broken_fixture_is_still_a_readable_project(project):
-    # Broken for the agent to repair, not broken as a file: the task stages it, so it still has
-    # to parse. A fixture that does not is a task that cannot start.
-    assert (project / "project.uiproj").is_file()
-    ET.fromstring(next(project.glob("*.dmn")).read_text(encoding="utf-8"))

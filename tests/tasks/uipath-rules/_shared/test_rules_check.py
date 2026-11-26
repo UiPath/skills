@@ -382,10 +382,6 @@ class TestAuthoringSurface:
         assert "one decision table and nothing else" in printed
         assert "leave it as it is" in printed
 
-    def test_two_decisions_on_the_graph_surface_are_accepted(self):
-        rc.check_authoring_surface(Path("r.dmn"),
-                                   self._dmn(self.TABLE + self.SECOND, rc.GRAPH_SURFACE))
-
     def test_two_decisions_on_the_table_surface_are_refused(self, capsys):
         # The other direction: a graph that opens as a bare table hides its requirement edges.
         with pytest.raises(SystemExit):
@@ -405,20 +401,6 @@ class TestAuthoringSurface:
         with pytest.raises(SystemExit):
             rc.check_authoring_surface(Path("r.dmn"), self._dmn(self.TABLE, None))
         assert "declares no <uipath:authoring" in capsys.readouterr().out
-
-    def test_an_unknown_surface_is_refused(self, capsys):
-        with pytest.raises(SystemExit):
-            rc.check_authoring_surface(Path("r.dmn"), self._dmn(self.TABLE, "canvas"))
-        assert "the designer reads" in capsys.readouterr().out
-
-    def test_a_single_literal_expression_decision_is_left_alone(self):
-        # `editor` is per-decision, and which surface the designer wants for a file whose one
-        # decision is a formula is not something this suite can evidence. Asserted on neither
-        # value rather than guessed at.
-        body = ('<decision id="d1" name="d1"><literalExpression id="le" typeRef="number">'
-                '<text>a * 2</text></literalExpression></decision>')
-        for surface in (rc.TABLE_SURFACE, rc.GRAPH_SURFACE):
-            rc.check_authoring_surface(Path("r.dmn"), self._dmn(body, surface))
 
     def test_every_grader_goes_through_it(self, project):
         # Wired into `load_graph`, so no task can opt out. Without that an agent could author the

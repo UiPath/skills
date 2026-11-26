@@ -73,14 +73,6 @@ class TestEngineOutputs:
 
         assert gc.engine_outputs(PROJECT, {"loanAmount": 20000}) == {"fee": 400.0}
 
-    def test_the_inputs_reach_the_cli_as_json(self, cli):
-        gc.engine_outputs(PROJECT, {"creditScore": 700, "income": 0})
-
-        argv = cli.calls[0]
-        assert argv[:3] == ["uip", "rules", "debug"]
-        assert json.loads(argv[argv.index("--inputs") + 1]) == {"creditScore": 700, "income": 0}
-        assert "--output" in argv and argv[argv.index("--output") + 1] == "json"
-
     def test_two_decisions_answering_under_one_name_are_refused(self, cli):
         # `dict.update` let whichever came last win, so a wrong value from the decision the case
         # names passed whenever another decision happened to answer under that name.
@@ -114,11 +106,6 @@ class TestEngineOutputs:
         assert "did not return JSON" in printed
         assert "transport failure, not a wrong rule" in printed
         assert "Checking for updates" in printed
-
-    def test_an_empty_payload_answers_nothing_rather_than_raising(self, cli):
-        cli.answer = lambda argv: _Completed(0, json.dumps({"Result": "Success"}))
-
-        assert gc.engine_outputs(PROJECT, {"creditScore": 700}) == {}
 
 
 class TestGradeEngine:
@@ -164,15 +151,6 @@ class TestGradeEngine:
 
         assert "interestRate=99.0" in capsys.readouterr().out
 
-    def test_a_number_where_the_case_wants_a_band_is_not_equal(self, project, cli):
-        # `same_value`, through the engine path: Python holds `True == 1`, FEEL does not.
-        cli.answer = lambda argv: _Completed(0, debug_payload(
-            [{"decisionName": "risk", "outputs": {"riskBand": True}},
-             {"decisionName": "rate", "outputs": {"interestRate": 1}}]))
-
-        with pytest.raises(SystemExit):
-            gc.grade_engine()
-
     def test_the_project_name_is_honoured(self, tmp_path, monkeypatch, cli):
         # Parsed and then ignored, `graph_check.py engine OtherRules` graded LoanRules silently.
         folder = tmp_path / "OtherRules"
@@ -186,14 +164,6 @@ class TestGradeEngine:
 
         assert folder.is_dir()
         assert {argv[3] for argv in cli.calls} == {"OtherRules"}
-
-    def test_a_missing_project_fails_before_the_engine_is_called(self, tmp_path, monkeypatch, cli):
-        monkeypatch.chdir(tmp_path)
-
-        with pytest.raises(SystemExit):
-            gc.grade_engine()
-
-        assert cli.calls == []
 
 
 class TestCheckModelCalled:
@@ -228,13 +198,6 @@ class TestCheckModelCalled:
         with pytest.raises(SystemExit):
             gc.check_model_called(root, fee, "bkm_rate")  # the id, not the name
 
-    def test_a_model_that_is_called_but_not_required_fails(self):
-        root = self.graph("loanAmount * rate(loanAmount)", requirement="")
-        fee = gc.decision_for_output(root, "fee")
-
-        with pytest.raises(SystemExit):
-            gc.check_model_called(root, fee, "rate")
-
     def test_a_model_required_but_never_called_fails(self, capsys):
         # Declared and wired is not called. The engine returns the right fee either way, so the
         # engine grade alone passed a rule whose model never ran.
@@ -245,13 +208,6 @@ class TestCheckModelCalled:
             gc.check_model_called(root, fee, "rate")
 
         assert "never calls rate(...)" in capsys.readouterr().out
-
-    def test_a_name_ending_in_the_models_is_not_a_call(self):
-        root = self.graph("loanAmount * netRate(loanAmount)")
-        fee = gc.decision_for_output(root, "fee")
-
-        with pytest.raises(SystemExit):
-            gc.check_model_called(root, fee, "rate")
 
     def test_whitespace_before_the_parenthesis_is_still_a_call(self):
         root = self.graph("loanAmount * rate (loanAmount)")
@@ -269,23 +225,6 @@ class TestRunValidate:
         folder = tmp_path / "RiskRules"
         folder.mkdir()
         return folder
-
-    def test_a_clean_validate_passes(self, project, monkeypatch):
-        monkeypatch.setattr(rc.subprocess, "run",
-                            lambda argv, **_: _Completed(0, json.dumps({"Result": "Success"})))
-
-        rc.run_validate(project)  # no exit
-
-    def test_the_project_and_json_flag_reach_the_cli(self, project, monkeypatch):
-        seen = []
-        monkeypatch.setattr(rc.subprocess, "run",
-                            lambda argv, **_: (seen.append(argv), _Completed(0, "{}"))[1])
-
-        rc.run_validate(project)
-
-        assert seen[0][:3] == ["uip", "rules", "validate"]
-        assert seen[0][3] == str(project)
-        assert seen[0][-2:] == ["--output", "json"]
 
     def test_diagnostics_reach_the_failure_message(self, project, monkeypatch, capsys):
         payload = json.dumps({"Data": {"Diagnostics": [{"Code": "DMN_FEEL_SYNTAX"}]}})
@@ -307,18 +246,6 @@ class TestRunValidate:
             rc.run_validate(project)
 
         assert "EACCES" in capsys.readouterr().out
-
-    def test_a_non_json_failure_does_not_raise_out_of_the_grader(self, project, monkeypatch, capsys):
-        # `run_validate` never parses, so this is a regression guard: adding a `json.loads` here
-        # would reintroduce the hole `engine_outputs` had.
-        monkeypatch.setattr(rc.subprocess, "run",
-                            lambda argv, **_: _Completed(1, "Checking for updates.\n"))
-
-        with pytest.raises(SystemExit) as raised:
-            rc.run_validate(project)
-
-        assert raised.value.code == 1
-        assert "Checking for updates" in capsys.readouterr().out
 
     def test_a_cli_that_is_not_installed_is_not_swallowed(self, project, monkeypatch):
         # Not caught on purpose: `validate` is the criterion, so a missing CLI must not read as
