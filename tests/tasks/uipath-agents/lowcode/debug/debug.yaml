@@ -38,16 +38,19 @@ success_criteria:
 
   # `uip agent debug` exits non-zero unless the run reaches State:Successful, so
   # require_success asserts the agent's own debug finished Successful. The
-  # lookaheads require that same debug command (up to any `|`, `;` or `&` that
-  # is not a redirect like `2>&1`) to pass the input via `--inputs` or `-i`
-  # followed by its JSON or `$` value (`-i` is the alias in `uip agent debug
-  # --help`; the value keeps `grep -i`/`sed -i` on a later line out), and not to
-  # be `--help`/`-h` or an echoed string. Only MathAgent exists in the sandbox,
-  # so the agent path is implied.
+  # lookahead requires that same debug command (up to the first `|`, `;` or `&`
+  # that is not part of a redirect such as `2>&1` or `&>`) to pass the input via
+  # `--inputs` or `-i` (its alias in `uip agent debug --help`); `--inputs-file`
+  # does not count. `-i` must be followed by a `{` or `$` value because coder_eval
+  # also matches the command with newlines joined, so a later-line `grep -i state`
+  # or `sed -i` would otherwise count. `--inputs` keeps the old any-value rule
+  # (`-i` is a common grep/sed flag, `--inputs` is not), so `--inputs ''` counts
+  # and `-i ''` does not. Only MathAgent exists in the sandbox, so the agent path
+  # is implied.
   - type: command_executed
     description: "Agent ran a successful `uip agent debug` with both --inputs"
     tool_name: "Bash"
-    command_pattern: '(?<!echo )(?<!echo .)uip\s+agent\s+debug\b(?!(?:[^|;&]|>&|&>)*\s(?:-h|--help)\b)(?=(?:[^|;&]|>&|&>)*(?:--inputs(?![\w-])|\s-i\s*[''"]?[{$]))'
+    command_pattern: 'uip\s+agent\s+debug\b(?=(?:[^|;&]|(?<=[<>])&|(?<![<>])&(?=>))*(?:--inputs(?![\w-])|\s-i\s*[''"]?[{$]))'
     min_count: 1
     require_success: true
     weight: 6.0

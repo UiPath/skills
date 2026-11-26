@@ -399,3 +399,49 @@ def test_declaring_the_resource_counts_refresh_or_add(pattern, call):
 )
 def test_declaring_the_resource_needs_add_of_the_same_kind(pattern, call):
     assert _hits(pattern, call) == {False}
+
+
+# --- uipath-agents: lowcode debug passes its input via --inputs or -i ----------
+
+DEBUG = _pattern("uipath-agents/lowcode/debug/debug.yaml", "Agent ran a successful `uip agent debug` with both --inputs")
+DEBUG_INPUT = """'{"input": "What is 2 plus 2? Reply with just the number."}'"""
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        # Recorded in the 2026-11-24/25 nightly runs.
+        f"uip agent debug MathSolution/MathAgent -i {DEBUG_INPUT} --output json",
+        f"cd /work/output/artifacts/skill-agent-lowcode-debug; uip agent debug MathSolution/MathAgent --inputs {DEBUG_INPUT} --output json",
+        f'uip agent validate "MathSolution/MathAgent" --output json && uip agent debug "MathSolution/MathAgent" --inputs {DEBUG_INPUT} --output json',
+        # A redirect before the flag stays inside the debug command.
+        f"uip agent debug MathSolution/MathAgent 2>&1 -i {DEBUG_INPUT}",
+        f"uip agent debug MathSolution/MathAgent >&2 --inputs {DEBUG_INPUT}",
+    ],
+)
+def test_debug_counts_inputs_or_its_alias(command):
+    assert _hits(DEBUG, command) == {True}
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "uip agent debug MathSolution/MathAgent --output json",
+        "uip agent debug MathSolution/MathAgent --output json | grep -i state",
+        f"uip agent debug MathSolution/MathAgent; uip agent eval -i {DEBUG_INPUT}",
+        "uip agent debug MathSolution/MathAgent && grep -i ok log",
+        "uip agent debug MathSolution/MathAgent --output json\ngrep -i foo out.json",
+        "uip agent debug MathSolution/MathAgent --input-file in.json",
+        "uip agent debug MathSolution/MathAgent --inputs-file in.json",
+    ],
+)
+def test_debug_needs_the_input_on_the_debug_command(command):
+    assert _hits(DEBUG, command) == {False}
+
+
+def test_debug_does_not_backtrack_on_many_redirects():
+    command = ("uip agent debug " + ">&>" * 200)[:2000]
+    for flags in FLAGS:
+        start = time.perf_counter()
+        assert not re.search(DEBUG, command, flags)
+        assert time.perf_counter() - start < 0.01
