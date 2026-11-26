@@ -230,7 +230,7 @@ UI targets: {the environment whose screens the targets describe}
 |-----------|-----------------|-------|
 | Source framework | {`UiPath` for a UiPath source, else the framework name as the migration pack's README spells it} {version the source states} | |
 | Source export | {root path as read at extraction} | {identity: database or tenant, export date, process count — what recognises a moved copy} |
-| Requested change | {for a refactor or migration request: the user's words; otherwise —} | {each refactor-question decision — `Target: <component> → <product>`, `Retire: <entry point>`, `Fold: <reader> into <writer>`; a split decision is that flow's `Decided:` line alone} |
+| Requested change | {for a refactor or migration request: the user's words; otherwise —} | {each decision of the refactor questions and of the refactor review — `Target: <component> → <product>`, `Retire: <entry point>`, `Fold: <reader> into <writer>`, any other in the user's words; a split decision is that flow's `Decided:` line alone} |
 | {Component} | {Source framework}: {project / solution / object} — `{Name}` ({id}) per object where names repeat | {the source units whose actions became its steps' activities; ambiguity or unresolved reference} |
 | Not covered | {live entry points, public workflows or test cases of the extracted projects that no step is built from — `{Name}` ({id})} | {what each does; left out because it is a public workflow nothing reaches and the Unused parts answer kept to what runs, or it only works a technology UiPath's activities cover, or the request named others} |
 | Unused | {workflows, pages and helpers no caller invokes that extraction left out — `{Name}` ({id})} | {what each does} |
