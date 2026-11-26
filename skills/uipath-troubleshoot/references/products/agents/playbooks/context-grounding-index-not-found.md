@@ -40,7 +40,8 @@ What to look for:
 
    ```bash
    uip traces spans get <trace-id> --output json \
-     --output-filter "spans[?spanType == 'contextGroundingTool'].{name: name, error: attributes.error, attrs: attributes}"
+     --output-filter "[?SpanType == 'contextGroundingTool']" \
+     | jq '[.Data[] | (.Attributes | fromjson? // {}) as $a | {name: .Name, error: $a.error, attrs: $a}]'
    ```
 
 3. Note the span `name` and any index identifier visible in `attrs` — this is the index the agent tried to resolve.
