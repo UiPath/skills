@@ -56,6 +56,8 @@ Show the table as Markdown before authoring and after each change — one table 
 | 3 | - | - | "Low" | Default |
 ```
 
+An input cell is a FEEL unary test on its column's value, not an expression: `-`, a literal, a comparison, a range, or a comma list of these.
+
 ### 3. Author the rule
 
 Replace the scaffolded table with the reviewed design, and add the other decisions a graph needs.
