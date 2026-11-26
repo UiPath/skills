@@ -25,10 +25,10 @@ Inside `design`, `author` and `extract`, that verb's § Read Plan opens this gui
 
 These add to the Critical Rules in [SKILL.md](../../SKILL.md).
 
-1. **Offered once per run, never imposed.** The offer is one structured question: before writing in `design` and `author` (§ The Offer), after the strict check in `extract` (§ After Writing). `author`'s closing names `interview <genome>` for what is still open and asks nothing. Not offered — gaps take their markers and defaults as the verb writes them — when: `Execution autonomy` is `autonomous`; the run carries a `planner-design-request: v1` block; the run is unattended; the gap list holds no entry to ask. An autonomous run's closing summary names the counts and `interview <file>` in one line instead.
+1. **Offered once per run, never imposed.** The offer is one structured question: before writing in `design` and `author` (§ The Offer), after the strict check in `extract` (§ After Writing). `author`'s closing names `interview <genome>` for what is still open and asks nothing. Not offered — gaps take their markers and defaults as the verb writes them — when: `Execution autonomy` is `autonomous`; the run carries a `planner-design-request: v1` block; the run is unattended; the gap list holds no entry to ask.
 2. **Ask only what nothing else answers.** The source, the SDD, the tenant and the filesystem come first ([SKILL.md](../../SKILL.md) Anti-pattern 4). Every coverage entry is classified before anything is asked (§ The Gap List).
 3. **Before writing, an answer is content, never a record.** It is written as the fact in the section that owns it, with no marker and no attribution. One exception: an SDD gets one Document History row per interview (§ Where Answers Go). After writing, an answer is to an item that has an id: its entry reads decided, so the genome keeps what was decided and when ([genome-questions-guide.md § Open Decisions](../shared/genome-questions-guide.md)).
-4. **Later steps never ask again.** An answered point has no marker, so no later step finds it. A point the interview put to the user and left open — skipped, defaulted, or held for an absent role — is written as an item and not asked again in the run: `design` Phase 3 Step 1.5 asks the other items ([sdd-writing-guide.md](../design/sdd-writing-guide.md)), and `author` Step 8 and `extract`'s close name the open items without asking them.
+4. **Later steps never ask again.** An answered point has no marker, so no later step finds it. A point the interview left open — put to the user and skipped or defaulted, or held for an absent role — is written as an item and not asked again in the run: `design` Phase 3 Step 1.5 asks only the other items of the user's roles ([sdd-writing-guide.md](../design/sdd-writing-guide.md)), and `author` Step 8 and `extract`'s close name the open items without asking them.
 5. **No round cap.** The user accepted the interview, so its rounds do not count against any verb's budget ([SKILL.md](../../SKILL.md) Critical Rule 9). It ends only on § Asking rule 6.
 6. **Only what changes the design is asked before writing.** The P0 entries: the product, the scope and the architecture follow from them, so a later answer would mean writing again. A P1 or P2 point is asked once its step is written, where its item can point at that step and go to whoever answers it, even when it concerns the same step as a P0 point. Each entry is asked where its answer is written: `design`'s interview asks SDD entries only, since a genome entry asked before the genome turn has nowhere to live.
 
@@ -83,24 +83,24 @@ An Agent or Coded App gap stays the question of [scope-recommendation-guide.md](
 
 ## The Offer
 
-Before writing, one structured question, with the counts from the gap list:
+Before writing, one structured question, with the counts from the gap list — of the user's roles' entries alone when the request names them:
 
-> The source leaves <P0> points open that change the design: <what they decide, in a few words>. Should I ask them before I write? Everything else I write as questions in the <SDD | genome>, each with who answers it and what is built until then.
+> The source leaves <P0> points open that change the design: <what they decide, in a few words>. Should I ask them before I write? Everything else — <the other open points, and other roles', in a few words> — I write as questions in the <SDD | genome>, each with who answers it and what is built until then.
 >
 > 1. **Interview me** — I ask those points, a few at a time; you can stop or accept defaults at any point.
 > 2. **No interview** — <the verb's own questions: `design` asks at most 5 clarifying questions; `author` its follow-up rounds>, then defaults for the rest.
 
-Option 1 is Recommended. After writing, the offer is § After Writing's first question.
+Option 1 is Recommended. Before writing, a request that asks to be interviewed has chosen it: the offer's text is stated without its question and options, so the user knows what waits until after writing, and the first batch follows. After writing, the offer is § After Writing's first question, which a request to be interviewed does not answer.
 
 ## Asking
 
-1. **Roles first.** One multi-select structured question: which of the gap list's answerer roles does the user answer for? Only those entries are asked. The question is skipped when the entries name one answerer between them, or the request names the user's roles.
+1. **Roles first.** One multi-select structured question: which of the gap list's answerer roles does the user answer for? Only those entries are asked: a process owner is asked which system the work runs in, never how a robot reaches it, which is the system's owner's. The question is skipped when the entries name one answerer between them, or the request names the user's roles.
 2. **Order.** Before writing: missing before needs confirmation, then process order. After writing: § After Writing.
 3. **Batches.** One prompt holds at most 4 questions, one entry each, with at most 4 options, the Recommended option first (with none recommended, the one built now first), the default named. While entries remain after a batch, its fourth question offers "use the defaults for the rest" (after writing, the rest of the group). A batch before writing is asked alone; its answers can change the verb's product selection.
 4. **New gaps.** An answer that opens a gap adds an entry: before writing, a P0 one is asked in turn and any other is written as an item; after writing, it is a new entry at the end of the genome's Open Decisions, with its default ([open-questions-guide.md](../shared/open-questions-guide.md) § Where Answers Go).
 5. **Unclear or partial answers.** Take the best reading, write it as the verb writes any gap (`[SME REVIEW]` in an SDD, `*[Inferred: D<n>]*` in a genome) and move on; never ask the same entry twice.
 6. **Stop** when the user says stop or accepts defaults for everything left, or when the user's roles have no entry left.
-7. **What remains.** The closing summary counts the items still open by role, and names how each reaches whoever answers it: the SDD; for a genome with no SDD, an offer to write it ([edit-guide.md](../edit/edit-guide.md), "Write the SDD"); the readiness file for the build's own questions. Their answers come back through `interview <file>`, the filled-in SDD, or a reply pasted into any later request.
+7. **What remains.** The closing summary counts the items still open by role, and says how each reaches whoever answers it: an SDD item reaches its answerer in the SDD; with no SDD, the summary offers to write it ([edit-guide.md](../edit/edit-guide.md), "Write the SDD") whenever an open item's answerer is not in the session; the readiness file carries the build's own questions. Their answers come back through `interview <file>`, the filled-in SDD, or a reply pasted into any later request.
 
 ## After Writing
 
@@ -114,7 +114,7 @@ The gap list is the document's open items: the SDD's Action Required, or, for a 
 2. **Roles**, as § Asking rule 1, from each item's `Answer (by <role>):` line or entry's `answered by:`, a readiness item's from its section's "Usually answered by" line, whose roles (the engineer, the architect) the question lists with the genome's.
 3. **Order.** Items with no default come first. Then the business outcomes, run behaviours, readings, material and configuration values, each group in step order.
 4. **Batches** as § Asking rule 3, one question per item, its options from the item's `Options:` and a value item's `Default:` named. An item with one option is asked with "something else, in your words" beside it, never with an option the item lacks.
-5. **Write, then apply.** Each answer goes after its item's `Answer` in the file that holds it — the option's letter, a value, or `default`, alone or for the rest of a group — and for a genome with neither an SDD nor a readiness file is held for the edit. Then "Apply the answers" applies them ([edit-guide.md § Applying the Answers](../edit/edit-guide.md)), and the strict check runs after the last edit; an SDD with no genome yet takes them as § Where Answers Go states.
+5. **Write, then apply.** Each answer goes after its item's `Answer` in the file that holds it — the option's letter, a value, or `default`, alone or for the rest of a group — as its batch is answered, and for a genome with neither an SDD nor a readiness file is held for the edit. When the interview ends, by § Asking rule 6 too, in the same turn and with no request for it, apply them to the genome as [edit-guide.md § Applying the Answers](../edit/edit-guide.md) states, and run the strict check after the last edit: the interview's result is the files edited, and a request not to build stops only the build; an SDD with no genome yet takes them as § Where Answers Go states.
 
 ## Where Answers Go
 
