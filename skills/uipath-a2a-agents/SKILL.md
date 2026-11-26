@@ -16,7 +16,7 @@ Agent Gateway is Orchestrator's hub for MCP servers and A2A agents: [about](http
 - Reach an agent inside a private network through Relay ([Relay](#relay)).
 - Get the `A2aUrl` UiPath callers use for the agent.
 
-**Not this skill:** calling a remote A2A agent from a flow (an `a2a` tool on the flow's agent) → `uipath-maestro-flow`; MCP servers → `uipath-mcp-servers`; creating the Integration Service connection itself → `uipath-platform`. No skill covers adding it as a tool to an Agent Builder agent, or exposing a UiPath agent to other platforms over A2A. A BPMN process cannot call one: Studio Web no longer offers the A2A task.
+**Not this skill:** calling a remote A2A agent from a flow (an `a2a` tool on the flow's agent) → `uipath-maestro-flow`; MCP servers → `uipath-mcp-servers`; Integration Service connections of other connectors → `uipath-platform`. No skill covers adding it as a tool to an Agent Builder agent, or exposing a UiPath agent to other platforms over A2A. A BPMN process cannot call one: Studio Web no longer offers the A2A task.
 
 ## Critical Rules
 
@@ -54,7 +54,7 @@ Agent Gateway is Orchestrator's hub for MCP servers and A2A agents: [about](http
 
 ## Authentication
 
-Agent Gateway authenticates every call to the agent, and every card fetch, with the caller's own per-user connection if they have one ([Per-User Connections](#per-user-connections)), else the agent's connection, else the agent's headers. Pick from the `securitySchemes` in the agent's card: OAuth 2.0 → an OAuth Agent 2 Agent connection (`--connection-id`, Rule 3); an API key in a header, HTTP Basic or a fixed bearer token → `--header`, with the value in an asset (Rule 4). The table for each scheme, what goes in the asset, OAuth connections and a Microsoft Foundry example: [references/authentication-guide.md](references/authentication-guide.md).
+Agent Gateway authenticates every call to the agent, and every card fetch, with the caller's own per-user connection if they have one ([Per-User Connections](#per-user-connections)), else the agent's connection, else the agent's headers. Pick from the `securitySchemes` in the agent's card: OAuth 2.0 → an OAuth Agent 2 Agent connection (`--connection-id`, Rule 3); an API key in a header, HTTP Basic or a fixed bearer token → `--header`, with the value in an asset (Rule 4). With no OAuth connection to use, create one with the user: the CLI opens the sign-in page and waits for it. The table for each scheme, what goes in the asset, OAuth connections, creating one, and a Microsoft Foundry example: [references/authentication-guide.md](references/authentication-guide.md).
 
 ## Updating Agents
 

@@ -34,11 +34,21 @@ A raw value (`--header "<NAME>=<VALUE>"`) works too, but use it only when the us
 
 ## OAuth connections
 
-The connector is **Agent 2 Agent**, connector key `uipath-google-agent2agent`. `uip is connections list <CONNECTOR_KEY> --all-folders --refresh --output json`, with that key, lists its connections with their ids and folders. Always pass `--refresh`: without it the CLI answers from its cache. Creating one → `uipath-platform`, or the user in Integration Service.
+The connector is **Agent 2 Agent**, connector key `uipath-google-agent2agent`. `uip is connections list <CONNECTOR_KEY> --all-folders --refresh --output json`, with that key, lists its connections with their ids and folders. Always pass `--refresh`: without it the CLI answers from its cache. When none fits, create one with the user ([below](#creating-a-connection)).
 
 The connector offers seven authentication types. Only the ones that use an OAuth 2.0 grant, such as client credentials, work in Agent Gateway, because it asks Integration Service for the connection's OAuth token. Personal Access Token, API Key and Basic do not ([why](troubleshooting-guide.md#connections-that-are-not-oauth)), although the connector's documentation lists them.
 
 The CLI cannot show a connection's type: `is connections list` has no column for it. Before passing `--connection-id`, ask the user which type the connection uses.
+
+### Creating a connection
+
+Ask the user first: it opens their browser and, for an authorization code, signs them in to the agent's provider. Then:
+
+1. Tell them what the page asks for, so they have it ready: the authentication type, **OAuth 2.0 Authorization code** (the caller signs in) or **OAuth 2.0 Client credentials** (no person signs in); the agent's base URL as **Service URL**; and the OAuth app's **Client ID**, **Client secret**, **Authorization URL**, **Token URL** and **Scope**, from the provider. The card's `securitySchemes` names the URLs and scopes. For an authorization code, the app must allow the callback URL the page shows (`https://cloud.uipath.com/provisioning_/callback` on Automation Cloud). They type these on the page: never ask for the client secret in the chat, and never fill the page in yourself.
+2. Run `uip --interactive is connections create uipath-google-agent2agent --folder-path <FOLDER_PATH> --output json` with a command timeout of at least 6 minutes. It opens the page in the browser, with the folder already chosen, and waits up to 5 minutes for the user to finish. Then it answers `Code: ConnectionCreated`, with `Data.ConnectionId` and `Data.State: Enabled`: pass that id as `--connection-id`.
+   - `--folder-path` is the agent's folder, for the agent's connection. Leave it out for a user's own per-user connection: it then goes to their Personal Workspace.
+   - Without `--interactive`, a run from an agent's shell opens nothing and answers `Status: AuthorizationPending` with an `AuthUrl`.
+3. When the shell cannot wait 6 minutes, pass `--no-wait` instead. Open the `AuthUrl` it answers in the user's browser (`open '<AUTH_URL>'` on macOS, `xdg-open '<AUTH_URL>'` on Linux, `powershell.exe -NoProfile -Command "Start-Process '<AUTH_URL>'"` on Windows) and wait for them to say it is done: the page expires about 12 minutes after it opens. Then find the connection with `uip is connections list <CONNECTOR_KEY> --folder-path <FOLDER_PATH> --refresh --output json`, with `<CONNECTOR_KEY>` `uipath-google-agent2agent`: the newest `Enabled` one.
 
 ## Example: Microsoft Foundry
 
