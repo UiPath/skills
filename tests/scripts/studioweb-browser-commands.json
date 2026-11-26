@@ -763,7 +763,13 @@
     }
   },
   "uipath-rpa": {
-    "allow": [],
+    "allow": [
+      {
+        "file": "references/remote-session-guide.md",
+        "command": "rpa remote configure",
+        "reason": "The Studio Web build of this file opens with a host-scope note that remote sessions do not exist in Studio Web and no command in it may run there; remote-target setup and Live Authoring's Remote View run only through the local uip CLI and desktop UiPath Studio."
+      }
+    ],
     "ceiling": {
       "login": 17,
       "login status": 1,
@@ -801,7 +807,6 @@
       "rpa project": 9,
       "rpa publish": 4,
       "rpa remote": 3,
-      "rpa remote configure": 2,
       "rpa remote download-file": 1,
       "rpa remote exec": 6,
       "rpa remote start": 2,
