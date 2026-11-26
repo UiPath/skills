@@ -15,6 +15,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "_shared"
 
 from rules_check import (  # noqa: E402
     POLICY,
+    RISK_ANNOTATIONS,
+    RISK_DECISION_ID,
+    RISK_DECISION_NAME,
     check_annotations_in_order,
     check_cases,
     check_contract,
@@ -26,9 +29,6 @@ from rules_check import (  # noqa: E402
     table_of,
 )
 
-DECISION_ID = "decision_25a2c471-1c6f-46cb-a22a-f4b2dfdb7ee7"
-DECISION_NAME = "decision1"
-ANNOTATIONS = ["Subprime", "Near-prime, sufficient income", "Near-prime, low income", "Prime"]
 INPUTS = {"creditScore": "number", "income": "number", "existingCustomer": "boolean"}
 UNCHANGED = [({**inputs, "existingCustomer": False}, band) for inputs, band in POLICY if inputs["creditScore"] < 800]
 EDITED = [
@@ -47,10 +47,10 @@ def check_identity() -> None:
     project = find_project()
     dmn_file, root = load_rule(project)
     decision = decision_of(root)
-    if decision.get("id") != DECISION_ID or decision.get("name") != DECISION_NAME:
+    if decision.get("id") != RISK_DECISION_ID or decision.get("name") != RISK_DECISION_NAME:
         fail("the decision's id or name changed; consumers bound to it would break")
     check_contract(project, dmn_file, root, INPUTS, {"riskBand": "string"})
-    check_annotations_in_order(table_of(root), ANNOTATIONS)
+    check_annotations_in_order(table_of(root), RISK_ANNOTATIONS)
     print("OK: decision, filePath, and the original rows' annotations kept; the contract carries existingCustomer")
 
 

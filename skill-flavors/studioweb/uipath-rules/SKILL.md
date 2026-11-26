@@ -1,5 +1,5 @@
 <!--skill-flavor:lifecycle-rules:start-->
-6. **Scaffold a new project with `init`; after every edit, `format`, `refresh` then `validate`.** An existing project needs no `init`: edit its `.dmn` and run `refresh`. Fix what `validate` reports. Never hand-write or delete `project.uiproj`, `entry-points.json`, or `bindings_v2.json`; keep the scaffolded `.dmn` file and its root element.
+6. **Scaffold a new project with `init`; after every edit, `refresh` then `validate` — and `format` first whenever the edit added or removed a drawn element.** An existing project needs no `init`: edit its `.dmn` and run `refresh`. Fix what `validate` reports. Never hand-write or delete `project.uiproj`, `entry-points.json`, or `bindings_v2.json`; keep the scaffolded `.dmn` file and its root element.
 7. **A rule is done when `validate` passes and `debug` returns what the reviewed design expects, from every decision and not only the last.** On a wrong output, read the trace with `uip traces spans get <TRACE_ID>`. Stop after 3 fix rounds and show the user the tables and the failing inputs.
 <!--skill-flavor:lifecycle-rules:end-->
 <!--skill-flavor:scaffold:start-->
@@ -7,7 +7,7 @@
 uip rules init <RULE_NAME>
 ```
 
-Run `init` from `/solution`, the Studio Web solution the user has open; never create another. Studio Web creates the project in the open solution at `/solution/<RULE_NAME>/`. The intercepted command prints plain text; `--output json` is ignored. The rule is the one `.dmn` file in the project folder. Treat whatever table the scaffolded `.dmn` holds as a placeholder; step 3 replaces it.
+Run `init` from `/solution`, the Studio Web solution the user has open; never create another. Studio Web creates the project in the open solution at `/solution/<RULE_NAME>/`. The intercepted command prints plain text; `--output json` is ignored. The rule is the one `.dmn` file in the project folder. Treat whatever table the scaffolded `.dmn` holds as a placeholder; step 3 replaces it. The **table** is the placeholder — not the root element, and not its `extensionElements`, which already carry the right authoring surface.
 <!--skill-flavor:scaffold:end-->
 <!--skill-flavor:verify:start-->
 ```bash

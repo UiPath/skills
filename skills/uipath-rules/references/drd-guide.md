@@ -2,7 +2,9 @@
 
 A rule holds one `.dmn`, and that file may hold more than one decision. Decisions linked by `informationRequirement` form a decision graph: the engine evaluates what a decision needs before the decision itself, and returns every decision's outputs in one run.
 
-Read this when a request needs more than one answer, or when one answer feeds another. One answer still needs the right shape: a set of cases is a decision table and needs nothing here, one formula is a [literal expression](#literal-expressions), a calculation run over different arguments in more than one place is a [knowledge model](#knowledge-models), and a note for a reader is a [text annotation](#text-annotations).
+DMN calls that graph a **Decision Requirements Diagram (DRD)** — hence this file's name. The designer's canvas *is* the DRD, and `dmndi:DMNDI` is where its layout lives. "Decision graph" and "DRD" mean the same thing throughout.
+
+Read this when a request needs more than one answer, or when one answer feeds another. **A rule that is one decision table needs nothing from this file** — author the table, and leave the `surface` attribute `uip rules init` wrote alone ([The authoring marker](#the-authoring-marker)). One answer still needs the right shape: a set of cases is a decision table, one formula is a [literal expression](#literal-expressions), a calculation run over different arguments in more than one place is a [knowledge model](#knowledge-models), and a note for a reader is a [text annotation](#text-annotations).
 
 ## When to split
 
@@ -20,7 +22,7 @@ Do not split a single answer across tables to make each table smaller. Each deci
 
 ## Skeleton
 
-A two-decision graph. `rate` reads the band `risk` decides.
+A two-decision graph. `rate` reads the band `risk` decides. It carries `surface="decision-graph"` **because it holds two decisions** — a rule with one table does not, and copying this skeleton into one is the most common way that attribute goes wrong.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8" ?>
@@ -107,13 +109,17 @@ No `dmndi:DMNDI` element — see [The diagram](#the-diagram).
 
 A column name is never the handle on its own. Above, `risk` has one output whose column is `riskBand`, so `rate` reads it as `risk`:
 
-```
+```text
 <text>risk</text>            ← right
 <text>riskBand</text>        ← wrong: that is the column, not the decision
 <text>risk.riskBand</text>   ← wrong: only a decision with several outputs has fields
 ```
 
 Reach for the dotted form **only** after counting two or more `<output>` elements. A wrong read is a valid FEEL name the engine cannot resolve, so nothing in the file looks wrong.
+
+### A column reads a name, not an expression
+
+An `<inputExpression>` may hold any FEEL, and the engine evaluates it — a boolean column spelled `loanAmount >= 100000` is legal DMN. Prefer the plain name and put the comparison in the cells (`>= 100000`). The column then says what it reads rather than what it tests, and only the engine evaluates an expression column — so any reviewer or check that reads the file without running it can say nothing about that decision's values.
 
 ## Requirements
 
@@ -145,15 +151,28 @@ Give `name` a plain identifier — no spaces, no leading digit. Put the readable
 
 `<uipath:authoring surface="decision-graph" />` in the `definitions` `extensionElements` says the file is a graph. Declare `xmlns:uipath="http://uipath.com/schema/1.0/dmn/authoring"` on `definitions` — a prefix bound anywhere else is not read.
 
-It matters because a graph that holds one decision is byte-identical to a plain decision table; without the marker that file opens as a bare table. Write it on any file authored as a graph, whatever its decision count.
+The other value is `decision-table`, and it is the one `uip rules init` scaffolds. Which to write:
+
+| The file holds | `surface` |
+|---|---|
+| One decision whose logic is a decision table, and nothing else | `decision-table` — what `init` already wrote, so change nothing |
+| Two or more decisions | `decision-graph` |
+| A business knowledge model or a text annotation, at any decision count | `decision-graph` — only the canvas draws them |
+
+It matters in both directions. A graph that holds one decision is byte-identical to a plain
+decision table, so without the marker that file opens as a bare table and the requirement edges
+are invisible. And `decision-graph` on a rule that is one decision table opens it on the canvas
+instead of the table editor — a worse editor for the thing the user asked for. `validate` reports
+neither, so nothing tells you.
+
+**Do not copy the skeleton above into a single-decision rule.** It is a two-decision graph, so it
+carries `decision-graph`; a rule with one table keeps the surface `init` gave it.
 
 Each decision carries `<uipath:authoring editor="…" />` naming the editor its logic opens in: `decision-table` or `literal-expression`. Attributes only — the marshaller drops the text body of an extension element it does not model.
 
 ## The diagram
 
-Critical Rule 10 owns this: never place shapes by hand, leave `dmndi:DMNDI` out of a new `.dmn`, run `uip rules format <PROJECT_DIR>` after adding or removing any drawn element, and keep an existing `dmndi:DMNDI` when you edit a file that has one.
-
-Every element the canvas draws counts, not only inputs and decisions: a knowledge model and a text annotation are placed too, so adding either is a reason to run `format`.
+Critical Rule 10 owns this; it is not restated here. What a graph adds to it: every element the canvas draws counts, not only inputs and decisions. A knowledge model and a text annotation are placed too, so adding either is a reason to run `format`.
 
 ## Literal expressions
 
@@ -283,6 +302,23 @@ A graph holds decisions, input data, knowledge models and text annotations. Say 
 - A knowledge model body that is Java or PMML rather than FEEL
 
 Never write the unsupported element.
+
+## When it does not work
+
+A graph fails in ways a single table does not: the failure is in the wiring between decisions, and the message names one decision while the cause sits in another.
+
+| What you see | Where to look |
+|---|---|
+| `validate` reports a dangling requirement | A `href` points at an `id` the file no longer holds. Every `requiredInput`, `requiredDecision` and `requiredKnowledge` names an element in the same file, by `id`, with a leading `#`. |
+| `validate` is clean and a decision answers nothing | It read a name nothing declares. Count the upstream table's outputs ([Reading an upstream decision](#reading-an-upstream-decision)) — a wrong read is valid FEEL, so nothing in the file looks wrong. |
+| A decision the run never reached | Nothing requires it, or what it requires answered nothing. Each decision the caller wants is reachable from the inputs through requirement edges. |
+| The engine reports a cycle | Two decisions require each other, directly or through a third. A requirement edge is one-way: the reader requires the read. |
+| A knowledge model is rejected at run time with a clean `validate` | It has no `<variable>`, or its `<variable>` name differs from the model's. |
+| A card lands on top of another in the designer | Shapes were written by hand, or `format` was not run after adding an element. |
+
+**Stop after 3 fix rounds** (Critical Rule 7). Then show the user the decisions, the requirement edges between them, and the inputs that produced the wrong answer — a fourth round on a graph is usually a wrong split, not a wrong cell, and that is the user's call.
+
+**When the tooling is not there.** `format` is what draws the diagram and `debug` is what proves the values; neither has a substitute. If `format` is unavailable, author the `.dmn` without `dmndi:DMNDI` at all rather than placing shapes by hand — a file with no diagram opens laid out, a file with a hand-placed one opens with cards on top of each other. If `debug` is unavailable, say so plainly: `validate` checks less of a graph than of a single decision ([Verifying](#verifying)), so a clean `validate` is not evidence the rule returns the right answers. Show the user the tables and the cases you would have run, and let them decide whether to go on.
 
 ## Anti-patterns
 

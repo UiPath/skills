@@ -26,11 +26,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "_shared"
 from graph_check import (  # noqa: E402
     answering_cell,
     check_annotations_attached,
+    check_diagram_kept,
     check_entry_points_kept,
     check_graph_cases,
     check_knowledge_models,
+    check_new_elements_drawn,
     check_no_overlap,
-    check_shapes_kept,
     decision_for_output,
     decisions,
     knowledge_models,
@@ -48,8 +49,18 @@ TIER_CASES = [({"customerTier": tier}, {"tierPct": pct})
 
 
 def kept() -> None:
-    """Everything the rule already held is still there, and still itself."""
+    """Everything the rule already held is still there, and still itself — once something was added.
+
+    Every assertion below is about survival, and an untouched fixture satisfies all of them: the
+    model is there, the formula is unchanged, the note is attached, the tier values hold. Staging
+    the fixture and stopping scored this criterion in full. So it asks first whether there is an
+    edit for anything to have survived, and grades survival only then.
+    """
     _, root = load_graph(find_project(PROJECT))
+
+    # The output the prompt names. `decision_for_output` fails when no decision answers under it,
+    # which is the whole of "nothing was added".
+    decision_for_output(root, "freight")
 
     models = {m.get("name") for m in knowledge_models(root)}
     if "discounted" not in models:
@@ -171,13 +182,21 @@ def _freight_values(root: ET.Element, freight: ET.Element) -> None:
 
 
 def diagram() -> None:
-    """The shapes the fixture placed are where they were, and the new element has one."""
+    """The shapes the fixture placed are where they were, and the new element has one.
+
+    The second half of that sentence was the docstring's claim and nothing enforced it:
+    shapes-kept, no-overlap and entry-points-kept are each true of the fixture as staged, so this
+    criterion scored an agent that added nothing. `check_new_elements_drawn` is the half that
+    asks about the edit — a decision added without `uip rules format` has no card at all.
+    """
     project = find_project(PROJECT)
     _, root = load_graph(project)
-    check_shapes_kept(ET.parse(FIXTURE / "Business rule.dmn").getroot(), root)
+    check_new_elements_drawn(FIXTURE, root)
+    check_diagram_kept(FIXTURE, root)
     check_no_overlap(root)
     check_entry_points_kept(project, FIXTURE)
-    print("OK: the placed shapes are where they were, every element is placed, and the entry points are kept")
+    print("OK: the new element is drawn, the placed shapes are where they were, every element is "
+          "placed, and the entry points are kept")
 
 
 if __name__ == "__main__":

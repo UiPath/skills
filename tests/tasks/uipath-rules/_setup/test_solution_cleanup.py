@@ -142,3 +142,52 @@ def test_a_refused_delete_is_reported_rather_than_counted(workspace, refused, ca
     printed = capsys.readouterr().out
     assert "deleted nothing" in printed
     assert "FAILED to delete, still on the tenant: ['refused-by-the-tenant']" in printed
+
+
+def test_one_uip_that_never_runs_does_not_abort_the_rest(workspace, monkeypatch, capsys):
+    # The delete call was unguarded while the manifest read was not, so a `uip` that is missing
+    # or hangs past its timeout raised out of the loop and left every id after it on the tenant.
+    attempted = []
+
+    def flaky(argv, **_):
+        attempted.append(argv[3])
+        if argv[3] == "second":
+            raise FileNotFoundError("uip")
+        return _Completed(0)
+
+    monkeypatch.setattr(sc.subprocess, "run", flaky)
+    sc.record()
+    for index, solution_id in enumerate(("first", "second", "third")):
+        manifest(workspace / f"S{index}Solution", f"S{index}Solution.uipx", solution_id)
+
+    sc.delete()
+
+    assert attempted == ["first", "second", "third"]
+    printed = capsys.readouterr().out
+    assert "FAILED to delete, still on the tenant: ['second']" in printed
+    assert "'first'" in printed and "'third'" in printed
+
+
+def test_a_timeout_is_reported_rather_than_raised(workspace, monkeypatch, capsys):
+    monkeypatch.setattr(sc.subprocess, "run",
+                        lambda argv, **_: (_ for _ in ()).throw(
+                            sc.subprocess.TimeoutExpired(argv, 120)))
+    sc.record()
+    manifest(workspace / "FeeRulesSolution", "FeeRulesSolution.uipx", "hung-on-delete")
+
+    sc.delete()
+
+    assert "FAILED to delete, still on the tenant: ['hung-on-delete']" in capsys.readouterr().out
+
+
+def test_the_root_level_solution_layout_is_handled(workspace, deletes):
+    # `uip solution init .` writes the manifest at the sandbox root with no solution directory
+    # at all, rather than in `NAMESolution/`. Both layouts reach the same record, because the
+    # search is over every `.uipx` and never over a directory name.
+    sc.record()
+    (workspace / "FeeRules").mkdir()
+    manifest(workspace, "FeeRules.uipx", "root-level-solution")
+
+    sc.delete()
+
+    assert deletes == ["root-level-solution"]

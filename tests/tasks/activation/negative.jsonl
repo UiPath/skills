@@ -81,3 +81,11 @@
 {"id": "negative-082", "prompt": "Upload the signed vendor approval form PDF to the Finance SharePoint document library", "expected_skill": ""}
 {"id": "negative-079", "prompt": "Write an Azure DevOps YAML pipeline that builds our .NET 8 solution and runs the unit tests on every PR", "expected_skill": ""}
 {"id": "negative-080", "prompt": "Add a step to our GitHub Actions workflow that caches npm dependencies between runs", "expected_skill": ""}
+{"id": "negative-085", "prompt": "Split this 400-line Python scoring function into two functions where the second one takes the first one's result", "expected_skill": ""}
+{"id": "negative-086", "prompt": "Add a third decision to my Camunda DMN deployment and redeploy it to the Zeebe cluster", "expected_skill": ""}
+{"id": "negative-087", "prompt": "Two sheets in my Excel workbook repeat the same affordability formula, how do I define it once", "expected_skill": ""}
+{"id": "negative-088", "prompt": "My fee is just the amount times a rate, make it a computed column in Postgres instead of a lookup table", "expected_skill": ""}
+{"id": "negative-089", "prompt": "Put a text note on my draw.io diagram saying Finance owns these thresholds", "expected_skill": ""}
+{"id": "negative-090", "prompt": "My second dbt model can't see the first one's columns, it says relation does not exist", "expected_skill": ""}
+{"id": "negative-091", "prompt": "The nodes in my Graphviz render overlap after I added another input, how do I lay it out properly", "expected_skill": ""}
+{"id": "negative-092", "prompt": "Can I cite our procurement policy PDF as a source document in my RAG index?", "expected_skill": ""}

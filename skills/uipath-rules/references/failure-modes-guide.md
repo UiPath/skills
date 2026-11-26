@@ -12,12 +12,23 @@ Failures `uip rules` reports, with the fix for each. DMN or FEEL syntax errors f
 | `Invalid project name "<NAME>". Name can only contain letters, numbers, underscores (_), and hyphens (-).` | Rename the project with only those characters. |
 | `Directory "<NAME>" already exists and is not empty. Use --force to overwrite.` | Pick another name, or pass `--force`. `--force` never overwrites an existing `.dmn` (`Data.RuleStatus: "Preserved"`). |
 
-## Any command that takes a project path (`refresh`, `validate`, `debug`)
+## Any command that takes a project path (`format`, `refresh`, `validate`, `debug`)
 
 | Message | Fix |
 |---|---|
 | `<DIR> is not a business rules project.` | Pass the folder that holds `project.uiproj`, not the solution folder. |
 | `Could not read <FILE>: it is not valid JSON.` | `project.uiproj` is malformed; fix it, or recreate it with `uip rules init <RULE_NAME> --force`. |
+
+## `uip rules format`
+
+`format` lays out the diagram: it adds a shape for each element that has none, leaves placed shapes where they are, and drops the shapes of deleted elements. It writes only the files whose diagram changed, so `Data.WrittenFiles` is empty when there was nothing to place — that is success, not a failure.
+
+| Message | Fix |
+|---|---|
+| `No .dmn file found in <DIR>.` | Put the rule's `.dmn` at the top level of the project, or scaffold one with `uip rules init`. |
+| An element still has no shape after `format` | It is not an element the canvas draws. Only `inputData`, `decision`, `businessKnowledgeModel` and `textAnnotation` are placed. |
+| Cards still overlap after `format` | Shapes were placed by hand. `format` leaves a placed shape where it is — it cannot tell yours from the user's. Delete the hand-written `DMNShape` elements and run it again. |
+| The whole diagram moved after an edit | The edit rewrote the file without its `dmndi:DMNDI`, so `format` laid the graph out afresh and the user's arrangement is gone. Restore it from version control; keep `dmndi:DMNDI` as it is when editing a file that has one (Critical Rule 10). |
 
 ## `uip rules refresh`
 

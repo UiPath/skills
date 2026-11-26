@@ -7,24 +7,109 @@
       "uniqueId": "b1f0c2a4-7d31-4a08-9c5e-2f6ad4b17e90",
       "type": "BusinessRules",
       "displayName": "PricingRules",
-      "input": "{\"type\": \"object\", \"properties\": {\"listPrice\": {\"type\": \"number\"}, \"customerTier\": {\"type\": \"string\"}}}",
-      "output": "{\"type\": \"object\", \"x-uipath-decision-keyed\": true, \"properties\": {\"tier\": {\"type\": \"object\", \"properties\": {\"tierPct\": {\"type\": \"number\"}}}, \"netUnitPrice\": {\"type\": \"number\"}}}"
-    },
-    {
-      "filePath": "/Business rule.dmn#decision_tier",
-      "uniqueId": "3c7e9a15-0b64-4d2f-8a71-5e93c0d8b426",
-      "type": "BusinessRules",
-      "displayName": "Tier percentage",
-      "input": "{\"type\": \"object\", \"properties\": {\"customerTier\": {\"type\": \"string\"}}}",
-      "output": "{\"type\": \"object\", \"properties\": {\"tierPct\": {\"type\": \"number\"}}}"
+      "input": {
+        "type": "object",
+        "properties": {
+          "listPrice": {
+            "type": "number",
+            "title": "listPrice"
+          },
+          "customerTier": {
+            "type": "string",
+            "title": "customerTier"
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "netUnitPrice": {
+            "type": "object",
+            "properties": {
+              "netUnitPrice": {
+                "type": "number"
+              }
+            }
+          },
+          "tier": {
+            "type": "object",
+            "properties": {
+              "tierPct": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "required": [],
+        "x-uipath-decision-keyed": true
+      }
     },
     {
       "filePath": "/Business rule.dmn#decision_netUnitPrice",
       "uniqueId": "9d2b48f6-61ca-4e37-b05d-7c41e2a95f83",
       "type": "BusinessRules",
       "displayName": "Net unit price",
-      "input": "{\"type\": \"object\", \"properties\": {\"listPrice\": {\"type\": \"number\"}}}",
-      "output": "{\"type\": \"number\"}"
+      "input": {
+        "type": "object",
+        "properties": {
+          "listPrice": {
+            "type": "number",
+            "title": "listPrice"
+          },
+          "customerTier": {
+            "type": "string",
+            "title": "customerTier"
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "netUnitPrice": {
+            "type": "object",
+            "properties": {
+              "netUnitPrice": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "required": [],
+        "x-uipath-decision-keyed": true
+      }
+    },
+    {
+      "filePath": "/Business rule.dmn#decision_tier",
+      "uniqueId": "3c7e9a15-0b64-4d2f-8a71-5e93c0d8b426",
+      "type": "BusinessRules",
+      "displayName": "Tier percentage",
+      "input": {
+        "type": "object",
+        "properties": {
+          "customerTier": {
+            "type": "string",
+            "title": "customerTier"
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "tier": {
+            "type": "object",
+            "properties": {
+              "tierPct": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "required": [],
+        "x-uipath-decision-keyed": true
+      }
     }
   ]
 }

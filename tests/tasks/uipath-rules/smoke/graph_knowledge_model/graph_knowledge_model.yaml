@@ -3,16 +3,17 @@ description: >
   Agent creates a Business Rules project whose tier lookup sits in a business
   knowledge model the decision calls, with a note on the diagram, offline.
   Grades skill activation, the model carrying a variable and encapsulated
-  logic, a decision actually calling it, the annotation being tied to an
-  element, no cards overlapping, and `uip rules validate` run by the grader.
+  logic, a decision actually calling it, the discounts the model answers, the
+  annotation being tied to an element, no cards overlapping, and
+  `uip rules validate` run by the grader.
 
-  The discount values are deliberately not graded. A call is FEEL the offline
-  evaluator does not run, and the model's own signature is not pinned by the
-  prompt — the agent chooses what the model takes and what the decision keeps,
-  so there are no fixed parameters to evaluate its table against. No e2e task
-  covers DiscountRules either; graph_formula_and_model_debug grades a model
-  through the engine, but FeeRules, not this one. What this task grades is the
-  structural contract of a knowledge model, which is what the skill teaches.
+  The prompt pins the model's signature — the parameter names and their order
+  — which is what makes its values gradable offline: the encapsulated logic is
+  a decision table like any other, so the same evaluator runs it against those
+  parameters. Without the signature pinned the agent chose what the model took,
+  and a model with the tiers swapped passed the whole task on structure alone.
+  The *decision's* discount is still not graded here, because a call is FEEL the
+  offline evaluator does not run and no e2e task covers DiscountRules.
 tags: [uipath-rules, smoke, "mode:build", "lifecycle:generate"]
 
 sandbox:
@@ -32,6 +33,8 @@ initial_prompt: |
   - Gold is 10, Silver is 5, Standard is 0.
   - For an order total of 1000 or more, Gold is 15, Silver is 7.5, and
     Standard is 2.
+  - The knowledge model takes two parameters, `customerTier` then
+    `orderTotal`, and answers with the discount.
 
   Add a note on the diagram saying the tiers are set by Sales and reviewed
   each quarter.
@@ -48,7 +51,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The knowledge model carries a variable and logic, a decision calls it, the note is tied to an element, and no cards overlap"
+    description: "The knowledge model carries a variable and logic, a decision calls it, it answers the policy's discount for every tier, the note is tied to an element, and no cards overlap"
     command: "python3 $REFERENCE_DIR/smoke/graph_knowledge_model/check_graph_knowledge_model.py"
     timeout: 30
     expected_exit_code: 0

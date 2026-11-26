@@ -33,6 +33,7 @@ from rules_check import (
     output_names,
     output_properties,
     read_entry_points,
+    read_name,
     unary_test,
 )
 
@@ -172,14 +173,6 @@ def model_calls_in(text: str, model: str) -> list[str]:
     return calls
 
 
-def executable_cells(decision: ET.Element) -> list[str]:
-    """Each FEEL expression the decision runs, one per cell, rather than joined into one blob."""
-    cells = [decision.findtext("dmn:literalExpression/dmn:text", default="", namespaces=NS) or ""]
-    cells += [element.text or "" for element
-              in decision.findall("dmn:decisionTable/dmn:rule/dmn:outputEntry/dmn:text", NS)]
-    return [cell.strip() for cell in cells if cell.strip()]
-
-
 def sole_call_arguments(cell: str, model: str) -> str:
     """The arguments of `model(...)` when that call is the whole of `cell`.
 
@@ -191,7 +184,10 @@ def sole_call_arguments(cell: str, model: str) -> str:
     if not calls:
         fail(f"the cell {cell!r} does not call {model}(...)")
     bare = unwrapped(cell)
-    if bare not in (f"{model}({calls[0]})", f"{model} ({calls[0]})"):
+    # Any whitespace, not nought-or-one space: `model_calls_in` accepts `discounted\n(50, tier)`
+    # as a call, so a check that re-spelled the call with a fixed separator refused a cell its
+    # own module had already read.
+    if not re.fullmatch(rf"{re.escape(model)}\s*\({re.escape(calls[0])}\)", bare, re.S):
         fail(f"the cell {cell!r} is not just the result of {model}(...); the prompt asks for that "
              f"result and nothing added to it")
     return calls[0]
@@ -265,14 +261,10 @@ def check_model_called(root: ET.Element, decision: ET.Element, model: str) -> li
     return calls
 
 
-def resolve(context: dict, path: str) -> tuple[bool, object]:
-    """`path` in `context`, where `a.b` reads member `b` of a multi-output decision `a`."""
-    value: object = context
-    for part in path.split("."):
-        if not isinstance(value, dict) or part not in value:
-            return False, None
-        value = value[part]
-    return True, value
+# A column that is not a name at all: it holds an operator, a call, a literal or a bracket, so
+# no lookup in the evaluation context could ever resolve it. A name may carry spaces -- FEEL
+# allows them -- so a space is not the signal; anything outside name characters is.
+NOT_A_NAME = re.compile(r"[^A-Za-z0-9_. ]")
 
 
 # A decision the offline evaluator cannot run — a literal expression, or a table whose cells call
@@ -318,8 +310,16 @@ def evaluate_graph(root: ET.Element, inputs: dict) -> dict:
             return
         values = {}
         for column in input_columns(table):
-            found, value = resolve(context, column)
+            found, value = read_name(context, column)
             if not found:
+                # A column may be a FEEL expression rather than a name -- a boolean column
+                # spelled `loanAmount >= 100000` is legal DMN, and only the engine evaluates it.
+                # Failing here blamed the file's wiring for a shape this evaluator simply does
+                # not run, so the decision degrades to UNEVALUATED exactly as an unevaluable
+                # cell does, and `graph_check.py engine` grades it.
+                if NOT_A_NAME.search(column):
+                    hits[decision_id] = UNEVALUATED
+                    return
                 fail(f"decision {decision.get('name')!r} reads {column!r}, which is not an input or decision it requires")
             if value is UNEVALUABLE:
                 hits[decision_id] = UNEVALUATED
@@ -375,6 +375,11 @@ def same_value(actual: object, expected: object) -> bool:
     # too, so letting the fallback handle a list would reopen the hole one level down.
     if isinstance(actual, list) and isinstance(expected, list):
         return len(actual) == len(expected) and all(same_value(a, e) for a, e in zip(actual, expected))
+    # A multi-output decision answers with a context, which arrives as a dict. `{"ok": True} ==
+    # {"ok": 1}` in Python too, so the same hole is one level down here as it was for lists.
+    if isinstance(actual, dict) and isinstance(expected, dict):
+        return (actual.keys() == expected.keys()
+                and all(same_value(actual[key], expected[key]) for key in actual))
     return actual == expected
 
 
@@ -383,9 +388,14 @@ def check_graph_cases(root: ET.Element, cases: list) -> None:
         actual = evaluate_graph(root, inputs)
         for name, value in expected.items():
             if name not in actual:
-                fail(f"no decision table returns an output named {name} that this check can evaluate; "
-                     f"a literal expression, a call or a formula is graded by the engine "
-                     f"(graph_check.py engine), not here")
+                # Deliberately no "run graph_check.py engine" here. That mode grades LoanRules
+                # through a tenant, and five of the tasks reaching this message are offline and
+                # about other projects -- so the instruction named a command their reader could
+                # not run, against a rule it would not have graded.
+                fail(f"no decision returns an output named {name} that this check can evaluate "
+                     f"offline: a literal expression, a call or a formula is FEEL only the rules "
+                     f"engine runs. Either the decision does not return {name}, or its value is "
+                     f"computed in a way an offline evaluator cannot read")
             if not same_value(actual[name], value):
                 fail(f"{inputs} returned {name}={actual[name]!r}, expected {value!r}")
 
@@ -424,6 +434,44 @@ def check_whole_file_contract(project: Path, dmn_file: Path, inputs: dict, outpu
         for name, json_type in wanted.items():
             if (declared.get(name) or {}).get("type") != json_type:
                 fail(f"entry-points.json has no {json_type} {kind} {name}; run `uip rules refresh`")
+
+
+# The one name `uip rules init` gives the scaffolded rule, so every fixture carries it. Spelled
+# once: four graders repeated `ET.parse(FIXTURE / "Business rule.dmn")` and a rename would have
+# had to find all of them.
+FIXTURE_DMN = "Business rule.dmn"
+
+
+def check_diagram_kept(fixture: Path, after: ET.Element, *, elements_may_go: bool = False) -> None:
+    """`check_shapes_kept` against the fixture the task staged."""
+    check_shapes_kept(ET.parse(fixture / FIXTURE_DMN).getroot(), after, elements_may_go=elements_may_go)
+
+
+def check_new_elements_drawn(fixture: Path, after: ET.Element) -> None:
+    """The edit added at least one element the canvas draws, and the diagram places it.
+
+    `check_shapes_kept` and `check_no_overlap` are both satisfied by a file nobody edited: the
+    first asks that the fixture's shapes are where they were, the second that nothing overlaps,
+    and an untouched fixture answers yes to both. A task whose diagram criterion was only those
+    two awarded its whole weight for staging the fixture and stopping.
+
+    So the question this asks is about the edit: a task that adds a decision adds a card, and
+    `uip rules format` is what draws it. An agent that added the decision and skipped `format`
+    leaves it off the canvas, which is the failure the criterion exists to catch.
+    """
+    before = ET.parse(fixture / FIXTURE_DMN).getroot()
+    drawable = {e.get("id") for e in after
+                if e.get("id") and e.tag.replace(f"{{{DMN_NS}}}", "") in DRAWN_SIZE}
+    added = sorted(drawable - {e.get("id") for e in before})
+    if not added:
+        fail("the file holds no drawn element the fixture did not; this task asks for one to be "
+             "added, and the diagram checks beside this one are all satisfied by the fixture as "
+             "it was staged")
+    placed = shapes(after)
+    unplaced = sorted(element for element in added if element not in placed)
+    if unplaced:
+        fail(f"the edit added {added} but the diagram places none of {unplaced}; "
+             f"run 'uip rules format <PROJECT_DIR>'")
 
 
 def check_entry_points_kept(project: Path, fixture: Path) -> None:
@@ -527,6 +575,49 @@ def check_knowledge_models(root: ET.Element) -> None:
         walk(model_id, ())
 
 
+def model_parameters(model: ET.Element) -> list[str]:
+    """The names the knowledge model's callers pass, in signature order."""
+    return [(p.get("name") or "").strip() for p
+            in model.findall("dmn:encapsulatedLogic/dmn:formalParameter", NS)]
+
+
+def evaluate_model(model: ET.Element, arguments: dict) -> object:
+    """What the knowledge model answers for `arguments`, keyed by its parameter names.
+
+    A model's encapsulated logic is a decision table like any other, so the same evaluator runs
+    it — the only difference is that its columns read formal parameters rather than inputs or
+    upstream decisions. Returns the one output's value when the table has a single output column,
+    the whole row keyed by output name when it has several, and `UNEVALUABLE` when the answering
+    cell is a call or a formula the offline evaluator does not run.
+    """
+    name = model.get("name")
+    declared = model_parameters(model)
+    missing = [p for p in declared if p not in arguments]
+    if missing:
+        fail(f"knowledge model {name!r} takes {declared}; this check supplies {sorted(arguments)}, "
+             f"so {missing} is unbound and what it answers cannot be told")
+    table = model.find("dmn:encapsulatedLogic/dmn:decisionTable", NS)
+    if table is None:
+        fail(f"the encapsulated logic of knowledge model {name!r} is not a decision table; this "
+             f"check grades a model whose logic is a table")
+    hit = evaluate(table, {p: arguments[p] for p in declared})
+    if hit is None:
+        return None
+    return next(iter(hit.values())) if len(hit) == 1 else hit
+
+
+def check_model_cases(model: ET.Element, cases: list) -> None:
+    """Every case the model is expected to answer, by its parameter names."""
+    name = model.get("name")
+    for arguments, expected in cases:
+        actual = evaluate_model(model, arguments)
+        if actual is UNEVALUABLE:
+            fail(f"knowledge model {name!r} answers {arguments} with a call or a formula, which this "
+                 f"check does not run; grade it through the engine")
+        if not same_value(actual, expected):
+            fail(f"knowledge model {name!r} returned {actual!r} for {arguments}, expected {expected!r}")
+
+
 def check_annotations_attached(root: ET.Element) -> None:
     """Every text annotation says something and is tied to an element that is there."""
     notes = {n.get("id"): n for n in root.findall("dmn:textAnnotation", NS)}
@@ -588,8 +679,19 @@ def engine_outputs(project: Path, inputs: dict) -> dict:
         capture_output=True, text=True, timeout=180,
     )
     if completed.returncode != 0:
-        fail(f"rules debug exited {completed.returncode} for {inputs}: {(completed.stdout or completed.stderr)[-1500:]}")
-    result = (json.loads(completed.stdout).get("Data") or {}).get("result") or {}
+        fail(f"`uip rules debug` exited {completed.returncode} for {inputs}, so the engine returned no "
+             f"answer to grade: {(completed.stdout or completed.stderr)[-1500:]}")
+    # A zero exit carrying something other than JSON is the CLI failing to report, not the rule
+    # answering wrongly. An unguarded `json.loads` raised a traceback here, which the harness
+    # scores exactly like a wrong value — so a broken CLI read as a failed submission.
+    try:
+        payload = json.loads(completed.stdout)
+    except ValueError:
+        fail(f"`uip rules debug` exited 0 for {inputs} but did not return JSON, so the engine's answer "
+             f"cannot be read; this is a CLI transport failure, not a wrong rule. It printed: "
+             f"{(completed.stdout or completed.stderr)[-1500:]}")
+        raise AssertionError
+    result = (payload.get("Data") or {}).get("result") or {}
     outputs: dict = {}
     owner: dict[str, str] = {}
     for decision in result.get("decisions") or []:
@@ -604,8 +706,8 @@ def engine_outputs(project: Path, inputs: dict) -> dict:
     return outputs
 
 
-def grade_engine() -> None:
-    project = find_project(LOAN_PROJECT)
+def grade_engine(name: str = LOAN_PROJECT) -> None:
+    project = find_project(name)
     for inputs, expected in ENGINE_CASES:
         actual = engine_outputs(project, inputs)
         for name, value in expected.items():
@@ -614,8 +716,8 @@ def grade_engine() -> None:
     print(f"OK: the engine returns the expected risk band and interest rate for all {len(ENGINE_CASES)} cases")
 
 
-def grade_chain() -> None:
-    project = find_project(LOAN_PROJECT)
+def grade_chain(name: str = LOAN_PROJECT) -> None:
+    project = find_project(name)
     dmn_file, root = load_graph(project)
     check_chain(root, "interestRate", "riskBand")
     check_graph_cases(root, LOAN_CASES)
@@ -627,10 +729,12 @@ def grade_chain() -> None:
 if __name__ == "__main__":
     mode = sys.argv[1] if len(sys.argv) > 1 else ""
     name = sys.argv[2] if len(sys.argv) > 2 else LOAN_PROJECT
+    # Every mode takes the project name. Parsing it and then grading whatever `find_project`'s
+    # own default resolved meant a task naming the wrong project was graded silently.
     if mode == "chain":
-        grade_chain()
+        grade_chain(name)
     elif mode == "engine":
-        grade_engine()
+        grade_engine(name)
     elif mode == "names":
         check_all_named(load_graph(find_project(name))[1])
         print("OK: every rule of every decision carries an annotation")

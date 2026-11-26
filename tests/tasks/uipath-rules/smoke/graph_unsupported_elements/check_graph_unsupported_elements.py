@@ -14,7 +14,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "_shared"))
 
 from graph_check import check_graph_cases  # noqa: E402
-from rules_check import NS, fail, find_project, load_graph  # noqa: E402
+from rules_check import UNSUPPORTED_ELEMENTS, fail, find_project, load_graph  # noqa: E402
 
 PROJECT = "SupplierRules"
 CASES = [({"onboarded": onboarded, "spend": spend},
@@ -24,12 +24,16 @@ CASES = [({"onboarded": onboarded, "spend": spend},
 
 
 def main() -> None:
+    # `load_graph` refuses every element in `UNSUPPORTED_ELEMENTS`, which is the whole of the set
+    # this task is about. Re-listing a subset here is what let the three lists drift: this grader
+    # named `import` and `group`, `load_graph` named `knowledgeSource`, and `decisionService` was
+    # asserted in both. Named rather than silently relied on, so the task still says what it grades.
     _, root = load_graph(find_project(PROJECT))
-    for unsupported in ("import", "decisionService", "group"):
-        if root.findall(f"dmn:{unsupported}", NS):
-            fail(f"the rule declares a {unsupported}, which the skill does not author")
+    if not UNSUPPORTED_ELEMENTS:
+        fail("the unsupported-element set is empty; this task grades that each one is refused")
     check_graph_cases(root, CASES)
-    print(f"OK: no unsupported element, and all {len(CASES)} cases return the expected decision")
+    print(f"OK: none of {list(UNSUPPORTED_ELEMENTS)} is declared, and all {len(CASES)} cases "
+          f"return the expected decision")
 
 
 if __name__ == "__main__":

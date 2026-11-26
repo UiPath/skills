@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """Grades DiscountRules, whose tier lookup sits in a business knowledge model the decision calls.
 
-Structure only, and the discount values are graded nowhere. A call is FEEL the
-offline evaluator does not run, and no engine task covers DiscountRules —
+The structural contract, and the discounts the model itself answers. A model's
+encapsulated logic is a decision table like any other, so the same evaluator
+runs it — against the parameters the prompt pins, which is what makes the values
+gradable without a tenant. A model with the tiers swapped used to pass.
+
+The *decision's* discount is still graded nowhere: a call is FEEL the offline
+evaluator does not run, and no engine task covers DiscountRules —
 `graph_check.py engine` is wired to LoanRules and graph_formula_and_model_debug
-covers FeeRules. The prompt does not pin the model's signature either, so there
-are no fixed parameters to evaluate its table against. A model with the tiers
-swapped passes this task; what it grades is the structural contract.
+covers FeeRules.
 """
 
 from __future__ import annotations
@@ -19,13 +22,25 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "_shared"
 from graph_check import (  # noqa: E402
     check_annotations_attached,
     check_knowledge_models,
+    check_model_cases,
     check_no_overlap,
     knowledge_models,
     model_calls,
+    model_parameters,
 )
 from rules_check import NS, fail, find_project, load_graph  # noqa: E402
 
 PROJECT = "DiscountRules"
+# Either side of the 1000 threshold for each tier, by the parameter names the prompt pins.
+DISCOUNTS = [
+    ({"customerTier": "Gold", "orderTotal": 0}, 10),
+    ({"customerTier": "Gold", "orderTotal": 999}, 10),
+    ({"customerTier": "Gold", "orderTotal": 1000}, 15),
+    ({"customerTier": "Silver", "orderTotal": 500}, 5),
+    ({"customerTier": "Silver", "orderTotal": 1000}, 7.5),
+    ({"customerTier": "Standard", "orderTotal": 999}, 0),
+    ({"customerTier": "Standard", "orderTotal": 2500}, 2),
+]
 
 
 def main() -> None:
@@ -45,9 +60,25 @@ def main() -> None:
         if not any(model_calls(caller, name or "") for caller in callers):
             fail(f"no decision's logic calls {name}(...), so the model is wired but never used")
 
+    # What the model answers, not merely that it is there and called. The prompt pins the two
+    # parameters, so the model that takes them evaluates like any other table against them.
+    #
+    # Found by its signature rather than by being the only model in the file: the prompt asks
+    # for the tier lookup as a model and does not forbid a helper beside it, so demanding
+    # exactly one would fail work that is correct.
+    wanted = sorted(DISCOUNTS[0][0])
+    lookups = [m for m in knowledge_models(root) if sorted(model_parameters(m)) == wanted]
+    if len(lookups) != 1:
+        fail(f"{len(lookups)} knowledge models take {wanted}, expected exactly one; the rule "
+             f"declares {sorted(models)} taking "
+             f"{[sorted(model_parameters(m)) for m in knowledge_models(root)]}. The tier lookup "
+             f"was asked for as a model over the customer tier and the order total")
+    check_model_cases(lookups[0], DISCOUNTS)
+
     check_annotations_attached(root)
     check_no_overlap(root)
-    print(f"OK: {sorted(models)} declared, called, annotated, and the diagram is whole")
+    print(f"OK: {sorted(models)} declared, called, answering all {len(DISCOUNTS)} discount cases, "
+          f"annotated, and the diagram is whole")
 
 
 if __name__ == "__main__":

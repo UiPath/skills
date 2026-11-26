@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Four static gates over the coder-eval task and experiment corpus.
+"""Six static gates over the coder-eval task and experiment corpus.
 
 Gate 1: no task YAML pins ``sandbox.driver: tempdir``
 -----------------------------------------------------
@@ -71,6 +71,38 @@ pattern finishes them in microseconds, so the budget has wide margin.
 instead of blocking every open PR. An entry whose pattern now passes fails the
 gate as stale: remove it.
 
+Gate 5: no pre_run/post_run command reads $REFERENCE_DIR or $TASK_DIR
+----------------------------------------------------------------------
+
+coder_eval expands those variables for ``success_criteria`` ``run_command``
+only. A hook runs in the sandbox CWD with neither set, so ``python3
+$REFERENCE_DIR/_setup/cleanup.py`` runs ``python3 /_setup/cleanup.py`` --
+"No such file or directory", exit 2. Hook results are informational, so nothing
+fails: the cleanup silently never ran, and a task that depends on its `pre_run`
+grades against state the hook was supposed to have built.
+
+A hook reaches its tooling through ``sandbox.template_sources``, which mounts
+it into the sandbox; the command then names the mount point (``_setup/...``),
+relative and with no variable at all.
+
+Gate 6: every .py a criterion or hook names resolves and is runnable
+---------------------------------------------------------------------
+
+A ``run_command`` that names a grader which is not on disk, or which has no
+``if __name__ == "__main__":`` to run, exits non-zero for a reason that has
+nothing to do with the agent -- and the harness scores it exactly like a failed
+submission, so a renamed or import-only grader reads as an agent that got the
+answer wrong. Every task in the suite does, silently and forever.
+
+``tests/tasks/uipath-rules/_shared/test_graders_refuse_an_empty_sandbox.py``
+pins the narrower half of this for one suite by running each grader in an empty
+directory; this gate is the static half, over every suite.
+
+A path is resolved the way coder_eval resolves it: ``$REFERENCE_DIR`` against
+the task's ``reference.directory``, and a bare relative path against the
+``template_sources`` mount that supplies it. A path this gate cannot resolve to
+either is reported -- an unresolvable grader is the finding, not an exemption.
+
 Usage:
     python3 scripts/check-task-driver.py                              # tests/tasks
     python3 scripts/check-task-driver.py tests/tasks tests/experiments  # all gates
@@ -82,6 +114,7 @@ Exit codes:
 
 from __future__ import annotations
 
+import ast
 import json
 import os
 import queue
@@ -412,12 +445,130 @@ def _report_slow_patterns(graded: list[tuple[Path, int, str, str]]) -> int:
     return 1
 
 
+# --- Gate 5: hook commands and the variables they cannot see ---------------
+
+# Matched in either spelling a shell accepts, so `${REFERENCE_DIR}` is caught too.
+_HOOK_VARIABLE = re.compile(r"\$\{?(REFERENCE_DIR|TASK_DIR)\b")
+
+
+def _hook_variables(doc: dict) -> Iterator[tuple[str, str | None, str]]:
+    """`(yaml_path, variable, command)` per pre_run/post_run command; `variable` None when clean.
+
+    Every such command is yielded, not only the offenders, so the gate can say how many it
+    read. `hooks_checked` counts Gate 2's scope -- Windows-reachable hooks only -- and reusing
+    it meant a corpus of clean non-Windows hooks reported nothing at all.
+    """
+    for yaml_path, command in _iter_hook_commands(doc):
+        if not yaml_path.startswith(("pre_run", "post_run")):
+            continue
+        found = _HOOK_VARIABLE.search(command)
+        yield yaml_path, found.group(1) if found else None, command.strip()
+
+
+# --- Gate 6: every grader a task names is on disk and runnable -------------
+
+_PY_IN_COMMAND = re.compile(r"(?<![\w/.$-])((?:\$\{?REFERENCE_DIR\}?|[\w./-]+)(?:/[\w.-]+)*\.py)")
+
+# Top-level statements that do nothing when the file is run. A module made only of these is a
+# library: `python3 that.py` prints nothing, exits 0, and a criterion asking it a question gets
+# no answer. Everything else -- a call, a branch, a loop, an assignment computed from one -- is
+# work the module does on import, which is how every straight-line grader in the corpus runs.
+_INERT_NODES = (ast.Import, ast.ImportFrom, ast.FunctionDef, ast.AsyncFunctionDef,
+                ast.ClassDef, ast.Pass)
+_LITERAL_VALUES = (ast.Constant, ast.Name, ast.Tuple, ast.List, ast.Dict, ast.Set,
+                   ast.JoinedStr, ast.ListComp, ast.DictComp, ast.SetComp)
+
+
+def _is_runnable(source: str) -> bool:
+    """Whether `python3 <file>` would execute anything -- a `__main__` guard, or top-level work."""
+    try:
+        module = ast.parse(source)
+    except SyntaxError:
+        return False
+    for node in module.body:
+        if isinstance(node, _INERT_NODES):
+            continue
+        if isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant):
+            continue  # a docstring
+        if isinstance(node, (ast.Assign, ast.AnnAssign)):
+            if node.value is None or isinstance(node.value, _LITERAL_VALUES):
+                continue  # a constant the module merely declares
+        return True
+    return False
+
+
+def _mount_roots(doc: dict, task_dir: Path) -> dict[str, list[Path]]:
+    """Sandbox path -> the directories on disk that supply it, in `template_sources` order.
+
+    A `template_dir` lands its *contents* at the mount point, which defaults to the sandbox
+    root -- so a source with no `mount_point` contributes each of its own children by name.
+    A list rather than one path per mount, because several sources may share a mount point and
+    merge there: uipath-admin stages both the task's own `_setup` and the suite's at `_setup`,
+    and a resolver that kept only one of them read half the suite's hooks as missing.
+    """
+    roots: dict[str, list[Path]] = {}
+    sandbox = doc.get("sandbox")
+    for src in (sandbox.get("template_sources") or []) if isinstance(sandbox, dict) else []:
+        if not isinstance(src, dict) or not src.get("path"):
+            continue
+        source = (task_dir / str(src["path"])).resolve()
+        mount = str(src.get("mount_point") or "").strip("/")
+        if mount:
+            roots.setdefault(mount, []).append(source)
+        elif source.is_dir():
+            for child in source.iterdir():
+                roots.setdefault(child.name, []).append(child)
+    return roots
+
+
+def _resolve_script(raw: str, task_dir: Path, reference: Path,
+                    mounts: dict[str, list[Path]]) -> Path | None:
+    """The repo file a command's `.py` argument names, or None when the repo does not supply it.
+
+    None means "not this gate's business", not "missing". A command may name a path the *sandbox*
+    supplies rather than the repo: a script the agent was asked to write, or one a `pre_run`
+    copied in (`cp _setup/verify.py .` then `./verify.py`). Neither is on disk at the path the
+    command spells, and neither is a defect. So only a path the repo is supposed to answer for
+    is resolved -- `$REFERENCE_DIR`-rooted, or under a `template_sources` mount -- plus a bare
+    relative one that does land in the repo, which is then held to the same bar.
+    """
+    variable = re.match(r"\$\{?REFERENCE_DIR\}?/(.*)", raw)
+    if variable:
+        return reference / variable.group(1)
+    relative = raw.lstrip("./")
+    head = relative.split("/")[0]
+    if head in mounts:
+        rest = relative[len(head):].lstrip("/")
+        mounted = [root / rest if rest else root for root in mounts[head]]
+        # The first that exists; failing that the first, so the report names where it belongs.
+        return next((c for c in mounted if c.is_file()), mounted[0] if mounted else None)
+    return next((c for c in (task_dir / relative, reference / relative) if c.is_file()), None)
+
+
+def _iter_named_scripts(doc: dict, path: Path) -> Iterator[tuple[str, str, Path | None]]:
+    """`(where, raw_path, resolved)` for each `.py` a criterion or hook command names."""
+    task_dir = path.parent
+    reference = (task_dir / str((doc.get("reference") or {}).get("directory") or ".")).resolve()
+    mounts = _mount_roots(doc, task_dir)
+    commands: list[tuple[str, str]] = list(_iter_hook_commands(doc))
+    for index, criterion in enumerate(doc.get("success_criteria") or []):
+        if isinstance(criterion, dict) and criterion.get("command"):
+            commands.append((f"success_criteria[{index}].command", str(criterion["command"])))
+    for where, command in commands:
+        for raw in _PY_IN_COMMAND.findall(command):
+            yield where, raw, _resolve_script(raw, task_dir, reference, mounts)
+
+
 def main(argv: list[str]) -> int:
     offenders: list[tuple[Path, int]] = []
     docker_pins: list[Path] = []
     multi_line: list[tuple[Path, int, str]] = []
     staged_skills: list[tuple[Path, str]] = []
     hooks_checked = 0
+    hook_variables: list[tuple[Path, str, str, str]] = []  # (path, yaml_path, variable, command)
+    hook_commands_scanned = 0
+    missing_scripts: list[tuple[Path, str, str, str]] = []  # (path, where, raw, why)
+    scripts_checked = 0
     graded: list[tuple[Path, int, str, str]] = []  # (path, index, description, pattern)
 
     for path in _iter_task_yamls(argv):
@@ -431,6 +582,21 @@ def main(argv: list[str]) -> int:
             continue
 
         graded.extend((path, i, desc, pat) for i, desc, pat in _iter_graded_patterns(doc))
+        for where, variable, command in _hook_variables(doc):
+            hook_commands_scanned += 1
+            if variable:
+                hook_variables.append((path, where, variable, command))
+        for where, raw, resolved in _iter_named_scripts(doc, path):
+            if resolved is None:
+                continue  # the sandbox supplies it, not the repo — see `_resolve_script`
+            scripts_checked += 1
+            if not resolved.is_file():
+                missing_scripts.append((path, where, raw, f"{_rel(resolved)} does not exist"))
+            elif not _is_runnable(resolved.read_text(encoding="utf-8", errors="replace")):
+                missing_scripts.append(
+                    (path, where, raw,
+                     f"{_rel(resolved)} runs nothing when executed: no `if __name__ == "
+                     f"\"__main__\":` and no top-level work"))
 
         tags = doc.get("tags")
         if (
@@ -511,6 +677,48 @@ def main(argv: list[str]) -> int:
 
     if not staged_skills:
         print("OK — no task stages a skill directory via template_sources.")
+
+    if hook_variables:
+        rc = 1
+        print(f"FAIL — {len(hook_variables)} pre_run/post_run command(s) read a variable that is "
+              f"not set for hooks:\n")
+        for path, where, variable, command in hook_variables:
+            rel = _rel(path)
+            print(f"::error file={rel}::{where} reads ${variable}, which coder_eval sets for "
+                  f"success_criteria only")
+            print(f"  {rel}  ({where})  ${variable}")
+            print(f"    {command}")
+        print()
+        print(
+            "coder_eval expands $REFERENCE_DIR and $TASK_DIR for success_criteria run_command\n"
+            "only. A hook runs in the sandbox CWD with neither set, so the path collapses to an\n"
+            "absolute one that does not exist — and because hook results are informational, the\n"
+            "hook silently never runs. Mount what the hook needs through\n"
+            "sandbox.template_sources and name the mount point relatively (`_setup/...`)."
+        )
+        print()
+    elif hook_commands_scanned:
+        print(f"OK — none of {hook_commands_scanned} pre_run/post_run command(s) reads "
+              f"$REFERENCE_DIR or $TASK_DIR.")
+
+    if missing_scripts:
+        rc = 1
+        print(f"FAIL — {len(missing_scripts)} command(s) name a .py that cannot be run:\n")
+        for path, where, raw, why in missing_scripts:
+            rel = _rel(path)
+            print(f"::error file={rel}::{where} names {raw}, which {why}")
+            print(f"  {rel}  ({where})  {raw} — {why}")
+        print()
+        print(
+            "A criterion whose grader is missing, renamed, or import-only exits non-zero for a\n"
+            "reason that is not the agent's, and the harness scores that exactly like a wrong\n"
+            "answer — for every run of the task. Point the command at a file that exists, and\n"
+            "give it something to do when it is run: an `if __name__ == \"__main__\":` guard,\n"
+            "or the top-level statements a straight-line grader already has."
+        )
+        print()
+    elif scripts_checked:
+        print(f"OK — all {scripts_checked} .py path(s) named by a criterion or hook resolve and are runnable.")
 
     rc |= _report_slow_patterns(graded)
 
