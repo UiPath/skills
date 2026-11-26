@@ -6,8 +6,9 @@ RiskRules project. `rules_check.py policy` grades a freshly authored RiskRules
 rule: the authoring profile `validate` does not enforce, the entry-point
 contract `uip rules refresh` writes, and the table's risk band for each POLICY
 case. `rules_check.py names` passes when every rule carries a non-empty
-annotation. DMN files are authored by the agent under test and parsed with stdlib
-ElementTree.
+annotation. The eval helpers read the sets and evaluators `uip rules eval` keeps
+in `evals/rule/` and grade each data point against the table. DMN files are
+authored by the agent under test and parsed with stdlib ElementTree.
 """
 
 from __future__ import annotations
@@ -327,6 +328,107 @@ def check_cases(table: ET.Element, output: str, cases: list) -> None:
             fail(f"output {output} for {inputs} is a call or a formula; grade it with 'graph_check.py engine'")
         if actual != expected:
             fail(f"{inputs} returned {actual!r}, expected {expected!r}")
+
+
+EXACT_MATCH = "uipath-exact-match"
+
+
+def read_json_dir(directory: Path) -> list[dict]:
+    docs = []
+    for path in sorted(directory.glob("*.json")):
+        try:
+            docs.append(json.loads(path.read_text(encoding="utf-8")))
+        except (OSError, ValueError):
+            fail(f"{path} is not valid JSON")
+    return docs
+
+
+def eval_sets(project: Path) -> list[dict]:
+    """The sets `uip rules eval` keeps in `evals/rule/`, the folder the Evaluate tab reads."""
+    return read_json_dir(project / "evals" / "rule" / "eval-sets")
+
+
+def evaluators(project: Path) -> list[dict]:
+    return read_json_dir(project / "evals" / "rule" / "evaluators")
+
+
+def find_eval_set(project: Path, name: str) -> dict:
+    matches = [s for s in eval_sets(project) if s.get("name") == name]
+    if len(matches) != 1:
+        fail(f"expected one eval set named {name!r} in {project}/evals/rule/eval-sets/, found {len(matches)}")
+    return matches[0]
+
+
+def check_exact_match_only(project: Path) -> list[dict]:
+    """Every evaluator is exact match, the only type a business rule is scored by; returns them."""
+    found = evaluators(project)
+    if not found:
+        fail(f"no evaluators in {project}/evals/rule/evaluators/")
+    other = [e.get("name") or e.get("id") for e in found if e.get("evaluatorTypeId") != EXACT_MATCH]
+    if other:
+        fail(f"evaluators {other} are not {EXACT_MATCH}")
+    return found
+
+
+def check_scored_by_exact_match(project: Path, eval_set: dict) -> list[str]:
+    """The set links at least one evaluator, each on disk and exact match; returns their ids."""
+    by_id = {e.get("id"): e for e in evaluators(project)}
+    refs = eval_set.get("evaluatorRefs") or []
+    if not refs:
+        fail(f"eval set {eval_set.get('name')!r} links no evaluators")
+    missing = [ref for ref in refs if ref not in by_id]
+    if missing:
+        fail(f"eval set {eval_set.get('name')!r} links {missing}, which are not in evals/rule/evaluators/")
+    other = [ref for ref in refs if by_id[ref].get("evaluatorTypeId") != EXACT_MATCH]
+    if other:
+        fail(f"eval set {eval_set.get('name')!r} links {other}, which are not {EXACT_MATCH}")
+    return refs
+
+
+def check_point_shape(point: dict, input_names: set[str], refs: list[str]) -> dict:
+    """A data point gives every rule input and keeps one copy of its expected output per linked
+    evaluator; returns its expected output.
+
+    The engine reads an input a data point leaves out as null, and the run scores each evaluator
+    against its own copy, so a missing input or a missing or stale copy grades wrongly.
+    """
+    name, expected = point.get("name"), point.get("expectedOutput") or {}
+    given = set(point.get("inputs") or {})
+    if given != input_names:
+        fail(f"data point {name!r} gives inputs {sorted(given)}, the rule reads {sorted(input_names)}")
+    criterias = point.get("evaluationCriterias") or {}
+    for ref in refs:
+        copy = (criterias.get(ref) or {}).get("expectedOutput")
+        if copy != expected:
+            fail(f"data point {name!r}: evaluator {ref}'s expectedOutput {copy} differs from {expected}")
+    return expected
+
+
+def check_data_points(eval_set: dict, table: ET.Element, decision: str, refs: list[str]) -> None:
+    """Each data point expects every output the table returns for its inputs, keyed by `decision`.
+
+    Every output, because `runs start` sends one a data point leaves out as null and exact match
+    on `*` then misses it.
+    """
+    points = eval_set.get("evaluations") or []
+    if not points:
+        fail(f"eval set {eval_set.get('name')!r} has no data points")
+    for point in points:
+        name = point.get("name")
+        expected = check_point_shape(point, set(input_columns(table)), refs)
+        actual = evaluate(table, point.get("inputs") or {}) or {}
+        outputs = expected.get(decision)
+        if set(expected) != {decision} or not isinstance(outputs, dict):
+            fail(f"data point {name!r} expects {expected}, not outputs keyed under decision {decision!r}")
+        if set(outputs) != set(output_names(table)):
+            fail(f"data point {name!r} expects outputs {sorted(outputs)}, the decision returns {output_names(table)}")
+        for output, value in outputs.items():
+            if output not in actual or actual[output] != value:
+                fail(f"data point {name!r} expects {output}={value!r}, the table returns {actual.get(output)!r}")
+
+
+def data_point_inputs(eval_set: dict) -> list[dict]:
+    return [point.get("inputs") or {} for point in eval_set.get("evaluations") or []]
 
 
 def grade_policy() -> None:

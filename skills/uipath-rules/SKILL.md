@@ -1,6 +1,6 @@
 ---
 name: uipath-rules
-description: "UiPath Business Rules — a `.dmn` rule (DMN 1.5, FEEL) in a BusinessRules project (`project.uiproj`), built with `uip rules` (`init`, `refresh`, `format`, `validate`, `debug`). Author, edit, review, validate, and debug a rule from a policy, spreadsheet, or description — one decision table, or a decision graph of several decisions linked by requirements, with literal expressions, business knowledge models and text annotations; list and describe deployed rules. For .bpmn business rule tasks→uipath-maestro-bpmn. For EvaluateBusinessRule in .xaml→uipath-rpa. For caseplan.case/caseplan.json business rule tasks→uipath-maestro-case. For solution pack/publish/deploy→uipath-solution."
+description: "UiPath Business Rules — a `.dmn` rule (DMN 1.5, FEEL) in a BusinessRules project (`project.uiproj`), built with `uip rules` (`init`, `refresh`, `format`, `validate`, `debug`, `eval`). Author, edit, review, validate, and debug a rule from a policy, spreadsheet, or description — one decision table, or a decision graph of several decisions linked by requirements, with literal expressions, business knowledge models and text annotations; write and run its evaluation sets (exact-match data points, `evals/rule/`); list and describe deployed rules. For .bpmn business rule tasks→uipath-maestro-bpmn. For EvaluateBusinessRule in .xaml→uipath-rpa. For caseplan.case/caseplan.json business rule tasks→uipath-maestro-case. For solution pack/publish/deploy→uipath-solution."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -13,12 +13,13 @@ A Business Rules project holds one `.dmn` rule of one or more decisions. DMN and
 - Create a business rule from a policy, spreadsheet, or description — one decision, or a graph of several
 - Edit the rows, columns, or hit policy of a `.dmn` in a BusinessRules project
 - Validate or debug a rule that returns the wrong output
+- Write a rule's evaluation sets and data points, or run them and read the results
 - List deployed rules or read a deployed rule's inputs and outputs
 
 ## Critical Rules
 
 1. **Write DMN 1.5.** Use the MODEL and DMNDI namespaces `https://www.omg.org/spec/DMN/20230324/...` and DC/DI `http://www.omg.org/spec/DMN/20180521/...`. When editing a file on an older DMN version, rewrite it to these namespaces.
-2. **One `.dmn` per project.** `rules debug` evaluates only the project's first `.dmn`.
+2. **One `.dmn` per project.** `rules debug` evaluates only the project's first `.dmn`; `rules eval` refuses a project with more than one.
 3. **A decision's logic is a decision table or a literal expression.** A rule may hold several decisions linked by `informationRequirement`, business knowledge models they call, and text annotations; read the [Decision Graphs Guide](references/drd-guide.md) before authoring or editing one, and remember how a decision reads an upstream one turns on how many outputs that one's table has: its own name when there is one output, `name.column` only when there are several. Never a column name on its own. When the user asks for a knowledge source, a decision service, a group, an import, or any other expression kind — context, invocation, relation, list, conditional — say authoring it is not supported yet, then offer to express the logic as decision tables. Never write the unsupported element.
 4. **No DOCTYPE, XML comments, or processing instructions.** Put notes in the annotation column, a `<description>` element, or a `<textAnnotation>` tied to the element it is about.
 5. **Use the designer's types.** `string`, `number`, `boolean`, `Any`, `date`, `time`, `date and time`, `days and time duration`, `years and months duration`, for both columns and input arguments.
@@ -83,8 +84,12 @@ uip rules debug <PROJECT_DIR> --inputs '<INPUTS_JSON>' --output json
 uip traces spans get <TRACE_ID> --output json
 ```
 
-`<TRACE_ID>` is `Data.traceId`. The trace shows which rules fired. `Data.traceId` is present only when tracing is on for the tenant (the default); without it, compare the inputs against each row by hand. `rules debug` needs the project directly inside its solution folder, as `init` creates it, and a logged-in user (`uip login`). `debug` uploads the solution's own files (`.uipignore` applied) and overwrites its Studio Web solution; pull Studio Web edits first.
+`<TRACE_ID>` is `Data.traceId`. The trace shows which rules fired. `Data.traceId` is present only when tracing is on for the tenant (the default); without it, compare the inputs against each row by hand. `rules debug` needs the project directly inside its solution folder, as `init` creates it, and a logged-in user (`uip login`). `debug` uploads the solution's own files (`.uipignore` applied) and overwrites its Studio Web solution; pull Studio Web edits first. `uip rules eval runs start` uploads and overwrites the same way, with no prompt.
 <!--skill-flavor:verify:end-->
+
+### 6. Test with an evaluation set
+
+When the user asks for tests, or the project already holds sets under `evals/rule/`, follow the [Evaluate Guide](references/evaluate-guide.md). Running a set uploads the solution: ask first.
 
 ## Editing an Existing Rule
 
@@ -114,7 +119,8 @@ Binding a rule into a process, workflow, or case belongs to that artifact's skil
 | Reference | When to read |
 |---|---|
 | [Decision Graphs Guide](references/drd-guide.md) | The rule holds, or needs, more than one decision |
-| [Failure Modes Guide](references/failure-modes-guide.md) | A `uip rules` command reports an error |
+| [Failure Modes Guide](references/failure-modes-guide.md) | A `uip rules` command reports an error (for `uip rules eval`, the Evaluate Guide's Failures table) |
+| [Evaluate Guide](references/evaluate-guide.md) | Writing, running, or reading a rule's evaluation sets (`uip rules eval`) |
 
 ## Anti-patterns
 

@@ -25,6 +25,7 @@ from rules_check import (
     POLICY,
     UNEVALUABLE,
     check_named_rules,
+    check_point_shape,
     evaluate,
     fail,
     find_project,
@@ -388,6 +389,37 @@ def check_graph_cases(root: ET.Element, cases: list) -> None:
                      f"(graph_check.py engine), not here")
             if not same_value(actual[name], value):
                 fail(f"{inputs} returned {name}={actual[name]!r}, expected {value!r}")
+
+
+def check_graph_data_points(eval_set: dict, root: ET.Element, refs: list[str]) -> None:
+    """Each data point expects every output of every decision, keyed by decision name.
+
+    Every decision, because `runs start` sends a declared output a data point leaves out as null,
+    so exact match on `*` misses it. A decision with no table (a literal expression) is checked
+    for its key only; its value is the engine's to work out.
+    """
+    points = eval_set.get("evaluations") or []
+    if not points:
+        fail(f"eval set {eval_set.get('name')!r} has no data points")
+    input_names = {e.get("name") for e in root.findall("dmn:inputData", NS)}
+    for point in points:
+        name = point.get("name")
+        expected = check_point_shape(point, input_names, refs)
+        actual = evaluate_graph(root, point.get("inputs") or {})
+        names = {d.get("name") for d in decisions(root)}
+        if set(expected) != names:
+            fail(f"data point {name!r} expects decisions {sorted(expected)}, the rule holds {sorted(names)}")
+        for decision in decisions(root):
+            outputs = expected[decision.get("name")]
+            table = decision.find("dmn:decisionTable", NS)
+            declared = output_names(table) if table is not None else [decision.get("name")]
+            if not isinstance(outputs, dict) or set(outputs) != set(declared):
+                fail(f"data point {name!r} expects {outputs} for {decision.get('name')!r}, which returns {declared}")
+            if table is None:
+                continue
+            for output, value in outputs.items():
+                if output not in actual or not same_value(actual[output], value):
+                    fail(f"data point {name!r} expects {output}={value!r}, the rule returns {actual.get(output)!r}")
 
 
 def requires(root: ET.Element, decision: ET.Element, upstream: ET.Element) -> bool:

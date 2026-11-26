@@ -90,11 +90,30 @@ OFFLINE_VERBS = (
     "solution resources remove",
     "solution resources edit",
     "solution resources list",
+    # Business Rules' local verbs. `rules eval` writes files under evals/rule/ only; its
+    # `runs` group (alias `run`) uploads the solution and runs the set, so it is not listed here.
+    # The singular group names and `add` / `remove` are the CLI's aliases.
+    "rules init",
+    "rules refresh",
+    "rules format",
+    "rules validate",
+    "rules eval evaluators",
+    "rules eval evaluator",
+    "rules eval sets",
+    "rules eval set",
+    "rules eval create",
+    "rules eval add",
+    "rules eval list",
+    "rules eval delete",
+    "rules eval remove",
     "login",
     "tools",
     "update",
     "version",
 )
+
+# The org flag Business Rules eval runs need; without it the engine answers PREVIEW_NOT_ENABLED.
+EVAL_FLAG = "Business Rules evaluation (BusinessRuleServiceEvaluationEnabled)"
 
 # Tenant services each verb family needs, longest prefix first.
 VERB_SERVICES: tuple[tuple[str, tuple[str, ...]], ...] = (
@@ -106,6 +125,12 @@ VERB_SERVICES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("maestro flow", ("Orchestrator", "Maestro")),
     ("maestro", ("Orchestrator", "Maestro")),
     ("solution upload", ("Studio Web",)),
+    # Both upload the solution to Studio Web and resolve the evaluation folder in Orchestrator;
+    # eval runs go through the Agents runtime and need EVAL_FLAG.
+    ("rules debug", ("Orchestrator", "Studio Web", "Business Rules")),
+    ("rules eval runs", ("Orchestrator", "Studio Web", "Agents", "Business Rules", EVAL_FLAG)),
+    ("rules eval run", ("Orchestrator", "Studio Web", "Agents", "Business Rules", EVAL_FLAG)),
+    ("rules", ("Orchestrator", "Business Rules")),
     ("solution", ("Orchestrator", "Automation Solutions")),
     ("is", ("Integration Service",)),
     ("or", ("Orchestrator",)),
@@ -373,7 +398,10 @@ def skill_names() -> set[str]:
 SHELL_COMMAND_RE = re.compile(r"(?:^|[;&|(]\s*)uip\s")
 
 # Command groups that name no operation on their own; a call cut off here had a variable sub-command.
-INCOMPLETE_VERBS = {"maestro", "maestro case", "maestro flow", "maestro bpmn", "solution", "solution resources"}
+INCOMPLETE_VERBS = {
+    "maestro", "maestro case", "maestro flow", "maestro bpmn", "solution", "solution resources",
+    "rules", "rules eval",
+}
 
 
 def classify_verb(words: list[str]) -> str | None:
