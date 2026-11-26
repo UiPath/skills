@@ -42,8 +42,8 @@ initial_prompt: |
   Important:
   - The `uip` CLI is installed but NOT logged in to a tenant here. Build the
     connector offline (pass the organization explicitly). Tenant commands
-    (import, publish, connections, llm-configuration, and the test
-    connection's API calls) WILL fail with auth errors — that is expected. Run each tenant command once and move on;
+    (import, publish, connections, llm-configuration, the test
+    connection and its API calls) WILL fail with auth errors — that is expected. Run each tenant command once and move on;
     use placeholder ids where a previous step returned none. Do NOT try to
     log in.
   - No real credentials exist; never put a key anywhere.
@@ -104,9 +104,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent opened the builder's connection session on the draft through the API"
+    description: "Agent created the draft's test connection with the CLI"
     tool_name: Bash
-    command_pattern: '(normalized-instances|\$NI|\$\{NI\})/applications/default/sessions'
+    command_pattern: 'uip\s+is\s+connectors\s+test-connection\s+create'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

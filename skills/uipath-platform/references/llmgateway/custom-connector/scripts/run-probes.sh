@@ -14,7 +14,7 @@
 #     --model <VENDOR_MODEL_ID> --connection <CONNECTION_ID> --helper <WORK_DIR>/is-api.sh --out <DIR>
 #
 # --list prints the probes that apply and sends nothing. Otherwise every request is sent with
-# the `api` function of the step 6 helper, which holds the token; this script never reads it.
+# the `api` function of the step 7 helper, which holds the token; this script never reads it.
 # A probe marked "roundTrip": true is two streamed calls with values drawn for the run (see below).
 # Exit 0 when every probe passes, 1 when one fails, 2 when none was sent (a usage error, an
 # unknown flavor, or no probe for that product, feature and flavor; --list exits 0 then).
