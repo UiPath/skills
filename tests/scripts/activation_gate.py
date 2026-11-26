@@ -104,6 +104,9 @@ BASELINES_PCT: dict[str, int] = {
     # Measured 2026-11-24 on claude-opus-5-5 with this gate (max_turns: 1, full positive set), two runs:
     # actions/runs/45421298006 and 45421319192.
     "uipath-automationhub": 100,  # 34/34
+    # Measured 2026-11-19 on claude-opus-5-5 with this gate (max_turns: 1, full positive set), two runs:
+    # actions/runs/44524900995 and 44524919210.
+    "uipath-aops": 100,  # 39/39
 }
 
 DROP_PP = 10
