@@ -24,7 +24,7 @@ from graph_check import (  # noqa: E402
 )
 from rules_check import fail, find_project, load_graph  # noqa: E402
 
-FIXTURE = Path(__file__).resolve().parent / "fixtures" / LOAN_PROJECT
+FIXTURE = Path(__file__).resolve().parent / "fixtures" / f"{LOAN_PROJECT}Solution" / LOAN_PROJECT
 DECISION_IDS = {"riskBand": "decision_risk", "interestRate": "decision_rate"}
 
 if __name__ == "__main__":

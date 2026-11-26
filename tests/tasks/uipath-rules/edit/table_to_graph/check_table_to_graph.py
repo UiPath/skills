@@ -29,7 +29,7 @@ from graph_check import (  # noqa: E402
 )
 from rules_check import NS, check_annotations_in_order, fail, find_project, load_graph  # noqa: E402
 
-FIXTURE = Path(__file__).resolve().parents[1] / "templates" / "initial_table" / "RiskRules"
+FIXTURE = Path(__file__).resolve().parents[1] / "templates" / "initial_table" / "RiskRulesSolution" / "RiskRules"
 DECISION_ID = "decision_25a2c471-1c6f-46cb-a22a-f4b2dfdb7ee7"
 DECISION_NAME = "decision1"
 ANNOTATIONS = ["Subprime", "Near-prime, sufficient income", "Near-prime, low income", "Prime"]

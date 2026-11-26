@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import rules_check as rc  # noqa: E402
 
 TASKS = Path(__file__).resolve().parent.parent
-FIXTURE = TASKS / "diagnose" / "wrong_output" / "fixtures" / "RiskRules"
+FIXTURE = TASKS / "diagnose" / "wrong_output" / "fixtures" / "RiskRulesSolution" / "RiskRules"
 
 
 def table(hit_policy, rows, inputs=("creditScore",), outputs=("riskBand",)):

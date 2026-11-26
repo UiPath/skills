@@ -42,7 +42,7 @@ from graph_check import (  # noqa: E402
 from rules_check import NS, fail, find_project, load_graph  # noqa: E402
 
 PROJECT = "PricingRules"
-FIXTURE = Path(__file__).resolve().parent / "fixtures" / PROJECT
+FIXTURE = Path(__file__).resolve().parent / "fixtures" / f"{PROJECT}Solution" / PROJECT
 TIER_CASES = [({"customerTier": tier}, {"tierPct": pct})
               for tier, pct in (("Gold", 15.0), ("Silver", 10.0), ("Standard", 0.0), ("Bronze", 0.0))]
 
