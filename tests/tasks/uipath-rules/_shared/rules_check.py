@@ -37,6 +37,11 @@ POLICY = [
     ({"creditScore": 820, "income": 20000}, "Low"),
 ]
 NUMBER = r"-?\d+(?:\.\d+)?"
+UIPATH_NS = "http://uipath.com/schema/1.0/dmn/authoring"
+# Which editor the designer opens the file in. `uip rules init` scaffolds `decision-table`, and
+# that is right for a rule that is one decision table: `decision-graph` opens it on the canvas
+# instead, a worse editor for the thing the user asked for. `validate` reports neither.
+TABLE_SURFACE, GRAPH_SURFACE = "decision-table", "decision-graph"
 
 
 def fail(message: str) -> None:
@@ -113,7 +118,43 @@ def load_graph(project: Path) -> tuple[Path, ET.Element]:
     for decision in decisions:
         if decision.find("dmn:decisionTable", NS) is None and decision.find("dmn:literalExpression", NS) is None:
             fail(f"{dmn_files[0]}: the logic of decision {decision.get('name')!r} is neither a decisionTable nor a literalExpression")
+    check_authoring_surface(dmn_files[0], root)
     return dmn_files[0], root
+
+
+def check_authoring_surface(dmn_file: Path, root: ET.Element) -> None:
+    """The authoring surface agrees with what the file holds.
+
+    Nothing graded this and `validate` reports neither value, so a rule authored with the wrong
+    surface passed every task in the suite. Agents reached for `decision-graph` on single-table
+    rules because the skill documented no other value.
+
+    Only the two shapes the product pins are asserted. A single decision whose logic is a literal
+    expression is left alone: `editor` is per-decision, and which surface the designer wants for
+    that file is not something this suite can evidence.
+    """
+    element = root.find("dmn:extensionElements/uipath:authoring", {**NS, "uipath": UIPATH_NS})
+    surface = element.get("surface") if element is not None else None
+    if not surface:
+        fail(f"{dmn_file} declares no <uipath:authoring surface=\"...\" /> in the definitions' "
+             f"<extensionElements>; without it the designer cannot tell which editor to open")
+    if surface not in (TABLE_SURFACE, GRAPH_SURFACE):
+        fail(f"{dmn_file} declares surface {surface!r}; the designer reads {TABLE_SURFACE!r} or "
+             f"{GRAPH_SURFACE!r}")
+    decisions = root.findall("dmn:decision", NS)
+    canvas_only = (root.findall("dmn:businessKnowledgeModel", NS)
+                   + root.findall("dmn:textAnnotation", NS))
+    if (len(decisions) > 1 or canvas_only) and surface != GRAPH_SURFACE:
+        reason = ("holds several decisions" if len(decisions) > 1
+                  else "holds a knowledge model or a text annotation, which only the canvas draws")
+        fail(f"{dmn_file} {reason} but declares surface {surface!r}; it opens as a bare table and "
+             f"the requirement edges are invisible. Use {GRAPH_SURFACE!r}")
+    one_table = (len(decisions) == 1 and not canvas_only
+                 and decisions[0].find("dmn:decisionTable", NS) is not None)
+    if one_table and surface != TABLE_SURFACE:
+        fail(f"{dmn_file} is one decision table and nothing else, but declares surface {surface!r}; "
+             f"that opens it on the graph canvas instead of the table editor. `uip rules init` "
+             f"scaffolds {TABLE_SURFACE!r} — leave it as it is")
 
 
 def load_rule(project: Path) -> tuple[Path, ET.Element]:
