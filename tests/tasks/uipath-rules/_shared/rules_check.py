@@ -97,7 +97,7 @@ def run_format_check(project: Path) -> None:
 
 
 def load_graph(project: Path) -> tuple[Path, ET.Element]:
-    """The project's one `.dmn`, once it holds the profile the skill authors: every decision's logic a decision table or a literal expression, knowledge models and text annotations allowed, no knowledge source or decision service."""
+    """The project's one `.dmn`, once it holds the profile the skill authors: every decision's logic a decision table or a literal expression, knowledge models, knowledge sources and text annotations allowed, no decision service."""
     dmn_files = list(project.glob("*.dmn"))
     if len(dmn_files) != 1:
         fail(f"expected exactly one .dmn in {project}/, found {len(dmn_files)}")
@@ -109,9 +109,8 @@ def load_graph(project: Path) -> tuple[Path, ET.Element]:
     root = ET.fromstring(text)
     if root.tag != f"{{{DMN_NS}}}definitions":
         fail(f"{dmn_files[0]} is not a DMN 1.5 <definitions>")
-    for unsupported in ("knowledgeSource", "decisionService"):
-        if root.findall(f"dmn:{unsupported}", NS):
-            fail(f"{dmn_files[0]} declares a {unsupported}")
+    if root.findall("dmn:decisionService", NS):
+        fail(f"{dmn_files[0]} declares a decisionService")
     decisions = root.findall("dmn:decision", NS)
     if not decisions:
         fail(f"{dmn_files[0]} holds no decision")
@@ -143,10 +142,11 @@ def check_authoring_surface(dmn_file: Path, root: ET.Element) -> None:
              f"{GRAPH_SURFACE!r}")
     decisions = root.findall("dmn:decision", NS)
     canvas_only = (root.findall("dmn:businessKnowledgeModel", NS)
+                   + root.findall("dmn:knowledgeSource", NS)
                    + root.findall("dmn:textAnnotation", NS))
     if (len(decisions) > 1 or canvas_only) and surface != GRAPH_SURFACE:
         reason = ("holds several decisions" if len(decisions) > 1
-                  else "holds a knowledge model or a text annotation, which only the canvas draws")
+                  else "holds a knowledge model, knowledge source or text annotation, which only the canvas draws")
         fail(f"{dmn_file} {reason} but declares surface {surface!r}; it opens as a bare table and "
              f"the requirement edges are invisible. Use {GRAPH_SURFACE!r}")
     one_table = (len(decisions) == 1 and not canvas_only

@@ -163,8 +163,10 @@ class TestDiagram:
         # PO.Frontend DrdLayout.ts on main, after #8458. Ahead of the CLI on purpose: the
         # dmn-editor-utils the CLI pins still draws inputData 216 and a knowledge model 288,
         # so a file `uip rules format` wrote carries those and is right for its own layout.
+        # A knowledge source is DRD_KNOWLEDGE_WIDTH wide, like a knowledge model.
         assert gc.DRAWN_SIZE == {"decision": (288, 96), "inputData": (240, 96),
-                                 "businessKnowledgeModel": (224, 96), "textAnnotation": (224, 64)}
+                                 "businessKnowledgeModel": (224, 96), "knowledgeSource": (224, 96),
+                                 "textAnnotation": (224, 64)}
 
     def test_overlap_is_measured_at_the_drawn_size(self):
         # 200 apart clears a 180-wide box in the file but not the 288-wide card the designer draws.

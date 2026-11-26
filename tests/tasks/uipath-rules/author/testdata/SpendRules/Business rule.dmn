@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:uipath="http://uipath.com/schema/1.0/dmn/authoring" id="definitions_SpendRules" name="SpendRules" namespace="http://uipath.com/dmn/ns_SpendRules" xmlns:kie="https://kie.org/dmn/extensions/1.0">
+  <extensionElements>
+    <uipath:authoring surface="decision-table" />
+  </extensionElements>
+  <decision id="decision_approval" name="approval" label="Supplier approval">
+    <extensionElements>
+      <uipath:authoring editor="decision-table" />
+    </extensionElements>
+    <variable id="variable_approval" name="approval" typeRef="boolean" />
+    <informationRequirement id="ir_approval_inputData_onboarded">
+      <requiredInput href="#inputData_onboarded" />
+    </informationRequirement>
+    <informationRequirement id="ir_approval_inputData_spend">
+      <requiredInput href="#inputData_spend" />
+    </informationRequirement>
+    <authorityRequirement id="authorityRequirement_approval_policy">
+      <requiredAuthority href="#knowledgeSource_procurementPolicy" />
+    </authorityRequirement>
+    <decisionTable id="dt_approval" hitPolicy="UNIQUE">
+      <input id="in_approval_0" label="onboarded">
+        <inputExpression id="ie_approval_0" typeRef="boolean">
+          <text>onboarded</text>
+        </inputExpression>
+      </input>
+      <input id="in_approval_1" label="spend">
+        <inputExpression id="ie_approval_1" typeRef="number">
+          <text>spend</text>
+        </inputExpression>
+      </input>
+      <output id="out_approval_approved" label="approved" name="approved" typeRef="boolean" />
+      <annotation name="Annotation" />
+      <rule id="rule_approval_0">
+        <inputEntry id="ie_approval_0_0">
+          <text>false</text>
+        </inputEntry>
+        <inputEntry id="ie_approval_0_1">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="oe_approval_0_0">
+          <text>false</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Not onboarded</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_approval_1">
+        <inputEntry id="ie_approval_1_0">
+          <text>true</text>
+        </inputEntry>
+        <inputEntry id="ie_approval_1_1">
+          <text>&lt;= 25000</text>
+        </inputEntry>
+        <outputEntry id="oe_approval_1_0">
+          <text>true</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Within limit</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_approval_2">
+        <inputEntry id="ie_approval_2_0">
+          <text>true</text>
+        </inputEntry>
+        <inputEntry id="ie_approval_2_1">
+          <text>&gt; 25000</text>
+        </inputEntry>
+        <outputEntry id="oe_approval_2_0">
+          <text>false</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Over limit</text>
+        </annotationEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <inputData id="inputData_onboarded" name="onboarded" label="onboarded">
+    <variable id="variable_in_onboarded" name="onboarded" typeRef="boolean" />
+  </inputData>
+  <inputData id="inputData_spend" name="spend" label="spend">
+    <variable id="variable_in_spend" name="spend" typeRef="number" />
+  </inputData>
+  <knowledgeSource id="knowledgeSource_procurementPolicy" name="procurementPolicy2026" label="Procurement Policy 2026">
+    <description>Sets the supplier spend limit.</description>
+    <type>Policy Document</type>
+  </knowledgeSource>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_a3b974c0-30a2-4796-a4b8-76d330b1d527">
+      <dmndi:DMNShape id="DMNShape_e7320796-c63f-4ab2-b25f-9efa71ee16ba" dmnElementRef="decision_approval">
+        <dc:Bounds x="112" y="0" width="288" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_e48257c4-3bef-4027-8fde-86539cb26284" dmnElementRef="inputData_onboarded">
+        <dc:Bounds x="0" y="416" width="240" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_2fd1be2e-ffd0-4c9f-94b3-b7078318ca2a" dmnElementRef="inputData_spend">
+        <dc:Bounds x="272" y="416" width="240" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_aeff9e48-c7b4-43f4-943e-880ac992cbc2" dmnElementRef="knowledgeSource_procurementPolicy">
+        <dc:Bounds x="144" y="208" width="224" height="96" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>
