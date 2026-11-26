@@ -6,7 +6,9 @@ decision-keyed contract, and the DMN profile checks. A regression here passes
 a wrong table or fails a right one in every task that imports it.
 """
 
+import json
 import shutil
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -19,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import rules_check as rc  # noqa: E402
 
 TASKS = Path(__file__).resolve().parent.parent
-FIXTURE = TASKS / "integration" / "diagnose_wrong_output" / "fixtures" / "RiskRules"
+FIXTURE = TASKS / "diagnose" / "wrong_output" / "fixtures" / "RiskRulesSolution" / "RiskRules"
 
 
 def table(hit_policy, rows, inputs=("creditScore",), outputs=("riskBand",)):
@@ -70,7 +72,21 @@ class TestUnaryTest:
 
     def test_unsupported_expression_fails_loudly(self):
         with pytest.raises(SystemExit):
-            rc.unary_test("not(5)", 5)
+            rc.unary_test('starts with("a")', 5)
+
+    @pytest.mark.parametrize("cell, value, expected", [
+        ('"High", "Medium"', "Medium", True),
+        ('"High","Medium"', "Low", False),
+        ('"a,b"', "a,b", True),
+        ('not("High")', "Low", True),
+        ('not("High", "Medium")', "Medium", False),
+        ("not(< 10)", 5, False),
+        ('"High"', None, False),
+        ("< 10", None, False),
+        ("-", None, True),
+    ])
+    def test_lists_negation_and_null(self, cell, value, expected):
+        assert rc.unary_test(cell, value) is expected
 
 
 class TestLiteral:
@@ -185,12 +201,74 @@ class TestProject:
         with pytest.raises(SystemExit):
             rc.load_rule(project)
 
-    def test_rejects_a_business_knowledge_model(self, project):
+    def test_accepts_a_business_knowledge_model(self, project):
+        # Supported since the profile widened; a model is graded by check_knowledge_models.
         path = dmn_of(project)
         text = path.read_text(encoding="utf-8")
         path.write_text(text.replace("</definitions>", '<businessKnowledgeModel id="b" name="b"/></definitions>'), encoding="utf-8")
+        rc.load_rule(project)
+
+    def test_rejects_a_knowledge_source(self, project):
+        path = dmn_of(project)
+        text = path.read_text(encoding="utf-8")
+        path.write_text(text.replace("</definitions>", '<knowledgeSource id="k" name="k"/></definitions>'), encoding="utf-8")
         with pytest.raises(SystemExit):
             rc.load_rule(project)
+
+    def test_accepts_a_decision_whose_logic_is_a_literal_expression(self, project):
+        path = dmn_of(project)
+        text = path.read_text(encoding="utf-8")
+        table_start = text.index("<decisionTable")
+        table_end = text.index("</decisionTable>") + len("</decisionTable>")
+        literal = '<literalExpression id="le" typeRef="number"><text>1</text></literalExpression>'
+        path.write_text(text[:table_start] + literal + text[table_end:], encoding="utf-8")
+        rc.load_rule(project)
+
+    def test_rejects_a_decision_with_no_logic_at_all(self, project):
+        path = dmn_of(project)
+        text = path.read_text(encoding="utf-8")
+        table_start = text.index("<decisionTable")
+        table_end = text.index("</decisionTable>") + len("</decisionTable>")
+        path.write_text(text[:table_start] + text[table_end:], encoding="utf-8")
+        with pytest.raises(SystemExit):
+            rc.load_rule(project)
+
+    def test_the_designers_type_constructors_are_literals(self):
+        # Critical Rule 5 offers these as column types, so a cell spelling one is not a call.
+        for cell in ('date("2026-01-01")', 'time("09:30:00")', 'date and time("2026-01-01T09:30:00")',
+                     'duration("P30D")', 'duration("P1Y2M")'):
+            assert rc.literal(cell) == cell
+
+    def test_a_dotted_upstream_field_resolves_instead_of_grading_as_text(self):
+        names = {"risk": {"riskBand": "High", "score": 7.0}, "fee": 12.5}
+        assert rc.read_name(names, "risk.riskBand") == (True, "High")
+        assert rc.read_name(names, " risk.score ") == (True, 7.0)
+        assert rc.read_name(names, "fee") == (True, 12.5)
+        assert rc.read_name(names, "risk.missing") == (False, None)
+        assert rc.read_name(names, "fee.anything") == (False, None)
+        assert rc.read_name(names, "notAName") == (False, None)
+
+    def test_a_call_in_an_output_cell_is_not_read_as_a_string(self):
+        # Returning the raw source would grade a correct rule wrong; the engine grades calls. It
+        # answers unevaluable rather than aborting, so a cell no case asks about cannot kill the
+        # whole grade — the caller decides what an unevaluable cell means for it.
+        assert rc.literal("scoreModel(1)") is rc.UNEVALUABLE
+        assert rc.literal("base * 1.1") is rc.UNEVALUABLE
+        assert rc.literal('"High"') == "High"
+        assert rc.literal("12.5") == 12.5
+        assert rc.literal("-3") == -3.0
+        assert rc.literal("true") is True
+
+    def test_a_single_decision_case_still_fails_loudly_on_a_call(self):
+        model = 'xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"'
+        table = ET.fromstring(f'''<decisionTable {model} hitPolicy="UNIQUE">
+          <input><inputExpression typeRef="number"><text>amount</text></inputExpression></input>
+          <output name="fee" typeRef="number"/>
+          <rule><inputEntry><text>-</text></inputEntry><outputEntry><text>scoreModel(amount)</text></outputEntry></rule>
+        </decisionTable>''')
+
+        with pytest.raises(SystemExit):
+            rc.check_cases(table, "fee", [({"amount": 1}, 1.0)])
 
     def test_renamed_decision_id_breaks_the_contract(self, project):
         dmn_file, root = rc.load_rule(project)
@@ -240,3 +318,40 @@ class TestProject:
         _, root = rc.load_rule(project)
         with pytest.raises(SystemExit):
             rc.check_named_rules(rc.table_of(root))
+
+
+def test_first_stops_at_its_first_match():
+    """A FIRST table never evaluates the rows below the one that answers."""
+    # With `literal()` refusing a call, reading every matching row let an unused fallback row
+    # abort grading on an expression the engine would never have looked at.
+    model = 'xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"'
+    table = ET.fromstring(f'''<decisionTable {model} hitPolicy="FIRST">
+      <input><inputExpression typeRef="number"><text>amount</text></inputExpression></input>
+      <output name="fee" typeRef="number"/>
+      <rule><inputEntry><text>&gt; 5</text></inputEntry><outputEntry><text>1</text></outputEntry></rule>
+      <rule><inputEntry><text>-</text></inputEntry><outputEntry><text>scoreModel(amount)</text></outputEntry></rule>
+    </decisionTable>''')
+
+    assert rc.evaluate(table, {"amount": 10}) == {"fee": 1}
+
+
+class TestFormatCheck:
+    """`run_format_check` with `uip` stubbed, so these run without the CLI."""
+
+    @staticmethod
+    def stub(monkeypatch, project, files, returncode=0):
+        def run(command, **_):
+            assert Path(command[3]) != project  # formats a copy, never the agent's files
+            body = json.dumps({"Data": {"Files": files}})
+            return subprocess.CompletedProcess(command, returncode, stdout=body, stderr="")
+        monkeypatch.setattr(rc.subprocess, "run", run)
+
+    def test_passes_when_nothing_changes(self, project, monkeypatch):
+        self.stub(monkeypatch, project, [{"File": "rule.dmn", "Changed": False}])
+        rc.run_format_check(project)
+
+    @pytest.mark.parametrize("files, returncode", [([{"File": "rule.dmn", "Changed": True}], 0), ([], 1)])
+    def test_fails_on_a_change_or_a_failed_run(self, project, monkeypatch, files, returncode):
+        self.stub(monkeypatch, project, files, returncode)
+        with pytest.raises(SystemExit):
+            rc.run_format_check(project)

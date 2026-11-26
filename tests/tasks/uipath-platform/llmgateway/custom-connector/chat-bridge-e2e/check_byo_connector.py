@@ -1,18 +1,30 @@
 #!/usr/bin/env python3
-"""Grade a BYO LLM custom connector built for the OpenAiChatCompletions flavor.
+"""Grade the BYO LLM custom connector built for the OpenAiChatCompletions flavor.
 
-Static checks (both modes): the flavor's resource path, the template tag, the
-x-api-key header, no secret defaults, no credentials in query/path parameters.
+The argument is the agent workspace root, or any directory holding the
+connector. The grader resolves the one connector under it whose
+app/element/element.json key is design-acme-acmechatbridge, whatever its folder
+is called, and refuses (exit 1) when it finds none or more than one. It grades
+this task's connector only; it is not a general connector checker.
 
-Hook checks (--hooks): run the connector's own preRequest/postRequest hooks for
-POST /v1/chat/completions in a Node vm against an OpenAI chat body and Acme
-Inference API answers (see fixtures/acme-inference-api.md), and assert the
-translation both ways. Exit 0 only when every check passes.
+Static checks (default mode, and with --hooks): the flavor's resource path, the
+template tag, the x-api-key header, no secret defaults, no credentials in
+query/path parameters.
 
-Usage: check_byo_connector.py <connector_root> [--hooks]
+Hook checks (--hooks, after the static checks): run the connector's own
+preRequest/postRequest hooks for POST /v1/chat/completions in a Node vm against
+an OpenAI chat body and Acme Inference API answers (see
+fixtures/acme-inference-api.md), and assert the translation both ways.
+
+In these two checking modes, exit 0 only when every check passes.
+
+--print-root: print the resolved connector root and exit 0. Runs no checks.
+
+Usage: check_byo_connector.py <workspace_or_connector_root> [--hooks | --print-root]
 """
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -22,6 +34,8 @@ FLAVOR_PATH = "/v1/chat/completions"
 FLAVOR_TAG = "aigateway-openai-chat-completions"
 VENDOR_PATH = "/v2/generate"
 CREDENTIAL_HINTS = ("key", "token", "secret", "password", "authorization", "credential")
+CONNECTOR_KEY = "design-acme-acmechatbridge"
+MODE_FLAGS = {"--hooks", "--print-root"}
 
 NODE_RUNNER = r"""
 const fs = require('fs');
@@ -90,6 +104,27 @@ class Report:
 
 def load_json(path: Path):
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def resolve_connector_root(workspace: Path) -> Path:
+    """Locate the task's connector by its identity, not its chosen folder name."""
+    matches = []
+    for directory, children, files in os.walk(workspace):
+        children[:] = [name for name in children if name not in {
+            "node_modules", ".git", ".agents", ".claude", ".venv", ".npm-prefix",
+        }]
+        path = Path(directory)
+        if path.parts[-2:] != ("app", "element") or "element.json" not in files:
+            continue
+        try:
+            element = load_json(path / "element.json")
+        except (OSError, ValueError):
+            continue
+        if isinstance(element, dict) and element.get("key") == CONNECTOR_KEY:
+            matches.append(path.parent.parent)
+    if len(matches) != 1:
+        raise ValueError(f"Expected one connector with key {CONNECTOR_KEY}; found {len(matches)}")
+    return matches[0]
 
 
 def as_obj(value):
@@ -250,10 +285,18 @@ def hook_checks(report: Report, root: Path, element: dict, resource: dict) -> No
 
 def main() -> int:
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    if len(args) != 1:
+    flags = {a for a in sys.argv[1:] if a.startswith("--")}
+    if len(args) != 1 or flags - MODE_FLAGS or flags == MODE_FLAGS:
         print(__doc__)
         return 2
-    root = Path(args[0])
+    try:
+        root = resolve_connector_root(Path(args[0]))
+    except ValueError as error:
+        print(f"FAIL  {error}", file=sys.stderr)
+        return 1
+    if "--print-root" in flags:
+        print(root)
+        return 0
     report = Report()
     element_path = root / "app" / "element" / "element.json"
     metadata_path = root / "app" / "element" / "element-metadata.json"
@@ -262,7 +305,7 @@ def main() -> int:
     element = load_json(element_path)
     metadata = load_json(metadata_path)
     resource = static_checks(report, root, element, metadata)
-    if "--hooks" in sys.argv and resource is not None:
+    if "--hooks" in flags and resource is not None:
         hook_checks(report, root, element, resource)
     return report.finish()
 

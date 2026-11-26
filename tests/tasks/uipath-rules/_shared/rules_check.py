@@ -2,7 +2,8 @@
 """Shared grading for the uipath-rules tasks.
 
 `rules_check.py validate` passes when `uip rules validate` passes on the
-RiskRules project. `rules_check.py policy` grades a freshly authored RiskRules
+RiskRules project. `rules_check.py format` passes when `uip rules format`, run
+on a copy, changes no file. `rules_check.py policy` grades a freshly authored RiskRules
 rule: the authoring profile `validate` does not enforce, the entry-point
 contract `uip rules refresh` writes, and the table's risk band for each POLICY
 case. `rules_check.py names` passes when every rule carries a non-empty
@@ -14,8 +15,10 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -53,7 +56,8 @@ def business_rules_projects() -> list[Path]:
     return projects
 
 
-def find_project(name: str = PROJECT_NAME) -> Path:
+def find_project(name: str | None = None) -> Path:
+    name = name or PROJECT_NAME
     for project in business_rules_projects():
         if json.loads((project / "project.uiproj").read_text(encoding="utf-8")).get("Name") == name:
             return project
@@ -70,8 +74,25 @@ def run_validate(project: Path) -> None:
         fail(f"`uip rules validate {project}` failed: {(completed.stdout or completed.stderr)[-1500:]}")
 
 
-def load_rule(project: Path) -> tuple[Path, ET.Element]:
-    """The project's one `.dmn`, once it holds the profile `validate` deliberately accepts."""
+def run_format_check(project: Path) -> None:
+    """Fails when `uip rules format`, run on a copy, would change a file: the diagram lags the model."""
+    with tempfile.TemporaryDirectory() as scratch:
+        copy = Path(scratch) / project.name
+        shutil.copytree(project, copy)
+        completed = subprocess.run(["uip", "rules", "format", str(copy), "--output", "json"],
+                                   capture_output=True, text=True, timeout=120)
+    if completed.returncode != 0:
+        fail(f"`uip rules format {project}` failed: {(completed.stdout or completed.stderr)[-1500:]}")
+    try:
+        changed = [f.get("File") for f in json.loads(completed.stdout)["Data"]["Files"] if f.get("Changed")]
+    except (ValueError, KeyError, TypeError):
+        fail(f"`uip rules format` printed no Data.Files: {completed.stdout[-1500:]}")
+    if changed:
+        fail(f"`uip rules format` still changes {changed}; run it after adding or removing an element")
+
+
+def load_graph(project: Path) -> tuple[Path, ET.Element]:
+    """The project's one `.dmn`, once it holds the profile the skill authors: every decision's logic a decision table or a literal expression, knowledge models and text annotations allowed, no knowledge source or decision service."""
     dmn_files = list(project.glob("*.dmn"))
     if len(dmn_files) != 1:
         fail(f"expected exactly one .dmn in {project}/, found {len(dmn_files)}")
@@ -83,15 +104,25 @@ def load_rule(project: Path) -> tuple[Path, ET.Element]:
     root = ET.fromstring(text)
     if root.tag != f"{{{DMN_NS}}}definitions":
         fail(f"{dmn_files[0]} is not a DMN 1.5 <definitions>")
-    for unsupported in ("businessKnowledgeModel", "knowledgeSource", "decisionService"):
+    for unsupported in ("knowledgeSource", "decisionService"):
         if root.findall(f"dmn:{unsupported}", NS):
             fail(f"{dmn_files[0]} declares a {unsupported}")
     decisions = root.findall("dmn:decision", NS)
-    if len(decisions) != 1:
-        fail(f"{dmn_files[0]} holds {len(decisions)} decisions, expected exactly one")
-    if decisions[0].find("dmn:decisionTable", NS) is None:
-        fail(f"{dmn_files[0]}: the decision's logic is not a decisionTable")
+    if not decisions:
+        fail(f"{dmn_files[0]} holds no decision")
+    for decision in decisions:
+        if decision.find("dmn:decisionTable", NS) is None and decision.find("dmn:literalExpression", NS) is None:
+            fail(f"{dmn_files[0]}: the logic of decision {decision.get('name')!r} is neither a decisionTable nor a literalExpression")
     return dmn_files[0], root
+
+
+def load_rule(project: Path) -> tuple[Path, ET.Element]:
+    """`load_graph`, for a rule that must hold exactly one decision."""
+    dmn_file, root = load_graph(project)
+    decisions = root.findall("dmn:decision", NS)
+    if len(decisions) != 1:
+        fail(f"{dmn_file} holds {len(decisions)} decisions, expected exactly one")
+    return dmn_file, root
 
 
 def decision_of(root: ET.Element) -> ET.Element:
@@ -122,7 +153,10 @@ def check_annotations_in_order(table: ET.Element, expected: list[str]) -> None:
         fail(f"the rows' annotations read {annotations(table)}, expected {expected} among them in that order")
 
 
-def check_named_rules(table: ET.Element) -> None:
+def check_named_rules(table: ET.Element | None) -> None:
+    # A literal expression has no rules, so no annotation column and nothing to name.
+    if table is None:
+        return
     clauses = len(table.findall("dmn:annotation", NS))
     if clauses != 1:
         fail(f"the table declares {clauses} <annotation> columns, expected 1")
@@ -168,9 +202,9 @@ def output_properties(schema: dict) -> dict:
     return {name: prop for decision in properties.values() for name, prop in (decision.get("properties") or {}).items()}
 
 
-def check_contract(project: Path, dmn_file: Path, root: ET.Element, inputs: dict, outputs: dict) -> dict:
-    """The entry point addressing the decision, carrying the contract `uip rules refresh` writes; returns it."""
-    file_path = f"/{dmn_file.name}#{decision_of(root).get('id')}"
+def check_contract(project: Path, dmn_file: Path, root: ET.Element, inputs: dict, outputs: dict, whole_file: bool = False) -> dict:
+    """The entry point addressing the decision (or, with `whole_file`, the file), carrying the contract `uip rules refresh` writes; returns it."""
+    file_path = f"/{dmn_file.name}" if whole_file else f"/{dmn_file.name}#{decision_of(root).get('id')}"
     entry = next((e for e in read_entry_points(project) if e.get("filePath") == file_path), None)
     if entry is None:
         fail(f"no entry point addresses {file_path}; the decision id or file name changed")
@@ -190,8 +224,15 @@ def unary_test(cell: str, value: object) -> bool:
     cell = cell.strip()
     if cell in ("", "-"):
         return True
-    if "," in cell and not cell.startswith('"'):
-        return any(unary_test(part, value) for part in cell.split(","))
+    negated = re.fullmatch(r"not\s*\((.*)\)", cell)
+    if negated:
+        return not unary_test(negated.group(1), value)
+    # Commas outside quotes separate alternatives: `< 10, > 90` and `"High", "Medium"`.
+    parts = [part.strip() for part in re.findall(r'(?:"[^"]*"|[^,])+', cell)]
+    if len(parts) > 1:
+        return any(unary_test(part, value) for part in parts)
+    if value is None:
+        return False
     if cell in ("true", "false"):
         return value is (cell == "true")
     if re.fullmatch(r'"[^"]*"', cell):
@@ -213,6 +254,16 @@ def unary_test(cell: str, value: object) -> bool:
     raise AssertionError
 
 
+class _Unevaluable:
+    """A cell the offline evaluator cannot read — a call or a formula, which only the engine runs."""
+
+    def __repr__(self) -> str:
+        return "<unevaluable: a call or a formula>"
+
+
+UNEVALUABLE = _Unevaluable()
+
+
 def literal(text: str) -> object:
     text = text.strip()
     if re.fullmatch(r'"[^"]*"', text):
@@ -221,13 +272,50 @@ def literal(text: str) -> object:
         return float(text)
     if text in ("true", "false"):
         return text == "true"
+    # The FEEL constructors for the designer's own types. Critical Rule 5 offers date, time,
+    # date and time, and both durations as column types, so a cell spelling one of them is a
+    # literal like any other and is kept as its source text for comparison.
+    if re.fullmatch(r'(date and time|date|time|duration)\s*\(\s*"[^"]*"\s*\)', text):
+        return text
+    # Anything else carrying a call or an operator is neither a literal nor a name. Returning the
+    # raw source would grade `scoreModel(1)` as the string "scoreModel(1)" and silently mark a
+    # correct rule wrong, so the cell is answered as unevaluable and the caller decides. Failing
+    # here instead aborted a whole graph on a cell no case asked about.
+    if re.search(r"[()+*/]|(?<![<>=!])-(?!\s*$)", text):
+        return UNEVALUABLE
     return text
 
 
-def evaluate(table: ET.Element, inputs: dict) -> dict | None:
-    """The single result the table's hit policy returns, keyed by output name."""
+def read_name(names: dict, text: str) -> tuple[bool, object]:
+    """`text` as a name the table may read, plain or dotted, resolved against `names`.
+
+    A decision whose table has one output answers with that value, so a reader names it bare.
+    A decision with several answers with a structure, so a reader names one field of it —
+    `risk.riskBand`, which the guide documents. Without this the dotted form fell through to
+    `literal` and graded as its own source text, which is a wrong value and never an error.
+    """
+    parts = text.strip().split(".")
+    if parts[0] not in names:
+        return False, None
+    value: object = names[parts[0]]
+    for part in parts[1:]:
+        if not isinstance(value, dict) or part not in value:
+            return False, None
+        value = value[part]
+    return True, value
+
+
+def evaluate(table: ET.Element, inputs: dict, names: dict | None = None) -> dict | None:
+    """The single result the table's hit policy returns, keyed by output name.
+
+    An output entry that is one of `names` returns that name's value, as a
+    decision that passes an upstream result through does.
+    """
+    names = names or {}
     columns = input_columns(table)
-    names = output_names(table)
+    policy = table.get("hitPolicy", "UNIQUE")
+    if policy not in ("FIRST", "UNIQUE", "ANY"):
+        fail(f"hit policy {policy} is outside the single-result policies this check evaluates")
     hits = []
     for rule in table.findall("dmn:rule", NS):
         cells = [(e.findtext("dmn:text", default="", namespaces=NS) or "") for e in rule.findall("dmn:inputEntry", NS)]
@@ -235,20 +323,28 @@ def evaluate(table: ET.Element, inputs: dict) -> dict | None:
             fail("a rule's input entries do not match the input columns")
         if all(unary_test(cell, inputs[column]) for cell, column in zip(cells, columns) if column in inputs):
             values = [(e.findtext("dmn:text", default="", namespaces=NS) or "") for e in rule.findall("dmn:outputEntry", NS)]
-            hits.append({name: literal(value) for name, value in zip(names, values)})
-    policy = table.get("hitPolicy", "UNIQUE")
+            resolved = []
+            for value in values:
+                found, read = read_name(names, value)
+                resolved.append(read if found else literal(value))
+            hits.append(dict(zip(output_names(table), resolved)))
+            # FIRST answers with this row, so the rows below it are never evaluated. Reading them
+            # anyway means a later fallback row holding a call or a formula aborts grading on
+            # `literal()`'s refusal, though the engine would never have looked at it.
+            if policy == "FIRST":
+                break
     if policy == "UNIQUE" and len(hits) > 1:
         fail(f"{inputs} matches {len(hits)} rows of a UNIQUE table")
     if policy == "ANY" and any(hit != hits[0] for hit in hits):
         fail(f"{inputs} matches rows of an ANY table with different outputs")
-    if policy not in ("FIRST", "UNIQUE", "ANY"):
-        fail(f"hit policy {policy} is outside the single-result policies this check evaluates")
     return hits[0] if hits else None
 
 
 def check_cases(table: ET.Element, output: str, cases: list) -> None:
     for inputs, expected in cases:
         actual = (evaluate(table, inputs) or {}).get(output)
+        if actual is UNEVALUABLE:
+            fail(f"output {output} for {inputs} is a call or a formula; grade it with 'graph_check.py engine'")
         if actual != expected:
             fail(f"{inputs} returned {actual!r}, expected {expected!r}")
 
@@ -266,9 +362,13 @@ def grade_policy() -> None:
 
 if __name__ == "__main__":
     mode = sys.argv[1] if len(sys.argv) > 1 else "policy"
+    name = sys.argv[2] if len(sys.argv) > 2 else None
     if mode == "validate":
-        run_validate(find_project())
+        run_validate(find_project(name))
         print("OK: uip rules validate passes")
+    elif mode == "format":
+        run_format_check(find_project(name))
+        print("OK: uip rules format changes nothing")
     elif mode == "policy":
         grade_policy()
     elif mode == "names":

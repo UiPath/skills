@@ -1,0 +1,38 @@
+task_id: skill-mcp-servers-guardrail-create
+description: |
+  Add a PII guardrail that blocks US Social Security numbers and IBANs on a remote Agent Gateway MCP server. Exercises the Guardrails section and its entity names: `uip agenthub mcp-guardrails create --validator pii-detection --action block` with the catalog names `USSocialSecurityNumber` and `InternationalBankingAccountNumber`, which the CLI's help does not list (its example uses Email and CreditCardNumber), and the caller-facing reason, in the server's folder, not an `mcp update` of the server. The user said block, so no question is needed.
+tags: [uipath-mcp-servers, smoke, 'mode:build', 'lifecycle:configure']
+agent:
+  type: claude-code
+  allowed_tools: [Skill, Bash, Read, Write]
+sandbox:
+  python: {}
+  template_sources:
+  - {type: template_dir, path: ../_shared/mock_template}
+  - {type: template_dir, path: fixtures}
+  mock_path_dirs: [mocks]
+reference:
+  directory: .
+initial_prompt: |
+  Use the `uip` CLI as if it were the real UiPath CLI (it is mocked in this
+  sandbox; manifest-driven canned responses).
+
+  TASK: On the remote AgentHub MCP server vendor-mcp in the Shared folder, block
+  every tool call whose input or result contains a US Social Security number or
+  an IBAN. Callers should see "Personal data is not allowed".
+success_criteria:
+- type: run_command
+  description: 'One executed `mcp-guardrails create --validator pii-detection --mcp vendor-mcp --action block` with exactly the entities USSocialSecurityNumber and InternationalBankingAccountNumber, the --reason the user gave, and the Shared folder; no executed `mcp update`'
+  command: python3 $REFERENCE_DIR/check_guardrail_create.py
+  timeout: 30
+  expected_exit_code: 0
+  weight: 3.0
+- type: command_not_executed
+  description: Agent did NOT change the server itself (a guardrail is its own resource)
+  tool_name: Bash
+  command_pattern: 'uip\s+agenthub\s+mcp\s+update\b(?![^\n]*--(dry-run|help|print-schema))'
+- type: command_not_executed
+  description: Agent did NOT delete a guardrail
+  tool_name: Bash
+  command_pattern: 'uip\s+agenthub\s+mcp-guardrails\s+delete\b(?![^\n]*--(dry-run|help))'
+run_limits: {max_turns: 60}

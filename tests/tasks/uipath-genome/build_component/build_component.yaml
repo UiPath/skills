@@ -119,3 +119,10 @@ success_criteria:
     command_pattern: '(uip|\$UIP)\s+(solution\s+(publish|deploy|upload)|rpa\s+publish|or\s+packages\s+upload)'
     weight: 1.0
     pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Nothing is created in the tenant: an unattended run creates no Platform resources"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(or\s+(assets|queues|buckets|folders|triggers)\s+create|df\s+(entities|choice-sets)\s+create|df\s+records\s+insert|is\s+connections\s+create|admin\s+external-apps\s+create)'
+    weight: 1.0
+    pass_threshold: 1.0

@@ -1,6 +1,52 @@
 {
   "uipath-activity-migrator": {
-    "allow": [],
+    "allow": [
+      {
+        "file": "SKILL.md",
+        "command": "rpa project migrate",
+        "reason": "`uip rpa project migrate` runs the Windows desktop migrator inside Helm; the studioweb flavor stops this skill before any step (host-availability-extra)."
+      },
+      {
+        "file": "SKILL.md",
+        "command": "rpa project migrate version",
+        "reason": "`uip rpa project migrate` runs the Windows desktop migrator inside Helm; the studioweb flavor stops this skill before any step (host-availability-extra)."
+      },
+      {
+        "file": "references/acquisition-guide.md",
+        "command": "rpa project",
+        "reason": "`uip rpa project migrate` runs the Windows desktop migrator inside Helm; the studioweb flavor stops this skill before any step (host-availability-extra)."
+      },
+      {
+        "file": "references/acquisition-guide.md",
+        "command": "rpa project migrate",
+        "reason": "`uip rpa project migrate` runs the Windows desktop migrator inside Helm; the studioweb flavor stops this skill before any step (host-availability-extra)."
+      },
+      {
+        "file": "references/acquisition-guide.md",
+        "command": "rpa project migrate version",
+        "reason": "`uip rpa project migrate` runs the Windows desktop migrator inside Helm; the studioweb flavor stops this skill before any step (host-availability-extra)."
+      },
+      {
+        "file": "references/acquisition-guide.md",
+        "command": "update",
+        "reason": "How a Windows desktop install updates the CLI and its Helm; the studioweb flavor stops this skill before any step (host-availability-extra)."
+      },
+      {
+        "file": "references/tool-behavior-guide.md",
+        "command": "rpa project migrate",
+        "reason": "`uip rpa project migrate` runs the Windows desktop migrator inside Helm; the studioweb flavor stops this skill before any step (host-availability-extra)."
+      },
+      {
+        "file": "SKILL.md",
+        "command": "login",
+        "reason": "Names the `uip login` session whose tenant feeds the desktop migrator restores from; prose, not a step, and the studioweb flavor stops this skill before any step (host-availability-extra)."
+      },
+      {
+        "file": "references/tool-behavior-guide.md",
+        "command": "login",
+        "reason": "Names the `uip login` session whose tenant feeds the desktop migrator restores from; prose, not a step, and the studioweb flavor stops this skill before any step (host-availability-extra)."
+      }
+    ],
     "ceiling": {
       "login status": 1,
       "rpa activities get-default-xaml": 1,
@@ -232,6 +278,11 @@
         "file": "references/pack-publish-deploy.md",
         "command": "codedapp delete",
         "reason": "Studio Web's host-scope override at the top of this file says `uip codedapp` does not run here; the delete mention is Node-only guidance under that banner."
+      },
+      {
+        "file": "references/public-coded-app.md",
+        "command": "solution pack",
+        "reason": "The pack/publish and upgrade blocks of the public app reference. Studio Web's host-scope note at the top of this file says these commands do not run here and are handed to the user to run on their machine."
       }
     ],
     "ceiling": {
@@ -712,7 +763,13 @@
     }
   },
   "uipath-rpa": {
-    "allow": [],
+    "allow": [
+      {
+        "file": "references/remote-session-guide.md",
+        "command": "rpa remote configure",
+        "reason": "The Studio Web build of this file opens with a host-scope note that remote sessions do not exist in Studio Web and no command in it may run there; remote-target setup and Live Authoring's Remote View run only through the local uip CLI and desktop UiPath Studio."
+      }
+    ],
     "ceiling": {
       "login": 17,
       "login status": 1,
@@ -750,7 +807,6 @@
       "rpa project": 9,
       "rpa publish": 4,
       "rpa remote": 3,
-      "rpa remote configure": 2,
       "rpa remote download-file": 1,
       "rpa remote exec": 6,
       "rpa remote start": 2,
@@ -769,7 +825,7 @@
       "rpa tm connect": 3,
       "rpa tm set-default-project": 2,
       "rpa tm status": 2,
-      "rpa uia": 14,
+      "rpa uia": 13,
       "rpa validate": 32,
       "rpa workflow-examples get": 2,
       "rpa workflow-examples list": 2,
@@ -786,7 +842,6 @@
     }
   },
   "uipath-rules": {
-    "allow": [],
     "ceiling": {
       "login tenant set": 1,
       "rules debug": 2,
@@ -824,6 +879,31 @@
         "file": "references/pack-and-deploy.md",
         "command": "update",
         "reason": "The GitHub Actions example and its freeze note describe a CI runner with the npm-installed CLI, not the Studio Web host, so the text is right as is for a Studio Web user who sets up CI."
+      },
+      {
+        "file": "references/pack-build-guide.md",
+        "command": "solution pack",
+        "reason": "Node-CLI-only reference: documents what `solution pack` does inside its build (feeds, analyzer, coded-app build, package ids). Studio Web publishes the solution itself and never runs it."
+      },
+      {
+        "file": "references/pack-build-guide.md",
+        "command": "solution cleanup",
+        "reason": "Node-CLI-only reference: `solution cleanup` edits project sources on a local checkout; Studio Web does not run it."
+      },
+      {
+        "file": "references/pack-build-guide.md",
+        "command": "codedapp init",
+        "reason": "Prose: names where `config.bundlePath` points for an app `codedapp init` scaffolded, not an instruction to run it."
+      },
+      {
+        "file": "references/develop-solution.md",
+        "command": "tools install",
+        "reason": "Node-CLI-only note: `Data.ResourcesPending` comes from `projects add` / `import`, which Studio Web does not use; the tool install it names applies to the Node CLI."
+      },
+      {
+        "file": "references/develop-solution.md",
+        "command": "rpa debug start",
+        "reason": "Lists each project type's Node CLI debug command and where each one runs; the point is that debugging is not deploying."
       }
     ],
     "ceiling": {

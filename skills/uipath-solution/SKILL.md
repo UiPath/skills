@@ -98,7 +98,7 @@ The typical lifecycle for a UiPath Solution:
 8. (optional) activate → Use --skip-activate on deploy, then activate explicitly
 ```
 
-> **`restore` is an optimization, not a requirement.** `pack` restores dependencies internally, so a separate `restore` step is only useful when you want deps resolved up front — most often in CI (`login → restore → pack`) to fail fast on a missing feed before the heavier pack runs. `restore` takes a `<solutionPath>` only (solution dir with a `.uipx`, or a `.uis` file), resolves deps in place, and does **not** produce a package. It needs an authenticated session to reach private Orchestrator feeds, so run `uip login` before it.
+> **`restore` is an optimization, not a requirement.** `pack` restores dependencies internally, so a separate `restore` step is only useful when you want deps resolved up front — most often in CI (`login → restore → pack`) to fail fast on a missing feed before the heavier pack runs. `restore` takes a `<solution-path>` only (solution dir with a `.uipx`, or a `.uis` file), resolves deps in place, and does **not** produce a package. It needs an authenticated session to reach private Orchestrator feeds, so run `uip login` before it.
 
 > **AppV2 coded apps in the solution flow through `uip solution`, not `uip codedapp` directly.** When a coded-app project has `Type: "AppV2"` in `.uipx`, `uip solution pack` bundles its `.nupkg` and `uip solution deploy run` provisions it in the deployment folder — no separate `uip codedapp pack` / `publish` / `deploy` step. Standalone coded apps (scaffolded outside any solution via `npx create-vite`, flat `dist/` at the project root, no `project.uiproj` / `webAppManifest.json`) use the direct `codedapp` path instead. See `uipath-coded-apps` for the standalone lifecycle and for authoring an AppV2 project inside a solution via `uip codedapp init`.
 <!--skill-flavor:solution-lifecycle-steps:end-->
@@ -106,6 +106,8 @@ The typical lifecycle for a UiPath Solution:
 Two distinct distribution paths from the same source:
 - **`pack` → `publish` → `deploy run`** — promotes a versioned package to Orchestrator.
 - **`upload`** — pushes the solution to Studio Web for browser-based debugging only. Does not produce a published package and cannot be deployed via `deploy run`.
+
+To debug or run the solution from the CLI, refresh, then run the lead project's own debug command ([Debug or Run the Solution](references/develop-solution.md#debug-or-run-the-solution)); `upload` alone runs nothing.
 
 Authentication is a prerequisite. Check `uip login status --output json` before any work; if not logged in, ask the user to run `uip login` (interactive browser flow). See `uipath-platform` for full auth options (interactive OAuth, client credentials, tenant switching).
 
@@ -150,6 +152,7 @@ When the download answers `not_found`, the solution is not in Studio Web, and th
 | [Develop a Solution](references/develop-solution.md) | `uip solution init / project add / import / remove / resources refresh / resources add / resources remove / resources edit`; field-tested gotchas |
 <!--skill-flavor:develop-solution-row:end-->
 | [Pack and Deploy](references/pack-and-deploy.md) | `restore / pack / publish / deploy run / feeds list`, targeting a non-tenant feed (`--feed` / `--personal-workspace`), deploy configs, CI/CD pipeline patterns |
+| [Pack Build Guide](references/pack-build-guide.md) | Inside `pack`: `Data.Projects` on failure, dependency feeds, signing, analyzer and governance, coded-app builds, member package ids, `solution cleanup` |
 | [Folder Runtime Check](references/deploy-folder-runtimes.md) | The `Data.Warnings` a deploy or upgrade gives when the folder has no runtime for a process's unattended jobs, and the `uip or machines assign` fix |
 | [Activate and Manage](references/activate-and-manage.md) | `deploy activate / status / upgrade / uninstall / delete`, in-place version upgrades, environment management |
 | [Scenarios Index](references/scenarios.md) | Failure modes and edge cases — manual edits, shared resources, virtual resources, name collisions, solutions that carry an ontology |

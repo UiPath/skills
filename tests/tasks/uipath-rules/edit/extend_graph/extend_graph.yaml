@@ -1,0 +1,83 @@
+task_id: skill-rules-smoke-graph-extend-brownfield
+description: >
+  Agent adds a freight decision to a Business Rules project that already holds
+  a knowledge model, a literal-expression decision and a text annotation,
+  offline. Every other brownfield fixture is decision tables only, so this is
+  the one that grades what survives an edit: the model still there and still
+  the only one, the literal-expression decision intact, the note still tied to
+  an element, the placed shapes where the user left them, the published entry
+  points kept, and the new decision calling the model that was already there
+  rather than declaring a second. The freight figure is a call, so the engine
+  grades it, not this.
+tags: [uipath-rules, integration, "mode:build", "lifecycle:generate"]
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  The `PricingRules/` folder is our UiPath Business Rules project. It works out
+  a tier percentage and a net unit price. Add freight to the same rule:
+
+  - Freight is a flat 50 before discount.
+  - It gets the same tier percentage off as the unit price does.
+  - Output: `freight` (number).
+
+  Leave everything else exactly as it is — I arranged that diagram and the note
+  on it matters.
+
+  There is no tenant to evaluate against, so do not run `uip rules debug`.
+  Do not ask for confirmation.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-rules skill"
+    skill_name: "uipath-rules"
+    expected_skill: "uipath-rules"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The knowledge model, the literal-expression decision, the note and the tier values all survived the edit"
+    command: "python3 $REFERENCE_DIR/edit/extend_graph/check_extend_graph.py kept"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The freight decision calls the knowledge model that was already there, rather than a second one"
+    command: "python3 $REFERENCE_DIR/edit/extend_graph/check_extend_graph.py wired"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The user's shapes are where they were, every element is placed, and the entry points are kept"
+    command: "python3 $REFERENCE_DIR/edit/extend_graph/check_extend_graph.py diagram"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rules validate passes on the project"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py validate PricingRules"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The diagram matches the model: uip rules format changes nothing"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py format PricingRules"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0

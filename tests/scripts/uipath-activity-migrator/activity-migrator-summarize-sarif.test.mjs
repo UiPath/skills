@@ -47,6 +47,12 @@ test("exits 2 for a file without JSON and for malformed JSON", () => {
   assert.match(broken.stderr, /cannot parse/);
 });
 
+test("exits 2 with uip's code and message when the file holds a uip failure instead of a log", () => {
+  const r = run(write({ Result: "Failure", Code: "helm-missing", Message: "Helm was not found", Instructions: "Reinstall uip" }));
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /failure reported by uip in .*: helm-missing: Helm was not found: Reinstall uip/);
+});
+
 test("extracts the JSON object from surrounding console noise", () => {
   const s = JSON.parse(run(write("log line\n" + JSON.stringify(log([VALIDATION])) + "\ntrailer"), "--json").stdout);
   assert.equal(s.status, "success");

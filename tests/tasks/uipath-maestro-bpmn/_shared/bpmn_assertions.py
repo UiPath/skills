@@ -76,6 +76,11 @@ def mapping_outputs(element: ET.Element) -> list[ET.Element]:
     )
 
 
+def has_source(output: ET.Element) -> bool:
+    """The engine drops an output with no `source` and no CDATA body when it parses the file."""
+    return bool(output.attrib.get("source") or (output.text or "").strip())
+
+
 def mapping_inputs(element: ET.Element) -> list[ET.Element]:
     # The canonical wrapper is `<uipath:activity>`; `<uipath:mapping>` is
     # the script-task / variables shape. Match either. Only top-level

@@ -80,5 +80,5 @@ Use `--resource-key` when a live Studio Web resource capability exposes the exac
 <!--skill-flavor:solution-metadata-antipattern:end-->
 
 <!--skill-flavor:required-field-antipattern:start-->
-- **Cross-check every stub against the resource schema.** Use `uip is resources describe <connector-key> <object-name> --operation <op> --connection-id <uuid> --output json` or the stub's `metadata.configuration.optionalConfiguration.fieldsContainer.inputFields`, then populate every `required: true` field before validation and approved host execution.
+- **Cross-check every stub against the resource schema.** Read the stub's `Data.Warnings` and the `required` flags in `Data.Parameters` and `Data.RequestFields`, or use `uip is resources describe <connector-key> <object-name> --operation <op> --connection-id <uuid> --output json`, then populate every `required: true` field before validation and approved host execution. See [Required-field cross-check](#required-field-cross-check).
 <!--skill-flavor:required-field-antipattern:end-->

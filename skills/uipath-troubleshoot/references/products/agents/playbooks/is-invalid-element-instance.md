@@ -42,7 +42,7 @@ What to look for:
 
    ```bash
    uip traces spans get <trace-id> --output json \
-     --output-filter "spans[?attributes.error != null].{name: name, spanType: spanType, error: attributes.error}"
+     | jq '[.Data[] | (.Attributes | fromjson? // {}) as $a | select($a.error != null) | {name: .Name, spanType: .SpanType, error: $a.error}]'
    ```
 
    The span `name` identifies which tool (and IS connection type) caused the 404.
@@ -51,7 +51,7 @@ What to look for:
 
    ```bash
    uip is connections list --output json \
-     --output-filter "connections[*].{id: id, name: name, connector: connector}"
+     --output-filter "[*].{id: Id, name: Name, connector: ConnectorName, elementInstanceId: ElementInstanceId}"
    ```
 
    - If no connection matches the connector type → the connection was deleted or never existed in this environment; proceed to Resolution.

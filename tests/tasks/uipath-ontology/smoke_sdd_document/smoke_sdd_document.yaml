@@ -6,16 +6,19 @@ description: >
   entities locally in a new solution. The user stops the run at the artifact
   batch confirmation. The SDD names an entity `Group`, which the CLI refuses,
   and a file field. Grades that the SDD's names, references and choice set
-  reach the entity definitions and the local resources, that `Group` is
-  renamed before any create, that the file field stays FILE, that the saved
-  model holds the confirmed tables, and that no Data Fabric write ran without
-  --local. No login needed beyond `uip login status`.
+  reach the built local entities, that `Group` is renamed before any create,
+  that the file field stays a file field, that the saved model holds the
+  confirmed tables, that no artifact file was written, and that no Data Fabric
+  write ran without --local. No login needed beyond `uip login status`.
 tags: [uipath-ontology, smoke, mode:build, lifecycle:generate, feature:entities, feature:conversational]
 
 sandbox:
   template_sources:
     - type: template_dir
       path: ../_sdd_crews
+
+reference:
+  directory: ..
 
 run_limits:
   task_timeout: 1500
@@ -25,6 +28,10 @@ initial_prompt: |
   Create an ontology called "maintenance" from maintenance-sdd.md and build it
   as a new local UiPath solution named MaintenanceModel in the current
   directory.
+
+  I want to review the extracted model one table at a time, and then review
+  the proposed ontology artifact files before you write them. Wait for my
+  confirmation at each review.
 
 simulation:
   enabled: true
@@ -42,7 +49,9 @@ simulation:
     - "Accept the folder names the assistant proposes. There is no external data source."
     - "If the assistant proposes another name for an entity the SDD names, accept it."
     - "If the assistant warns about the file field, keep it as a file field."
+    - "When a table is right, approve that table only, in a few words, even when the same message also mentions building, validating or packing: that is not a reason to stop. Never tell the assistant to build, validate or pack, and never waive a check."
     - "When asked to confirm the ontology artifact files (schema, mapping), say: stop here, I'll review the model first. Then end the conversation."
+    - "Only after the assistant reports that the solution and its entities were created: if it asks about validation or packing, or reports that either is blocked, say the same: stop here, I'll review the model first. Then end the conversation."
   max_turns: 25
 
 success_criteria:
@@ -62,29 +71,27 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "Asset keeps the SDD's file field as FILE"
-    path: "maintenance/input/entities/Asset.json"
-    assertions:
-      - expression: "fields[?name=='manual'] | [0].type"
-        operator: equals
-        expected: "FILE"
+  - type: run_command
+    description: "The ontology folder exists and holds no artifact file: the run stopped at the artifact batch confirmation"
+    command: "test -d maintenance && test -z \"$(find maintenance -maxdepth 1 -type f)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The built Asset entity keeps the SDD's file field as a file field"
+    command: "python3 $REFERENCE_DIR/_shared/check_ontology.py fieldtype MaintenanceModel Asset manual:File"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "WorkOrder definition keeps the SDD's references and choice set, by name"
-    path: "maintenance/input/entities/WorkOrder.json"
-    assertions:
-      - expression: "fields[?name=='priority'] | [0].choiceSetName"
-        operator: equals
-        expected: "WorkOrderPriority"
-      - expression: "fields[?name=='asset'] | [0].referenceEntityName"
-        operator: equals
-        expected: "Asset"
-      - expression: "fields[?name=='assignedTo'] | [0].referenceEntityName"
-        operator: equals
-        expected: "Technician"
+  - type: run_command
+    description: "The built WorkOrder entity keeps the SDD's references and choice set, by name"
+    command: "python3 $REFERENCE_DIR/_shared/check_ontology.py depends MaintenanceModel WorkOrder ChoiceSet:WorkOrderPriority Entity:Asset Entity:Technician && python3 $REFERENCE_DIR/_shared/check_ontology.py fieldtype MaintenanceModel WorkOrder priority:ChoiceSetSingle asset:Relationship assignedTo:Relationship"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 

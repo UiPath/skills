@@ -86,3 +86,43 @@ test("the flavor publisher scans with its own copy of the gate, not the built co
   );
   assert.doesNotMatch(flavorPublish, /python3 scripts\/check-sensitive-content\.py/);
 });
+
+// The directory lists what it finds on the branch. A push from any channel but
+// stable would put an unreleased tree in front of directory users.
+test("the Claude directory edition follows the stable npmjs publish", () => {
+  assert.match(job("build-claude-directory"), /needs: \[publish-npmjs\]/);
+  assert.match(gate("build-claude-directory"), /github\.event_name == 'workflow_dispatch' && github\.event\.inputs\.channel == 'latest'$/);
+  assert.match(job("publish-claude-directory"), /needs: \[build-claude-directory\]/);
+});
+
+// `release/*` rulesets require a pull request, so a generated commit pushed
+// there is refused; and no other job needs to write repository contents.
+test("only the directory push job writes contents, and never to a release branch", () => {
+  assert.equal(PUBLISH.match(/contents: write/g)?.length, 1);
+  const push = job("publish-claude-directory");
+  assert.match(push, /contents: write/);
+  assert.match(push, /BRANCH: dist\/claude-directory/);
+});
+
+// The edition is public the moment it is pushed, so it passes the npmjs
+// customer gate first. Repository code can plant hooks, git config, or
+// $GITHUB_ENV entries for later steps of its own job, so the job holding the
+// write token checks nothing out and runs none.
+test("the directory edition is scanned, and the write token never meets repository code", () => {
+  const build = job("build-claude-directory");
+  assert.match(build, /contents: read/);
+  assert.match(build, /persist-credentials: false/);
+  assert.match(build, /include-hidden-files: true/);
+  const order = [
+    "node scripts/build-claude-directory.mjs build/claude-directory",
+    "python3 scripts/check-sensitive-content.py build/claude-directory",
+    "actions/upload-artifact@",
+  ].map((step) => build.indexOf(step));
+  assert.ok(order[0] !== -1 && order[0] < order[1] && order[1] < order[2], "build, scan, then upload");
+  assert.doesNotMatch(build, /github\.token|secrets\.GITHUB_TOKEN/);
+
+  const push = job("publish-claude-directory");
+  assert.match(push, /actions\/download-artifact@/);
+  assert.doesNotMatch(push, /actions\/checkout@|\b(node|python3|npm|npx)\s/);
+  assert.equal(push.match(/github\.token|secrets\.GITHUB_TOKEN/g)?.length, 1);
+});

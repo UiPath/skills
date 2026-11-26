@@ -272,7 +272,7 @@ Do not run any of these actions automatically. Wait for the user's selection.
 
 **Per-operation adjustments to the menu:**
 - After `create` or `update`: offer all options above.
-- After `deploy`: replace the three Deploy options with a single **Verify deployment** option that runs `deployed-policy get <license-type> <product-name> <tenantIdentifier>` to confirm the assignment took effect. Keep **Query effective rules** (via `deployed-policy list`) as the follow-up check for chain-resolved values.
+- After `deploy`: replace the three Deploy options with a single **Verify deployment** option that runs `deployed-policy get <license-type> <product-name> <tenant-identifier>` to confirm the assignment took effect. Keep **Query effective rules** (via `deployed-policy list`) as the follow-up check for chain-resolved values.
 - After `delete`: offer only **List policies to verify** and **Something else**.
 
 ## References

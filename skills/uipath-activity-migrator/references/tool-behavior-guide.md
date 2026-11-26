@@ -1,9 +1,9 @@
 # Tool Behavior Guide
 
-Facts about `UiPath.Upgrade.exe` that neither `--help` nor the product documentation states, learned from the tool's source and from live runs. For the list of commands and flags, the installed build is the only authority:
+Facts about the Activity Migrator that neither `--help` nor the product documentation states, learned from the tool's source and from live runs. They hold for both forms of `<MIGRATOR>` (Step 0): `uip rpa project migrate`, which runs the migrator inside Helm and hands it its arguments, stdout, stderr and exit code unchanged, and the standalone `UiPath.Upgrade.exe`. For the list of commands and flags, the installed build is the only authority:
 
 ```bash
-"<MIGRATOR_EXE>" analyze --help
+<MIGRATOR> analyze --help
 ```
 
 Core options come first, then one block per active extension. A flag named anywhere in this skill but missing from that output does not exist in this build: do not pass it, and say so in the report.
@@ -15,12 +15,12 @@ Core options come first, then one block per active extension. A flag named anywh
 
 ## Exit code
 
-`0` for success, partial success, and failure alike: every exception inside a step, a crashed core step included, is caught and written into the SARIF as a result (rule `ERROR` or `WARNING`, message `Step failed: <Step> - <exception>`), and the log is still printed. Non-zero only when the command never ran, a rejected command line or a startup crash; then stdout holds no log and the one-line cause is on stderr. Status comes from the SARIF results (see [sarif-triage-guide.md](sarif-triage-guide.md)).
+`0` for success, partial success, and failure alike: every exception inside a step, a crashed core step included, is caught and written into the SARIF as a result (rule `ERROR` or `WARNING`, message `Step failed: <Step> - <exception>`), and the log is still printed. Non-zero only when the command never ran, a rejected command line or a startup crash; then stdout holds no log and the one-line cause is on stderr. Through `uip`, a failure of `uip` itself (Helm not found) also exits 1, with a JSON object holding `"Result":"Failure"` on stdout or stderr. Status comes from the SARIF results (see [sarif-triage-guide.md](sarif-triage-guide.md)).
 
 ## Output streams
 
-- `--output-format sarif`: stdout is the SARIF 2.1.0 log, sometimes preceded by stray `info:` lines from extension steps. Redirect it to a file; the summarizer skips the leading lines, a raw JSON parse does not. Console logging is otherwise suppressed and no browser opens.
-- `--output-format console` (the default): a text summary plus an HTML report that the tool opens in the browser. Never use it from the agent.
+- `--output-format sarif`: stdout is the SARIF 2.1.0 log, sometimes preceded by stray `info:` lines from extension steps. Redirect it to a file; the summarizer skips the leading lines, a raw JSON parse does not. Console logging is otherwise suppressed and no browser opens. The HTML report is still written; under `uip` the SARIF run's `htmlReport` property is its `file:///` link.
+- `--output-format console` (the default): a text summary and the HTML report. Under `uip` the tool prints the report's `file:///` link and opens the browser only with `--open-report` (`bulk`: the combined report); the standalone archive opens it every time. Never use console output from the agent.
 - stderr: normally empty. It carries the command-line validation errors and the `Error: <message>` line of a startup crash, the two cases where stdout holds no log at all. Steps 3 and 4 redirect it to `analyze-latest.err` / `upgrade-latest.err` in `.upgrade` so it survives a background run and can be read after the fact.
 
 ## The `.upgrade` folder
@@ -38,14 +38,24 @@ Created inside the source project on every run, `analyze` included. Files per ru
 - Extension package pins run before restore and replace the dependency with an exact `[x.y.z]`.
 - Every other dependency that is not Windows-compatible moves to the smallest compatible `major.minor` above its current version, highest patch. The tool does not chase the newest line.
 - A pinned version that no reachable feed serves surfaces as `RESTORE-MISSING-PACKAGE`.
-- Tenant feeds: without `--orchestrator-url`, the tool falls back to the local Studio or Robot connection. With the URL, it needs a PAT or a confidential external application with `OR.Execution.Read`.
+- Tenant feeds: without `--orchestrator-url`, `uip rpa project migrate` uses the tenant library feeds of the `uip login` session, for `analyze`, `upgrade` and `bulk` alike; the token travels in the environment, never on the command line. The standalone tool, or a run with no `uip login` session, falls back to the local Studio or Robot connection. With the URL, it needs a PAT or a confidential external application with `OR.Execution.Read`.
+- The feeds are resolved once per command. `bulk` resolves them before its first project and hands them to every per-project run, so credentials are exchanged once and never reach a per-project command line; explicit credentials that fail stop `bulk` before the first project.
+- Not logged in under `uip rpa project migrate`: the tool warns once, and every `RESTORE-MISSING-PACKAGE` note says the user is not logged in and should run `uip login`. Ask the user to run `uip login` themselves, then rerun the same command; never collect credentials for them.
+- A NuGet feed that does not answer (unreachable, 401, 403) is reported once as a warning naming it, and is not searched again. `bulk` checks the configured feeds once, before its first project, and its projects search only the ones that answered.
 
 ## Orchestrator hand-off template
 
 Secrets never pass through the agent (Critical Rule 6). Hand the user the complete command with placeholders:
 
 ```bash
-"<MIGRATOR_EXE>" analyze --project-path "<PROJECT_DIR>" --output-format sarif --orchestrator-url "https://cloud.uipath.com/<ORG>" --orchestrator-tenant "<TENANT>" --orchestrator-pat "<PAT>" > "<PROJECT_DIR>/.upgrade/analyze-latest.sarif"
+<MIGRATOR> analyze --project-path "<PROJECT_DIR>" --output-format sarif --orchestrator-url "https://cloud.uipath.com/<ORG>" --orchestrator-tenant "<TENANT>" --orchestrator-pat "<PAT>" > "<PROJECT_DIR>/.upgrade/analyze-latest.sarif"
+```
+
+When `<MIGRATOR>` is `uip rpa project migrate`, prefer the form that keeps the PAT off the command line, the shell history and the process list: each `--orchestrator-*` option it is not given is read from an environment variable.
+
+```powershell
+$env:UIPATH_ORCHESTRATOR_URL = "https://cloud.uipath.com/<ORG>"; $env:UIPATH_ORCHESTRATOR_TENANT = "<TENANT>"; $env:UIPATH_ORCHESTRATOR_PAT = "<PAT>"
+<MIGRATOR> analyze --project-path "<PROJECT_DIR>" --output-format sarif > "<PROJECT_DIR>/.upgrade/analyze-latest.sarif"
 ```
 
 ## Extensions
@@ -57,7 +67,7 @@ Secrets never pass through the agent (Critical Rule 6). Hand the user the comple
 ## bulk
 
 ```bash
-"<MIGRATOR_EXE>" bulk --path "<ROOT>" --command analyze
+<MIGRATOR> bulk --path "<ROOT>" --command analyze
 node "<SKILL_DIR>/scripts/summarize-sarif.mjs" "<ROOT>/repository-analyze-results.sarif"
 ```
 
