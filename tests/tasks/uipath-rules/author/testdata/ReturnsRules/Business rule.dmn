@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:uipath="http://uipath.com/schema/1.0/dmn/authoring" id="definitions_ReturnsRules" name="ReturnsRules" namespace="http://uipath.com/dmn/ns_ReturnsRules" xmlns:kie="https://kie.org/dmn/extensions/1.0">
+  <extensionElements>
+    <uipath:authoring surface="decision-table" />
+  </extensionElements>
+  <decision id="decision_returns" name="returns" label="returns">
+    <extensionElements>
+      <uipath:authoring editor="decision-table" />
+    </extensionElements>
+    <variable id="variable_returns" name="returns" typeRef="boolean" />
+    <informationRequirement id="ir_returns_inputData_daysSinceDelivery">
+      <requiredInput href="#inputData_daysSinceDelivery" />
+    </informationRequirement>
+    <decisionTable id="dt_returns" hitPolicy="UNIQUE">
+      <input id="in_returns_0" label="daysSinceDelivery">
+        <inputExpression id="ie_returns_0" typeRef="number">
+          <text>daysSinceDelivery</text>
+        </inputExpression>
+      </input>
+      <output id="out_returns_returnable" label="returnable" name="returnable" typeRef="boolean" />
+      <annotation name="Annotation" />
+      <rule id="rule_returns_0">
+        <inputEntry id="ie_returns_0_0">
+          <text>&lt;= 30</text>
+        </inputEntry>
+        <outputEntry id="oe_returns_0_0">
+          <text>true</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Within the return window</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_returns_1">
+        <inputEntry id="ie_returns_1_0">
+          <text>&gt; 30</text>
+        </inputEntry>
+        <outputEntry id="oe_returns_1_0">
+          <text>false</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Past the return window</text>
+        </annotationEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <inputData id="inputData_daysSinceDelivery" name="daysSinceDelivery" label="daysSinceDelivery">
+    <variable id="variable_in_daysSinceDelivery" name="daysSinceDelivery" typeRef="number" />
+  </inputData>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_87939afe-2c6b-4713-a53d-34e165876c7b">
+      <dmndi:DMNShape id="DMNShape_abcc18ef-6d59-40e9-ab5f-df45d3adb163" dmnElementRef="decision_returns">
+        <dc:Bounds x="0" y="0" width="288" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_e387e258-f262-44a2-9c46-8b8f8533b0e9" dmnElementRef="inputData_daysSinceDelivery">
+        <dc:Bounds x="32" y="208" width="240" height="96" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

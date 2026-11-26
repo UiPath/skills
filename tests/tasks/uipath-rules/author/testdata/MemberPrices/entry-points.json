@@ -1,0 +1,111 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "/Business rule.dmn",
+      "uniqueId": "77611ee2-ff4e-476c-a6be-c46bdcb1bd8f",
+      "type": "BusinessRules",
+      "displayName": "MemberPrices",
+      "input": {
+        "type": "object",
+        "properties": {
+          "itemPrice": {
+            "type": "number",
+            "title": "itemPrice"
+          },
+          "deliveryFee": {
+            "type": "number",
+            "title": "deliveryFee"
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "memberItemPrice": {
+            "type": "object",
+            "properties": {
+              "memberItemPrice": {
+                "type": "number"
+              }
+            }
+          },
+          "memberDeliveryFee": {
+            "type": "object",
+            "properties": {
+              "memberDeliveryFee": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "required": [],
+        "x-uipath-decision-keyed": true
+      }
+    },
+    {
+      "filePath": "/Business rule.dmn#decision_memberItemPrice",
+      "uniqueId": "71b5aeb9-d559-4fa3-a6e4-36d542b88c9e",
+      "type": "BusinessRules",
+      "displayName": "memberItemPrice",
+      "input": {
+        "type": "object",
+        "properties": {
+          "itemPrice": {
+            "type": "number",
+            "title": "itemPrice"
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "memberItemPrice": {
+            "type": "object",
+            "properties": {
+              "memberItemPrice": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "required": [],
+        "x-uipath-decision-keyed": true
+      }
+    },
+    {
+      "filePath": "/Business rule.dmn#decision_memberDeliveryFee",
+      "uniqueId": "44a892f2-c935-45fe-8844-b475ae8cc12b",
+      "type": "BusinessRules",
+      "displayName": "memberDeliveryFee",
+      "input": {
+        "type": "object",
+        "properties": {
+          "deliveryFee": {
+            "type": "number",
+            "title": "deliveryFee"
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "memberDeliveryFee": {
+            "type": "object",
+            "properties": {
+              "memberDeliveryFee": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "required": [],
+        "x-uipath-decision-keyed": true
+      }
+    }
+  ]
+}

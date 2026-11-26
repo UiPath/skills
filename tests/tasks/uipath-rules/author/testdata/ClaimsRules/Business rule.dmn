@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:uipath="http://uipath.com/schema/1.0/dmn/authoring" id="definitions_ClaimsRules" name="ClaimsRules" namespace="http://uipath.com/dmn/ns_ClaimsRules" xmlns:kie="https://kie.org/dmn/extensions/1.0">
+  <extensionElements>
+    <uipath:authoring surface="decision-graph" />
+  </extensionElements>
+  <decision id="decision_tier" name="tier" label="tier">
+    <extensionElements>
+      <uipath:authoring editor="decision-table" />
+    </extensionElements>
+    <variable id="variable_tier" name="tier" typeRef="string" />
+    <informationRequirement id="ir_tier_inputData_claimAmount">
+      <requiredInput href="#inputData_claimAmount" />
+    </informationRequirement>
+    <decisionTable id="dt_tier" hitPolicy="UNIQUE">
+      <input id="in_tier_0" label="claimAmount">
+        <inputExpression id="ie_tier_0" typeRef="number">
+          <text>claimAmount</text>
+        </inputExpression>
+      </input>
+      <output id="out_tier_tier" label="tier" name="tier" typeRef="string" />
+      <annotation name="Annotation" />
+      <rule id="rule_tier_0">
+        <inputEntry id="ie_tier_0_0">
+          <text>&gt; 10000</text>
+        </inputEntry>
+        <outputEntry id="oe_tier_0_0">
+          <text>&quot;Large&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Large claim</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_tier_1">
+        <inputEntry id="ie_tier_1_0">
+          <text>&lt;= 10000</text>
+        </inputEntry>
+        <outputEntry id="oe_tier_1_0">
+          <text>&quot;Standard&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Standard claim</text>
+        </annotationEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="decision_approval" name="approval" label="approval">
+    <extensionElements>
+      <uipath:authoring editor="decision-table" />
+    </extensionElements>
+    <variable id="variable_approval" name="approval" typeRef="boolean" />
+    <informationRequirement id="ir_approval_decision_tier">
+      <requiredDecision href="#decision_tier" />
+    </informationRequirement>
+    <informationRequirement id="ir_approval_inputData_customerYears">
+      <requiredInput href="#inputData_customerYears" />
+    </informationRequirement>
+    <decisionTable id="dt_approval" hitPolicy="UNIQUE">
+      <input id="in_approval_0" label="tier">
+        <inputExpression id="ie_approval_0" typeRef="string">
+          <text>tier</text>
+        </inputExpression>
+      </input>
+      <input id="in_approval_1" label="customerYears">
+        <inputExpression id="ie_approval_1" typeRef="number">
+          <text>customerYears</text>
+        </inputExpression>
+      </input>
+      <output id="out_approval_approved" label="approved" name="approved" typeRef="boolean" />
+      <annotation name="Annotation" />
+      <rule id="rule_approval_0">
+        <inputEntry id="ie_approval_0_0">
+          <text>&quot;Standard&quot;</text>
+        </inputEntry>
+        <inputEntry id="ie_approval_0_1">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="oe_approval_0_0">
+          <text>true</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Standard auto-approved</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_approval_1">
+        <inputEntry id="ie_approval_1_0">
+          <text>&quot;Large&quot;</text>
+        </inputEntry>
+        <inputEntry id="ie_approval_1_1">
+          <text>&gt;= 5</text>
+        </inputEntry>
+        <outputEntry id="oe_approval_1_0">
+          <text>true</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Large, loyal customer</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_approval_2">
+        <inputEntry id="ie_approval_2_0">
+          <text>&quot;Large&quot;</text>
+        </inputEntry>
+        <inputEntry id="ie_approval_2_1">
+          <text>&lt; 5</text>
+        </inputEntry>
+        <outputEntry id="oe_approval_2_0">
+          <text>false</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Large, new customer</text>
+        </annotationEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="decision_routing" name="routing" label="routing">
+    <extensionElements>
+      <uipath:authoring editor="decision-table" />
+    </extensionElements>
+    <variable id="variable_routing" name="routing" typeRef="string" />
+    <informationRequirement id="ir_routing_decision_tier">
+      <requiredDecision href="#decision_tier" />
+    </informationRequirement>
+    <decisionTable id="dt_routing" hitPolicy="UNIQUE">
+      <input id="in_routing_0" label="tier">
+        <inputExpression id="ie_routing_0" typeRef="string">
+          <text>tier</text>
+        </inputExpression>
+      </input>
+      <output id="out_routing_queue" label="queue" name="queue" typeRef="string" />
+      <annotation name="Annotation" />
+      <rule id="rule_routing_0">
+        <inputEntry id="ie_routing_0_0">
+          <text>&quot;Large&quot;</text>
+        </inputEntry>
+        <outputEntry id="oe_routing_0_0">
+          <text>&quot;Senior&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Large to senior</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_routing_1">
+        <inputEntry id="ie_routing_1_0">
+          <text>&quot;Standard&quot;</text>
+        </inputEntry>
+        <outputEntry id="oe_routing_1_0">
+          <text>&quot;General&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Standard to general</text>
+        </annotationEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <inputData id="inputData_claimAmount" name="claimAmount" label="claimAmount">
+    <variable id="variable_in_claimAmount" name="claimAmount" typeRef="number" />
+  </inputData>
+  <inputData id="inputData_customerYears" name="customerYears" label="customerYears">
+    <variable id="variable_in_customerYears" name="customerYears" typeRef="number" />
+  </inputData>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_09e5257e-9e34-430b-b788-408800ddc508">
+      <dmndi:DMNShape id="DMNShape_e3aab30b-1852-4046-a7e0-355438e50d62" dmnElementRef="decision_tier">
+        <dc:Bounds x="160" y="208" width="288" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_b26a0f3c-b314-45a7-8bdf-57e538ca19cb" dmnElementRef="decision_approval">
+        <dc:Bounds x="0" y="0" width="288" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_0b8632c9-d8aa-4ee0-bf29-d890513d59c3" dmnElementRef="decision_routing">
+        <dc:Bounds x="320" y="0" width="288" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_ffba2a14-15d8-485f-98e8-7b6a7d6e06d4" dmnElementRef="inputData_claimAmount">
+        <dc:Bounds x="320" y="416" width="240" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_f806d07e-5376-491d-b8b2-50d416deb426" dmnElementRef="inputData_customerYears">
+        <dc:Bounds x="48" y="416" width="240" height="96" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

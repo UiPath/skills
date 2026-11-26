@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Grades SupplierRules, requested with a knowledge source the skill still does not author.
+"""Grades SupplierRules, requested with an element the skill still does not author.
 
-Knowledge models and literal expressions are in the profile; a knowledge source,
-a decision service and an import are not. `load_graph` fails on the first two,
-and an import is checked here.
+Each dataset row asks for one: a knowledge source, a decision service, an import,
+or a boxed context. Knowledge models and literal expressions are in the profile;
+those four are not. `load_graph` fails on the first two and on a decision whose
+logic is a context; an import, a group, and a context nested anywhere else are
+checked here.
 """
 
 from __future__ import annotations
@@ -25,9 +27,9 @@ CASES = [({"onboarded": onboarded, "spend": spend},
 
 def main() -> None:
     _, root = load_graph(find_project(PROJECT))
-    for unsupported in ("import", "decisionService", "group"):
-        if root.findall(f"dmn:{unsupported}", NS):
-            fail(f"the rule declares a {unsupported}, which the skill does not author")
+    for unsupported in ("import", "decisionService", "group", "context"):
+        if root.findall(f".//dmn:{unsupported}", NS):
+            fail(f"the rule holds a <{unsupported}> element, which the skill does not author")
     check_graph_cases(root, CASES)
     print(f"OK: no unsupported element, and all {len(CASES)} cases return the expected decision")
 

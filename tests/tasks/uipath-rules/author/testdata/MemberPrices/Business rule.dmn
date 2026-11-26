@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:uipath="http://uipath.com/schema/1.0/dmn/authoring" id="definitions_MemberPrices" name="MemberPrices" namespace="http://uipath.com/dmn/ns_MemberPrices" xmlns:kie="https://kie.org/dmn/extensions/1.0">
+  <extensionElements>
+    <uipath:authoring surface="decision-graph" />
+  </extensionElements>
+  <decision id="decision_memberItemPrice" name="memberItemPrice" label="memberItemPrice">
+    <extensionElements>
+      <uipath:authoring editor="literal-expression" />
+    </extensionElements>
+    <variable id="variable_memberItemPrice" name="memberItemPrice" typeRef="number" />
+    <informationRequirement id="ir_memberItemPrice_inputData_itemPrice">
+      <requiredInput href="#inputData_itemPrice" />
+    </informationRequirement>
+    <knowledgeRequirement id="kr_memberItemPrice_memberPrice">
+      <requiredKnowledge href="#bkm_memberPrice" />
+    </knowledgeRequirement>
+    <literalExpression id="le_memberItemPrice" typeRef="number">
+      <text>memberPrice(itemPrice)</text>
+    </literalExpression>
+  </decision>
+  <decision id="decision_memberDeliveryFee" name="memberDeliveryFee" label="memberDeliveryFee">
+    <extensionElements>
+      <uipath:authoring editor="literal-expression" />
+    </extensionElements>
+    <variable id="variable_memberDeliveryFee" name="memberDeliveryFee" typeRef="number" />
+    <informationRequirement id="ir_memberDeliveryFee_inputData_deliveryFee">
+      <requiredInput href="#inputData_deliveryFee" />
+    </informationRequirement>
+    <knowledgeRequirement id="kr_memberDeliveryFee_memberPrice">
+      <requiredKnowledge href="#bkm_memberPrice" />
+    </knowledgeRequirement>
+    <literalExpression id="le_memberDeliveryFee" typeRef="number">
+      <text>memberPrice(deliveryFee)</text>
+    </literalExpression>
+  </decision>
+  <businessKnowledgeModel id="bkm_memberPrice" name="memberPrice" label="memberPrice">
+    <variable id="variable_bkm_memberPrice" name="memberPrice" />
+    <encapsulatedLogic id="el_memberPrice" typeRef="number">
+      <formalParameter id="fp_memberPrice_price" name="price" typeRef="number" />
+      <literalExpression id="le_bkm_memberPrice" typeRef="number">
+        <text>decimal(price * 0.9, 2)</text>
+      </literalExpression>
+    </encapsulatedLogic>
+  </businessKnowledgeModel>
+  <inputData id="inputData_itemPrice" name="itemPrice" label="itemPrice">
+    <variable id="variable_in_itemPrice" name="itemPrice" typeRef="number" />
+  </inputData>
+  <inputData id="inputData_deliveryFee" name="deliveryFee" label="deliveryFee">
+    <variable id="variable_in_deliveryFee" name="deliveryFee" typeRef="number" />
+  </inputData>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_a0742c29-6a9e-4c3a-bafe-4e65a98bc954">
+      <dmndi:DMNShape id="DMNShape_dfd4b77f-e11d-41ab-87fc-a189ad2a7737" dmnElementRef="decision_memberItemPrice">
+        <dc:Bounds x="0" y="0" width="288" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_590faf43-eba6-4c9f-96ad-3f8ebb583df7" dmnElementRef="decision_memberDeliveryFee">
+        <dc:Bounds x="320" y="0" width="288" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_3abe6824-4f6c-4423-b59b-cd0674efb528" dmnElementRef="bkm_memberPrice">
+        <dc:Bounds x="192" y="208" width="224" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_bb5ef3de-6098-446b-b242-48d68929b2ed" dmnElementRef="inputData_itemPrice">
+        <dc:Bounds x="48" y="416" width="240" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_0f23e137-1c16-4bc3-99ba-75578a5e4816" dmnElementRef="inputData_deliveryFee">
+        <dc:Bounds x="320" y="416" width="240" height="96" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

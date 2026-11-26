@@ -1,0 +1,41 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "/Business rule.dmn#decision_carrier",
+      "uniqueId": "33a86bb2-b81c-4530-9648-5ff9c2f2c3e5",
+      "type": "BusinessRules",
+      "displayName": "carrier",
+      "input": {
+        "type": "object",
+        "properties": {
+          "weightKg": {
+            "type": "number",
+            "title": "weightKg"
+          },
+          "zone": {
+            "type": "string",
+            "title": "zone"
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "carrier": {
+            "type": "object",
+            "properties": {
+              "carrier": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [],
+        "x-uipath-decision-keyed": true
+      }
+    }
+  ]
+}

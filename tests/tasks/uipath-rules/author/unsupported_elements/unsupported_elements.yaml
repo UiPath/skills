@@ -1,11 +1,13 @@
 task_id: skill-rules-smoke-graph-unsupported-elements
 description: >
-  Agent is asked for a Business Rules project that cites a policy document as a
-  knowledge source, which the skill does not author, offline. Grades skill
-  activation, the rule holding no knowledge source, decision service, group or
-  import, the approval on the policy cases, and `uip rules validate` run by the
+  Agent is asked for a Business Rules project that holds an element the skill
+  does not author, offline. One dataset row per element: a knowledge source, a
+  decision service, an import, and a boxed context. Critical Rule 3 says to
+  decline the element and express the logic as decision tables. Grades skill
+  activation, the rule holding none of the four (nor a group), the approval on
+  the policy cases, and `uip rules validate` and `uip rules format` run by the
   grader. Knowledge models and literal expressions are in the profile and are
-  covered by their own tasks; this one holds the line on what is still out.
+  covered by their own tasks.
 tags: [uipath-rules, integration, "mode:build", "lifecycle:generate"]
 
 sandbox:
@@ -14,10 +16,28 @@ sandbox:
 reference:
   directory: ../..
 
+dataset:
+  rows:
+    - id: knowledge-source
+      request: >-
+        Cite our Procurement Policy 2026 as a knowledge source on the decision,
+        so auditors can see where the thresholds come from.
+    - id: decision-service
+      request: >-
+        Wrap the decision in a decision service, so other models can call it as
+        one unit.
+    - id: import
+      request: >-
+        Import our shared `SupplierTypes` model from `supplier-types.dmn`, so
+        the supplier types are defined in one place.
+    - id: context
+      request: >-
+        Write the decision's logic as a boxed context, with one entry for the
+        onboarding check, one for the spend check, and a final result entry.
+
 initial_prompt: |
   Create a UiPath Business Rules project named SupplierRules for our supplier
-  approvals. Cite our Procurement Policy 2026 as a knowledge source on the
-  decision, so auditors can see where the thresholds come from:
+  approvals. ${row.request}
 
   - Inputs: `onboarded` (boolean) and `spend` (number).
   - Output: `approved` (boolean).
@@ -37,7 +57,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The rule holds no knowledge source, decision service, group or import, and returns the policy's decision"
+    description: "The rule holds no knowledge source, decision service, import, context or group, and returns the policy's decision"
     command: "python3 $REFERENCE_DIR/author/unsupported_elements/check_unsupported_elements.py"
     timeout: 30
     expected_exit_code: 0

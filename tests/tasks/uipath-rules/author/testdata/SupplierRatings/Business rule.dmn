@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:uipath="http://uipath.com/schema/1.0/dmn/authoring" id="definitions_SupplierRatings" name="SupplierRatings" namespace="http://uipath.com/dmn/ns_SupplierRatings" xmlns:kie="https://kie.org/dmn/extensions/1.0">
+  <extensionElements>
+    <uipath:authoring surface="decision-table" />
+  </extensionElements>
+  <decision id="decision_rating" name="rating" label="rating">
+    <extensionElements>
+      <uipath:authoring editor="decision-table" />
+    </extensionElements>
+    <variable id="variable_rating" name="rating" typeRef="string" />
+    <informationRequirement id="ir_rating_inputData_onTimeRate">
+      <requiredInput href="#inputData_onTimeRate" />
+    </informationRequirement>
+    <decisionTable id="dt_rating" hitPolicy="UNIQUE">
+      <input id="in_rating_0" label="onTimeRate">
+        <inputExpression id="ie_rating_0" typeRef="number">
+          <text>onTimeRate</text>
+        </inputExpression>
+      </input>
+      <output id="out_rating_rating" label="rating" name="rating" typeRef="string" />
+      <annotation name="Annotation" />
+      <rule id="rule_rating_0">
+        <inputEntry id="ie_rating_0_0">
+          <text>&lt; 85</text>
+        </inputEntry>
+        <outputEntry id="oe_rating_0_0">
+          <text>&quot;Red&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Late supplier</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_rating_1">
+        <inputEntry id="ie_rating_1_0">
+          <text>[85..90)</text>
+        </inputEntry>
+        <outputEntry id="oe_rating_1_0">
+          <text>&quot;Amber&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Watch list</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_rating_2">
+        <inputEntry id="ie_rating_2_0">
+          <text>&gt;= 90</text>
+        </inputEntry>
+        <outputEntry id="oe_rating_2_0">
+          <text>&quot;Green&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Reliable supplier</text>
+        </annotationEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <inputData id="inputData_onTimeRate" name="onTimeRate" label="onTimeRate">
+    <variable id="variable_in_onTimeRate" name="onTimeRate" typeRef="number" />
+  </inputData>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_bfc43fdc-c40b-4461-b57b-5bc43d52b052">
+      <dmndi:DMNShape id="DMNShape_c9e12df2-c86a-4a56-bbab-e07f156f9cd3" dmnElementRef="decision_rating">
+        <dc:Bounds x="0" y="0" width="288" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_a7c40533-adf3-451b-935c-e6a74d6d1913" dmnElementRef="inputData_onTimeRate">
+        <dc:Bounds x="32" y="208" width="240" height="96" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

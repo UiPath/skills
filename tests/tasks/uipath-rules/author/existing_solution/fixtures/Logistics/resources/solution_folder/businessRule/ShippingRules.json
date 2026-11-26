@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ShippingRules",
+    "kind": "businessRule",
+    "apiVersion": "orchestrator.uipath.com/v2",
+    "projectKey": "9851a1bd-9c31-4516-b89f-b076c2a7ebe3",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "ShippingRules"
+    },
+    "locks": [],
+    "key": "3285b3dc-d63d-4384-ab68-000aa8dc299d",
+    "files": []
+  }
+}

@@ -1,0 +1,154 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "/Business rule.dmn",
+      "uniqueId": "5254c91f-fb07-4325-b91f-0ac394358eea",
+      "type": "BusinessRules",
+      "displayName": "ClaimsRules",
+      "input": {
+        "type": "object",
+        "properties": {
+          "claimAmount": {
+            "type": "number",
+            "title": "claimAmount"
+          },
+          "customerYears": {
+            "type": "number",
+            "title": "customerYears"
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "approval": {
+            "type": "object",
+            "properties": {
+              "approved": {
+                "type": "boolean"
+              }
+            }
+          },
+          "routing": {
+            "type": "object",
+            "properties": {
+              "queue": {
+                "type": "string"
+              }
+            }
+          },
+          "tier": {
+            "type": "object",
+            "properties": {
+              "tier": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [],
+        "x-uipath-decision-keyed": true
+      }
+    },
+    {
+      "filePath": "/Business rule.dmn#decision_approval",
+      "uniqueId": "3ef57e25-dc34-4647-8b32-53749798b090",
+      "type": "BusinessRules",
+      "displayName": "approval",
+      "input": {
+        "type": "object",
+        "properties": {
+          "claimAmount": {
+            "type": "number",
+            "title": "claimAmount"
+          },
+          "customerYears": {
+            "type": "number",
+            "title": "customerYears"
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "approval": {
+            "type": "object",
+            "properties": {
+              "approved": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "required": [],
+        "x-uipath-decision-keyed": true
+      }
+    },
+    {
+      "filePath": "/Business rule.dmn#decision_routing",
+      "uniqueId": "3853b5df-8e3c-4052-b406-99f28a45f4b0",
+      "type": "BusinessRules",
+      "displayName": "routing",
+      "input": {
+        "type": "object",
+        "properties": {
+          "claimAmount": {
+            "type": "number",
+            "title": "claimAmount"
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "routing": {
+            "type": "object",
+            "properties": {
+              "queue": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [],
+        "x-uipath-decision-keyed": true
+      }
+    },
+    {
+      "filePath": "/Business rule.dmn#decision_tier",
+      "uniqueId": "81315aeb-3ec3-476d-9102-1f3519d814b7",
+      "type": "BusinessRules",
+      "displayName": "tier",
+      "input": {
+        "type": "object",
+        "properties": {
+          "claimAmount": {
+            "type": "number",
+            "title": "claimAmount"
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "tier": {
+            "type": "object",
+            "properties": {
+              "tier": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [],
+        "x-uipath-decision-keyed": true
+      }
+    }
+  ]
+}
