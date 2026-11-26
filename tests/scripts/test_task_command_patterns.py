@@ -438,3 +438,35 @@ def test_published_refresh_accepts_prepare_or_registry_refresh(command):
 )
 def test_published_refresh_needs_prepare_of_kind_process(command):
     assert _hits(PUBLISHED_REFRESH, command) == {False}
+
+
+PUBLISHED_DEPLOY = _pattern(
+    "uipath-agents/coded/coded_in_flow_published/coded_in_flow_published.yaml",
+    "Agent deployed to the personal workspace (deploy or publish, --my-workspace)",
+)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "source .venv/bin/activate && uip codedagent deploy --my-workspace --output json",
+        "uip codedagent deploy --my-workspace 2>&1 | tee publish.log",
+        "uip codedagent publish --my-workspace",
+    ],
+)
+def test_published_deploy_counts_the_personal_workspace_flag(command):
+    assert _hits(PUBLISHED_DEPLOY, command) == {True}
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        # The flag belongs to a later command, not to this deploy.
+        "uip codedagent deploy; echo --my-workspace",
+        "uip codedagent deploy && uip solution deploy --my-workspace",
+        "uip codedagent deploy\necho --my-workspace",
+        "uip codedagent deployx --my-workspace",
+    ],
+)
+def test_published_deploy_needs_the_flag_on_the_deploy_itself(command):
+    assert _hits(PUBLISHED_DEPLOY, command) == {False}
