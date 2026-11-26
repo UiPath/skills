@@ -51,12 +51,18 @@ or `{ entityScope: 'tenant', tenantEntityName: 'Invoices' }`;
 `primaryFolderEntityName` and `secondaryFolderEntityName` (tenant:
 `primaryTenantEntityName` / `secondaryTenantEntityName`), and its
 `queryExpression` is a WHERE condition (`Movie.Title IS NOT NULL`), not a query.
-Its join fields come from `registry prepare … --action <op> -f
-primaryFolderEntityName=<A> -f secondaryFolderEntityName=<B>`.
+An activity's record fields come from `registry prepare
+uipath-uipath-dataservice --action <op>` given ONE scope's fields: `-f
+folderEntityName=<Name>` or `-f tenantEntityName=<Name>` (the two-entity query:
+`-f primaryFolderEntityName=<A> -f secondaryFolderEntityName=<B>`). Without
+them compile refuses a record field as an unknown input. When several folders
+hold the name, `prepare` says so: add `-f folderEntityName_folderKey=<folder key
+or path>` beside it on that command, the only place the companion is written
+(needs <NEXT_SDK_VERSION>).
 A deploy provisions its own copy of a folder entity in the deployment's folder
 and re-points every picker there: test records go into that copy, not the
 source folder's entity.
-Never write `folderEntityName_folderKey` beside it (`RESOURCE_PICKER_COMPANION`),
+In source, never write `folderEntityName_folderKey` beside it (`RESOURCE_PICKER_COMPANION`),
 and never the other scope's field (`EVENT_PARAMETER_CLEARED`). `check` reports
 `RESOURCE_UNRESOLVED` with the `uip maestro registry prepare --entity <name>
 --folder-path <path>` that records a folder entity's keys, and warns
