@@ -192,7 +192,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 <INTERVIEW RAN, when items are open: the open items counted by role, and `interview <SDD_PATH>` to ask them ([interview-guide.md](../interview/interview-guide.md) § Asking rule 7).>
 
 **Next — branch on the handoff `Status`:**
-- `ready` — `design` is complete and the SDD is on disk. The genome is written from it on the next turn (Step 3), then `uipath-genome` builds it when the request is to build; open default-carried SME items travel into the genome as Open Decisions entries, and the SDD's Action Required is written again from the genome — confirm them before production. A design a build skill handed over gets no genome.
+- `ready` — `design` is complete and the SDD is on disk. Next I write the genome, the step-by-step build specification a coding agent follows; if you asked for a build, it starts one reply after that and asks only the setup questions this SDD does not already answer, first offering to take the defaults it carries. Open default-carried SME items travel into the genome as Open Decisions entries, and the SDD's Action Required is written again from the genome — confirm them before production. A design a build skill handed over gets no genome.
 - `draft` (blocking SME items) — Blocked on: <BLOCKING_ITEMS>. Answer these and the SDD finalizes to `ready`; no genome is written until then.
 ```
 

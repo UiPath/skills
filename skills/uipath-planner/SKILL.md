@@ -59,10 +59,7 @@ A verb hands its output to the next one only along these edges:
 - **`design` revise → `edit`, same run.** An SDD change on an SDD whose `Genome` row names a genome on disk ends with that genome updated and given the strict check ([sdd-writing-guide.md](references/design/sdd-writing-guide.md) § Keeping the Genome Current).
 - **`uipath-genome` → `edit` → `uipath-genome`.** A deviation the build reports in the genome comes back here as an `edit`, then the build runs again; the builder never changes the genome.
 - **`uipath-genome` not installed** (it is absent from the session's list of available skills) → the genome verbs still write and check genomes, and `design` still writes the genome; say that building them needs `uipath-genome`.
-- **Build → publish, only when asked.** The build is local and writes nothing to a tenant.
-<!--skill-flavor:deploy-after-build:start-->
-When the request asks to publish, deploy or go live, the publish follows the build's hand-off: through `uipath-solution`, or per package to Orchestrator through `uipath-platform` when Solutions (`.uipx`) are blocked for the SDD's `Delivery model` — standalone, Automation Suite older than 2.2510, or a user exclusion ([platform-availability-guide.md](references/shared/platform-availability-guide.md)).
-<!--skill-flavor:deploy-after-build:end-->
+- **Build → deploy.** The build settles the deploy at its end; a request that asks to publish, deploy or go live answers it.
 
 ## Critical Rules
 
