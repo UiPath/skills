@@ -1,0 +1,102 @@
+task_id: skill-rules-operate-stop-tenant-unavailable
+description: >
+  Stop condition, against a mocked `uip`. The agent runs ShippingRules with
+  `uip rules debug`, and the tenant has no Business Rules service. The failure
+  modes guide says to stop: only the user can switch tenants or ask for the
+  service. Grades that `debug` ran once and was not retried, and that the
+  agent did not change the login or tenant. The debug body is the
+  `configuration_error` that UiPath/cli main raises when the gateway answers
+  "businessrules not found"; validate, refresh and format bodies are real
+  1.208.0 output with the path replaced. Studio Web has no `record_cli` shim,
+  so this task does not run there (harness gap, not tagged).
+tags: [uipath-rules, integration, "mode:operate", "lifecycle:discover"]
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../_fixtures/solution_with_rule
+  record_cli:
+    - tool: uip
+      exit_code: 1
+      stderr: "uip (mock): not connected to a tenant in this offline sandbox.\n"
+      responses:
+        - when:
+            verb: "login status"
+          stdout: >-
+            {"Result":"Success","Code":"LoginStatus","Data":{"Status":"Logged in",
+            "BaseUrl":"https://cloud.uipath.com","Organization":"example-org",
+            "Tenant":"DefaultTenant","Identity":"analyst@example.com","IdentityType":"User"}}
+
+        - when:
+            verb: "rules validate"
+          stdout: >-
+            {"Result":"Success","Code":"RulesValidate","Data":{"Status":"Valid",
+            "ProjectPath":"Logistics/ShippingRules","DmnFiles":["Business rule.dmn"],"Diagnostics":[]}}
+
+        - when:
+            verb: "rules refresh"
+          stdout: >-
+            {"Result":"Success","Code":"RulesRefresh","Data":{"Status":"Business rules package files are up to date",
+            "ProjectPath":"Logistics/ShippingRules","DmnFiles":["Business rule.dmn"],"WrittenFiles":[],
+            "UnchangedFiles":["entry-points.json","bindings_v2.json"]}}
+
+        - when:
+            verb: "rules format"
+          stdout: >-
+            {"Result":"Success","Code":"RulesFormat","Data":{"ProjectPath":"Logistics/ShippingRules",
+            "Files":[{"File":"Business rule.dmn","Changed":false}]}}
+
+        - when:
+            verb: "rules debug"
+          exit_code: 1
+          stdout: >-
+            {"Result":"ConfigError","ErrorCode":"configuration_error",
+            "Message":"Business Rules is not available on tenant 'DefaultTenant': it is not enabled there, or not offered in the tenant's region.",
+            "Instructions":"Switch to a tenant that has Business Rules with 'uip login tenant set <tenant-name>', or ask your UiPath representative to enable it for this tenant.",
+            "Retry":"RetryWillNotFix","Context":{"httpStatus":404}}
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Run the ShippingRules business rule in ./Logistics on our tenant for a
+  12 kg Domestic parcel, and tell me which carrier it picks.
+
+  The `uip` CLI here is a mock that answers like a live tenant. Do not ask for
+  confirmation.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-rules skill"
+    skill_name: "uipath-rules"
+    expected_skill: "uipath-rules"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Agent ran the rule with rules debug once and did not retry a failure that retrying will not fix"
+    tool: uip
+    verb: "rules debug"
+    min_count: 1
+    max_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Agent did not switch tenants itself; the user decides that"
+    tool: uip
+    verb: "login tenant"
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Agent did not log out to try another login"
+    tool: uip
+    verb: "logout"
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0

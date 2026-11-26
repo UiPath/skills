@@ -1,0 +1,182 @@
+task_id: skill-rules-operate-deployed-discovery
+description: >
+  Agent finds a deployed rule whose folder the user does not know and saves its
+  argument contract, against a mocked `uip`. FreightRates sits in a nested
+  folder and is still held by Orchestrator (`Source: Orchestrator`), so a
+  one-folder `list` of Shared does not show it; `list --all-folders` does. The
+  contract values exist only in the mocked `describe` answer. The mock bodies
+  follow real `uip rules` 1.208.0 output (built from UiPath/cli main, with
+  `Source`), with names, keys and dates replaced. Grades the all-folders
+  lookup, the `describe` in the right folder, and `contract.json` holding the
+  described schemas. Studio Web has no `record_cli` shim, so this task does
+  not run there (harness gap, not tagged).
+tags: [uipath-rules, integration, "mode:operate", "lifecycle:discover"]
+
+sandbox:
+  python: {}
+  record_cli:
+    - tool: uip
+      exit_code: 1
+      stderr: "uip (mock): not connected to a tenant in this offline sandbox.\n"
+      responses:
+        - when:
+            verb: "login status"
+          stdout: >-
+            {"Result":"Success","Code":"LoginStatus","Data":{"Status":"Logged in",
+            "BaseUrl":"https://cloud.uipath.com","Organization":"example-org",
+            "Tenant":"DefaultTenant","Identity":"analyst@example.com","IdentityType":"User"}}
+
+        - when:
+            verb: "rules list"
+            flags:
+              all-folders: {present: true}
+          stdout: >-
+            {"Result":"Success","Code":"RulesList","Pagination":{"Returned":4,"Limit":50,"Offset":0,"HasMore":false},
+            "Data":[
+            {"Key":"00000000-0000-4000-8000-000000000101","Name":"ReturnWindows","FolderPath":"Shared","FolderKey":"00000000-0000-4000-8000-000000000001","Description":"","Source":"BusinessRules"},
+            {"Key":"00000000-0000-4000-8000-000000000102","Name":"SupplierTiers","FolderPath":"Procurement","FolderKey":"00000000-0000-4000-8000-000000000002","Description":"","Source":"BusinessRules"},
+            {"Key":"00000000-0000-4000-8000-000000000103","Name":"FreightRatesDraft","FolderPath":"Sandbox/Drafts","FolderKey":"00000000-0000-4000-8000-000000000003","Description":"","Source":"BusinessRules"},
+            {"Key":"00000000-0000-4000-8000-000000000104","Name":"FreightRates","FolderPath":"Operations/Freight","FolderKey":"00000000-0000-4000-8000-000000000004","Description":"Parcel freight rates","Source":"Orchestrator"}]}
+
+        - when:
+            verb: "rules list"
+          stdout: >-
+            {"Result":"Success","Code":"RulesList","Pagination":{"Returned":1,"Limit":50,"Offset":0,"HasMore":false},
+            "Data":[{"Key":"00000000-0000-4000-8000-000000000101","Name":"ReturnWindows","FolderPath":"Shared","FolderKey":"00000000-0000-4000-8000-000000000001","Description":"","CurrentVersion":"1.0.2","Source":"BusinessRules"}]}
+
+        - when:
+            verb: "rules get"
+            positional: ["FreightRates"]
+            flags:
+              folder-path: {equals: "Operations/Freight"}
+          stdout: >-
+            {"Result":"Success","Code":"RulesGet","Data":{"Key":"00000000-0000-4000-8000-000000000104",
+            "Name":"FreightRates","FolderPath":"Operations/Freight","FolderKey":"00000000-0000-4000-8000-000000000004",
+            "Description":"Parcel freight rates","CurrentVersion":"1.3.0","Source":"Orchestrator","Tags":[],
+            "CreationTime":"2026-06-02T09:14:05.112Z"}}
+
+        - when:
+            verb: "rules get"
+            positional: ["FreightRates"]
+            flags:
+              folder-key: {equals: "00000000-0000-4000-8000-000000000004"}
+          stdout: >-
+            {"Result":"Success","Code":"RulesGet","Data":{"Key":"00000000-0000-4000-8000-000000000104",
+            "Name":"FreightRates","FolderPath":"Operations/Freight","FolderKey":"00000000-0000-4000-8000-000000000004",
+            "Description":"Parcel freight rates","CurrentVersion":"1.3.0","Source":"Orchestrator","Tags":[],
+            "CreationTime":"2026-06-02T09:14:05.112Z"}}
+
+        - when:
+            verb: "rules versions"
+            positional: ["FreightRates"]
+          stdout: >-
+            {"Result":"Success","Code":"RulesVersionList","Pagination":{"Returned":2,"Limit":50,"Offset":0,"HasMore":false},
+            "Data":[{"Version":"1.3.0","IsActive":true,"CreationTime":"2026-06-02T09:14:05.112Z"},
+            {"Version":"1.2.0","IsActive":false,"CreationTime":"2026-03-11T16:40:51.903Z"}]}
+
+        - when:
+            verb: "rules describe"
+            positional: ["FreightRates"]
+            flags:
+              folder-path: {equals: "Operations/Freight"}
+          stdout: &freight_describe >-
+            {"Result":"Success","Code":"RulesEntryPoints","Data":[{"UniqueId":"00000000-0000-4000-8000-000000000201",
+            "Path":"/Business rule.dmn#decision_freight","DisplayName":"freight",
+            "InputArguments":"{\"type\":\"object\",\"properties\":{\"parcelWeightKg\":{\"type\":\"number\",\"title\":\"parcelWeightKg\"},\"destinationZone\":{\"type\":\"string\",\"title\":\"destinationZone\"}},\"required\":[]}",
+            "OutputArguments":"{\"type\":\"object\",\"properties\":{\"freight\":{\"type\":\"object\",\"properties\":{\"rateEur\":{\"type\":\"number\"},\"carrierCode\":{\"type\":\"string\"}}}},\"required\":[],\"x-uipath-decision-keyed\":true}"}]}
+
+        - when:
+            verb: "rules describe"
+            positional: ["FreightRates"]
+            flags:
+              folder-key: {equals: "00000000-0000-4000-8000-000000000004"}
+          stdout: *freight_describe
+
+        - when:
+            verb: "rules"
+            positional: ["describe", "FreightRates"]
+            flags:
+              folder-path: {equals: "Shared"}
+          exit_code: 1
+          stdout: >-
+            {"Result":"Failure","ErrorCode":"not_found",
+            "Message":"Business rule 'FreightRates' was not found in folder 'Shared'.",
+            "Instructions":"Run 'uip rules list --folder-path \"Shared\"' to see the rules in this folder.",
+            "Retry":"RetryWillNotFix",
+            "Context":{"Session":{"Profile":"default","Organization":"example-org","Tenant":"DefaultTenant"}}}
+
+        - when:
+            verb: "rules"
+          exit_code: 1
+          stdout: >-
+            {"Result":"Failure","ErrorCode":"not_found",
+            "Message":"Business rule was not found in that folder.",
+            "Instructions":"Run 'uip rules list --all-folders' to find the folder a rule is in.",
+            "Retry":"RetryWillNotFix",
+            "Context":{"Session":{"Profile":"default","Organization":"example-org","Tenant":"DefaultTenant"}}}
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Our FreightRates business rule is deployed, but I don't know which
+  Orchestrator folder it is in. Find it, and save its contract to
+  `contract.json` in this folder as
+  `{"folderPath": ..., "input": ..., "output": ...}`, where `input` and
+  `output` are the rule's input and output argument schemas as JSON objects.
+
+  The `uip` CLI here is a mock that answers like a live tenant. Do not ask for
+  confirmation.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-rules skill"
+    skill_name: "uipath-rules"
+    expected_skill: "uipath-rules"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Agent searched every folder for the rule (rules list --all-folders)"
+    tool: uip
+    verb: "rules list"
+    flags:
+      all-folders: {present: true}
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Agent described FreightRates in the folder the list named"
+    tool: uip
+    verb: "rules describe"
+    positional: ["FreightRates"]
+    flags:
+      folder-path: {present: true, aliases: [folder-key]}
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "contract.json holds the folder and the described input and output schemas"
+    command: "python3 $REFERENCE_DIR/operate/deployed_discovery/check_deployed_discovery.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Read-only: nothing debugged, published, or deployed"
+    tool: uip
+    verb: "rules debug"
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Read-only: no solution command"
+    tool: uip
+    verb: "solution"
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
