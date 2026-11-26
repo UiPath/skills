@@ -26,11 +26,11 @@ Decide from the `state get` result:
 ```
 This will reset all <packName> recommended settings on <tenantName> back to the values the standard recommends, overwriting any local changes to those policies.
 This includes any values you configured for the standard's manual settings — those go back to the bundle defaults and will need to be configured again. Policies that were deleted are recreated.
-
-Are you sure? (y/n)
 ```
 
-Ask, then STOP — end your reply. Never run `state restore` in the same response as this question. Proceed only on an explicit `y` in the user's next message; halt on anything else. The user's original request ("reset my settings") is intent, not consent. Sole exception: the user explicitly waived confirmation in advance (e.g., "don't ask for confirmation") — treat the waiver as `y`.
+Ask with `AskUserQuestion` ([SKILL.md Critical Rule 13](../../../SKILL.md#critical-rules)): question `Reset <packName> on <tenantName> to its recommended settings?`, options `Yes, reset` / `Cancel`. Without the tool: `Are you sure? (y/n)`.
+
+Never run `state restore` before the admin answers. Proceed only on `Yes, reset` (or, without the tool, an explicit `y` in the user's next message, after ending your reply); halt on anything else. The user's original request ("reset my settings") is intent, not consent. Sole exception: the user explicitly waived confirmation in advance (e.g., "don't ask for confirmation") — treat the waiver as `y`.
 
 ## Restore
 

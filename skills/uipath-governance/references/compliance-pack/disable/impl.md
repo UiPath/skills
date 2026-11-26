@@ -46,14 +46,15 @@ Policies leaving your tenant:
 
 The standards' policies stay in Policy Library, so applying a standard later reuses them.
 
-Turn off all <N> standards? (y/n)
 ```
+
+Ask with `AskUserQuestion` ([SKILL.md Critical Rule 13](../../../SKILL.md#critical-rules)): question `Turn off all <N> standards on <tenantName>?`, options `Yes, turn off all <N>` / `Cancel`. Without the tool: `Turn off all <N> standards? (y/n)`.
 
 - `RestoredPolicyId` null → `no policy`. A missing `PolicyName` / `RestoredPolicyName` → `a standard's policy` / `your earlier policy`; never print an id.
 - `Data.PackIds` empty → nothing is active: say so and stop.
 - If the user wants only <packName> off, they can't with modes on; offer to keep everything as it is.
 
-Require `y`. Halt on anything else. Then:
+Require `Yes, turn off all <N>` (or `y`). Halt on anything else. Then:
 
 ```bash
 uip gov compliance-packs state disable-all $TENANT_ID --output json
@@ -70,10 +71,9 @@ This will remove all <packName> recommended settings from <tenantName>.
 Policies that will be removed:
   <list Data.policies[].policyType: Data.policies[].externalPolicyId>
 
-Are you sure? (y/n)
 ```
 
-Require `y`. Halt on anything else.
+Ask with `AskUserQuestion` (Critical Rule 13): question `Turn off <packName> on <tenantName>?`, options `Yes, turn off` / `Cancel`. Without the tool: `Are you sure? (y/n)`. Require `Yes, turn off` (or `y`). Halt on anything else.
 
 ### Disable
 

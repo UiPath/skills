@@ -151,7 +151,7 @@ Coverage compares the pack against **whatever policies the tenant already has**,
 Evaluate IN THIS ORDER (first match wins):
 
 0. **Pack active in Observe** (modes on, `Data.Active == true`, `Data.Mode == "audit"`): render the [Observe view](#observe-view) in place of the template below and of the All settings applied block, then the next actions of case 3 (3·0 first: `'Enforce <packName>'` with its [If you enforce](#if-you-apply--if-you-enforce) block). A null or absent `Mode` (Mode not chosen) is not Observe here: it keeps the template, as the admin portal does. If the catalog has no Observe requirements to show (see the view's fallback), go on to case 2 / 3.
-1. **Pack NOT active** (`Data.Active == false`; a never-applied known pack returns 200 with `Active: false`, not a 404 — a 404 from `state get` means the packId itself is not usable, so re-check it against `catalog list` and stop) — the pack is not applied, whatever the coverage numbers say. Offer `'Apply <packName> settings'`, `'Apply High impact <packName> settings'`, or `'Apply only <specific area> settings'`. If coverage already shows partial or full clause coverage, that is the tenant's own policies coinciding with the standard, NOT the pack — say so plainly ("some of these settings already match what the standard recommends; applying it will manage them going forward") and still offer to apply. Never suppress the apply offer because coverage looks good. Render the [If you apply](#if-you-apply--if-you-enforce) block with it. When `ConflictStatus == "unavailable"`, do NOT offer to apply in this run: show the `CONFLICTS NOT CHECKED` banner from [Conflicts with your existing policies](#conflicts-with-your-existing-policies).
+1. **Pack NOT active** (`Data.Active == false`; a never-applied known pack returns 200 with `Active: false`, not a 404 — a 404 from `state get` means the packId itself is not usable, so re-check it against `catalog list` and stop) — the pack is not applied, whatever the coverage numbers say. Offer the mode directly, never a plain "Apply" that asks the mode later: modes on → `'Enforce <packName>'` and `'Observe <packName>'`; modes off → `'Apply <packName>'`. A standard is applied as a whole ([SKILL.md Critical Rule 12](../../../SKILL.md#critical-rules)): never offer part of it (High impact only, one area, one product). If coverage already shows partial or full clause coverage, that is the tenant's own policies coinciding with the standard, NOT the pack — say so plainly ("some of these settings already match what the standard recommends; applying it will manage them going forward") and still offer to apply. Never suppress the apply offer because coverage looks good. Render the [If you apply](#if-you-apply--if-you-enforce) block with it. When `ConflictStatus == "unavailable"`, do NOT offer to apply in this run: show the `CONFLICTS NOT CHECKED` banner from [Conflicts with your existing policies](#conflicts-with-your-existing-policies).
 2. **Pack active, everything covered** (`Data.Active == true` and `PartiallyDeployedCount == 0 && NotDeployedCount == 0`): render the [All settings applied](#all-settings-applied) block. Nothing to apply. If the pack is not enforced, add the [If you enforce](#if-you-apply--if-you-enforce) block and the enforce call-to-action from case 3.
 3. **Pack active, gaps remain** (`Data.Active == true`, otherwise): do NOT suggest reapplying the standard or applying a subset. Point the user at the residual settings, checking the enforce and drift cases FIRST:
    - **3·0. If the pack is not enforced** (modes on, `Mode` is `"audit"`, null or absent): render the [If you enforce](#if-you-apply--if-you-enforce) block, and offer first: `'Enforce <packName>'`. On yes, hand off to [`../full-apply/impl.md` § Modes on](../full-apply/impl.md#modes-on) — it asks the mode and, for every conflict, keep or update. Every ✗ setting that is in `Conflicts[]` is covered by this offer. Do NOT route a conflict to restore or to the product UI.
@@ -290,15 +290,21 @@ DETAILS  (every requirement, every setting)
   that is missing from the tenant, so they can't currently be verified. Resetting the
   standard recreates that policy with the recommended values."
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Next action (state-aware — see "Next-action suggestion"):
-  · modes on, active, not enforced      → 'Enforce <packName>' (asks keep or update for every conflict)
-  · modes on, Enforced, conflicts       → 'Correct the changed <packName> settings' (keep or update for each)
-  · any ⟳ settings or Cannot-Be-Checked → 'Reset the changed <packName> settings back to the standard'
-  · Active == true, ⚙ settings          → 'Configure the manual <packName> settings'   ·   'What does [clause name] require?'
-  · nothing applied yet                 → 'Apply <packName> settings' (y/n)   ·   'Just fix the High impact gaps'   ·   'Apply only <specific area> settings'
-  · DETAILS left out                    → also 'Show full details' (every setting in each requirement)
 ```
+
+**Next action** — the same for every view: this template, the [Observe view](#observe-view), the [Enforced view](#enforced-view), [All settings applied](#all-settings-applied) and the report after an apply. It is not printed in the block. After the block, ask with `AskUserQuestion` ([SKILL.md Critical Rule 13](../../../SKILL.md#critical-rules)): question `What would you like to do next?`, header `Next`, 2–4 options taken from this list in order (state-aware — see "Next-action suggestion"), each with a one-line description:
+
+| State | Options |
+|---|---|
+| modes on, not applied | `Enforce <packName>` (`Block violations across the whole tenant; you then keep or update each of the <N> conflicts`) · `Observe <packName>` (`Monitor and report without blocking; nothing changes in your AOps policies`) |
+| modes off, not applied | `Apply <packName>` |
+| modes on, active, not enforced | `Enforce <packName>` (keep or update for every conflict) |
+| modes on, Enforced, conflicts | `Correct the changed <packName> settings` (keep or update for each) |
+| any ⟳ settings or Cannot-Be-Checked | `Reset the changed <packName> settings back to the standard` |
+| active, ⚙ settings | `Configure the manual <packName> settings` |
+| always, while DETAILS is not shown | `Show full details` (every setting in each requirement, with its recommendation and impact) |
+
+`Show full details` is always one of the options, last, in every view while DETAILS is not on screen; when more than four rows apply, drop from the rows above it, never this one. Picking it prints this template's DETAILS section (every requirement: Setting · Recommendation · Impact, with the ⚙ and ⟳ sub-lines), then asks this question again without it. Never add a do-nothing option (`Leave as is`, `Stay in Observe`): the admin can close the question or type in Other. Picking `Enforce <packName>` or `Observe <packName>` chooses the mode: go to [full-apply § Modes on](../full-apply/impl.md#modes-on) without asking it again. Without `AskUserQuestion`, print the same options as a numbered list under `Next action:` and END YOUR REPLY.
 
 Layout rules:
 - **Do not compress the layout.** Every non-empty section (Needs configuration, Not applied, Applied) lists **every** requirement in it on its own line. Never merge requirements into "N other requirements", and never mention a requirement only inside the conflict table. The number of lines in a section must equal its count in the REQUIREMENTS row; check this before printing. Omit a section with zero entries (its count still shows in the REQUIREMENTS row).
@@ -363,7 +369,7 @@ Rules:
 - The title is `<PackName> policy` (e.g. `UiPath ISO 27001 policy`). The heading line is `PackLongName`, else `PackName`.
 - Status words are only **Observed** and **Enforced**, right-aligned in one column. No Impact, no ✓/✗/⟳/⚙ markers, no recommendation column: the view shows what Observe watches, not gaps.
 - The four counts must satisfy `F + P + N == T`; check before printing.
-- After the block, continue with the next actions of case 3: the [If you enforce](#if-you-apply--if-you-enforce) block and `'Enforce <packName>'` first, then any drift or manual-setting offer that applies.
+- After the block, continue with the next actions of case 3, asked as in [Next action](#posture-plan-presentation): the [If you enforce](#if-you-apply--if-you-enforce) block, then the pick list with `Enforce <packName>` first, any drift or manual-setting offer that applies, and `Show full details` last.
 
 ### Enforced view
 
@@ -436,6 +442,7 @@ Rules:
 - Drifted settings are not setting rows: they go in the card's DRIFTED FROM THE STANDARD panel, with their conflict's `Lines[]` per the [line rules](#line-rules). After the block, offer `'Correct the changed <packName> settings'` (case 3a′).
 - A Needs configuration row carries its `ConfigLocation` from `catalog.json` on the next line. After the block, offer `'Configure the manual <packName> settings'` for them; an Unverifiable card gets the restore offer (case 3a).
 - Status words are only **Enforced**, **Needs configuration** and **Not applied** on rows. No Impact column and no ✗/⟳/⚙ markers inside the cards.
+- The offers above are asked after the block as one pick list, as in [Next action](#posture-plan-presentation), with `Show full details` last.
 - Leave out ALSO RECORDED AS EVIDENCE when there are no evidence checks; write `1 check is recorded as evidence, not as a policy.` for one.
 
 ### Enable view
@@ -525,10 +532,9 @@ Your policy: P<i> "<live PolicyName>" · Included in policy: <catalog PolicyName
 
 NO CONFLICTS                                                                <T − R> requirements
 OUTSIDE PLATFORM SCOPE — your auditor needs separate evidence for these         <U> requirements
-
-How should <packName> run on <tenantName>? Reply 1 (Enforce) or 2 (Observe).
-You can also ask to "show full details" for every requirement and setting.
 ```
+
+After the block, ask the mode with `AskUserQuestion`: the question and options are in [full-apply § Step 1](../full-apply/impl.md#step-1--ask-how-the-standard-should-run) (Enforce, Observe, Show full details). Without the tool, end the block with `How should <packName> run on <tenantName>? Reply 1 (Enforce) or 2 (Observe).` When the admin already chose the mode (a posture next action, or a request that names it), print the view without the question and go on with full-apply.
 
 Worked example — ISO 42001 on appsdevDefault (not applied; P1 is an AI Trust Layer policy with 9 conflicts):
 
@@ -663,9 +669,6 @@ Your policy: P1 "aitl-22-nov-2026" · Included in policy: AI Capabilities And Sa
 
 NO CONFLICTS                                                                     18 requirements
 OUTSIDE PLATFORM SCOPE — your auditor needs separate evidence for these          15 requirements
-
-How should UiPath ISO 42001 run on appsdevDefault? Reply 1 (Enforce) or 2 (Observe).
-You can also ask to "show full details" for every requirement and setting.
 ```
 
 - **Status line**: `Not applied` when `Active == false`; `Observe` / `Mode not chosen` for an active pack, and mark that mode `(current)` after its name in APPLICATION MODE.
@@ -965,6 +968,8 @@ Ask for values — known recommended value → offer to confirm it; org-specific
    Requires approved providers only · currently: All providers → which providers?
 ```
 
+Print the list, then ask the settings that have a recommended value with `AskUserQuestion` (Critical Rule 13), one question each: options `Use the recommended value` (`<recommended>`) and `Keep the current value` (`<current>`); another value goes in the tool's Other field. A value only the admin can know (a package list, an allowlist) has nothing to pick from: ask it in text.
+
 Review gate before applying:
 
 ```
@@ -972,8 +977,9 @@ Will change (3 existing policies — no re-apply of the standard):
   Studio Web — Publish Outside Personal Workspace       → Development only
   Workflow Analyzer — Required Packages                 → <user packages>
   Model Governance — Third-Party AI Providers Allowlist → <user providers>
-Proceed? (y/n)
 ```
+
+Then ask with `AskUserQuestion` (Critical Rule 13): `Update these <n> settings?`, options `Yes, update` / `Cancel`. Without the tool: `Proceed? (y/n)`.
 
 Receipt + re-check after applying:
 

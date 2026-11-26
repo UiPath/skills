@@ -42,7 +42,7 @@ $tmpDir | Set-Content "$env:TEMP\uipath-compliance-current-session.txt" -NoNewli
 uip gov compliance-packs catalog get <packId> --output json | Set-Content "$tmpDir\catalog.json"
 ```
 
-Save to `$SESSION_TEMP/catalog.json` (Bash) or `$tmpDir\catalog.json` (Windows). This file feeds all downstream plugins. Always run this step **before** `state coverage`, `partial-apply`, or `query` — those plugins resolve the session dir from the sentinel file.
+Save to `$SESSION_TEMP/catalog.json` (Bash) or `$tmpDir\catalog.json` (Windows). This file feeds all downstream plugins. Always run this step **before** `state coverage` or `query` — those plugins resolve the session dir from the sentinel file.
 
 Key fields in `Data`:
 
