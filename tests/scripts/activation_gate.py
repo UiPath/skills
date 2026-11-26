@@ -81,6 +81,9 @@ BASELINES_PCT: dict[str, int] = {
     "uipath-maestro-case": 95,
     "uipath-api-workflow": 100,
     "uipath-functions": 100,
+    # uipath-extension: measured 2026-11-22 on claude-opus-5-5 with this gate (max_turns: 1, full positive set), two
+    # runs that agree at 16/16: actions/runs/45051408714 (placeholder 0) and 45051763197 (this baseline).
+    "uipath-extension": 100,
     # uipath-genome: measured under this name on its 11 rows: 8/11 (actions/runs/42999979392) and 7/11
     # (43022865492). The gate lists plugin skills by name only at its context size; on the misses (002, 003,
     # 005, 008: "implement", "execute", "run the migration") the agent reads the genome first instead of

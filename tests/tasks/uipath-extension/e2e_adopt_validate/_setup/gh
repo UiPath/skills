@@ -1,0 +1,56 @@
+#!/bin/sh
+# Task-scoped stand-in for `gh`, put first on the task's PATH by
+# `sandbox.mock_path_dirs` in e2e_adopt_validate.yaml.
+# `uip extension init` reads the template schema from the community index through
+# `gh api -X GET`, and the sandbox has no GitHub login. This answers only those
+# two reads and fails every other call, so the task cannot write to GitHub.
+# Every call is appended to gh-calls.log next to this script. check_adopt_validate.py reads it.
+INDEX="repos/UiPath/uipath-extensions"
+LOG="$(dirname "$0")/gh-calls.log"
+ARGS="$*"
+
+record() {
+    printf '%s\n' "$1" >>"$LOG" 2>/dev/null || true
+}
+
+case "$1" in
+    auth)
+        if [ "$2" = "status" ]; then
+            record "OK auth status"
+            echo "github.com"
+            echo "  Logged in to github.com account e2e-fixture (stand-in, read-only)"
+            exit 0
+        fi
+        ;;
+    api)
+        shift
+        method="GET"
+        endpoint=""
+        while [ $# -gt 0 ]; do
+            case "$1" in
+                -X|--method) method="$2"; shift 2 ;;
+                -H|--header|-f|--raw-field|-F|--field|--input|-q|--jq|-t|--template) shift 2 ;;
+                -*) shift ;;
+                *) [ -z "$endpoint" ] && endpoint="$1"; shift ;;
+            esac
+        done
+        if [ "$method" = "GET" ]; then
+            case "${endpoint%%\?*}" in
+                "$INDEX")
+                    record "OK GET ${endpoint%%\?*}"
+                    echo '{"default_branch":"main"}'
+                    exit 0
+                    ;;
+                "$INDEX/contents/policy/gate-library.yaml")
+                    record "OK GET ${endpoint%%\?*}"
+                    echo 'template_schema: 2'
+                    exit 0
+                    ;;
+            esac
+        fi
+        ;;
+esac
+
+record "DENIED $ARGS"
+echo "HTTP 404: this sandbox gh only answers the index policy read" >&2
+exit 1
