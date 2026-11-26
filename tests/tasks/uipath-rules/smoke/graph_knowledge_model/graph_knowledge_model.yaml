@@ -7,10 +7,12 @@ description: >
   annotation being tied to an element, no cards overlapping, and
   `uip rules validate` run by the grader.
 
-  The prompt pins the model's signature — the parameter names and their order
-  — which is what makes its values gradable offline: the encapsulated logic is
-  a decision table like any other, so the same evaluator runs it against those
-  parameters. Without the signature pinned the agent chose what the model took,
+  The prompt pins the model's signature — the parameter names, their order, and
+  that its logic is a decision table over those names — which is what makes its
+  values gradable offline: the encapsulated logic is then a table like any
+  other, so the same evaluator runs it against those parameters. The order is
+  pinned because a caller passes arguments positionally, and the column shape
+  because an expression column is FEEL only the engine evaluates. Without the signature pinned the agent chose what the model took,
   and a model with the tiers swapped passed the whole task on structure alone.
   The *decision's* discount is still not graded here, because a call is FEEL the
   offline evaluator does not run and no e2e task covers DiscountRules.
@@ -34,7 +36,9 @@ initial_prompt: |
   - For an order total of 1000 or more, Gold is 15, Silver is 7.5, and
     Standard is 2.
   - The knowledge model takes two parameters, `customerTier` then
-    `orderTotal`, and answers with the discount.
+    `orderTotal`, in that order, and answers with the discount. Its logic is a
+    decision table whose two input columns read those parameters by name, with
+    the thresholds in the cells.
 
   Add a note on the diagram saying the tiers are set by Sales and reviewed
   each quarter.

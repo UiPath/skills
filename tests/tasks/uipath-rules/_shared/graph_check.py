@@ -598,8 +598,20 @@ def evaluate_model(model: ET.Element, arguments: dict) -> object:
              f"so {missing} is unbound and what it answers cannot be told")
     table = model.find("dmn:encapsulatedLogic/dmn:decisionTable", NS)
     if table is None:
-        fail(f"the encapsulated logic of knowledge model {name!r} is not a decision table; this "
-             f"check grades a model whose logic is a table")
+        fail(f"the encapsulated logic of knowledge model {name!r} is not a decision table. This "
+             f"check reads a table; a literal expression or any other body is FEEL only the "
+             f"engine runs, so its values cannot be graded offline. The task's prompt asks for a "
+             f"table, so that this criterion can say what the model answers")
+    # Every column a bare parameter name. A column that is an expression -- `orderTotal >= 1000`
+    # -- is legal DMN the engine evaluates, but `evaluate` only tests columns it was given a value
+    # for, so an expression column is skipped and the first row matches vacuously. That grades a
+    # correct model as wrong, silently. Refused on the stated contract instead.
+    foreign = [column for column in input_columns(table) if column not in declared]
+    if foreign:
+        fail(f"the table of knowledge model {name!r} reads {foreign}, which {'is' if len(foreign) == 1 else 'are'} "
+             f"not among its parameters {declared}. This check evaluates a table whose columns are "
+             f"the parameters by name; put any comparison in the cells (`>= 1000`), not in the "
+             f"column. The task's prompt asks for that shape")
     hit = evaluate(table, {p: arguments[p] for p in declared})
     if hit is None:
         return None

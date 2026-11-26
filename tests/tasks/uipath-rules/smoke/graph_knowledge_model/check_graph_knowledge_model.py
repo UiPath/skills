@@ -31,6 +31,12 @@ from graph_check import (  # noqa: E402
 from rules_check import NS, fail, find_project, load_graph  # noqa: E402
 
 PROJECT = "DiscountRules"
+# The signature the prompt pins, in order. Order is not decoration: a caller passes arguments
+# positionally -- `tierDiscount(customerTier, orderTotal)` -- so a model declaring them the other
+# way round binds the tier to the total at run time. `evaluate_model` binds by name, so it would
+# answer every case correctly while the engine got it wrong, which is the failure this task exists
+# to catch rather than to reproduce.
+MODEL_PARAMETERS = ["customerTier", "orderTotal"]
 # Either side of the 1000 threshold for each tier, by the parameter names the prompt pins.
 DISCOUNTS = [
     ({"customerTier": "Gold", "orderTotal": 0}, 10),
@@ -66,13 +72,14 @@ def main() -> None:
     # Found by its signature rather than by being the only model in the file: the prompt asks
     # for the tier lookup as a model and does not forbid a helper beside it, so demanding
     # exactly one would fail work that is correct.
-    wanted = sorted(DISCOUNTS[0][0])
-    lookups = [m for m in knowledge_models(root) if sorted(model_parameters(m)) == wanted]
+    assert set(MODEL_PARAMETERS) == set(DISCOUNTS[0][0]), "the cases and the signature disagree"
+    lookups = [m for m in knowledge_models(root) if model_parameters(m) == MODEL_PARAMETERS]
     if len(lookups) != 1:
-        fail(f"{len(lookups)} knowledge models take {wanted}, expected exactly one; the rule "
-             f"declares {sorted(models)} taking "
-             f"{[sorted(model_parameters(m)) for m in knowledge_models(root)]}. The tier lookup "
-             f"was asked for as a model over the customer tier and the order total")
+        declared = {m.get("name"): model_parameters(m) for m in knowledge_models(root)}
+        fail(f"{len(lookups)} knowledge models take {MODEL_PARAMETERS} in that order, expected "
+             f"exactly one; the rule declares {declared}. The prompt pins the parameters and "
+             f"their order, because a caller passes them positionally: declared the other way "
+             f"round, the engine binds the tier to the order total")
     check_model_cases(lookups[0], DISCOUNTS)
 
     check_annotations_attached(root)

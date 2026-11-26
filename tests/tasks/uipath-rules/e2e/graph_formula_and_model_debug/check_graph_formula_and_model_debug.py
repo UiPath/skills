@@ -182,32 +182,55 @@ def _model_answers(root: ET.Element, model_id: str, rate: float) -> None:
     ET.SubElement(constant, f"{{{DMN_NS}}}text").text = str(rate)
 
 
+def _namespaces_in_names(root: ET.Element) -> set[str]:
+    """Namespaces ElementTree will declare on its own: those used by an element or attribute name."""
+    used = set()
+    for element in root.iter():
+        if isinstance(element.tag, str) and element.tag.startswith("{"):
+            used.add(element.tag[1:].split("}", 1)[0])
+        for key in element.attrib:
+            if key.startswith("{"):
+                used.add(key[1:].split("}", 1)[0])
+    return used
+
+
 def _write(dmn_file: Path, root: ET.Element) -> None:
     """The mutated tree back to disk, every prefix the file declared still bound.
 
-    ElementTree renames the prefixes it keeps to `ns0`, `ns1`... and drops the declarations it
-    reads as unused. A DMN file addresses its own elements through the `tns:` prefix it declares
-    for its target namespace, and an `href` is an attribute value ElementTree copies verbatim --
-    so a dropped declaration leaves the engine a reference to a prefix the file no longer binds.
-    Re-registering what the file itself declared keeps the serialised copy readable by whatever
-    read the original.
+    Two kinds of prefix, and they need opposite treatment.
+
+    A prefix used by an element or attribute *name* — `uipath:authoring`, `dmndi:DMNDI` — is one
+    ElementTree declares itself, so `register_namespace` is enough to keep its spelling. Declaring
+    it again as a literal attribute writes the same `xmlns:` twice, and a duplicate attribute is
+    not well-formed XML: the file stops parsing. Every rule this task accepts carries
+    `uipath:authoring`, so doing that to all of them corrupted every correct submission before the
+    engine was asked anything, and the probe then reported the fee as not following the model.
+
+    A prefix used only inside an attribute *value* — `tns:` in a `dmnElementRef` — is one
+    ElementTree cannot see, so it drops the declaration and the reference binds to nothing. That
+    one has to be written back by hand.
     """
     parser = ET.XMLPullParser(events=["start-ns"])
     parser.feed(dmn_file.read_bytes())
     declared = [pair for _, pair in parser.read_events()]
     parser.close()
-    # Re-declared literally rather than only registered. `register_namespace` sets the prefix
-    # ElementTree *prefers* for a namespace it is already emitting; it does not make it emit a
-    # declaration nothing in the tree uses. A prefix used only inside an attribute value is
-    # exactly that case, so writing them back as attributes is what keeps the reference bound.
+    emitted = _namespaces_in_names(root)
     for prefix, uri in declared:
         ET.register_namespace(prefix, uri)
-        if prefix:
+        if prefix and uri not in emitted:
             root.set(f"xmlns:{prefix}", uri)
     # The DMN namespace unprefixed, so the constant the probe injected -- which carries the
     # namespace and no prefix of its own -- serialises as a plain `<literalExpression>`.
     ET.register_namespace("", DMN_NS)
     ET.ElementTree(root).write(dmn_file, encoding="utf-8", xml_declaration=True)
+
+    # Read it back before the engine is asked anything. A file the probe wrote and cannot itself
+    # parse is a probe defect, and without this check the engine's refusal to read it was scored
+    # as the agent's rule not following the model.
+    try:
+        ET.fromstring(dmn_file.read_bytes())
+    except ET.ParseError as error:
+        probe_defect(f"the rewritten copy at {dmn_file} does not parse: {error}")
 
 
 if __name__ == "__main__":

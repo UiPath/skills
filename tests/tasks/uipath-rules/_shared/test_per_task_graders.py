@@ -170,6 +170,39 @@ class TestGraphKnowledgeModel:
         assert not accepted(result)
         assert "returned 99.0" in result.stdout
 
+    def test_a_reversed_signature_is_refused(self, tmp_path):
+        # The caller passes positionally, so a model declaring `(orderTotal, customerTier)` binds
+        # the tier to the total at run time. `evaluate_model` binds by name, so it answered every
+        # case correctly while the engine got it wrong — which is why the order is compared and
+        # not just the set.
+        reversed_signature = discount_rules().replace(
+            '<formalParameter id="fp_tier" name="customerTier" typeRef="string"/>\n'
+            '      <formalParameter id="fp_total" name="orderTotal" typeRef="number"/>',
+            '<formalParameter id="fp_total" name="orderTotal" typeRef="number"/>\n'
+            '      <formalParameter id="fp_tier" name="customerTier" typeRef="string"/>')
+        assert reversed_signature != discount_rules(), "the signature was not reversed"
+        project(tmp_path, "DiscountRules", reversed_signature,
+                {"customerTier": "string", "orderTotal": "number"}, {"discount": "number"})
+
+        result = run(self.GRADER, cwd=tmp_path)
+
+        assert not accepted(result)
+        assert "in that order" in result.stdout
+
+    def test_an_expression_input_column_is_refused_with_the_reason(self, tmp_path):
+        # Legal DMN the engine evaluates, but `evaluate` only tests columns it holds a value for,
+        # so an expression column is skipped and the first row matches vacuously — grading a
+        # correct model as wrong. Refused on the stated contract instead of mis-graded.
+        expression_column = discount_rules().replace(
+            "<text>orderTotal</text>", "<text>orderTotal &gt;= 1000</text>")
+        project(tmp_path, "DiscountRules", expression_column,
+                {"customerTier": "string", "orderTotal": "number"}, {"discount": "number"})
+
+        result = run(self.GRADER, cwd=tmp_path)
+
+        assert not accepted(result)
+        assert "put any comparison in the cells" in result.stdout
+
 
 def supplier_rules(extra: str = "") -> str:
     rows = "".join([
