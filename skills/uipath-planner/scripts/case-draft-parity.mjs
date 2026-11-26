@@ -113,6 +113,14 @@ for (const m of draft.matchAll(THRESHOLD)) {
   const has = new RegExp(`(?<![\\d.])${amount}(?![\\d])`);
   if (picksRole && !has.test(roleCells)) {
     fails.push(`threshold '${m[0].trim()}' picks a role, and no =js: line holds ${amount} with a Role: (write the owning task's **Recipient:** as =js:vars.<amount> > ${amount} ? "Role:<above>" : "Role:<at or below>")`);
+  } else if (picksRole) {
+    // the expression routes: its two sides name different roles, one of them a persona the draft's line names
+    const named = personas.filter((p) => line.toLowerCase().includes(p.toLowerCase()));
+    const routes = roleCells.split("\n").filter((l) => has.test(l)).some((l) => {
+      const roles = [...l.matchAll(/Role:\s*([^"'`|]+?)\s*["'`]/g)].map((r) => r[1].trim());
+      return new Set(roles).size >= 2 && roles.some((r) => named.some((p) => p.toLowerCase() === r.toLowerCase()));
+    });
+    if (!routes) fails.push(`threshold '${m[0].trim()}' picks a role: the =js: line holding ${amount} names two different roles, one of them ${named.join(" or ")} — "Role:X" on both sides routes nothing`);
   } else if (!picksRole && !has.test(cells)) {
     fails.push(`threshold '${m[0].trim()}' has no =js: cell holding ${amount} in the final`);
   }

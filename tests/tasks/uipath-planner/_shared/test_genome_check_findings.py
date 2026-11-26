@@ -195,7 +195,14 @@ def test_entry_withdrawn_as_a_question_without_its_cq_mark_fails_strict(check):
     assert finding not in check(marked, profile="strict")[1]
 
 
-CASE_SDD = "# SDD — Sample\n\n## Section 1: Case Definition\n\n### Case Metadata\n"
+def test_entry_withdrawn_as_a_cq_numbered_question_is_checked_too(check):
+    text = with_decisions(COMPONENT, "1. (withdrawn: asked as Configuration Question CQ4) — portal address\n")
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert "Open Decisions entry 1 is withdrawn as Configuration Question 4, and no line carries *[Inferred: CQ4]*" in out
+
+
+CASE_SDD ="# SDD — Sample\n\n## Section 1: Case Definition\n\n### Case Metadata\n"
 NO_CASE_INPUT = "case component: Interface names no case SDD as its build input; name sample-case-sdd.md"
 
 

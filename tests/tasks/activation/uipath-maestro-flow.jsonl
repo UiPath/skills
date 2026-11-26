@@ -59,3 +59,5 @@
 {"id": "uipath-maestro-flow-059", "prompt": "Add an approval step to my Maestro Automate", "expected_skill": "uipath-maestro-flow"}
 {"id": "uipath-maestro-flow-060", "prompt": "My Maestro Automate fails on the second node, can you debug it", "expected_skill": "uipath-maestro-flow"}
 {"id": "uipath-maestro-flow-061", "prompt": "Publish my maestro automate to Orchestrator", "expected_skill": "uipath-maestro-flow"}
+{"id": "uipath-maestro-flow-062", "prompt": "In my Maestro flow, add a node that calls our registered remote A2A agent", "expected_skill": "uipath-maestro-flow"}
+{"id": "uipath-maestro-flow-063", "prompt": "Wire the Agentforce A2A agent into my .flow file and pass the case summary to it", "expected_skill": "uipath-maestro-flow"}

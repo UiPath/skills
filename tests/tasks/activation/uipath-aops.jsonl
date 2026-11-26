@@ -1,0 +1,39 @@
+{"id": "uipath-aops-001", "prompt": "Create an Automation Ops pipeline for the InvoiceIntake process", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-002", "prompt": "need a pipeline in automation ops for the Finance solution, repo is on github", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-003", "prompt": "pipeline ClaimsBot-main got created via uip aops, now how do i run it and watch logs", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-004", "prompt": "What permissions do I need to create and run pipelines in Automation Ops?", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-005", "prompt": "uip aops pipeline create --file ./pipeline-hr-onboarding.json", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-006", "prompt": "new automation ops pipeline, but it should build the release/2.x branch", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-007", "prompt": "Create an Automation Ops pipeline for VendorSync that triggers on every commit to main", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-008", "prompt": "uip tools install @uipath/aops-tool fails with Unknown tool", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-009", "prompt": "what processes can i pick when creating a pipeline in automation ops?", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-010", "prompt": "my automation ops pipeline failed, get me the whole log not just the first part", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-011", "prompt": "Create an Automation Ops pipeline for just the Library project in our Procurement solution", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-012", "prompt": "automation ops pipeline for TicketTriage, its just a project on its own, no solution", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-013", "prompt": "create the Expenses pipeline in automation ops and run it, i want to see the logs", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-014", "prompt": "did save-and-run on my pipeline but got no execution id back, where's the run?", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-015", "prompt": "Kick off the nightly-build pipeline in Automation Ops now", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-016", "prompt": "watch the logs for pipeline execution 7f3c2a10-9d4e-4b1a-a2c3-5e8f01d2b6c4 till it finishes", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-017", "prompt": "Last 5 runs of the InvoiceIntake pipeline?", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-018", "prompt": "Stop the VendorSync pipeline run that's in progress", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-019", "prompt": "Did my last Automation Ops pipeline run succeed?", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-020", "prompt": "List all my Automation Ops pipelines", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-021", "prompt": "what arguments did the last run of my automation ops pipeline use?", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-022", "prompt": "Delete test-pipeline-2 from Automation Ops", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-023", "prompt": "uip aops pipeline update rejects the json i got from pipeline get, why?", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-024", "prompt": "what source control connections do we have in automation ops", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-025", "prompt": "which github repos can automation ops source control actually see?", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-026", "prompt": "list branches of the automation-finance repo in automation ops", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-027", "prompt": "what solutions show up under our azure devops connection in automation ops?", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-028", "prompt": "just pushed to github but source control in automation ops doesnt show it, resync?", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-029", "prompt": "show me recent commits on the ClaimsBot project in automation ops source control", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-030", "prompt": "what uipath projects does source control see in rpa-monorepo on the feature/refunds branch", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-031", "prompt": "Is our AOps source control connection synced?", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-032", "prompt": "Is uip sc gone? What do I use instead?", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-033", "prompt": "I have a script that calls uip cicd pipeline create, update it for the new CLI", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-034", "prompt": "npm can't find @uipath/cicd-tool anymore, how do I install the pipeline tooling now?", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-035", "prompt": "uip aops connection list comes back empty, what now?", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-036", "prompt": "Before I build anything, check whether pipelines are even enabled for our org in Automation Ops", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-037", "prompt": "our repo has a Dispatcher and a Performer, i need a pipeline for each", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-038", "prompt": "change my VendorSync pipeline from manual to run on every commit", "expected_skill": "uipath-aops"}
+{"id": "uipath-aops-039", "prompt": "which branch and commit did my last pipeline run actually build?", "expected_skill": "uipath-aops"}

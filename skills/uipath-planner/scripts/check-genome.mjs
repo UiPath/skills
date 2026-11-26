@@ -447,7 +447,7 @@ function checkOpenDecisions(text, r, processEntries = null, namedElsewhere = new
   }
   if (unnamed.length) r.strict(`${unnamed.length} *[Inferred]* mark(s) name no Open Decisions entry or Configuration Question (write *[Inferred: D<n>]*), first: ${unnamed[0]}`);
   // an entry withdrawn into a Configuration Question keeps its point marked on the line that uses the question
-  for (const [, num, n] of section.matchAll(/^(\d+)\. .*\(withdrawn: asked as Configuration Question (\d+)/gm)) {
+  for (const [, num, n] of section.matchAll(/^(\d+)\. .*\(withdrawn: asked as Configuration Question (?:CQ)?(\d+)/gm)) {
     if (!new RegExp(`\\*\\[Inferred:\\s*CQ${n}\\]\\*`).test(text)) r.strict(`Open Decisions entry ${num} is withdrawn as Configuration Question ${n}, and no line carries *[Inferred: CQ${n}]*: mark the line that uses the question, *[Inferred: CQ${n}]* (SDD [SME REVIEW]: <note>)`);
   }
   const named = namedEntries(text);
@@ -464,7 +464,7 @@ function checkDesignedIn(path, text, level, r) {
   let matches;
   // a line taken over the whole SDD, its Action Required section included, still matches an SDD that has not changed
   try { matches = sddFingerprint(sdd) === m[2] || sddFingerprint(sdd, { keepOpenQuestions: true }) === m[2]; } catch { r.strict(`Designed in: ${m[1]} or a child SDD it lists cannot be read`); return; }
-  if (!matches) r.strict(`Designed in: sdd-sha256 does not match ${m[1]}; the SDD changed since the genome was written`);
+  if (!matches) r.strict(`Designed in: sdd-sha256 does not match ${m[1]}; the SDD changed since the genome was written — write the value \`node sdd-fingerprint.mjs <SDD>\` prints (not sha256sum: the fingerprint leaves out the Genome row)`);
   checkBuildAssumptions(path, text, sdd, m[1], r);
   // a component genome holds every gap of its SDD: an SDD with Action Required items, a genome with none of them
   if (level !== "component") return;

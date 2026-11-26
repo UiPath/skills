@@ -353,7 +353,7 @@ the exact stage display name — never the case name. -->
 **Action App ID:** <actionAppId or <UNRESOLVED>>
 **Deployment Folder:** <folder path or <UNRESOLVED>>
 **actionType:** <dispatch code or —>
-**Recipient:** <Role:name \| User:uuid \| UserGroup:uuid \| Email:addr \| Expression:=vars.id — typed prefix only; none known → drop the cell + high review item> <!-- `Role:` names THIS task's Persona (its Tasks-table row), never a role copied from another task's block. -->
+**Recipient:** <Role:name \| User:uuid \| UserGroup:uuid \| Email:addr \| Expression:=vars.id — typed prefix only; the task's Tasks row names a persona → `Role:<that Persona>`, never `—`; no persona and no other identity known → drop the cell + high review item> <!-- `Role:` names THIS task's Persona (its Tasks-table row), never a role copied from another task's block. A Persona cell IS the assignment: a human task whose row names a persona is never left `—`. -->
 **Priority:** <Low \| Medium \| High \| Critical> · **Task Title:** <one-line Action Center prompt> · **Labels:** <csv or —>
 
 **Input Schema:**
@@ -738,6 +738,9 @@ Case Variables rows and every `=js:` expression, finds every comparator + amount
 `=js:` cell, and checks each Tasks table row's cell count and each `Role:` Recipient against its task's Persona.
 Each `FAIL:` line is a defect your edits introduced: repair it in place from the draft and run it again until it
 prints `OK`.
+Then run `node "<SKILL_DIR>/scripts/case-sdd-check.mjs" "<NAME>.md"` the same way: it finds the template markers a
+stage or task block lost (`**Design Rationale:**`, `**Activation Mode:**`, `**Entry Condition:**`, `**Task envelope**`),
+a `**Type:**` outside the task types, and an SLA Response Map row that breaks the template's cell rules.
 
 Draft repairs — the only changes beside the rules above:
 1. `user-selected-stage` repair per case-product-guide.md § Repairing a `user-selected-stage` lane; wording such as
@@ -844,6 +847,8 @@ CONFORMANCE CHECKLIST — 21 items.
  18. No `user-selected-stage` entry sits on a lane that a decision, event or SLA routes to — the picker row is
      then the defect (case-product-guide.md § Repairing a `user-selected-stage` lane). Source silent on who
      launches the lane → keep what is authored.
+ Mechanical gate — the template markers, the task types and the SLA Response Map rows PASS only after
+ `case-sdd-check.mjs` prints `OK`; quote that line
  Draft parity (finalizing a draft only) — items 16, 19 and 20 PASS only after `case-draft-parity.mjs` prints `OK`;
  quote that line
  19. The ordered stage and task inventory equals the draft's — names verbatim, only letter prefixes renumbered —

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import glob
+import json
 import os
 import subprocess
 import sys
@@ -350,3 +351,72 @@ def test_norm_value_reads_boolean_words(value, expected) -> None:
 @pytest.mark.parametrize("boolean", [True, False])
 def test_norm_value_keeps_numbers_apart_from_booleans(number, boolean) -> None:
     assert bpmn_live.norm_value(number) != bpmn_live.norm_value(boolean)
+
+
+def _ok(data) -> str:
+    return json.dumps({"Result": "Success", "Data": data})
+
+
+_FOLDER = _ok({"Key": "fk"})
+_ONE_PROCESS = _ok([{"Name": "P", "ProcessKey": "P.pk", "ProcessVersion": "1.0.1", "ReleaseKey": "rk", "FeedId": "feed"}])
+_STARTED = _ok({"jobKey": "jk", "state": "Pending"})
+
+
+def _job(state: str) -> str:
+    return _ok({"Key": "jk", "State": state, "CreationTime": "2026-01-01T00:00:00.000Z", "Info": "x"})
+
+
+def _stub_deployed(monkeypatch, outputs: list[tuple[int, str]]) -> list[list[str]]:
+    seen: list[list[str]] = []
+
+    def fake_run_cli(arguments, *, timeout, log_file=None):
+        code, out = outputs[len(seen)]
+        seen.append(arguments)
+        return subprocess.CompletedProcess(arguments, code, out, "")
+
+    monkeypatch.setattr(bpmn_live, "run_cli", fake_run_cli)
+    monkeypatch.setattr(bpmn_live.time, "sleep", lambda _seconds: None)
+    return seen
+
+
+def test_run_deployed_starts_the_listed_release_and_waits(monkeypatch, tmp_path) -> None:
+    seen = _stub_deployed(
+        monkeypatch,
+        [(0, _FOLDER), (0, _ONE_PROCESS), (0, _STARTED), (0, _job("Running")), (1, _POLL_504), (0, _job("Successful"))],
+    )
+    run_data, instance_id, folder_key = bpmn_live.run_deployed("Shared/x", {"a": 1}, tmp_path / "run.log")
+    assert (instance_id, folder_key) == ("jk", "fk")
+    assert run_data["FinalStatus"] == "Successful"
+    assert run_data["CreationTime"] == "2026-01-01T00:00:00.000Z"
+    run = seen[2]
+    assert run[:6] == ["uip", "maestro", "bpmn", "process", "run", "P.pk:1.0.1"]
+    assert run[run.index("--release-key") + 1] == "rk"
+    assert run[run.index("--feed-id") + 1] == "feed"
+    assert run[run.index("--inputs") + 1] == '{"a":1}'
+    assert "jk: Successful" in (tmp_path / "run.log").read_text()
+
+
+def test_run_deployed_refuses_an_ambiguous_folder(monkeypatch, tmp_path) -> None:
+    two = _ok([{"Name": "P"}, {"Name": "Q"}])
+    _stub_deployed(monkeypatch, [(0, _FOLDER), (0, two)])
+    with pytest.raises(bpmn_live.CheckFailure, match="one Maestro process"):
+        bpmn_live.run_deployed("Shared/x", {}, None)
+
+
+def test_run_deployed_gives_up_after_repeated_poll_failures(monkeypatch, tmp_path) -> None:
+    failures = [(1, _POLL_504)] * bpmn_live.DEPLOYED_MAX_FAILED_POLLS
+    seen = _stub_deployed(monkeypatch, [(0, _FOLDER), (0, _ONE_PROCESS), (0, _STARTED), *failures])
+    with pytest.raises(bpmn_live.CheckFailure, match="504"):
+        bpmn_live.run_deployed("Shared/x", {}, None)
+    assert len(seen) == 3 + bpmn_live.DEPLOYED_MAX_FAILED_POLLS
+
+
+def test_instance_commands_address_debug_and_deployed_instances() -> None:
+    assert bpmn_live._instance_command("incidents", "i", None)[3] == "debug-instance"
+    assert bpmn_live._instance_command("incidents", "i", "fk")[3:] == ["instances", "incidents", "i", "-f", "fk"]
+
+
+def test_fetch_element_executions_reads_the_deployed_instance(monkeypatch) -> None:
+    seen = _stub_deployed(monkeypatch, [(0, _ok({"ElementExecutions": [{"ElementId": "x"}]}))])
+    assert bpmn_live.fetch_element_executions("i", "fk") == [{"ElementId": "x"}]
+    assert seen[0][3:] == ["instances", "element-executions", "i", "-f", "fk"]
