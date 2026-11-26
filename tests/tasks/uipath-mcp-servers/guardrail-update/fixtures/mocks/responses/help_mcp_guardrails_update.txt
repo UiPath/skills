@@ -1,0 +1,69 @@
+                       uip agenthub mcp-guardrails update                       
+Change an MCP server's guardrail of one validator. Settings you leave out are kept.
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip agenthub mcp-guardrails update [options]                                 │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --validator <validator>        The built-in validator.                       │
+│ --dry-run                      Print the mutation plan without changing it.  │
+│ --mcp <slug>                   Parent MCP server slug, not its display name. │
+│ --folder-key <key>             Orchestrator folder key (GUID). Use           │
+│                                --folder-path for the folder name or          │
+│                                fully-qualified path.                         │
+│ --folder-path <path>           Orchestrator folder display name or           │
+│                                fully-qualified path (e.g. 'Shared' or        │
+│                                'Foo/Shared'). Resolved to the folder key via │
+│                                the Orchestrator SDK.                         │
+│ --login-validity <minutes>     Interactive-login token lifetime.             │
+│ --action <action>              What a violation does: log lets the call      │
+│                                through, block stops it.                      │
+│ --reason <text>                With --action block: the message the caller   │
+│                                gets. Required except for prompt-injection.   │
+│ --severity <level>             With --action log: the severity logged.       │
+│ --entity <name>                pii-detection / harmful-content: an entity to │
+│                                detect. Repeatable, or comma-separated;       │
+│                                replaces the selection.                       │
+│ --entity-threshold             pii-detection (0-1) / harmful-content (0, 2,  │
+│ <entity=value>                 4, 6): the threshold of a selected entity.    │
+│                                Repeatable.                                   │
+│ --threshold <value>            prompt-injection (0-1) / llm-as-judge (0, 2,  │
+│                                4, 6): the detection threshold.               │
+│ --instructions <text>          llm-as-judge: what the judge checks for.      │
+│ --model <name>                 llm-as-judge: the judge model, from `uip      │
+│                                agenthub guardrail-models list`.              │
+│ --positive-example <text>      llm-as-judge: an input that passes.           │
+│                                Repeatable, up to 3.                          │
+│ --negative-example <text>      llm-as-judge: an input that violates.         │
+│                                Repeatable, up to 3.                          │
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ <table|json|yaml|plain|markd                                                 │
+│ own>                                                                         │
+│ --output-filter <expression>   JMESPath expression applied to the Data field │
+│                                of the response envelope                      │
+│ --log-level                    Log level threshold (default: warn)           │
+│ <debug|info|warn|error>                                                      │
+│ --log-file <path>              Write logs to file instead of stderr          │
+│ --profile <name>               Use a named login profile                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Examples ───────────────────────────────────────────────────────────────────┐
+│ Switch a server's prompt-injection guardrail to log, keeping its threshold   │
+│                                                                              │
+│   $ uip agenthub mcp-guardrails update --validator prompt-injection --mcp vendor-mcp --action log --folder-path Shared │
+│                                                                              │
+│   validator  prompt-injection                                                │
+│   action     log                                                             │
+│   enabled    true                                                            │
+│   scope      server                                                          │
+│   settings:                                                                  │
+│     action     log                                                           │
+│     severity   info                                                          │
+│     threshold  0.5                                                           │
+│   id         5c1f0e2a-7b3d-4c8e-9f60-2a4b6c8d0e1f                            │
+│   name       Prompt Injection                                                │
+│   managed    true                                                            │
+└──────────────────────────────────────────────────────────────────────────────┘

@@ -1,0 +1,67 @@
+{
+  "version": 2,
+  "rules": [
+    {
+      "match": "mcp-guardrails update --help",
+      "file": "help_mcp_guardrails_update.txt"
+    },
+    {
+      "match": "mcp-guardrails delete --help",
+      "file": "help_mcp_guardrails_delete.txt"
+    },
+    {
+      "match": "mcp-guardrails list --help",
+      "file": "help_mcp_guardrails_list.txt"
+    },
+    {
+      "match": "mcp-guardrails get --help",
+      "file": "help_mcp_guardrails_get.txt"
+    },
+    {
+      "match": "mcp-guardrails --help",
+      "file": "help_mcp_guardrails.txt"
+    },
+    {
+      "match": "--help",
+      "passthrough": true
+    },
+    {
+      "match": "agenthub mcp list",
+      "file": "agenthub_mcp_list.json"
+    },
+    {
+      "match": "agenthub mcp get vendor-mcp",
+      "file": "mcp_get.json"
+    },
+    {
+      "match": "mcp-guardrails list",
+      "file": "mcp_guardrails_list_updated.json",
+      "after": "mcp_guardrails_update.json"
+    },
+    {
+      "match": "mcp-guardrails list",
+      "file": "mcp_guardrails_list.json"
+    },
+    {
+      "match": "mcp-guardrails get",
+      "file": "mcp_guardrails_get_updated.json",
+      "after": "mcp_guardrails_update.json"
+    },
+    {
+      "match": "mcp-guardrails get",
+      "file": "mcp_guardrails_get.json"
+    },
+    {
+      "match": "--dry-run",
+      "file": "mcp_guardrails_update_dryrun.json"
+    },
+    {
+      "match": "mcp-guardrails update",
+      "file": "mcp_guardrails_update.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "{\"Result\":\"Failure\",\"Message\":\"command not mocked in this scenario\"}\n",
+    "exit_code": 1
+  }
+}

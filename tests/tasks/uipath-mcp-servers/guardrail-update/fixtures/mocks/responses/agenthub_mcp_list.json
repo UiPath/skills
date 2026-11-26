@@ -1,0 +1,17 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubMcpList",
+  "Data": {
+    "Items": [
+      {
+        "Slug": "vendor-mcp",
+        "Name": "Vendor MCP",
+        "Type": 4,
+        "Status": 1,
+        "FolderKey": "folder-mock-shared"
+      }
+    ],
+    "Total": 1,
+    "Count": 1
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "DryRun",
+  "Data": {
+    "Plan": {
+      "Ops": [
+        {
+          "Verb": "POST",
+          "Target": "/api/servers/vendor-mcp/guardrails"
+        }
+      ],
+      "Resolved": {
+        "Name": "PII Detection",
+        "GuardrailType": "builtInValidator",
+        "ActionType": "block",
+        "IsEnabled": true,
+        "Configuration": "{\"validatorType\":\"pii_detection\",\"validatorParameters\":[{\"$parameterType\":\"enum-list\",\"id\":\"entities\",\"value\":[\"USSocialSecurityNumber\",\"InternationalBankingAccountNumber\"]},{\"$parameterType\":\"map-enum\",\"id\":\"entityThresholds\",\"value\":{\"USSocialSecurityNumber\":0.7,\"InternationalBankingAccountNumber\":0.7}}],\"actionConfig\":{\"reason\":\"Personal data is not allowed\"}}",
+        "Selector": {
+          "Scopes": [
+            "Server"
+          ]
+        }
+      }
+    }
+  }
+}
