@@ -358,6 +358,7 @@ def test_rejects_local_alias_of_another_field(tmp_path: Path) -> None:
         ['x = args.get("customer_id")', 'f = lambda x: "secret" in x'],
         ['x = args.get("customer_id")', "try: pass", "except Exception as x: pass"],
         ['x = args.get("customer_id")', "import json as x"],
+        ["x = x.lower()"],
     ],
 )
 def test_rejects_alias_not_holding_customer_id(tmp_path: Path, lines: list[str]) -> None:
