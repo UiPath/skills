@@ -67,11 +67,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent refreshed the flow registry or recorded the published agent via registry prepare --kind Process"
+    description: "Agent refreshed the flow registry or looked up the published agent (registry get, or registry prepare --kind Process)"
     tool_name: "Bash"
     # `registry prepare --kind Process` (the flow SDK path for a published agent) fetches the key and schemas too;
     # `npx flow-sdk registry prepare` is its documented fallback for an older `uip` (or-processes.md).
-    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+(pull|search)|(uip\s+maestro|npx\s+flow-sdk)\s+registry\s+prepare\b[^\n;&|]*--kind[\s=]+Process\b'
+    # `flow registry get "uipath.core.agent.<key>"` is the lookup uipath-agents flow-integration.md teaches.
+    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+((pull|search)|get\s+[''"]?uipath\.core\.agent\.)|(uip\s+maestro|npx\s+flow-sdk)\s+registry\s+prepare\b[^\n;&|]*--kind[\s=]+Process\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

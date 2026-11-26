@@ -405,7 +405,7 @@ def test_declaring_the_resource_needs_add_of_the_same_kind(pattern, call):
 
 PUBLISHED_REFRESH = _pattern(
     "uipath-agents/coded/coded_in_flow_published/coded_in_flow_published.yaml",
-    "Agent refreshed the flow registry or recorded the published agent via registry prepare --kind Process",
+    "Agent refreshed the flow registry or looked up the published agent (registry get, or registry prepare --kind Process)",
 )
 
 
@@ -417,6 +417,7 @@ PUBLISHED_REFRESH = _pattern(
         "npx flow-sdk registry prepare --kind Process --name triage-agent",
         "uip maestro flow registry pull --force",
         "uip maestro flow registry search triage-agent",
+        'uip maestro flow registry get "uipath.core.agent.4f1c2b7e-9d3a-4e5b-8c6d-1a2b3c4d5e6f" --output json',
     ],
 )
 def test_published_refresh_accepts_prepare_or_registry_refresh(command):
@@ -432,6 +433,7 @@ def test_published_refresh_accepts_prepare_or_registry_refresh(command):
         "uip maestro registry prepare --entity X; echo --kind Process",
         "uip maestro registry prepare --entity X && uip solution resources list --kind Process",
         "uip maestro flow registry get triage-agent",
+        'uip maestro flow registry get "uipath.core.rpa.4f1c2b7e" --output json',
     ],
 )
 def test_published_refresh_needs_prepare_of_kind_process(command):
