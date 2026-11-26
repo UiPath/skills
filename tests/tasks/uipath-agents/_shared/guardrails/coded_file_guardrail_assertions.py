@@ -1,18 +1,291 @@
 """AST assertions for coded-agent guardrails that inspect files (``detection_scope``).
 
 Each ``require_*`` helper exits with ``FAIL: ...`` on a failed assertion and
-prints one ``OK: ...`` line when it passes.
+prints one ``OK: ...`` line when it passes. Names, arguments and enum values are
+read the way Python and the UiPath SDK read them, so a check judges what the code
+sends at runtime, not how it is spelled.
 """
 
 from __future__ import annotations
 
 import ast
 import sys
+from collections.abc import Iterator
+from dataclasses import dataclass
 
-DETECTION_SCOPE_VALUES = ("Text", "Files", "Both")
-_MEMBER_TO_VALUE = {"TEXT": "Text", "FILES": "Files", "BOTH": "Both"}
+from _shared.guardrails.guardrail_middleware import call_name
+
+# Copied from the UiPath SDK. The enums are str enums, and the SDK sends the value.
+ENUMS: dict[str, dict[str, str]] = {
+    "PIIDetectionEntityType": {
+        "PERSON": "Person",
+        "ADDRESS": "Address",
+        "DATE": "Date",
+        "PHONE_NUMBER": "PhoneNumber",
+        "EUGPS_COORDINATES": "EugpsCoordinates",
+        "EMAIL": "Email",
+        "CREDIT_CARD_NUMBER": "CreditCardNumber",
+        "INTERNATIONAL_BANKING_ACCOUNT_NUMBER": "InternationalBankingAccountNumber",
+        "SWIFT_CODE": "SwiftCode",
+        "ABA_ROUTING_NUMBER": "ABARoutingNumber",
+        "US_DRIVERS_LICENSE_NUMBER": "USDriversLicenseNumber",
+        "UK_DRIVERS_LICENSE_NUMBER": "UKDriversLicenseNumber",
+        "US_INDIVIDUAL_TAXPAYER_IDENTIFICATION": "USIndividualTaxpayerIdentification",
+        "UK_UNIQUE_TAXPAYER_NUMBER": "UKUniqueTaxpayerNumber",
+        "US_BANK_ACCOUNT_NUMBER": "USBankAccountNumber",
+        "US_SOCIAL_SECURITY_NUMBER": "USSocialSecurityNumber",
+        "USUK_PASSPORT_NUMBER": "UsukPassportNumber",
+        "URL": "URL",
+        "IP_ADDRESS": "IPAddress",
+    },
+    "GuardrailScope": {"AGENT": "Agent", "LLM": "Llm", "TOOL": "Tool"},
+    "GuardrailExecutionStage": {"PRE": "pre", "POST": "post", "PRE_AND_POST": "pre&post"},
+    "DetectionScope": {"TEXT": "Text", "FILES": "Files", "BOTH": "Both"},
+}
+# The SDK parameter order of the calls whose arguments a check may find by position.
+POSITIONAL_PARAMS: dict[str, tuple[str, ...]] = {
+    "UiPathPIIDetectionMiddleware": ("scopes", "action", "entities"),
+    "UiPathLLMAsJudgeMiddleware": ("scopes", "action", "guardrail_text", "model"),
+    "LLMAsJudgeValidator": ("guardrail_text", "model"),
+    "PIIDetectionEntity": ("name", "threshold"),
+    "BlockAction": ("title", "detail"),
+}
+DETECTION_SCOPE_VALUES = tuple(ENUMS["DetectionScope"].values())
 _REFERENCE_KEY_SETS = ({"ID", "FullName", "MimeType"}, {"id", "full_name", "mime_type"})
 RENDER = "render_attachments_block"
+_MAX_HOPS = 5
+
+
+@dataclass(frozen=True)
+class _Binding:
+    """One binding of a name: an assigned ``value``, an ``imported`` name, or neither (a parameter, a loop target)."""
+
+    line: int
+    column: int
+    value: ast.expr | None = None
+    imported: str | None = None
+
+
+class Bindings:
+    """Where each name is bound, per scope, so a name resolves as Python resolves it where it is used."""
+
+    def __init__(self, tree: ast.Module) -> None:
+        self.tree = tree
+        self._parent = {id(child): parent for parent in ast.walk(tree) for child in ast.iter_child_nodes(parent)}
+        self._bound: dict[tuple[int, str], list[_Binding]] = {}
+        self._added: dict[tuple[int, str], list[tuple[ast.expr, bool]]] = {}
+        for node in ast.walk(tree):
+            for scope, name, binding in self._bindings_of(node):
+                self._bound.setdefault((id(scope), name), []).append(binding)
+            for name, added, single in _list_updates(node):
+                self._added.setdefault((id(self.scopes(node)[0]), name), []).append((added, single))
+        for entries in self._bound.values():
+            entries.sort(key=lambda binding: (binding.line, binding.column))
+
+    def scopes(self, at: ast.AST) -> list[ast.AST]:
+        """The scopes whose names ``at`` sees, innermost first. A class body is seen only from itself."""
+        found: list[ast.AST] = []
+        child, node = at, self._parent.get(id(at))
+        while node is not None:
+            if _in_body(node, child) and (not isinstance(node, ast.ClassDef) or not found):
+                found.append(node)
+            child, node = node, self._parent.get(id(node))
+        return [*found, self.tree]
+
+    def resolve(self, node: ast.expr | None) -> ast.expr | None:
+        """Follow a name to the value assigned to it where it is used, up to five hops.
+
+        A name bound by a parameter, a loop target or an import stays unresolved.
+        """
+        for _ in range(_MAX_HOPS):
+            if not isinstance(node, ast.Name):
+                break
+            found = self._lookup(node.id, node)
+            if found is None or found[1].value is None:
+                break
+            node = found[1].value
+        return node
+
+    def imported_name(self, node: ast.Name) -> str:
+        """The original name behind ``node`` when it is a ``from m import x as y`` alias visible where it is used."""
+        found = self._lookup(node.id, node)
+        return found[1].imported if found and found[1].imported else node.id
+
+    def added(self, node: ast.Name) -> list[tuple[ast.expr, bool]]:
+        """What the code adds to the list ``node`` names, in its scope: ``(items, False)`` or ``(item, True)``."""
+        found = self._lookup(node.id, node)
+        return self._added.get((id(found[0]), node.id), []) if found else []
+
+    def _lookup(self, name: str, at: ast.AST) -> tuple[ast.AST, _Binding] | None:
+        line = getattr(at, "lineno", None)
+        holding = self._ancestors(at)
+        for depth, scope in enumerate(self.scopes(at)):
+            entries = [b for b in self._bound.get((id(scope), name), []) if b.value is None or id(b.value) not in holding]
+            if not entries:
+                continue
+            before = [b for b in entries if depth == 0 and line is not None and b.line <= line]
+            return scope, (before or entries)[-1]
+        return None
+
+    def _ancestors(self, node: ast.AST | None) -> set[int]:
+        found: set[int] = set()
+        while node is not None:
+            found.add(id(node))
+            node = self._parent.get(id(node))
+        return found
+
+    def _bindings_of(self, node: ast.AST) -> Iterator[tuple[ast.AST, str, _Binding]]:
+        """The names ``node`` binds, each with the scope it binds in."""
+        if isinstance(node, ast.Module):
+            return
+        here = self.scopes(node)[0]
+        at = (node.lineno, node.col_offset) if isinstance(node, (ast.stmt, ast.expr, ast.excepthandler)) else (0, 0)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+            arguments = node.args
+            for arg in (*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs, arguments.vararg, arguments.kwarg):
+                if arg is not None:
+                    yield node, arg.arg, _Binding(*at)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            yield here, node.name, _Binding(*at)
+        elif isinstance(node, (ast.Assign, ast.AnnAssign, ast.NamedExpr)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            if node.value is not None:
+                for target in targets:
+                    for name, value in _paired(target, node.value):
+                        yield here, name, _Binding(*at, value=value)
+        elif isinstance(node, (ast.For, ast.AsyncFor)):
+            yield from ((here, name, _Binding(*at)) for name in _target_names(node.target))
+        elif isinstance(node, (ast.With, ast.AsyncWith)):
+            for item in node.items:
+                yield from ((here, name, _Binding(*at)) for name in _target_names(item.optional_vars))
+        elif isinstance(node, ast.ExceptHandler) and node.name:
+            yield here, node.name, _Binding(*at)
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                yield here, alias.asname or alias.name.split(".")[0], _Binding(*at)
+        elif isinstance(node, ast.ImportFrom):
+            for alias in node.names:
+                if alias.name != "*":
+                    yield here, alias.asname or alias.name, _Binding(*at, imported=alias.name)
+
+
+def _in_body(scope: ast.AST, child: ast.AST) -> bool:
+    if isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+        return any(child is stmt for stmt in scope.body)
+    return isinstance(scope, ast.Lambda) and child is scope.body
+
+
+def _target_names(target: ast.expr | None) -> list[str]:
+    return [n.id for n in ast.walk(target) if isinstance(n, ast.Name)] if target is not None else []
+
+
+def _paired(target: ast.expr, value: ast.expr) -> Iterator[tuple[str, ast.expr | None]]:
+    """Each name ``target`` binds, with the value it gets, or ``None`` when unpacking hides it."""
+    if isinstance(target, ast.Name):
+        yield target.id, value
+    elif (
+        isinstance(target, (ast.Tuple, ast.List))
+        and isinstance(value, (ast.Tuple, ast.List))
+        and len(target.elts) == len(value.elts)
+    ):
+        for sub_target, sub_value in zip(target.elts, value.elts, strict=True):
+            yield from _paired(sub_target, sub_value)
+    else:
+        yield from ((name, None) for name in _target_names(target))
+
+
+def _list_updates(node: ast.AST) -> Iterator[tuple[str, ast.expr, bool]]:
+    """``(name, added, single)`` for ``name += [...]``, ``name.extend(xs)`` (items) and ``name.append(x)`` /
+    ``name.insert(i, x)`` (one item)."""
+    if isinstance(node, ast.AugAssign) and isinstance(node.op, ast.Add) and isinstance(node.target, ast.Name):
+        yield node.target.id, node.value, False
+    elif (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and isinstance(node.func.value, ast.Name)
+        and node.args
+    ):
+        if node.func.attr in ("append", "insert"):
+            yield node.func.value.id, node.args[-1], True
+        elif node.func.attr == "extend":
+            yield node.func.value.id, node.args[0], False
+
+
+def call_arg(call: ast.expr | None, name: str) -> ast.expr | None:
+    """The argument ``name`` of ``call``, by keyword or by its SDK position (``POSITIONAL_PARAMS``)."""
+    if not isinstance(call, ast.Call):
+        return None
+    for keyword in call.keywords:
+        if keyword.arg == name:
+            return keyword.value
+    params = POSITIONAL_PARAMS.get(call_name(call) or "", ())
+    if name not in params:
+        return None
+    index = params.index(name)
+    leading = call.args[: index + 1]
+    if len(leading) <= index or any(isinstance(arg, ast.Starred) for arg in leading):
+        return None
+    return call.args[index]
+
+
+def elements(node: ast.expr | None, bindings: Bindings, depth: int = 0) -> Iterator[ast.expr]:
+    """The items of a list, tuple or set argument: names resolved, ``*`` and ``+`` followed, and the items
+    the code adds to a named list with ``+=``, ``.append``, ``.insert`` or ``.extend``."""
+    if node is None or depth > _MAX_HOPS:
+        return
+    if isinstance(node, ast.Name):
+        for added, single in bindings.added(node):
+            if not single:
+                yield from elements(added, bindings, depth + 1)
+            elif (item := bindings.resolve(added)) is not None:
+                yield item
+    node = bindings.resolve(node)
+    if node is None:
+        return
+    if isinstance(node, (ast.List, ast.Tuple, ast.Set)):
+        for item in node.elts:
+            yield from elements(item.value if isinstance(item, ast.Starred) else item, bindings, depth + 1)
+    elif isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        yield from elements(node.left, bindings, depth + 1)
+        yield from elements(node.right, bindings, depth + 1)
+    else:
+        yield node
+
+
+def names_enum(node: ast.expr | None, enum: str, bindings: Bindings) -> bool:
+    """True when ``node`` is the SDK enum class ``enum``: its name, an import alias, or ``module.enum``."""
+    node = bindings.resolve(node)
+    if isinstance(node, ast.Name):
+        return bindings.imported_name(node) == enum
+    return isinstance(node, ast.Attribute) and node.attr == enum
+
+
+def enum_value(node: ast.expr | None, enum: str, bindings: Bindings) -> str | None:
+    """The value ``node`` passes for an SDK ``enum`` parameter: ``Enum.MEMBER``, ``"value"`` or ``Enum("value")``."""
+    node = bindings.resolve(node)
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    if isinstance(node, ast.Attribute) and names_enum(node.value, enum, bindings):
+        return ENUMS[enum].get(node.attr)
+    if isinstance(node, ast.Call) and names_enum(node.func, enum, bindings) and len(node.args) == 1:
+        arg = bindings.resolve(node.args[0])
+        if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+            return arg.value
+    return None
+
+
+def enum_values(node: ast.expr | None, enum: str, bindings: Bindings) -> set[str]:
+    """The values a list argument passes for an SDK ``enum`` (for example ``scopes=``)."""
+    return {value for item in elements(node, bindings) if (value := enum_value(item, enum, bindings)) is not None}
+
+
+def lists_tool(node: ast.expr | None, tool: str, bindings: Bindings) -> bool:
+    """True when a ``tools=`` argument lists ``tool``, as the tool object or as its name."""
+    return any(
+        (isinstance(sub, ast.Name) and sub.id == tool) or (isinstance(sub, ast.Constant) and sub.value == tool)
+        for item in elements(node, bindings)
+        for sub in ast.walk(item)
+    )
 
 
 def imported_from(tree: ast.AST, module: str, symbol: str) -> bool:
@@ -26,85 +299,32 @@ def imported_from(tree: ast.AST, module: str, symbol: str) -> bool:
     return False
 
 
-def module_constants(tree: ast.AST) -> dict[str, ast.expr]:
-    """Module-level ``NAME = <expr>`` bindings, so a scope held in a constant resolves."""
-    consts: dict[str, ast.expr] = {}
-    body = tree.body if isinstance(tree, ast.Module) else []
-    for node in body:
-        if isinstance(node, ast.Assign):
-            for target in node.targets:
-                if isinstance(target, ast.Name):
-                    consts[target.id] = node.value
-        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.value is not None:
-            consts[node.target.id] = node.value
-    return consts
+def detection_scope_value(node: ast.expr | None, bindings: Bindings) -> str | None:
+    """The value a ``detection_scope=`` argument passes, ``None`` when absent.
 
-
-def detection_scope_value(node: ast.expr | None, consts: dict[str, ast.expr]) -> str | None:
-    """Resolve a ``detection_scope=`` value to its wire string, or ``None`` when absent.
-
-    Accepts ``DetectionScope.FILES``, ``"Files"``, ``DetectionScope("Files")``, or a
-    module constant bound to one of them. Anything else is returned as written so
-    the caller can report it (a lowercase ``"files"``, ``GuardrailExecutionStage.FILES``).
+    Anything that is not a ``DetectionScope`` member, a string or ``DetectionScope("...")``
+    is returned as written, so the caller can report it (``GuardrailExecutionStage.FILES``).
     """
-    seen = 0
-    while isinstance(node, ast.Name) and node.id in consts and seen < 5:
-        node = consts[node.id]
-        seen += 1
     if node is None:
         return None
-    if isinstance(node, ast.Attribute) and node.attr in _MEMBER_TO_VALUE and _names_detection_scope(node.value):
-        return _MEMBER_TO_VALUE[node.attr]
-    if isinstance(node, ast.Constant) and isinstance(node.value, str):
-        return node.value
-    if (
-        isinstance(node, ast.Call)
-        and _names_detection_scope(node.func)
-        and node.args
-        and isinstance(node.args[0], ast.Constant)
-        and isinstance(node.args[0].value, str)
-    ):
-        return node.args[0].value
-    return ast.unparse(node)
+    value = enum_value(node, "DetectionScope", bindings)
+    return value if value is not None else ast.unparse(bindings.resolve(node) or node)
 
 
-def wired_middleware_calls(tree: ast.AST) -> list[ast.Call]:
-    """Middleware calls spread into a ``create_agent(middleware=[...])`` list, inline or through variables."""
-    assigned: dict[str, ast.expr] = {}
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Assign):
-            for target in node.targets:
-                if isinstance(target, ast.Name):
-                    assigned[target.id] = node.value
-
-    def deref(node: ast.expr | None) -> ast.expr | None:
-        seen = 0
-        while isinstance(node, ast.Name) and node.id in assigned and seen < 5:
-            node = assigned[node.id]
-            seen += 1
-        return node
-
+def wired_middleware_calls(bindings: Bindings) -> list[ast.Call]:
+    """Middleware calls spread (``*``) into a ``create_agent(middleware=[...])`` list, inline or through names."""
     calls: list[ast.Call] = []
-    for node in ast.walk(tree):
-        if not (isinstance(node, ast.Call) and isinstance(node.func, (ast.Name, ast.Attribute))):
+    for node in ast.walk(bindings.tree):
+        if not (isinstance(node, ast.Call) and call_name(node) == "create_agent"):
             continue
-        name = node.func.id if isinstance(node.func, ast.Name) else node.func.attr
-        if name != "create_agent":
-            continue
-        listing = deref(next((kw.value for kw in node.keywords if kw.arg == "middleware"), None))
+        listing = bindings.resolve(next((kw.value for kw in node.keywords if kw.arg == "middleware"), None))
         if not isinstance(listing, (ast.List, ast.Tuple)):
             continue
-        for elt in listing.elts:
-            target = deref(elt.value) if isinstance(elt, ast.Starred) else None
+        for item in listing.elts:
+            target = bindings.resolve(item.value) if isinstance(item, ast.Starred) else None
             if isinstance(target, ast.Call):
                 calls.append(target)
     return calls
-
-
-def _names_detection_scope(node: ast.expr) -> bool:
-    return (isinstance(node, ast.Name) and node.id == "DetectionScope") or (
-        isinstance(node, ast.Attribute) and node.attr == "DetectionScope"
-    )
 
 
 def _annotation_mentions_attachment(annotation: ast.expr | None) -> bool:
@@ -308,9 +528,8 @@ def require_rendered_attachments(tree: ast.AST) -> None:
     )
 
 
-def require_detection_scope(call: ast.Call, expected: str, consts: dict[str, ast.expr], reason: str) -> None:
-    node = next((kw.value for kw in call.keywords if kw.arg == "detection_scope"), None)
-    value = detection_scope_value(node, consts)
+def require_detection_scope(call: ast.Call, expected: str, bindings: Bindings, reason: str) -> None:
+    value = detection_scope_value(call_arg(call, "detection_scope"), bindings)
     if value is None:
         sys.exit(f"FAIL: detection_scope= is missing on {ast.unparse(call.func)}(...) — without it no file is inspected")
     if value not in DETECTION_SCOPE_VALUES:

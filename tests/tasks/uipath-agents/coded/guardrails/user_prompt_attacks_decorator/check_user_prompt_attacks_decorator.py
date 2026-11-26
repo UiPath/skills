@@ -11,6 +11,9 @@ Validates:
 - The Input model declares an Attachment field and render_attachments_block puts it
   into the user message (the uploaded document)
 - the decorator sets detection_scope to Both
+
+Names resolve in the scope where the decorator is written, and an enum may be a
+member, an alias of the enum or its value.
 """
 
 import ast
@@ -20,13 +23,15 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 from _shared.guardrails.coded_file_guardrail_assertions import (
+    Bindings,
+    call_arg,
+    enum_value,
     imported_from,
-    module_constants,
     require_attachment_input,
     require_detection_scope,
     require_rendered_attachments,
 )
-from _shared.guardrails.guardrail_middleware import call_kwarg, call_name, spread_middleware_calls
+from _shared.guardrails.guardrail_middleware import call_name, spread_middleware_calls
 
 GRAPH = Path("graph.py")
 LANGCHAIN_GUARDRAILS = "uipath_langchain.guardrails"
@@ -41,14 +46,6 @@ def read() -> str:
 def check(condition: object, msg: str) -> None:
     if not condition:
         sys.exit(f"FAIL: {msg}")
-
-
-def resolve(node: ast.expr | None, consts: dict[str, ast.expr]) -> ast.expr | None:
-    seen = 0
-    while isinstance(node, ast.Name) and node.id in consts and seen < 5:
-        node = consts[node.id]
-        seen += 1
-    return node
 
 
 def returns_chat_model(fn: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
@@ -73,7 +70,7 @@ def main() -> None:
         tree = ast.parse(src)
     except SyntaxError as exc:
         sys.exit(f"FAIL: graph.py no longer parses as Python: {exc}")
-    consts = module_constants(tree)
+    bindings = Bindings(tree)
 
     for symbol in ("guardrail", "UserPromptAttacksValidator"):
         check(imported_from(tree, LANGCHAIN_GUARDRAILS, symbol), f"{symbol} is not imported from {LANGCHAIN_GUARDRAILS}")
@@ -90,8 +87,8 @@ def main() -> None:
     upa = [
         (fn, dec)
         for fn, dec in guarded
-        if isinstance(resolve(call_kwarg(dec, "validator"), consts), ast.Call)
-        and call_name(resolve(call_kwarg(dec, "validator"), consts)) == "UserPromptAttacksValidator"
+        if isinstance(validator := bindings.resolve(call_arg(dec, "validator")), ast.Call)
+        and call_name(validator) == "UserPromptAttacksValidator"
     ]
     check(upa, "no @guardrail(validator=UserPromptAttacksValidator(...)) decorating a function")
     fn, dec = upa[0]
@@ -106,14 +103,14 @@ def main() -> None:
     )
     print(f"OK: {fn.name}() is the LLM factory")
 
-    stage = resolve(call_kwarg(dec, "stage"), consts)
+    stage = call_arg(dec, "stage")
     check(
-        stage is not None and ast.unparse(stage).endswith("GuardrailExecutionStage.PRE"),
+        enum_value(stage, "GuardrailExecutionStage", bindings) == "pre",
         f"stage must be GuardrailExecutionStage.PRE (user prompt attacks is PRE-only), got {ast.unparse(stage) if stage is not None else 'PRE_AND_POST (default)'}",
     )
     print("OK: stage is GuardrailExecutionStage.PRE")
 
-    action = resolve(call_kwarg(dec, "action"), consts)
+    action = bindings.resolve(call_arg(dec, "action"))
     check(
         isinstance(action, ast.Call) and call_name(action) == "BlockAction",
         f"action must be BlockAction(...) — user prompt attacks should block adversarial inputs, got {ast.unparse(action) if action is not None else None}",
@@ -131,7 +128,7 @@ def main() -> None:
     require_detection_scope(
         dec,
         "Both",
-        consts,
+        bindings,
         "the user asked for both the typed text and the uploaded document",
     )
 
