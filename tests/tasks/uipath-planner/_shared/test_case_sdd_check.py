@@ -26,9 +26,24 @@ def check(tmp_path):
     return run
 
 
+# the fixture is a uipath-maestro-case build input; its Personas table predates the template's six columns
+PERSONAS_IN = """| Persona | Scope |
+|---------|-------|
+| Claims Handler | Intake validation and evidence gathering |
+| Claims Assessor | Damage assessment and the settle-or-reject decision |
+| Claims Lead | Escalation review when an assessment misses its deadline |"""
+PERSONAS = """| Persona | Scope | Stages | Permissions | Description | Notes |
+|---------|-------|--------|-------------|-------------|-------|
+| Claims Handler | Case | — | View | Intake validation and evidence gathering | |
+| Claims Assessor | Case | — | View | Damage assessment and the settle-or-reject decision | |
+| Claims Lead | Case | — | View | Escalation review when an assessment misses its deadline | |"""
+
+
 @pytest.fixture
 def sound():
-    return SOUND.read_text(encoding="utf-8")
+    text = SOUND.read_text(encoding="utf-8").replace("\r\n", "\n")
+    assert PERSONAS_IN in text
+    return text.replace(PERSONAS_IN, PERSONAS)
 
 
 def test_a_sound_case_sdd_prints_ok(check, sound):
@@ -178,3 +193,48 @@ def test_two_completion_exits_with_different_ifs_pass(check, sound):
              + INTAKE_EXIT.replace("| — |", '| =js:vars.ok === false |', 1))
     rc, out = check(sound.replace(INTAKE_EXIT, split))
     assert "two required-tasks-completed rows" not in out
+
+
+def test_a_draft_shaped_personas_table_fails(check, sound):
+    draft = "| Persona | Stage Scope | Permissions | Description |\n|---|---|---|---|\n| Claims Handler | All | View, Act, Reassign | Intake |"
+    rc, out = check(sound.replace(PERSONAS, draft))
+    assert rc == 1
+    assert "Personas header is" in out
+
+
+def test_a_persona_with_prose_permissions_fails(check, sound):
+    rc, out = check(sound.replace("| Claims Handler | Case | — | View |", "| Claims Handler | Case | — | View, Act, Reassign |"))
+    assert rc == 1
+    assert "persona 'Claims Handler': Permissions Act, Reassign not a template permission key" in out
+
+
+def test_a_persona_row_short_of_cells_fails(check, sound):
+    rc, out = check(sound.replace("| Claims Lead | Case | — | View | Escalation review when an assessment misses its deadline | |", "| Claims Lead | All | View, Act | Escalation review |"))
+    assert rc == 1
+    assert "persona 'Claims Lead': 4 cells, the header 6" in out
+
+
+def test_a_stages_persona_with_a_case_only_key_fails(check, sound):
+    rc, out = check(sound.replace("| Claims Lead | Case | — | View |", "| Claims Lead | Stages | Intake | View, TasksEdit |"))
+    assert rc == 1
+    assert "a Stages persona holds only View, Assign, ManageSLA, RunAdhocTasks — not TasksEdit" in out
+
+
+def test_an_action_app_named_after_another_task_fails(check, sound):
+    rc, out = check(sound.replace("**HITL Implementation:** Action App: WarrantyClaimActionApp", "**HITL Implementation:** Action App: Validate Claim Details Action App", 1))
+    assert rc == 1
+    assert "task 'Chase Missing Paperwork': **HITL Implementation:** names another task's Action App" in out
+
+
+def test_a_json_schema_hitl_cell_fails(check, sound):
+    rc, out = check(sound.replace("**HITL Implementation:** Action App: WarrantyClaimActionApp", "**HITL Implementation:** JSON Schema", 1))
+    assert rc == 1
+    assert "the only form is 'Action App: <title>'" in out
+
+
+def test_a_table_activation_mode_differing_from_its_block_fails(check, sound):
+    row = "| 1 | Validate Claim Details | api-workflow | sequential |"
+    assert row in sound
+    rc, out = check(sound.replace(row, row.replace("sequential |", "parallel |")))
+    assert rc == 1
+    assert "task 'Validate Claim Details': Tasks table Activation Mode 'parallel', task block 'sequential'" in out
