@@ -37,15 +37,14 @@ success_criteria:
     pass_threshold: 0.0
 
   # `uip agent debug` exits non-zero unless the run reaches State:Successful, so
-  # require_success asserts the agent's own debug finished Successful. The two
-  # lookaheads require that same successful command to carry both `--inputs`
-  # (the requested input was passed) and `--output json` (the skill's convention),
-  # in any order. Only MathAgent exists in the sandbox, so the agent path is
-  # implied.
+  # require_success asserts the agent's own debug finished Successful. The
+  # lookahead requires that same debug command (up to any `|`, `;` or `&`) to
+  # pass the input via `--inputs` or `-i` (its alias in `uip agent debug --help`).
+  # Only MathAgent exists in the sandbox, so the agent path is implied.
   - type: command_executed
     description: "Agent ran a successful `uip agent debug` with both --inputs"
     tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+debug\b(?=.*--inputs)'
+    command_pattern: 'uip\s+agent\s+debug\b(?=[^|;&]*(?:--inputs|\s-i\b))'
     min_count: 1
     require_success: true
     weight: 6.0
