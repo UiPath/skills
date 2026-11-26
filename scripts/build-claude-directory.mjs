@@ -62,7 +62,23 @@ function asMarkdown(name, text) {
   const fence = "`".repeat(Math.max(3, longestRun + 1));
   const language = path.posix.extname(name).slice(1).toLowerCase();
   const body = text.endsWith("\n") ? text : `${text}\n`;
-  return `# ${name}\n\nThe code block is the exact content of \`${name}\`.\n\n${fence}${language}\n${body}${fence}\n`;
+  return (
+    `# ${name}\n\nThe code block is the exact content of \`${name}\`. To copy \`${name}\`, ` +
+    `write only the block's contents; never copy this Markdown file.\n\n${fence}${language}\n${body}${fence}\n`
+  );
+}
+
+const CONVERSION_NOTE =
+  "> **Claude directory edition:** each cited `<name>.md` wraps the file `<name>` in one fenced block. " +
+  "To copy one, write only the block's contents to the destination; never copy the Markdown file.\n\n";
+
+/** Insert `CONVERSION_NOTE` after the frontmatter and a leading `# ` title, if any. */
+function withConversionNote(text) {
+  const frontmatter = text.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n/)?.[0] ?? "";
+  const title = text.slice(frontmatter.length).match(/^(?:[ \t]*\r?\n)*# [^\n]*\n(?:[ \t]*\r?\n)*/)?.[0] ?? "";
+  const at = frontmatter.length + title.length;
+  const lead = title || !frontmatter ? "" : "\n";
+  return text.slice(0, at) + lead + CONVERSION_NOTE + text.slice(at);
 }
 
 function globMatcher(glob) {
@@ -215,7 +231,10 @@ function planClaudeDirectory(repoRoot) {
     const original = bytes.toString("utf8");
     let text = original;
     const converted = convertedBySkill.get(skill);
-    if (converted) text = rewriteCitations(text, converted);
+    if (converted) {
+      const rewritten = rewriteCitations(text, converted);
+      if (rewritten !== text) text = withConversionNote(rewritten);
+    }
     if (path.posix.basename(relativePath) === "SKILL.md") text = narrowToolGrants(text, relativePath, findings);
     for (const target of linkedPaths(text, relativePath)) {
       if (convertedSources.has(target)) findings.push(`${relativePath}: links ${target}, which ships as ${target}.md`);

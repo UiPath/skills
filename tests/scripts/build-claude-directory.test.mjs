@@ -86,13 +86,16 @@ test("ships examples and templates as Markdown and rewrites their citations", (t
   assert.ok(!edition.files.has("skills/uipath-flow/examples/Doorbell.flow.ts"));
   assert.equal(
     read(out, "skills/uipath-flow/examples/Doorbell.flow.ts.md"),
-    "# Doorbell.flow.ts\n\nThe code block is the exact content of `Doorbell.flow.ts`.\n\n" +
+    "# Doorbell.flow.ts\n\nThe code block is the exact content of `Doorbell.flow.ts`. To copy `Doorbell.flow.ts`, " +
+      "write only the block's contents; never copy this Markdown file.\n\n" +
       "````ts\n" + source + "````\n",
   );
   assert.match(read(out, "skills/uipath-flow/assets/templates/app/index-template.css.md"), /^```css\n:root \{\}\n```\n$/m);
   assert.equal(
     read(out, "skills/uipath-flow/SKILL.md"),
     skillMd("uipath-flow") +
+      "> **Claude directory edition:** each cited `<name>.md` wraps the file `<name>` in one fenced block. " +
+      "To copy one, write only the block's contents to the destination; never copy the Markdown file.\n\n" +
       "Copy `examples/Doorbell.flow.ts.md`, or the closest `examples/*.flow.ts.md`. See examples/Doorbell.flow.ts.md.\n" +
       "Copy [app/index-template.css.md](assets/templates/app/index-template.css.md), then `index-template.css.md` → `src/index.css`.\n" +
       "Write `.flow-sdk/Doorbell.flow.ts`; check every `*.flow.ts`.\n",
