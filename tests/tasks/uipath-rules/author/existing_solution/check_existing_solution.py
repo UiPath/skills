@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "_shared"
 
 from rules_check import check_cases, fail, find_project, load_rule, table_of  # noqa: E402
 
-PRISTINE = Path(__file__).resolve().parent / "fixtures" / "Logistics"
+PRISTINE = Path(__file__).resolve().parents[2] / "_fixtures" / "solution_with_rule" / "Logistics"
 RETURNS = [({"daysSinceDelivery": days}, days <= 30) for days in (0, 29.5, 30, 30.5, 365)]
 
 

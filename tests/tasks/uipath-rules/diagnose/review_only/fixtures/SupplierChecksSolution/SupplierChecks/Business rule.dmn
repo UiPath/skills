@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:uipath="http://uipath.com/schema/1.0/dmn/authoring" id="definitions_SupplierChecks" name="SupplierChecks" namespace="http://uipath.com/dmn/ns_SupplierChecks" xmlns:kie="https://kie.org/dmn/extensions/1.0">
+  <extensionElements>
+    <uipath:authoring surface="decision-table" />
+  </extensionElements>
+  <decision id="decision_checks" name="checks" label="Supplier check level">
+    <extensionElements>
+      <uipath:authoring editor="decision-table" />
+    </extensionElements>
+    <variable id="variable_checks" name="checks" typeRef="string" />
+    <informationRequirement id="ir_checks_inputData_annualSpend">
+      <requiredInput href="#inputData_annualSpend" />
+    </informationRequirement>
+    <informationRequirement id="ir_checks_inputData_riskLevel">
+      <requiredInput href="#inputData_riskLevel" />
+    </informationRequirement>
+    <decisionTable id="dt_checks" hitPolicy="UNIQUE">
+      <input id="in_checks_0" label="riskLevel">
+        <inputExpression id="ie_checks_0" typeRef="string">
+          <text>riskLevel</text>
+        </inputExpression>
+      </input>
+      <input id="in_checks_1" label="annualSpend">
+        <inputExpression id="ie_checks_1" typeRef="number">
+          <text>annualSpend</text>
+        </inputExpression>
+      </input>
+      <output id="out_checks_checkLevel" label="checkLevel" name="checkLevel" typeRef="string" />
+      <annotation name="Annotation" />
+      <rule id="rule_checks_0">
+        <inputEntry id="ie_checks_0_0">
+          <text>&quot;Low&quot;</text>
+        </inputEntry>
+        <inputEntry id="ie_checks_0_1">
+          <text>&lt; 50000</text>
+        </inputEntry>
+        <outputEntry id="oe_checks_0_0">
+          <text>&quot;Basic&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Low risk, small spend</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_checks_1">
+        <inputEntry id="ie_checks_1_0">
+          <text>&quot;Low&quot;</text>
+        </inputEntry>
+        <inputEntry id="ie_checks_1_1">
+          <text>&gt;= 50000</text>
+        </inputEntry>
+        <outputEntry id="oe_checks_1_0">
+          <text>&quot;Standard&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Low risk, large spend</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_checks_2">
+        <inputEntry id="ie_checks_2_0">
+          <text>&quot;Medium&quot;</text>
+        </inputEntry>
+        <inputEntry id="ie_checks_2_1">
+          <text>&lt; 100000</text>
+        </inputEntry>
+        <outputEntry id="oe_checks_2_0">
+          <text>&quot;Standard&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Medium risk, up to 100k</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_checks_3">
+        <inputEntry id="ie_checks_3_0">
+          <text>&quot;Medium&quot;</text>
+        </inputEntry>
+        <inputEntry id="ie_checks_3_1">
+          <text>&gt;= 80000</text>
+        </inputEntry>
+        <outputEntry id="oe_checks_3_0">
+          <text>&quot;Enhanced&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Medium risk, large spend</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_checks_4">
+        <inputEntry id="ie_checks_4_0">
+          <text>&quot;High&quot;</text>
+        </inputEntry>
+        <inputEntry id="ie_checks_4_1">
+          <text>&gt;= 20000</text>
+        </inputEntry>
+        <outputEntry id="oe_checks_4_0">
+          <text>&quot;Enhanced&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>High risk</text>
+        </annotationEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <inputData id="inputData_annualSpend" name="annualSpend" label="annualSpend">
+    <variable id="variable_in_annualSpend" name="annualSpend" typeRef="number" />
+  </inputData>
+  <inputData id="inputData_riskLevel" name="riskLevel" label="riskLevel">
+    <variable id="variable_in_riskLevel" name="riskLevel" typeRef="string" />
+  </inputData>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_7db2aca7-0821-4721-a74f-291640585cdd">
+      <dmndi:DMNShape id="DMNShape_b0ccfee2-b293-4dce-8bfe-6a5c7110c6d0" dmnElementRef="decision_checks">
+        <dc:Bounds x="112" y="0" width="288" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_3dcfc3b6-c389-4965-8676-d74db70dca1c" dmnElementRef="inputData_annualSpend">
+        <dc:Bounds x="0" y="208" width="240" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_d9f30d45-d68e-4e7f-912f-e51eacde2f3c" dmnElementRef="inputData_riskLevel">
+        <dc:Bounds x="272" y="208" width="240" height="96" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

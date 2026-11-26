@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SupplierChecks",
+    "kind": "businessRule",
+    "apiVersion": "orchestrator.uipath.com/v2",
+    "projectKey": "d0ab1f4b-6db3-4b60-b030-6a8c2b9656f4",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "SupplierChecks"
+    },
+    "locks": [],
+    "key": "a9b6116a-7cf7-4552-ae59-6898ffbe0b3d",
+    "files": []
+  }
+}

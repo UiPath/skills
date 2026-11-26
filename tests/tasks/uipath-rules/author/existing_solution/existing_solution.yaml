@@ -15,7 +15,7 @@ sandbox:
   python: {}
   template_sources:
     - type: template_dir
-      path: fixtures
+      path: ../../_fixtures/solution_with_rule
 
 reference:
   directory: ../..

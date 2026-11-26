@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "OrderRules",
+    "kind": "businessRule",
+    "apiVersion": "orchestrator.uipath.com/v2",
+    "projectKey": "d3985119-f16d-4a02-b8f5-bcfa3426a6bc",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "OrderRules"
+    },
+    "locks": [],
+    "key": "21077824-24fd-4c49-adde-b04633d050d8",
+    "files": []
+  }
+}

@@ -1,0 +1,57 @@
+task_id: skill-rules-diagnose-review-only
+description: >
+  Agent reviews the existing SupplierChecks rule for gaps and overlaps and
+  changes nothing, offline. The UNIQUE table leaves High-risk suppliers below
+  20000 matching no row, and matches Medium-risk suppliers from 80000 up to
+  100000 twice; `uip rules validate` reports neither. The agent writes example
+  inputs for each fault to `review.json`, like the report file of
+  `uipath-review/rpa/legacy-precision`. The grader evaluates each example
+  against the fixture's own table, so only inputs that really hit a fault
+  pass. Grades skill activation, the review, the `.dmn` byte-identical, and
+  guards against scaffolding, debugging, publishing or deploying.
+tags: [uipath-rules, integration, "mode:diagnose", "lifecycle:discover"]
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Review the UiPath Business Rules project SupplierChecks in this folder for
+  gaps and overlaps in its table. Do not change the rule; this is a review
+  only.
+
+  Save your findings to `review.json` in this folder: under `gaps`, a list of
+  example inputs that match no row, and under `overlaps`, a list of example
+  inputs that match more than one row. Each example is an object with
+  `annualSpend` and `riskLevel`, as the caller sends them.
+
+  There is no tenant to evaluate against, so do not run `uip rules debug`.
+  Do not ask for confirmation.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-rules skill"
+    skill_name: "uipath-rules"
+    expected_skill: "uipath-rules"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Each gap and overlap example hits the fault it names, and the rule is unchanged"
+    command: "python3 $REFERENCE_DIR/diagnose/review_only/check_review_only.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Read-only: nothing scaffolded, debugged, published, or deployed"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(rules\s+(init|debug)|solution\s+(publish|deploy\s+(run|activate|upgrade|uninstall|delete)))\b(?!\s+--help)'
+    weight: 2.0
+    pass_threshold: 1.0

@@ -1,0 +1,80 @@
+task_id: skill-rules-edit-narrow-edit
+description: >
+  Agent makes one narrow edit to the existing OrderRules project, offline. Row
+  `threshold`: Express priority starts at 500, not 1000; the 1000 in the tier
+  table must stay. Row `remove`: the priority decision goes, with its shape and
+  entry point. Row `rename`: the discount decision's label changes while its
+  `id` and `name` stay. Grades skill activation, `uip rules validate` and
+  `uip rules format` run by the grader, and, against the pristine fixture,
+  every element, shape and entry point the request did not name unchanged.
+tags: [uipath-rules, integration, "mode:build", "lifecycle:generate"]
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: ../..
+
+dataset:
+  rows:
+    - id: threshold
+      request: >-
+        Orders of 500 or more now ship Express, instead of 1000 or more.
+    - id: remove
+      request: >-
+        We no longer decide shipping priority in this rule. Remove that
+        decision.
+    - id: rename
+      request: >-
+        Show the discount decision as "Loyalty discount" in the designer. Keep
+        everything that reads it working.
+
+initial_prompt: |
+  The UiPath Business Rules project OrderRules in this folder decides our
+  customer tier, discount and shipping priority. ${row.request} Change nothing
+  else.
+
+  There is no tenant to evaluate against, so do not run `uip rules debug`.
+  Do not ask for confirmation.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-rules skill"
+    skill_name: "uipath-rules"
+    expected_skill: "uipath-rules"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not re-scaffold the existing project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rules\s+init'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rules validate passes on the project"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py validate OrderRules"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The diagram matches the model: uip rules format changes nothing"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py format OrderRules"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The ${row.id} edit changed only what it named, and kept every other element, shape and entry point"
+    command: "python3 $REFERENCE_DIR/edit/narrow_edit/check_narrow_edit.py ${row.id}"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

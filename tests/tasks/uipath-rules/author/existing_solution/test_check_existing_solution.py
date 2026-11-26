@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 CHECKER = Path(__file__).with_name("check_existing_solution.py")
-FIXTURE = Path(__file__).with_name("fixtures") / "Logistics"
+FIXTURE = Path(__file__).parents[2] / "_fixtures" / "solution_with_rule" / "Logistics"
 RETURNS = Path(__file__).parent.parent / "testdata" / "ReturnsRules"
 
 
