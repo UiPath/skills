@@ -482,7 +482,7 @@ binding half, which is the same for every connector-backed node.
   If `uip` says `--folder-key` needs a builder SDK release that supports it, or `npx flow-sdk` answers `unknown option '--folder-key'`, the SDK predates the flag: name the folder by path with `{ name, folder }` instead, which needs no `--folder-key`.
 <!--skill-flavor:sdk-folder-key:end-->
   A folder key written as an `=`-expression cannot be recorded, so it writes the V1 task and declares nothing in the solution; prefer `{ name, folder }`.
-  A decompiled process shows a folder-entity task as an `.activity()` with its rows and the entity's two bindings, with or without the connector library: a `.connector()` call would drop the picker, so decompile keeps the task as it is, and it compiles back unchanged.
+  A decompiled process shows a folder-entity task, like any connector task with a saved picker, as an `.activity()` with its rows and the entity's two bindings, with or without the connector library: decompile keeps the task as it is, so it compiles back unchanged.
 - The file operations (`downloadFile`, `uploadFile`, `deleteFile`) refuse a folder-scoped entity; there is no SDK form for them yet.
   Tell the user the file operation is not supported on a folder-scoped entity; do not fall back to a plain entity name, which addresses a tenant-level entity instead, or hand-fill `.activity()`.
 - A Data Fabric entity trigger takes its folder entity as `{ name, folder }` in its picker parameter, `parameters: { entityScope: 'folder', folderEntityName: { name, folder } }`, and shares the entity's pair with a `.dataService()` on it: [connector events](connectors.md#6-connector-events).
