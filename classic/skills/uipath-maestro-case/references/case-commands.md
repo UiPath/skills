@@ -136,7 +136,7 @@ uip solution pack <SolutionDir> <SolutionDir>/dist --output json
 uip solution pack ./MySolution ./MySolution/dist --version 2.0.0 --output json
 ```
 
-`<solutionPath>` (directory containing `.uipx`, not the case project) and `<output-path>` are required. `-n, --name <name>` defaults to the solution folder; `-v, --version <version>` to `1.0.0`. Run `uip solution resources refresh` first (Rule 15). The command packs projects into `.nupkg` files and bundles `<name>_<version>.zip` (underscore, not dot); read the filename from `Data.Packages` or list `<output-path>`, never construct it. It does not compile BPMN and bundles `caseplan.case.bpmn` only if already present; run [`uip maestro case pack`](#uip-maestro-case-pack) every time.
+`<solution-path>` (directory containing `.uipx`, not the case project) and `<output-path>` are required. `-n, --name <name>` defaults to the solution folder; `-v, --version <version>` to `1.0.0`. Run `uip solution resources refresh` first (Rule 15). The command packs projects into `.nupkg` files and bundles `<name>_<version>.zip` (underscore, not dot); read the filename from `Data.Packages` or list `<output-path>`, never construct it. It does not compile BPMN and bundles `caseplan.case.bpmn` only if already present; run [`uip maestro case pack`](#uip-maestro-case-pack) every time.
 
 ---
 
@@ -145,10 +145,10 @@ uip solution pack ./MySolution ./MySolution/dist --version 2.0.0 --output json
 Phase 7 step 4; consent-gated; requires `uip login`. Run:
 
 ```bash
-uip solution publish <packagePath> --wait --output json
+uip solution publish <package-path> --wait --output json
 ```
 
-`<packagePath>` is required and must be the `.zip` from `uip solution pack`. `--wait` blocks until `Ready` / `Active`; `--timeout <seconds>` defaults to `360`; `--personal-workspace` selects the current user's Personal Workspace feed instead of the tenant feed. Duplicate `name+version` pairs are rejected; on `processKey` collision, bump `--version` during `uip solution pack` and re-run. On failure, print the CLI error verbatim, log it in `build-issues.md`, and re-show the Phase 7 prompt; see [phased-execution.md § Phase 7](phased-execution.md#phase-7--publish-to-orchestrator). Publishing only lists the package; installation requires `uip solution deploy run` and is out of scope.
+`<package-path>` is required and must be the `.zip` from `uip solution pack`. `--wait` blocks until `Ready` / `Active`; `--timeout <seconds>` defaults to `360`; `--personal-workspace` selects the current user's Personal Workspace feed instead of the tenant feed. Duplicate `name+version` pairs are rejected; on `processKey` collision, bump `--version` during `uip solution pack` and re-run. On failure, print the CLI error verbatim, log it in `build-issues.md`, and re-show the Phase 7 prompt; see [phased-execution.md § Phase 7](phased-execution.md#phase-7--publish-to-orchestrator). Publishing only lists the package; installation requires `uip solution deploy run` and is out of scope.
 
 ---
 

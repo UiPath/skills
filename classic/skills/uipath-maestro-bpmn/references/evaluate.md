@@ -150,10 +150,10 @@ unsimulated connector step really sends — once per data point, every run.
 
 ```bash
 uip maestro bpmn eval run start   --set "Smoke Tests" --path ./MySolution/MyBpmn --output json
-uip maestro bpmn eval run status  <evalSetRunId> --set "Smoke Tests" --path ./MySolution/MyBpmn --output json
-uip maestro bpmn eval run results <evalSetRunId> --set "Smoke Tests" --path ./MySolution/MyBpmn --output json
+uip maestro bpmn eval run status  <eval-set-run-id> --set "Smoke Tests" --path ./MySolution/MyBpmn --output json
+uip maestro bpmn eval run results <eval-set-run-id> --set "Smoke Tests" --path ./MySolution/MyBpmn --output json
 uip maestro bpmn eval run list    --set "Smoke Tests" --path ./MySolution/MyBpmn --output json
-uip maestro bpmn eval run compare <evalSetRunId> --compare-to <evalSetRunId> \
+uip maestro bpmn eval run compare <eval-set-run-id> --compare-to <eval-set-run-id> \
   --set "Smoke Tests" --path ./MySolution/MyBpmn --output json
 ```
 
