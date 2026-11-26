@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-11-24T04:06:36Z",
-  "cli_version": "1.208.0-dev.10056",
+  "generated_at": "2026-11-26T18:06:54Z",
+  "cli_version": "1.208.0-dev.10110",
   "verbs": [
     "admin",
     "admin audit",
@@ -509,6 +509,11 @@
     "explorer-engine suggestions history",
     "explorer-engine suggestions list",
     "explorer-engine suggestions update",
+    "extension",
+    "extension init",
+    "extension submit",
+    "extension upload",
+    "extension validate",
     "feedback",
     "feedback send",
     "function",

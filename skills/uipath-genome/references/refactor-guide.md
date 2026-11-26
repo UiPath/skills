@@ -71,7 +71,7 @@ Built when the Run modes answer asks for them, in every component that writes:
 5. **The shadow sees the source's inputs:** it runs just before the source's run, with the date and time window the source's run uses.
 6. **The comparison is a read-only check built and tested with the rebuild:** given one source run — its job logs, the records and mails it left — and the shadow's would-do records for the same inputs, it lists each item as the same, different as expected (citing the plan row), or to look at, and prints the counts per run.
 
-The stores the run record, the would-do records and the shadow's marks need are platform resources the rebuild adds: Platform Dependencies of the plan's Decisions, created per the Data Fabric answer ([configuration-questions-guide.md](configuration-questions-guide.md)) or listed in the open items.
+The stores the run record, the would-do records and the shadow's marks need are platform resources the rebuild adds: Platform Dependencies of the plan's Decisions, created per the Platform resources answer ([configuration-questions-guide.md](configuration-questions-guide.md)) or listed in the open items.
 
 ## Cutover
 
