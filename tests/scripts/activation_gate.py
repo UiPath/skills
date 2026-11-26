@@ -93,7 +93,11 @@ BASELINES_PCT: dict[str, int] = {
     "uipath-connector-builder": 100,  # 52/52
     "uipath-insights": 100,  # 61/61
     "uipath-process-mining": 100,  # 19/19
-    "uipath-rules": 100,  # 30/30
+    # First measured over the 30 rows the set then held. The decision-graph prompts took it to
+    # 38 and the figure was re-measured at 100% over the full set (MST-18847). The denominator
+    # tracks the row count of tests/tasks/activation/uipath-rules.jsonl -- a comment that says
+    # 30/30 beside a 38-row set reads as a measurement nobody made.
+    "uipath-rules": 100,  # 38/38
     # uipath-ontology: measured 52/52 under this name (actions/runs/44284706628, 44293074603), with the planner's ontology
     # redirect in place. Its rows include 25 SDD/PDD/design-document prompts the planner also claims, so this gate is
     # what keeps them reaching it.

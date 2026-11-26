@@ -47,7 +47,7 @@ Early stop: every criterion carries a `stop_early: {on_pass: stop}` block (coder
 
 ## Cost
 
-On Sonnet 4.6 via Bedrock, ~$0.05–$0.10 per row. The dataset is ~1838 rows total (1755 positives + 83 negatives). The agent runs ONCE per row regardless of criteria count, and the 33 stacked criteria are pure-Python evaluation against the same trace, so the full benchmark costs **~$90–185**. Those numbers assume the default armed run, where decided rows end at ~1 turn; an unarmed run (`-D run_limits.stop_early=false` — optional for routine checks, required for authoritative precision) lets every row use up to `max_turns: 3`, so budget roughly 2–3× for it. Use `--sample N` for cheaper iteration (note: `--sample` slices first-N, which biases toward the first-listed paths; useful for smoke runs, not for metrics).
+On Sonnet 4.6 via Bedrock, ~$0.05–$0.10 per row. The dataset is ~1849 rows total (1758 positives + 91 negatives). The agent runs ONCE per row regardless of criteria count, and the 33 stacked criteria are pure-Python evaluation against the same trace, so the full benchmark costs **~$90–185**. Those numbers assume the default armed run, where decided rows end at ~1 turn; an unarmed run (`-D run_limits.stop_early=false` — optional for routine checks, required for authoritative precision) lets every row use up to `max_turns: 3`, so budget roughly 2–3× for it. Use `--sample N` for cheaper iteration (note: `--sample` slices first-N, which biases toward the first-listed paths; useful for smoke runs, not for metrics).
 
 ## Provenance
 
