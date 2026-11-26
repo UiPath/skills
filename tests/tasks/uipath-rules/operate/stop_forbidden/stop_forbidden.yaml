@@ -3,10 +3,11 @@ description: >
   Stop condition, against a mocked `uip`. The agent reads the contract of
   PayrollBands in the Finance folder, and every read answers 403: the account
   lacks the BusinessRules.View permission there. A permission failure never
-  resolves by retrying. Grades that `describe` ran once and was not retried,
-  that `get` was not retried either, and that the agent did not change the
-  login or tenant. The bodies are what UiPath/cli main prints for a 403 from
-  the Business Rules service (`permission_denied`, `RetryWillNotFix`).
+  resolves by retrying. Grades that the agent read the rule (`describe`,
+  `get` or `versions`; Studio Web has no `describe`), retried neither
+  `describe` nor `get`, and that the agent did not change the login or
+  tenant. The bodies are what UiPath/cli main prints for a 403 from the
+  Business Rules service (`permission_denied`, `RetryWillNotFix`).
 tags: [uipath-rules, integration, "mode:operate", "lifecycle:discover"]
 
 sandbox:
@@ -14,7 +15,7 @@ sandbox:
   record_cli:
     - tool: uip
       exit_code: 1
-      stderr: "uip (mock): not connected to a tenant in this offline sandbox.\n"
+      stderr: "uip (mock): no recorded answer for this command.\n"
       responses:
         - when:
             verb: "login status"
@@ -82,18 +83,28 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: cli_called
-    description: "Agent described PayrollBands once and did not retry a 403"
+    description: "Agent read PayrollBands (describe, get or versions)"
+    tool: uip
+    verb_any_of: ["rules describe", "rules get", "rules versions"]
+    positional: ["PayrollBands"]
+    value_flags: [output, folder-path, folder-key, inputs, limit, offset, output-filter, log-level, log-file, profile]
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Agent did not retry describe on a 403"
     tool: uip
     verb: "rules describe"
     positional: ["PayrollBands"]
     value_flags: [output, folder-path, folder-key, inputs, limit, offset, output-filter, log-level, log-file, profile]
-    min_count: 1
+    min_count: 0
     max_count: 1
-    weight: 3.0
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: cli_called
-    description: "Agent did not retry rules get on a 403"
+    description: "Agent did not retry get on a 403"
     tool: uip
     verb: "rules get"
     positional: ["PayrollBands"]

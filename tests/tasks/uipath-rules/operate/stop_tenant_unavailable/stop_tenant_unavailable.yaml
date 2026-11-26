@@ -18,7 +18,7 @@ sandbox:
   record_cli:
     - tool: uip
       exit_code: 1
-      stderr: "uip (mock): not connected to a tenant in this offline sandbox.\n"
+      stderr: "uip (mock): no recorded answer for this command.\n"
       responses:
         - when:
             verb: "login status"
