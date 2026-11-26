@@ -39,6 +39,9 @@ from rules_check import DMN_NS, NS, fail, find_project, load_graph  # noqa: E402
 # grading message carries, so a run that trips it is read as "the probe broke", not "the fee is
 # hardcoded".
 PROBE_DEFECT_EXIT = 3
+# The temp directory's prefix, named once: the copy skips anything matching it, so the probe
+# cannot copy its own working directory into the copy it is making.
+PROBE_PREFIX = ".mutation-probe-"
 
 
 def probe_defect(message: str) -> None:
@@ -96,9 +99,17 @@ def _fee_follows_the_model(project: Path) -> None:
     move. Run in a copy of the solution, so a grader killed mid-run leaves the agent's project
     as it was.
     """
-    probe = Path(tempfile.mkdtemp(prefix=".mutation-probe-", dir=project.parent.parent)) / project.parent.name
+    # The temp root in its own variable, and the copy under a name of this grader's choosing.
+    # Deriving the copy's name from `project.parent.name` left it empty for the root-level layout
+    # `uip solution init .` produces (the solution *is* the sandbox, so the project's parent has
+    # no name) -- which made the copy the temp root itself, `probe.parent` the sandbox, and the
+    # `finally` below delete the grader's whole working directory.
+    temp_root = Path(tempfile.mkdtemp(prefix=PROBE_PREFIX, dir=project.parent.parent))
     try:
-        shutil.copytree(project.parent, probe)
+        probe = temp_root / "solution"
+        # The temp root sits inside the tree being copied under that same layout, so it would
+        # otherwise be copied into itself.
+        shutil.copytree(project.parent, probe, ignore=shutil.ignore_patterns(f"{PROBE_PREFIX}*"))
         copied = probe / project.name
         dmn_file, copied_root = load_graph(copied)
         _model_answers(copied_root, _the_model_the_fee_calls(copied_root), PROBE_RATE)
@@ -114,7 +125,7 @@ def _fee_follows_the_model(project: Path) -> None:
                      f"band does not come from the model, so the call the file carries is not what "
                      f"computes it")
     finally:
-        shutil.rmtree(probe.parent, ignore_errors=True)
+        shutil.rmtree(temp_root, ignore_errors=True)
 
 
 def _model_name(root: ET.Element, model_id: str) -> str:

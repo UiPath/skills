@@ -31,14 +31,6 @@ SUITE = Path(__file__).resolve().parent.parent
 
 # task yaml (relative to the suite) -> {criterion index: why it passes untouched}
 PASSES_ON_A_NO_OP: dict[str, dict[int, str]] = {
-    "smoke/graph_extend_brownfield/graph_extend_brownfield.yaml": {
-        1: "OPEN, weight 3.0 — `kept` grades only that the fixture's own decisions, ids and "
-           "entry points survived, which an untouched fixture satisfies by definition. The "
-           "Critical finding of MST-18847 § Grading validity; not closed by that ticket's "
-           "non-critical pass.",
-        3: "OPEN, weight 2.0 — `diagram` grades only that the fixture's shapes are where they "
-           "were and nothing overlaps. Same finding as index 1.",
-    },
     "smoke/brownfield_extend/brownfield_extend.yaml": {
         2: "BY DESIGN, weight 1.0 — `rules_check.py names` asserts every row carries an "
            "annotation, and the fixture's four rows already do. It grades the agent's new rows "
