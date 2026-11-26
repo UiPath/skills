@@ -12,6 +12,7 @@ initial_prompt: |
   Build the shell of a NEW UiPath Integration Service connector on disk for a
   fictional REST API. This is an OFFLINE build — do not log in; pass the
   organization explicitly so the element key can be derived without a session.
+  Use the legacy route, not community.
 
   Before starting, load the uipath-connector-builder skill and follow its
   workflow. Do NOT ask for approval, confirmation, or feedback. Do NOT pause
