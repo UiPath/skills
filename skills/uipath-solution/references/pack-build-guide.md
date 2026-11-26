@@ -105,9 +105,9 @@ Pass the AutomationOps export **exactly as exported**, envelope included. The in
 | `bun.lock` | `bun install --frozen-lockfile` |
 | none | `npm install` (writes a `package-lock.json`) |
 
-Pack skips the build when the bundle folder exists and the app's files match the last build. It keeps a SHA-256 of the app's files (except `node_modules/`) in `.uipath-build.json` beside `package.json`. **Git-ignore `.uipath-build.json`.** An app with no `build` script, or no `package.json`, is packed from its existing folder as is.
+Pack skips the build when the bundle folder exists and the app's files match the last build. It keeps a SHA-256 of the app's files (except `node_modules/`) in `.uipath-build.json` beside `package.json`. **Git-ignore `.uipath-build.json`.** An app with no `build` script, or no `package.json`, is packed from its existing folder as is. The placeholder `source/` that coded-app init writes is such an app: packed as is, it ships a static page, not the app. Scaffold the React sources into `source/` first (uipath-coded-apps).
 
-The packed folder is `config.bundlePath` in `webAppManifest.json`, relative to the project: `source/dist` for an app `uip codedapp init` scaffolded in a solution, `dist` for a standalone one. The build must write there.
+The packed folder is `config.bundlePath` in `webAppManifest.json`, relative to the project: `source/dist` for an app registered with `uip codedapp init` in a solution, `dist` for a standalone one. The build must write there.
 
 - **`--skip-build`**: no install, no build, for every coded app. Ships whatever `config.bundlePath` holds — stale output ships as is, a missing folder fails the pack. Use it when an earlier step built the app or the pack step cannot reach the package registry.
 - **`--dry-run` and a `.uis` input install from scratch.** The dry run's temporary copy has no `node_modules/`, nor does a `.uis`, so an app that needs a build needs the same registry access a real pack does. An app whose build is current is not rebuilt.

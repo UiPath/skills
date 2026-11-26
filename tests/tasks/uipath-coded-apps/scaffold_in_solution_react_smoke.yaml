@@ -1,0 +1,113 @@
+task_id: skill-coded-apps-scaffold-in-solution-react-smoke
+description: >
+  Smoke test: the sandbox root is a UiPath solution (it holds a `.uipx`), and the
+  agent scaffolds a Coded Web App inside it. `uip codedapp init` registers the
+  project but writes only a placeholder `source/` (a static `dist/index.html`, a
+  `package.json` with no scripts), and an agent that stops there, or edits the
+  placeholder into the app, ships a static page with no React project behind it.
+  Grades what is on disk: the project is registered, and its `source/` holds the
+  `create-vite` React scaffold, not the placeholder. Scaffolding at the project
+  root instead leaves the placeholder as the bundle the solution packs. A root
+  scaffold that `uip codedapp init --force` then adopts (`bundlePath: "dist"`)
+  also packs, but the skill keeps the app in `source/`, as Studio Web does, and
+  never reruns init with `--force`, so this task grades it as a failure. The
+  sandbox holds only the `.uipx`, with no `AGENTS.md`: Studio Desktop writes
+  none into a solution, and the solution in the incident held only its `.uipx`.
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
+run_limits:
+  expected_turns: 10
+
+pre_run:
+  - command: "printf '{\\n  \"DocVersion\": \"1.0.0\",\\n  \"StudioMinVersion\": \"2025.10.0\",\\n  \"SolutionId\": \"5b7c2f0e-1d2a-4c3b-9e8f-a1b2c3d4e5f6\",\\n  \"Projects\": []\\n}\\n' > IntakeSolution.uipx"
+    timeout: 30
+
+initial_prompt: |
+  Add a hello world Coded Web App named `intake-report` here.
+
+  Scaffold the project only — do NOT install the UiPath SDK, Tailwind, or any
+  other dependency, and do NOT write project files from the templates. This
+  environment is not signed in to UiPath, and nothing here needs it.
+
+  Stop as soon as the scaffold gate prints `SCAFFOLD_OK` — do not continue into
+  Step 3.3 (dependency installs) or Step 3.4 (deleting the Vite defaults).
+
+  This is a non-interactive automated test with no user to consult: do not ask
+  setup questions.
+
+success_criteria:
+  - type: file_exists
+    description: "React entrypoint exists in the project's source/ folder"
+    path: "intake-report/source/src/main.tsx"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "The solution registers the app as an AppV2 project"
+    path: "IntakeSolution.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "equals"
+        expected: 1
+      - expression: "Projects[0].Type"
+        operator: "equals"
+        expected: "AppV2"
+      - expression: "Projects[0].ProjectRelativePath"
+        operator: "equals"
+        expected: "intake-report/project.uiproj"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "webAppManifest.json packs the source/ build output"
+    path: "intake-report/webAppManifest.json"
+    assertions:
+      - expression: "config.bundlePath"
+        operator: "equals"
+        expected: "source/dist"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "source/package.json is the React scaffold's: it declares react and a build script (init's placeholder has neither)"
+    command: "sh -c 'grep -q \"\\\"react\\\":\" intake-report/source/package.json && grep -q \"\\\"build\\\":\" intake-report/source/package.json'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "init's placeholder is gone: create-vite --overwrite replaced source/, it was not edited into the app"
+    command: "sh -c 'test -f intake-report/source/vite.config.ts && ! grep -qs \"<main>\" intake-report/source/dist/index.html'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "init registered the project: its solution resource exists (hand-editing the .uipx does not write it)"
+    path: "resources/solution_folder/package/intake-report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No app scaffolded at the project root, beside project.uiproj"
+    command: "sh -c 'test ! -f intake-report/package.json && test ! -d intake-report/src'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Rule #20: agent did NOT use an `npm create vite` form"
+    tool_name: "Bash"
+    command_pattern: 'npm\s+create\s+vite'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "(advisory, non-gating) the project was registered with `uip codedapp init`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0  # advisory: the .uipx and webAppManifest.json checks grade the outcome
