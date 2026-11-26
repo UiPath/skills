@@ -95,7 +95,7 @@ find . -maxdepth 4 \( -name "*.bpmn" -o -name "*.bpmn.ts" \) | head -3
 | `.flow.ts` or `.flow` file | **Flow** | Author with `hitl(...)` in `<Name>.flow.ts` through the `uipath-maestro-flow` skill ([hitl.md](../uipath-maestro-flow/references/hitl.md)); never write node JSON into the compiled `.flow` — `compile` overwrites it |
 <!--skill-flavor:flow-sdk-surface-row:end-->
 <!--skill-flavor:case-sdk-surface-row:start-->
-| `<Name>.case.ts`, or `caseplan.case` (any `*.json` or `*.case` whose `nodes[]` carry `data.parentElement.type: "case-management:root"` — the marker is per-node; there is no `root` node on disk) | **Case** | Author an `action(...)` task in `<Name>.case.ts` through the `uipath-maestro-case` skill (Capability router); never write task JSON into the compiled plan — `compile` overwrites it |
+| `<Name>.case.ts`, or `caseplan.case` (any `*.json` or `*.case` whose `nodes[]` carry `data.parentElement.type: "case-management:root"` — the marker is per-node; there is no `root` node on disk) | **Case** | Author an `action(...)` task in `<Name>.case.ts` through the `uipath-maestro-case` skill (Capability router, "Human work and its Action App" row); never write task JSON into the compiled plan — `compile` overwrites it |
 <!--skill-flavor:case-sdk-surface-row:end-->
 | `agent.json` | **Low Code Agent** | Escalation CLI in-flight — guide manually for now |
 <!--skill-flavor:bpmn-sdk-surface-row:start-->
