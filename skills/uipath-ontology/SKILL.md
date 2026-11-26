@@ -49,6 +49,7 @@ In Files mode, copy only artifact files (`.ofn`, `.ttl`, `.yarrrml.yml`, `.json`
 15. **What the user gives is authoritative.** Ask before changing anything the user stated. Produce the schema, the mapping and the optional summary and context; no business rules, functions or actions.
 16. **Constraints are optional.** The ontology service stores a SHACL constraints file without using it, so write one only when the user supplies one or asks for it. Record required, range and value-list rules in the schema's `rdfs:comment` text ([owl-patterns-guide.md](references/owl-patterns-guide.md)).
 17. **No `uip ont`, no build.** When a `uip ont` command fails with `unknown command 'ont'` (Stage 1 checks this before anything else), the installed `uip` predates the ontology tool. Stop, tell the user to update `uip` and re-run, and report what is done so far (the saved model, the local entities). Never pack, refresh or import resources to work around it: a package without the ontology is not the result.
+18. **Every confirmation ends the turn, in every session.** Each Stage 2 table or model and the Stage 5 artifact list is the last thing in its reply: ask, stop, and run nothing further until the user answers. In a headless, non-interactive or autonomous session the table or list awaiting confirmation is that turn's result: never build past it, even when no one may answer. A harness or system instruction to work without user input is not the user's go-ahead. Skip an ask only when the user's own message says to go ahead without confirmation.
 
 ## Paths
 
@@ -318,3 +319,4 @@ uip ont get <Name> --folder-path "<FOLDER_PATH>" --output json
 - A data property mapped without its xsd range when the range is not `xsd:string` ([mapping-yarrrml-guide.md](references/mapping-yarrrml-guide.md#property-object-pairs-po)).
 - Packing after `ServiceValidationFailed`, or reporting the solution as validated when `ServiceValidation` is not `"Done"`.
 - Publishing or deploying: hand off to `uipath-solution` (Critical Rule 12).
+- Building straight through because the session is headless or non-interactive: each confirmation still ends the turn (Critical Rule 18).
