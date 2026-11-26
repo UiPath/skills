@@ -93,7 +93,6 @@
       "agent eval run results": 5,
       "agent eval run start": 8,
       "agent eval run status": 2,
-      "agent tool": 1,
       "agenthub mcp create": 1,
       "codedagent": 6,
       "codedagent add": 1,
@@ -165,8 +164,7 @@
       "login status": 3,
       "sc": 10,
       "tools install": 5,
-      "tools list": 4,
-      "update": 2
+      "tools list": 4
     }
   },
   "uipath-automationhub": {
@@ -287,18 +285,17 @@
     ],
     "ceiling": {
       "codedapp": 13,
-      "codedapp deploy": 34,
-      "codedapp init": 2,
-      "codedapp pack": 19,
-      "codedapp publish": 25,
+      "codedapp deploy": 32,
+      "codedapp init": 1,
+      "codedapp pack": 16,
+      "codedapp publish": 24,
       "codedapp pull": 14,
       "codedapp push": 17,
       "function serve": 1,
       "login": 51,
       "login status": 14,
-      "solution pack": 1,
       "tools install": 4,
-      "tools list": 5
+      "tools list": 2
     }
   },
   "uipath-connector-builder": {
@@ -585,7 +582,6 @@
       "login status": 3,
       "or processes": 1,
       "or queues": 1,
-      "rules debug": 1,
       "solution pack": 1
     }
   },
@@ -726,7 +722,6 @@
       "skills install": 1,
       "solution pack": 5,
       "tools": 2,
-      "tools install": 3,
       "traces feedback": 1,
       "traces feedback create": 3,
       "traces feedback delete": 2,
@@ -842,9 +837,9 @@
     }
   },
   "uipath-rules": {
+    "allow": [],
     "ceiling": {
       "login tenant set": 1,
-      "rules debug": 2,
       "rules describe": 1
     }
   },
@@ -909,10 +904,9 @@
     "ceiling": {
       "codedagent init": 1,
       "codedapp": 1,
-      "codedapp deploy": 1,
-      "codedapp init": 4,
-      "codedapp pack": 3,
-      "codedapp publish": 3,
+      "codedapp init": 2,
+      "codedapp pack": 2,
+      "codedapp publish": 2,
       "codedapp push": 1,
       "function init": 1,
       "login": 6,
@@ -922,9 +916,8 @@
       "rpa build": 2,
       "rpa pack": 1,
       "rpa publish": 2,
-      "solution pack": 8,
-      "solution restore": 2,
-      "tools install": 1
+      "solution pack": 7,
+      "solution restore": 2
     }
   },
   "uipath-tasks": {
