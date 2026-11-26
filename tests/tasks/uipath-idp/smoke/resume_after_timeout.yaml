@@ -67,22 +67,31 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: cli_called
-    description: "Started the digitization once and never again after the timeout (Critical Rule 5)"
+    description: "Started the digitization of the document in the Finance folder"
     tool: uip
     verb: "documents digitize"
     flags:
       document-id: "7c1d9e42-3b5a-4f68-8a0e-5d2c6b1f9a37"
+      folder-path: "Finance"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Never started a second digitization after the timeout (Critical Rule 5)"
+    tool: uip
+    verb: "documents digitize"
     max_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
   - type: cli_called
-    description: "Read the timed-out run with runs get, in the folder it was started in"
+    description: "Resumed the timed-out run with runs get --wait, in the folder it was started in"
     tool: uip
     verb: "documents runs get"
     positional: ["9a3f6c58-1e2d-4b7a-b0c4-6f8d2e5a7c13"]
     flags:
       folder-path: "Finance"
+      wait: {present: true}
     value_flags: [output, output-filter, timeout, folder-key, tenant]
     weight: 3.0
     pass_threshold: 1.0

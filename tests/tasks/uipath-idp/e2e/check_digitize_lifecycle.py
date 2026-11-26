@@ -2,7 +2,8 @@
 """Verify the digitize lifecycle e2e against the tenant.
 
 Takes the runId the agent saved in run.json, reads that run back with the CLI,
-and requires a succeeded one-page digitization whose text is the fixture's.
+and requires a succeeded one-page digitization whose text is the fixture's and
+a page1.md identical to the page-1 markdown the service returns for that run.
 """
 from __future__ import annotations
 
@@ -36,9 +37,10 @@ def saved_run_id() -> str:
     return run_id
 
 
-def read_run(run_id: str) -> dict:
+def uip_data(*args: str) -> dict:
+    command = " ".join(args[:2])
     proc = subprocess.run(
-        ["uip", "documents", "runs", "get", run_id, "--folder-path", FOLDER, "--output", "json"],
+        ["uip", "documents", *args, "--folder-path", FOLDER, "--output", "json"],
         capture_output=True,
         text=True,
         timeout=90,
@@ -47,10 +49,14 @@ def read_run(run_id: str) -> dict:
     try:
         envelope = json.loads(proc.stdout)
     except json.JSONDecodeError:
-        fail(f"runs get printed no JSON (exit {proc.returncode}): {proc.stderr.strip()[:300]}")
+        fail(f"{command} printed no JSON (exit {proc.returncode}): {proc.stderr.strip()[:300]}")
     if envelope.get("Result") != "Success" or not isinstance(envelope.get("Data"), dict):
-        fail(f"runs get answered {envelope.get('Result')}: {envelope.get('Message')}")
+        fail(f"{command} answered {envelope.get('Result')}: {envelope.get('Message')}")
     return envelope["Data"]
+
+
+def normalized(text: str) -> str:
+    return text.replace("\r\n", "\n").strip()
 
 
 def require_text(text: str, source: str) -> None:
@@ -60,7 +66,8 @@ def require_text(text: str, source: str) -> None:
 
 
 def main() -> None:
-    run = read_run(saved_run_id())
+    run_id = saved_run_id()
+    run = uip_data("runs", "get", run_id)
     if run.get("capability") != "digitize" or run.get("status") != "succeeded":
         fail(f"run is {run.get('capability')}/{run.get('status')}, expected digitize/succeeded")
     result = run.get("result") or {}
@@ -71,8 +78,12 @@ def main() -> None:
     page = Path.cwd() / "page1.md"
     if not page.exists():
         fail("page1.md not found")
-    require_text(page.read_text(encoding="utf-8"), "page1.md")
-    print("OK: the run succeeded on the tenant and page1.md holds its text")
+    expected = uip_data("pages", "get", "1", "--run-id", run_id, "--format", "markdown").get("content")
+    if not isinstance(expected, str) or not expected.strip():
+        fail("pages get returned no markdown for page 1")
+    if normalized(page.read_text(encoding="utf-8")) != normalized(expected):
+        fail("page1.md differs from the page-1 markdown the service returns for the run")
+    print("OK: the run succeeded on the tenant and page1.md is its page 1")
 
 
 if __name__ == "__main__":
