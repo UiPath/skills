@@ -53,7 +53,7 @@ The `env` export exists from `@uipath/uipath-typescript` 1.8.2. Read `node_modul
 
 `@uipath/coded-apps-dev` injects the `UIPATH_APPS_*` values from `.env.local`, `.env.development` and `.env.development.local` (later files win, as in Vite) into the dev server's page, so `env` reads the same way locally and deployed. Plain `.env` is not read for app variables; it holds `UIPATH_PROJECT_ID` and other CLI settings. `create-vite`'s `.gitignore` already ignores `*.local`, so `.env.local` stays on the machine.
 
-> The plugin reads these files from the release after `@uipath/coded-apps-dev` 1.0.0-beta.1. On an older plugin `env` is empty locally and every read falls back; check `grep -l UIPATH_APPS_ node_modules/@uipath/coded-apps-dev/dist/*.js` and update the plugin if it prints nothing.
+> The plugin reads these files from `@uipath/coded-apps-dev` 1.0.0 on. On an older plugin `env` is empty locally and every read falls back; check `grep -l UIPATH_APPS_ node_modules/@uipath/coded-apps-dev/dist/*.js` and update the plugin if it prints nothing.
 
 ## `.env.example`: list the names once
 
