@@ -76,7 +76,7 @@ Manage folders, jobs, processes, machines, users, packages, and more. See [`uipa
 | **Process ROI** | `get`, `create`, `update`, `delete` | [Business ROI](orchestrator/business-roi.md) |
 | **Packages** | `list`, `get`, `versions`, `entry-points`, `upload`, `download` | [Run Jobs](orchestrator/run-jobs.md) |
 | **Machines** | `list`, `get`, `create`, `update`, `delete`, `assign`, `unassign` | [Setup Environment](orchestrator/setup-environment.md) |
-| **Users** | `list`, `list-in-folder`, `list-available`, `get`, `create`, `update`, `delete`, `current`, `assign`, `unassign`, `assign-roles` | [Setup Environment](orchestrator/setup-environment.md) |
+| **Users** | `list`, `list-in-folder`, `list-available`, `get`, `create`, `update`, `delete`, `current`, `import`, `assign`, `unassign`, `assign-roles`. For a robot account or external app: `users import --directory-id <id> --type DirectoryRobot --domain autogen` (same for `DirectoryExternalApplication`); cloud needs `--domain` too, whatever `--help` says | [Setup Environment](orchestrator/setup-environment.md) |
 | **Roles** | `list`, `permissions`, `get`, `create`, `update`, `delete`, `users list`, `users set`, `user-roles list`, `user-permissions list`, `assign` | [Setup Environment](orchestrator/setup-environment.md) |
 | **Sessions** | `attended list`, `unattended list`, `machines list <machine-key>`, `list-usernames`, `list-user-executors`, `toggle-debug-mode`, `delete-inactive`, `set-maintenance-mode` | [Manage Sessions](orchestrator/manage-sessions.md) |
 | **Settings** | `list`, `get`, `update`, `execution`, `timezones` | [Tenant Admin](orchestrator/tenant-admin.md) |
