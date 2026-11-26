@@ -46,7 +46,16 @@ writes it back as `{ name, folderKey, resourceKey }`, which recompiles as is.
 A `_V3` connector activity (the `-preview-` operations, e.g.
 `get-entity-record-by-id-preview-`) takes its entity the same way in its inputs:
 `{ entityScope: 'folder', folderEntityName: { name: 'Movie', folder: '<folder path>' } }`
-or `{ entityScope: 'tenant', tenantEntityName: 'Invoices' }`.
+or `{ entityScope: 'tenant', tenantEntityName: 'Invoices' }`;
+`query-multiple-entity-records-preview-` has two pickers,
+`primaryFolderEntityName` and `secondaryFolderEntityName` (tenant:
+`primaryTenantEntityName` / `secondaryTenantEntityName`), and its
+`queryExpression` is a WHERE condition (`Movie.Title IS NOT NULL`), not a query.
+Its join fields come from `registry prepare … --action <op> -f
+primaryFolderEntityName=<A> -f secondaryFolderEntityName=<B>`.
+A deploy provisions its own copy of a folder entity in the deployment's folder
+and re-points every picker there: test records go into that copy, not the
+source folder's entity.
 Never write `folderEntityName_folderKey` beside it (`RESOURCE_PICKER_COMPANION`),
 and never the other scope's field (`EVENT_PARAMETER_CLEARED`). `check` reports
 `RESOURCE_UNRESOLVED` with the `uip maestro registry prepare --entity <name>
@@ -59,7 +68,8 @@ The resource form needs `@uipath/maestro-builder-sdk` <NEXT_SDK_VERSION> or
 later. An older SDK compiles it without an error but writes the object itself as
 the parameter (an `entity()` token: the name alone), with no picker and no
 binding pair. Tenant fields work on both. There is no `entity` option on
-`onEvent`/`waitForEvent` (`FLOW_UNKNOWN_OPTION`).
+`onEvent`/`waitForEvent` (`FLOW_UNKNOWN_OPTION`; a Case subscription:
+`CASE_UNKNOWN_OPTION`).
 <!--skill-flavor:event-entity-sdk-upgrade:start-->
 Read the version from the directory you run `uip` in (the workspace root):
 `node -p "require(require.resolve('@uipath/maestro-builder-sdk/package.json',{paths:[process.cwd()]})).version"`;
