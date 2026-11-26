@@ -7,7 +7,7 @@
 uip rules init <RULE_NAME>
 ```
 
-Run `init` from `/solution`, the Studio Web solution the user has open; never create another. Studio Web creates the project in the open solution at `/solution/<RULE_NAME>/`. The intercepted command prints plain text; `--output json` is ignored. The rule is the one `.dmn` file in the project folder. Treat whatever table the scaffolded `.dmn` holds as a placeholder; step 3 replaces it.
+Run `init` from `/solution`, the Studio Web solution the user has open; never create another. Studio Web creates the project in the open solution at `/solution/<RULE_NAME>/`. The intercepted command prints plain text; `--output json` is ignored. The rule is the one `.dmn` file in the project folder. Treat whatever table the scaffolded `.dmn` holds as a placeholder; step 3 replaces it. The **table** is the placeholder — not the root element, and not its `extensionElements`, which already carry the right authoring surface.
 <!--skill-flavor:scaffold:end-->
 <!--skill-flavor:verify:start-->
 ```bash

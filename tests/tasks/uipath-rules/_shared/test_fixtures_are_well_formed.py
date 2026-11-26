@@ -94,6 +94,19 @@ def test_the_entry_points_are_objects_the_shared_parsers_can_read(project):
             assert isinstance(rc.output_properties(schema), dict)
 
 
+@pytest.mark.parametrize(
+    "project", [p for p in PROJECTS if _rel(p) not in DELIBERATELY_BROKEN],
+    ids=[i for i in IDS if i not in DELIBERATELY_BROKEN])
+def test_the_authoring_surface_matches_what_the_fixture_holds(project):
+    # A fixture is what an agent copies. One staged on the wrong surface teaches the wrong
+    # surface, and the suite graded that nowhere until `check_authoring_surface`.
+    #
+    # Sound fixtures only: repair_invalid's is DMN 1.3, so its `extensionElements` are not in the
+    # 1.5 namespace this reads. Moving it there is part of the repair the task grades.
+    dmn_file = next(project.glob("*.dmn"))
+    rc.check_authoring_surface(dmn_file, ET.fromstring(dmn_file.read_text(encoding="utf-8")))
+
+
 @pytest.mark.parametrize("project", PROJECTS, ids=IDS)
 def test_the_bindings_file_parses(project):
     assert isinstance(json.loads((project / "bindings_v2.json").read_text(encoding="utf-8")), dict)

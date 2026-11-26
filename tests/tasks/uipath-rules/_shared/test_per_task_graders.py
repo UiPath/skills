@@ -68,10 +68,21 @@ def project(workspace: Path, name: str, dmn: str, inputs: dict, outputs: dict,
 
 
 def definitions(name: str, body: str) -> str:
+    """A `.dmn` whose authoring surface matches what `body` holds.
+
+    Derived rather than passed, so a test that adds a second decision or a knowledge model to a
+    submission cannot forget to flip it — which is the mistake the surface check exists to catch.
+    """
+    needs_canvas = (body.count("<decision ") > 1
+                    or "<businessKnowledgeModel" in body or "<textAnnotation" in body)
+    surface = rc.GRAPH_SURFACE if needs_canvas else rc.TABLE_SURFACE
     return (f'<?xml version="1.0" encoding="UTF-8" ?>\n'
             f'<definitions xmlns="{rc.DMN_NS}" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" '
-            f'xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" id="definitions_{name}" '
-            f'name="{name}" namespace="urn:{name}">{body}</definitions>')
+            f'xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" '
+            f'xmlns:uipath="{rc.UIPATH_NS}" id="definitions_{name}" '
+            f'name="{name}" namespace="urn:{name}">'
+            f'<extensionElements><uipath:authoring surface="{surface}" /></extensionElements>'
+            f'{body}</definitions>')
 
 
 def shape(element_id: str, x: int, y: int) -> str:
@@ -365,7 +376,14 @@ def extended_risk(tmp_path):
     dmn = folder / "Business rule.dmn"
     text = dmn.read_text(encoding="utf-8")
     assert "</definitions>" in text
-    dmn.write_text(text.replace("</definitions>", RATE_DECISION + "</definitions>"), encoding="utf-8")
+    text = text.replace("</definitions>", RATE_DECISION + "</definitions>")
+    # The fixture is one decision table, so `init` left it on the table surface. A second
+    # decision makes it a graph, and the designer opens a graph on the canvas — so the edit has
+    # to flip the surface, which is exactly what agents were getting wrong in the other
+    # direction (`decision-graph` on a rule that is one table).
+    assert f'surface="{rc.TABLE_SURFACE}"' in text
+    text = text.replace(f'surface="{rc.TABLE_SURFACE}"', f'surface="{rc.GRAPH_SURFACE}"')
+    dmn.write_text(text, encoding="utf-8")
 
     # The shapes `uip rules format` adds for the two new elements. Placed clear of the
     # fixture's own three (the band at 0,0 and the two inputs along y=176), because a partial
