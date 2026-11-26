@@ -53,7 +53,8 @@ The resource form needs `@uipath/maestro-builder-sdk` <NEXT_SDK_VERSION> or
 later. An older SDK compiles it without an error but writes the object itself as
 the parameter, with no picker and no binding pair. Below <NEXT_SDK_VERSION>, write
 the folder entity as `entity: { name: 'Movie', folder: '<folder path>' }` instead;
-from <NEXT_SDK_VERSION> that form still compiles but is deprecated, and needs
+from <NEXT_SDK_VERSION> that form still compiles with no warning (it is deprecated
+in the API docs only), and needs
 the event's rules (`EVENT_ENTITY_UNPREPARED` prints the prepare). Tenant fields
 in `where` work on both. `entity: '<name>'` is refused from <NEXT_SDK_VERSION>
 (`EVENT_ENTITY_TENANT`): write `where`.
@@ -171,14 +172,14 @@ uip maestro registry prepare --entity Orders --folder-path Finance/Prod
 # Recorded  ./.flow-sdk/resources.json
 ```
 
-`compile` writes the folder key, resource key, two `resource: 'Entity'` binding rows, and the entity row in `bindings_v2.json`; `uip solution resources refresh` then declares it in the solution. Do not type keys; compile refuses an unrecorded entity.
+For the native read, create, update and delete nodes, `compile` writes the folder key, resource key, two `resource: 'Entity'` binding rows, and the entity row in `bindings_v2.json`. For an event, it writes one lowercase `entity` row that the trigger and a wait on the same entity share, plus a `Property` row per event. Either way, `uip solution resources refresh` then declares it in the solution. Do not type keys; compile refuses an unrecorded entity.
 
 Run `prepare` from the directory used for `check` and `compile`, normally `<Solution>/<Name>/`; it records `./.flow-sdk/resources.json`. Within a solution (a `.uipx` in that folder or above), it searches the solution before the tenant.
 
 `prepare` lists and stops; it never picks:
 
 - **No `folder`:** it searches every folder. One match records the folder and names it to pin in source. Multiple matches list each `folder:`; write the intended one and run `prepare` again.
-- **Tenant-level match:** no `prepare`; write `entity: '<Name>'` as output says.
+- **Tenant-level match:** no `prepare`. On a native node, write `entity: '<Name>'` as output says; on an event, write `where: { entityScope: 'tenant', tenantEntityName: '<Name>' }`.
 - **Matching:** a name matches exactly, case included; a `folder` path ignores case and a leading or trailing slash. A folder without that entity returns `RESOURCE_NOT_IN_FOLDER` and lists folders containing it.
 - **No match:** it lists near misses and listings to check. If none is intended, ask the user; never create an entity unless the user asks. Creating one in the requested scope follows [/uipath:uipath-platform — local-entities.md](../../uipath-platform/references/data-fabric/local-entities.md), then run `prepare` again.
 - **Recorded row older than a day:** it counts as missing; `check` asks for `prepare` again.
