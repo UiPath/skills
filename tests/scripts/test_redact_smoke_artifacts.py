@@ -18,6 +18,10 @@ CODEX = "dummy-codex-credential-for-tests"
 BEDROCK = "dummy-bedrock-credential-for-tests"
 ACCESS = "dummy-uipath-access-token-for-tests"
 REFRESH = "dummy-uipath-refresh-token-for-tests"
+# What the mint wrote before a mid-run refresh rotated .auth to ACCESS/REFRESH.
+MINTED_ACCESS = "dummy-uipath-minted-access-token-for-tests"
+MINTED_REFRESH = "dummy-uipath-minted-refresh-token-for-tests"
+SNAPSHOT_PATH = "${{ runner.temp }}/smoke-uipath-auth-snapshot"
 SECRETS = (CODEX, BEDROCK, ACCESS, REFRESH)
 SPEC = importlib.util.spec_from_file_location("redact_smoke_artifacts", SCRIPT)
 MODULE = importlib.util.module_from_spec(SPEC)
@@ -34,15 +38,25 @@ def write_auth(home, text=None):
     return home
 
 
-def run_scrub(root, key=CODEX, home=None):
+def write_snapshot(directory, access=ACCESS, refresh=REFRESH):
+    # The mint step's copy of .auth, outside every sandbox mount.
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / "smoke-uipath-auth-snapshot"
+    path.write_text(f"UIPATH_ACCESS_TOKEN={access}\nUIPATH_REFRESH_TOKEN={refresh}\n")
+    return path
+
+
+def run_scrub(root, key=CODEX, home=None, snapshot=None):
     if home is None:
         home = write_auth(root.parent / f"{root.name}-home")
-    return subprocess.run(
-        [sys.executable, str(SCRIPT), str(root)],
-        env={**os.environ, "HOME": str(home), "CODEX_API_KEY": key,
-             "AWS_BEARER_TOKEN_BEDROCK": BEDROCK},
-        capture_output=True, text=True,
-    )
+    if snapshot is None:
+        snapshot = write_snapshot(root.parent / f"{root.name}-runner-temp")
+    env = {**os.environ, "HOME": str(home), "CODEX_API_KEY": key,
+           "AWS_BEARER_TOKEN_BEDROCK": BEDROCK, "UIPATH_AUTH_SNAPSHOT": str(snapshot)}
+    if snapshot == "":
+        del env["UIPATH_AUTH_SNAPSHOT"]
+    return subprocess.run([sys.executable, str(SCRIPT), str(root)],
+                          env=env, capture_output=True, text=True)
 
 
 def test_scrubs_reports_and_arbitrary_artifact_bytes_preserving_gate_fields(tmp_path):
@@ -108,6 +122,8 @@ def test_read_error_fails_closed(tmp_path, monkeypatch, capsys):
     (tmp_path / "task.json").write_text("{}")
     monkeypatch.setenv("CODEX_API_KEY", CODEX)
     monkeypatch.setenv("HOME", str(write_auth(tmp_path.parent / f"{tmp_path.name}-home")))
+    monkeypatch.setenv("UIPATH_AUTH_SNAPSHOT",
+                       str(write_snapshot(tmp_path.parent / f"{tmp_path.name}-runner-temp")))
 
     def unreadable(_):
         raise OSError(CODEX)
@@ -121,6 +137,8 @@ def test_verification_rejects_a_write_that_did_not_redact(tmp_path, monkeypatch)
     (tmp_path / "task.log").write_text(CODEX)
     monkeypatch.setenv("CODEX_API_KEY", CODEX)
     monkeypatch.setenv("HOME", str(write_auth(tmp_path.parent / f"{tmp_path.name}-home")))
+    monkeypatch.setenv("UIPATH_AUTH_SNAPSHOT",
+                       str(write_snapshot(tmp_path.parent / f"{tmp_path.name}-runner-temp")))
     monkeypatch.setattr(Path, "write_bytes", lambda *_: 0)
     assert MODULE.main([str(SCRIPT), str(tmp_path)]) == 1
 
@@ -150,6 +168,39 @@ def test_unusable_auth_file_blocks_upload_without_printing_tokens(tmp_path, auth
     result = run_scrub(root, home=home)
     assert result.returncode == 1
     assert result.stdout == f"::error::UiPath auth file ~/.uipath/.auth {message}; upload blocked\n"
+    assert result.stderr == ""
+    assert (root / "task.log").read_text() == f"{ACCESS} {REFRESH}"
+
+
+def test_tokens_rotated_out_of_auth_file_are_still_redacted(tmp_path):
+    # An agent printed the minted tokens, then a uip refresh rewrote the mounted
+    # .auth. The old access token is still valid: the snapshot must cover it,
+    # and the refreshed pair now in .auth must be covered as well.
+    root = tmp_path / "runs"
+    root.mkdir()
+    (root / "task.log").write_text(f"{MINTED_ACCESS} {MINTED_REFRESH} {ACCESS} {REFRESH}")
+    snapshot = write_snapshot(tmp_path / "runner-temp", MINTED_ACCESS, MINTED_REFRESH)
+    result = run_scrub(root, home=write_auth(tmp_path / "home"), snapshot=snapshot)
+    assert result.returncode == 0, result.stdout
+    assert (root / "task.log").read_text() == "*** *** *** ***"
+
+
+@pytest.mark.parametrize("snapshot, message", [
+    ("", "missing or unreadable"),
+    ("missing", "missing or unreadable"),
+    ("UIPATH_REFRESH_TOKEN=" + REFRESH + "\n", "has no access token"),
+])
+def test_unusable_token_snapshot_blocks_upload_without_printing_tokens(tmp_path, snapshot, message):
+    root = tmp_path / "runs"
+    root.mkdir()
+    (root / "task.log").write_text(f"{ACCESS} {REFRESH}")
+    path = tmp_path / "runner-temp/smoke-uipath-auth-snapshot"
+    if snapshot.startswith("UIPATH_"):
+        path.parent.mkdir()
+        path.write_text(snapshot)
+    result = run_scrub(root, snapshot="" if snapshot == "" else path)
+    assert result.returncode == 1
+    assert result.stdout == f"::error::UiPath token snapshot {message}; upload blocked\n"
     assert result.stderr == ""
     assert (root / "task.log").read_text() == f"{ACCESS} {REFRESH}"
 
@@ -191,7 +242,18 @@ def test_workflow_only_uploads_after_successful_full_tree_scrub(tmp_path):
     assert steps.index(mint) < steps.index(scrub)
     assert "AUTH_FILE" not in mint.get("env", {}) and "HOME" not in scrub["env"]
     smoke = yaml.safe_load((ROOT / "tests/experiments/smoke.yaml").read_text())
-    assert "~/.uipath:/.uipath:rw" in smoke["defaults"]["sandbox"]["docker"]["extra_mounts"]
+    mounts = smoke["defaults"]["sandbox"]["docker"]["extra_mounts"]
+    assert "~/.uipath:/.uipath:rw" in mounts
+
+    # The minted tokens are snapshotted right after the mint, before this step
+    # opens ~/.uipath to sandboxes, into runner temp: not under ~/.uipath or the
+    # uploaded /tmp/runs, and in no sandbox mount.
+    assert mint["env"]["UIPATH_AUTH_SNAPSHOT"] == scrub["env"]["UIPATH_AUTH_SNAPSHOT"] == SNAPSHOT_PATH
+    run = mint["run"]
+    copy = 'install -m 600 "$HOME/.uipath/.auth" "$UIPATH_AUTH_SNAPSHOT"'
+    assert run.index("refresh-auth.sh") < run.index(copy) < run.index("chmod") < run.index("docker run")
+    # A new mount could expose runner temp; recheck the snapshot before adding one.
+    assert [mount.split(":")[0] for mount in mounts] == ["~/.uipath"]
 
 
 def test_ci_runs_this_regression_suite():

@@ -3,6 +3,9 @@
 
 Credentials are the forwarded secrets plus the UiPath tokens the ROPC mint writes
 to ~/.uipath/.auth, which smoke.yaml mounts read-write into every agent sandbox.
+The uip CLI rewrites that file when it refreshes, so the minted tokens come from
+a runner-owned snapshot taken before any sandbox starts (UIPATH_AUTH_SNAPSHOT),
+and the scrub covers the union of the snapshot and the file after the run.
 
 Scan bytes, not selected text extensions: agent artifacts can have any suffix or
 contain non-UTF-8 bytes. This covers verbatim secrets, not encoded/compressed ones.
@@ -23,22 +26,32 @@ class Blocked(ValueError):
     """A failure whose message holds no secret and can be printed."""
 
 
-def auth_secrets() -> list[str]:
-    # refresh-auth.sh writes KEY=value lines; the uip CLI rewrites the file in the
-    # same format when it refreshes, so read it after the run, not at mint time.
+def auth_tokens(path: Path, label: str) -> list[str]:
+    # KEY=value lines: refresh-auth.sh writes them, and the uip CLI keeps the
+    # format when it rewrites ~/.uipath/.auth on a refresh.
     try:
-        lines = (Path.home() / ".uipath/.auth").read_text(encoding="utf-8").splitlines()
+        lines = path.read_text(encoding="utf-8").splitlines()
     except (OSError, UnicodeDecodeError):
-        raise Blocked("UiPath auth file ~/.uipath/.auth missing or unreadable") from None
+        raise Blocked(f"{label} missing or unreadable") from None
     tokens = {}
     for line in lines:
         key, sep, value = line.partition("=")
         if sep and key in AUTH_TOKENS:
             tokens[key] = value.strip()
     if len(tokens.get("UIPATH_ACCESS_TOKEN", "")) < 8:
-        raise Blocked("UiPath auth file ~/.uipath/.auth has no access token")
+        raise Blocked(f"{label} has no access token")
     # The refresh token is optional, and "null" when the mint got none.
     return [value for value in tokens.values() if len(value) >= 8]
+
+
+def auth_secrets() -> list[str]:
+    # A token an agent printed before a mid-run refresh is gone from .auth but
+    # still valid, so the minted snapshot must be readable, not best-effort.
+    snapshot = os.environ.get("UIPATH_AUTH_SNAPSHOT")
+    if not snapshot:
+        raise Blocked("UiPath token snapshot missing or unreadable")
+    return (auth_tokens(Path(snapshot), "UiPath token snapshot")
+            + auth_tokens(Path.home() / ".uipath/.auth", "UiPath auth file ~/.uipath/.auth"))
 
 
 def redact(root: Path, secrets: list[bytes]) -> None:
