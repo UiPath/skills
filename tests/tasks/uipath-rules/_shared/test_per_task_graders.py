@@ -18,6 +18,7 @@ probe's XML rewrite and the model-by-id-not-name lookup — is in
 """
 
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -725,3 +726,90 @@ class TestGraphLargePolicy:
 
     def test_an_unknown_mode_is_refused(self, tmp_path):
         assert not accepted(run(self.GRADER, "values", cwd=tmp_path))
+
+# --- graph_extend_brownfield, whose criteria used to score an untouched fixture ---
+
+FREIGHT_DECISION = (
+    '<decision id="decision_freight" name="freight" label="Freight">'
+    '<variable id="variable_freight" name="freight" typeRef="number" />'
+    '<informationRequirement id="ir_freight_tier">'
+    '<requiredDecision href="#decision_tier"/></informationRequirement>'
+    '<knowledgeRequirement id="kr_freight">'
+    '<requiredKnowledge href="#bkm_discounted"/></knowledgeRequirement>'
+    '<decisionTable id="dt_freight" hitPolicy="FIRST">'
+    '<input id="in_freight_tier"><inputExpression id="ie_freight_tier" typeRef="number">'
+    '<text>tier</text></inputExpression></input>'
+    '<output id="out_freight" name="freight" typeRef="number" /><annotation name="Annotation"/>'
+    '<rule id="r_freight"><inputEntry><text>-</text></inputEntry>'
+    '<outputEntry><text>discounted(50, tier)</text></outputEntry>'
+    '<annotationEntry><text>Flat 50, tier discount</text></annotationEntry></rule>'
+    '</decisionTable></decision>')
+
+
+@pytest.fixture
+def priced(tmp_path):
+    """The PricingRules fixture with the freight decision its prompt asks for, card drawn."""
+    fixture = SUITE / "smoke" / "graph_extend_brownfield" / "fixtures" / "PricingRules"
+    shutil.copytree(fixture, tmp_path / "PricingRules")
+    dmn = tmp_path / "PricingRules" / "Business rule.dmn"
+    text = dmn.read_text(encoding="utf-8").replace(
+        "</definitions>", FREIGHT_DECISION + "</definitions>")
+    # Clear of every shape the fixture placed, so `check_no_overlap` is not what fails.
+    right = max(int(x) for x in re.findall(r'x="(\d+)"', text)) + 400
+    card = (f'<dmndi:DMNShape id="DMNShape_freight" dmnElementRef="decision_freight">'
+            f'<dc:Bounds x="{right}" y="0" width="288" height="96" /></dmndi:DMNShape>')
+    dmn.write_text(text.replace("</dmndi:DMNDiagram>", card + "</dmndi:DMNDiagram>"),
+                   encoding="utf-8")
+    return tmp_path
+
+
+class TestGraphExtendBrownfield:
+    """`kept` and `diagram` awarded 5.0 of this task's 12.0 for staging the fixture and stopping.
+
+    Both now ask whether there is an edit before grading what survived it. The point of these
+    tests is the other direction: a correct submission still passes, so the fix did not simply
+    make the task harder.
+    """
+
+    GRADER = SUITE / "smoke" / "graph_extend_brownfield" / "check_graph_extend_brownfield.py"
+
+    @pytest.mark.parametrize("mode", ["kept", "wired", "diagram"])
+    def test_a_correct_edit_is_accepted(self, priced, mode):
+        assert accepted(run(self.GRADER, mode, cwd=priced))
+
+    @pytest.mark.parametrize("mode", ["kept", "wired", "diagram"])
+    def test_the_untouched_fixture_is_refused(self, tmp_path, mode):
+        fixture = SUITE / "smoke" / "graph_extend_brownfield" / "fixtures" / "PricingRules"
+        shutil.copytree(fixture, tmp_path / "PricingRules")
+
+        assert not accepted(run(self.GRADER, mode, cwd=tmp_path))
+
+    def test_an_added_decision_with_no_card_is_refused_by_diagram(self, tmp_path):
+        # Adding the decision and skipping `uip rules format` leaves it off the canvas, which is
+        # the failure `diagram` exists to catch and the half its docstring already claimed.
+        fixture = SUITE / "smoke" / "graph_extend_brownfield" / "fixtures" / "PricingRules"
+        shutil.copytree(fixture, tmp_path / "PricingRules")
+        dmn = tmp_path / "PricingRules" / "Business rule.dmn"
+        dmn.write_text(dmn.read_text(encoding="utf-8").replace(
+            "</definitions>", FREIGHT_DECISION + "</definitions>"), encoding="utf-8")
+
+        result = run(self.GRADER, "diagram", cwd=tmp_path)
+
+        assert not accepted(result)
+        assert "uip rules format" in result.stdout
+
+    def test_moving_a_users_shape_is_still_refused(self, priced):
+        # The survival half has to keep working beside the new "was anything added" half.
+        dmn = priced / "PricingRules" / "Business rule.dmn"
+        text = dmn.read_text(encoding="utf-8")
+        dmn.write_text(text.replace('x="', 'x="1', 1), encoding="utf-8")
+
+        assert not accepted(run(self.GRADER, "diagram", cwd=priced))
+
+    def test_rewriting_the_kept_formula_is_still_refused(self, priced):
+        dmn = priced / "PricingRules" / "Business rule.dmn"
+        text = dmn.read_text(encoding="utf-8")
+        assert "amount * (1 - pct / 100)" in text
+        dmn.write_text(text.replace("amount * (1 - pct / 100)", "amount"), encoding="utf-8")
+
+        assert not accepted(run(self.GRADER, "kept", cwd=priced))

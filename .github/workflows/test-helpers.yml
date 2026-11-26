@@ -208,8 +208,11 @@ jobs:
         with:
           python-version: '3.13'
 
+      # pyyaml for test_no_edit_baseline.py, which reads each task's criteria to run them
+      # against the untouched fixture. Without it that module errors at collection and takes
+      # the whole suite with it.
       - name: Install pytest
-        run: pip install pytest
+        run: pip install pytest pyyaml
 
       # Pins the FEEL unary-test evaluator and hit-policy logic every
       # uipath-rules grader uses to score the agent's decision table.

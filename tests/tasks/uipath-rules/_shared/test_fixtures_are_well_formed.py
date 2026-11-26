@@ -7,9 +7,9 @@ contract parsers raised on it and `uip rules validate` reported
 `RULES_ENTRY_POINTS_STALE` — in a file the task hands the agent as the starting
 point (MST-18847).
 
-These are the checks that need no tenant. The CLI's own verdict on each fixture
-runs on the smoke runner, which has `uip`; see the fixture-validity step in
-.github/workflows/smoke-skills.yml.
+These are the checks that need no tenant, so they run in this suite's own job. The CLI's own
+verdict on each fixture needs `uip`, so it lives in `validate_fixtures.py` beside this file and is
+run by hand; no CI job calls it yet.
 """
 
 import json

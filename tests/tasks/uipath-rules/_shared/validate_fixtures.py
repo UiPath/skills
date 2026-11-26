@@ -9,8 +9,11 @@ the two that nothing reads are where `graph_extend_brownfield`'s string-encoded
 The repair fixtures are expected to be refused -- being refused is the task. They are required
 to be refused, so a fixture someone quietly repairs stops silently grading nothing.
 
-Run by the fixture-validity job in .github/workflows/smoke-skills.yml.
-Usage: python3 validate_fixtures.py
+Not wired into CI by this change: a job that runs it needs a runner with the CLI, which is an
+edit to a shared workflow and belongs with whoever owns it. Run it by hand from the repository
+root after touching a fixture, and before relying on one as a starting point:
+
+    python3 tests/tasks/uipath-rules/_shared/validate_fixtures.py
 """
 
 from __future__ import annotations
