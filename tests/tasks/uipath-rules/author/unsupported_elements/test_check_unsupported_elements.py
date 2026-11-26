@@ -36,7 +36,6 @@ def test_plain_table_passes(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("insert, message", [
-    ('  <knowledgeSource id="ks_policy" name="Procurement Policy 2026" />\n', "declares a knowledgeSource"),
     ('  <decisionService id="ds_approval" name="approvalService" />\n', "declares a decisionService"),
     ('  <import namespace="http://example.com/supplier-types" name="SupplierTypes" '
      'importType="https://www.omg.org/spec/DMN/20230324/MODEL/" />\n', "<import> element"),
