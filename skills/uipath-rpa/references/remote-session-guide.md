@@ -20,7 +20,7 @@ The mode is set on `remote configure` with `--live-authoring` or `--remote-run-o
 | Connection | Persistent — one long-lived remote session job on the robot | None |
 | Debug / run with `--remote` | Executes on the remote machine, over the session | Each run/debug session is an Orchestrator job of its own |
 | `remote exec`, `remote upload-file`, `remote download-file` | Served by the session — return in seconds | Use Live Authoring |
-| Remote UI Automation (the `uip rpa uia` group in remote mode — syntax in the UIA docs), remote screen streaming | Available | Not available |
+| Remote UI Automation (the `uip rpa uia` group in remote mode — syntax in the UIA docs) | Available | Not available |
 | `remote start` / `remote stop` | Open / close the session | Not applicable — `remote start` fails |
 | Default | — | Yes, for a target that never had a mode stored |
 
@@ -254,6 +254,19 @@ Then apply Rule 3: present the candidates and ask the user which to use. Offer o
 
    `Result: Success` proves the session executes commands; the streamed host name must match the pinned `--runtime` when one was set. The call returns in a few seconds when the session is open; 20+ seconds means the command had to start a new session job.
 3. **Remote Run Only** — the first `--remote` run (§ Debug / Run a Workflow on the Remote) is the end-to-end check.
+
+## Live Authoring in UiPath Studio
+
+When `uip rpa remote configure` runs in Live Authoring from the UiPath Studio integrated terminal, UiPath Studio also connects to the remote session:
+
+- **Remote View panel** — streams the remote machine's screen for the whole session; the user sees it and can interact with it.
+- **Studio status bar** — shows the remote machine Studio is connected to.
+
+### Troubleshoot
+
+- **Remote View does not load:**
+  1. Check the remote session job in Orchestrator — through the `uipath-platform` skill, or ask the user to check it in the Orchestrator web UI when that skill is unavailable — and confirm the remote-control tunnel is on for the job.
+  2. Tunnel off → the Robot on the remote machine may be missing the `Live streaming and remote control` component. Ask the user to check that the component is installed and to add it to the Robot installation when missing — steps on the machine belong to the user (§ Rules for Preparing a Target, rule 7).
 
 ## Debug / Run a Workflow on the Remote
 
