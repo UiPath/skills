@@ -97,9 +97,9 @@ For every job under investigation, gather these in order. Follow the generic gui
      --output-filter '{Key:Key,State:State,StartTime:StartTime,EndTime:EndTime,Info:Info,JobError:JobError,InputArguments:InputArguments,OutputArguments:OutputArguments}' \
      | tee .local/investigations/raw/triage-job-get.json
    ```
-2. **Job logs** — robot execution logs, newest-first. Folder is inferred from the job key. Use `--level Error` to find errors quickly. The command below requests up to 50 entries.
+2. **Job logs** — robot execution logs, newest-first, all levels: Warning and Info entries just before the error often tell sibling causes apart. Folder is inferred from the job key. The command below requests up to 50 entries; add `--level Error` only for a later quick re-scan.
    ```
-   uip or jobs logs <key> --level Error --limit 50 --output json \
+   uip or jobs logs <key> --limit 50 --output json \
      --output-filter '[].{Level:Level,TimeStamp:TimeStamp,Message:Message}' \
      | tee .local/investigations/raw/triage-job-logs.json
    ```
