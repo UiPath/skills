@@ -41,8 +41,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "validate re-run confirms a valid connector (exit 0)"
-    command: "CD=$(find . -type d -name periodic-design-acme-acmechatbridge -not -path '*/node_modules/*' | head -1); uip is connectors builder validate --connector-dir \"$CD\""
+    description: "validate re-run on the connector found by its key confirms a valid connector (exit 0)"
+    command: 'CONNECTOR_ROOT=$(python3 "$REFERENCE_DIR/check_byo_connector.py" . --print-root) && uip is connectors builder validate --connector-dir "$CONNECTOR_ROOT"'
     timeout: 60
     expected_exit_code: 0
     weight: 1.5
@@ -50,7 +50,7 @@ success_criteria:
 
   - type: run_command
     description: "check_byo_connector.py (static): flavor path, template tag, x-api-key header, no secret defaults"
-    command: "CD=$(find . -type d -name periodic-design-acme-acmechatbridge -not -path '*/node_modules/*' | head -1); python3 $REFERENCE_DIR/check_byo_connector.py \"$CD\""
+    command: 'python3 "$REFERENCE_DIR/check_byo_connector.py" .'
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

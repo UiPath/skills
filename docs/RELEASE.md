@@ -182,7 +182,7 @@ Stable (`latest`) is **not** published automatically — the sprint cut publishe
    ```bash
    gh workflow run publish.yml --ref release/v<minor> -f channel=latest
    ```
-   This publishes the exact committed `package.json` version to npm `latest` via OIDC + `--provenance`. The run then waits until npmjs actually serves the version (`npm publish` returns as soon as the registry *accepts* the tarball; availability follows minutes later, or never if held for review) and posts the "Published to npm (stable)" announcement to `#team-coding-agents` as Skills Buddy (`announce-stable.yml`, skill list in the thread). A red `Announce stable publish` job means the version is still not installable — check npmjs before telling anyone. To (re)announce a line by hand: `gh workflow run announce-stable.yml --ref main -f ref=release/v<minor>` (the branch's committed `package.json` is the version).
+   This publishes the exact committed `package.json` version to npm `latest` via OIDC + `--provenance`. The run then waits until npmjs actually serves the version (`npm publish` returns as soon as the registry *accepts* the tarball; availability follows minutes later, or never if held for review) and posts the "Published to npm (stable)" announcement to `#team-coding-agents` as Skills Buddy (`announce-stable.yml`, skill list in the thread). A red `Announce stable publish` job means the version is still not installable — check npmjs before telling anyone. To (re)announce a line by hand: `gh workflow run announce-stable.yml --ref main -f ref=release/v<minor>` (the branch's committed `package.json` is the version). The same run updates the Claude plugin directory edition ([below](#claude-plugin-directory-edition)).
 2. (Optional) Create a GitHub Release tagged `v<version>` as a durable changelog record. This is **just a record** — there is no `release:` trigger, so it does **not** publish anything to npm; the dispatch in step 1 is what publishes.
 
 > **Lockstep note.** The CLI resolves `@uipath/skills` from npm `latest` for its own minor line. Because stable is now manual, **promote the matching skills line to stable before the CLI cuts that minor**, or the CLI will resolve the previous skills minor.
@@ -205,6 +205,30 @@ Off-cadence or ad-hoc cut: dispatch manually with `minor_override` (e.g. `1.198`
 
 > **Automating the bump (optional).** `main` is protected (PR + 1 approval + smoke-test checks) on a public repo, so the cut opens a bump PR that a maintainer merges — no bypass credential is introduced. A PR opened by the built-in `GITHUB_TOKEN` does **not** trigger the required check workflows, so a maintainer may need to reopen/re-run them before merge. To make the bump fully hands-off, create a scoped **GitHub App**, add it to the `main` ruleset bypass, and have step 3 mint a short-lived token (`actions/create-github-app-token`) to open the PR (its checks run) and `gh pr merge --auto` it — App tokens are short-lived and repo-scoped, unlike a personal PAT. This is the only safe route to full automation; do **not** store a long-lived PAT for it.
 
+## Claude plugin directory edition
+
+The Claude plugin directory tracks the generated branch `dist/claude-directory`, never `main`: `main` exceeds the directory's 10,000-entry archive limit and holds repository tooling the directory reads as plugin content. After every `channel=latest` publish, two jobs in `publish.yml` run:
+
+1. `build-claude-directory` (read-only token) runs `scripts/build-claude-directory.mjs` on the release ref, scans the result with `scripts/check-sensitive-content.py` (the same gate as the npmjs tarball), and uploads it as an artifact.
+2. `publish-claude-directory` (write token) checks nothing out and runs no repository code. It commits the artifact in a fresh git directory on top of the previous edition and pushes it. A re-run of the same release pushes nothing.
+
+Never edit the branch by hand; the next stable release replaces it.
+
+The edition is the default plugin reduced to what the directory accepts from an organization that is not Verified:
+
+| Default plugin | Directory edition |
+|---|---|
+| Every skill | Skills marked `stable` in `assets/skill-status.json` |
+| `hooks/` (telemetry, session env, permission suggestion) | None |
+| `allowed-tools` grants | Read, Grep, Glob, LS only; an empty line is removed |
+| Refused file types under `examples/` or `templates/` | Same content as `<name>.md` with one fenced block; citations gain `.md` |
+| Refused file types under `scripts/` or `fixtures/` | Omitted; skill steps that run them do not work |
+| Other repository files | None. The root is `.claude-plugin/plugin.json`, `commands/`, `README.md`, `LICENSE` |
+
+A refused file type anywhere else in a stable skill fails the build, and `npm run skills:test` builds this repository, so the PR that adds the file fails. Move the file under one of those directories, or extend the rule in `scripts/build-claude-directory.mjs`.
+
+The branch sits outside `release/*` because the rulesets there require a pull request. Build locally with `npm run skills:build-claude-directory` (writes `build/claude-directory`).
+
 ## Required setup
 
 - [x] **npmjs Trusted Publishing for the default package** — configure a GitHub Actions trusted publisher on `@uipath/skills` (npmjs → package → Settings → Trusted Publisher): repository `UiPath/skills`, workflow `publish.yml`. No `NPM_TOKEN` secret is used — the default `publish-npmjs` job authenticates via OIDC (`id-token: write`). Do **not** set `NODE_AUTH_TOKEN`; a token makes npm bypass OIDC and (with 2FA) fail `EOTP`.
@@ -212,5 +236,7 @@ Off-cadence or ad-hoc cut: dispatch manually with `minor_override` (e.g. `1.198`
 - [ ] **Studio Web Internal package bootstrap** — manually create `@uipath/skills-studioweb`, set it to Internal, confirm it does not inherit access from the public source repository, grant `UiPath/skills` Actions write access, and only then set `ENABLE_SKILL_FLAVOR_PUBLISH=true` as described above.
 - [x] Package name/scope confirmed: **`@uipath/skills`** (published).
 - [x] **Version source confirmed** — `package.json` and `version-manifest.json` are authoritative for the current CLI minor line; do not copy a volatile version number into this checklist. The ongoing CLI↔skills lockstep is automated by `sprint-release-cut.yml` (Sunday 06:00 UTC, 6 h before the CLI's own cut, on the same 14-day cadence anchored at `2026-06-14`).
+- [ ] **`dist/claude-directory` push restriction** — add a ruleset on `refs/heads/dist/claude-directory` that blocks updates, deletion, and force pushes, with GitHub Actions as the only bypass actor, so only the `publish-claude-directory` job can write it.
+- [ ] **Claude directory submission** — connect GitHub in the Claude organization with an account that can push to `UiPath/skills`, then submit the plugin with branch `dist/claude-directory` and an empty plugin path.
 
 > The `dev` channel also needs no secret — `publish-dev` uses the built-in `GITHUB_TOKEN` with `packages: write`.

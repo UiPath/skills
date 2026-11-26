@@ -393,3 +393,7 @@ RUN pip install --no-cache-dir "uipath-langchain>=0.9.26"
 # a2a-sdk, pulled in above, caps protobuf below 7, which leaves google-antigravity
 # unable to load its gencode-7.35 stubs. a2a's own stubs are 5.29.3, so 7.x serves both.
 RUN pip install --no-cache-dir "protobuf>=7.35,<8"
+
+# Copies the read-only host login into a container-private /.uipath; smoke.yaml
+# runs it as the first pre_run of every task. See the script for why.
+COPY --chmod=0755 tests/docker/seed-uipath-auth.sh /usr/local/bin/seed-uipath-auth

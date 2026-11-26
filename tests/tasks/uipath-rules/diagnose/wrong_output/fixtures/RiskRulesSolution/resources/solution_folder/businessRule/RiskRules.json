@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "RiskRules",
+    "kind": "businessRule",
+    "apiVersion": "orchestrator.uipath.com/v2",
+    "projectKey": "00300d77-940e-4fa0-ae0d-f054887c3eaa",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "RiskRules"
+    },
+    "locks": [],
+    "key": "8034183b-1261-4e99-ae47-65081e2484ef",
+    "files": []
+  }
+}

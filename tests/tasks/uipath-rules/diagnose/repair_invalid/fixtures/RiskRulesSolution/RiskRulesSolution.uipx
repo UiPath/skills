@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "82faf648-4de9-4db0-9bb8-2cc8570796aa",
+  "Projects": [
+    {
+      "Type": "BusinessRules",
+      "ProjectRelativePath": "RiskRules/project.uiproj",
+      "Id": "ef626f47-c623-4103-b03e-dda5fc57c7ab"
+    }
+  ]
+}

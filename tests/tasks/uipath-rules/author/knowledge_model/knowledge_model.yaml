@@ -1,0 +1,72 @@
+task_id: skill-rules-smoke-graph-knowledge-model
+description: >
+  Agent creates a Business Rules project whose tier lookup sits in a business
+  knowledge model the decision calls, with a note on the diagram, offline.
+  Grades skill activation, the model carrying a variable and encapsulated
+  logic, a decision actually calling it, the annotation being tied to an
+  element, no cards overlapping, and `uip rules validate` run by the grader.
+
+  The discount values are deliberately not graded. A call is FEEL the offline
+  evaluator does not run, and the model's own signature is not pinned by the
+  prompt — the agent chooses what the model takes and what the decision keeps,
+  so there are no fixed parameters to evaluate its table against. No e2e task
+  covers DiscountRules either; lifecycle/formula_and_model_debug grades a model
+  through the engine, but FeeRules, not this one. What this task grades is the
+  structural contract of a knowledge model, which is what the skill teaches.
+tags: [uipath-rules, integration, "mode:build", "lifecycle:generate"]
+
+sandbox:
+  python: {}
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Create a UiPath Business Rules project named DiscountRules for our order
+  discounts. The tier lookup is reused elsewhere, so put it in a business
+  knowledge model and call it from the decision:
+
+  - Inputs: `customerTier` (string), one of "Gold", "Silver", "Standard", and
+    `orderTotal` (number).
+  - Output: `discount` (number), a percentage.
+  - Gold is 10, Silver is 5, Standard is 0.
+  - For an order total of 1000 or more, Gold is 15, Silver is 7.5, and
+    Standard is 2.
+
+  Add a note on the diagram saying the tiers are set by Sales and reviewed
+  each quarter.
+
+  There is no tenant to evaluate against, so do not run `uip rules debug`.
+  Do not ask for confirmation.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-rules skill"
+    skill_name: "uipath-rules"
+    expected_skill: "uipath-rules"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The knowledge model carries a variable and logic, a decision calls it, the note is tied to an element, and no cards overlap"
+    command: "python3 $REFERENCE_DIR/author/knowledge_model/check_knowledge_model.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rules validate passes on the project"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py validate DiscountRules"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The diagram matches the model: uip rules format changes nothing"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py format DiscountRules"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0

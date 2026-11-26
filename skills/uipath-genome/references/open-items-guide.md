@@ -21,7 +21,7 @@ Complete these steps in order in the target Orchestrator before the automation's
 ## Access
 Give the automation a folder and the robots that run it.
 
-- [ ] Create or choose the folder **`<folder>`**.
+- [ ] <Create or choose the folder **`<folder>`** | Name the new folder the solution's deployment creates, **`<folder>`**, and the folder it goes under, `<parent folder>`; once the deployment has created it, give it these>.
   - Robot accounts: `<accounts>` (unattended)
   - Machines: `<machine or machine template>`
   - Roles: `<roles>` for the people who operate the automation
@@ -106,13 +106,14 @@ Setup outside UiPath that the robot machines and the network need.
 - [ ] Install the UiPath extension in `<browser>` on the robot machines and allow it to run in incognito mode. <Only when the automation opens the browser in incognito.>
 
 ## Triggers
-Create the triggers last: once a trigger is on, the automation starts running.
+Create the triggers last, switched off, and switch each on once every step above is done: once a trigger is on, the automation starts running.
 
-- [ ] **`<TriggerName>`**
+- [ ] Create **`<TriggerName>`**, switched off.
   - Process: `<process>`
   - Type: <Time | Queue>
   - When it starts: <the schedule in words — the days and the time | when new items arrive in the queue `<QueueName>`>
   - Robots: at most <n> at a time
+- [ ] Switch **`<TriggerName>`** on. <Not in a refactor: its Cutover section switches the triggers on.>
 ````
 
 Rules:
@@ -125,7 +126,7 @@ Rules:
 6. **The solution file holds the steps several projects share** — the folder, packages and deployment, a queue between projects, a shared connection or asset — in the same sections, and ends with one line per project linking its file, with that project's step count. A step that spans projects is written once, in the solution file; a project file links to it instead of repeating it.
 7. **A project file holds that project's own steps** in the same sections: its assets, its process and triggers, its Others items.
 8. **Others holds every setup step outside UiPath's services.** Network access is one item listing every host the robot must reach — each target system's hosts, the identity and API endpoints behind it, the hosts a desktop client calls itself, or a line saying the build does not know them (a client can have its hosts built in rather than configured), the mail relay with its port — taken from the build's configuration answers and Target Applications, as values to set per environment. Robot machine setup is Others too: the applications installed and signed in (from Target Applications), the UiPath browser extension and its settings (allowed in incognito mode when the automation runs the browser incognito), accounts and permissions inside a target system, certificates.
-9. **Test Manager organises the test project as the source organised its suite.** One Test Manager test case per test case built, linked to its automation one by one ([package-doc-errata-guide.md](package-doc-errata-guide.md), Tools): its description from the source object's, its manual steps from the source's steps, its labels from the data set and the folder it ran with, the source object's id as a custom field, a requirement per source folder or business area, and one test set per test component (genome Deployment). Take each command from the CLIs (`uip tm --help`, the project-link commands of `uipath-rpa`), never from memory; the build writes nothing to Test Manager ([execution-guide.md](execution-guide.md) anti-pattern 10).
+9. **Test Manager organises the test project as the source organised its suite.** One Test Manager test case per test case built, linked to its automation one by one ([package-doc-errata-guide.md](package-doc-errata-guide.md), Tools): its description from the source object's, its manual steps from the source's steps, its labels from the data set and the folder it ran with, the source object's id as a custom field, a requirement per source folder or business area, and one test set per test component (genome Deployment). Take each command from the CLIs (`uip tm --help`, the project-link commands of `uipath-rpa`), never from memory; the build writes to Test Manager only when the deploy answer works through these steps ([execution-guide.md § 3.6](execution-guide.md)).
 10. **Behaviour the design rests on that no run against a tenant showed is a Verify first step**, in the section of its service: a queue transaction held open, a reference filter, a listing by item state, a call to an entity that does not exist yet. The step says what to run on a test robot and what to expect; a failure there changes the design, not a setting.
 
 ## Anti-patterns

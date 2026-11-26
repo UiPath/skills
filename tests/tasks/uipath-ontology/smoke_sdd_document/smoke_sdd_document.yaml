@@ -29,6 +29,10 @@ initial_prompt: |
   as a new local UiPath solution named MaintenanceModel in the current
   directory.
 
+  I want to review the extracted model one table at a time, and then review
+  the proposed ontology artifact files before you write them. Wait for my
+  confirmation at each review.
+
 simulation:
   enabled: true
   persona: |

@@ -8,8 +8,8 @@ Manage and run runtime evaluations for published agents. All commands are scoped
 uip eval
 ├── execute-and-evaluate             Submit a runtime eval run (eval-set or inline mode)
 ├── run list                         List eval set runs for a process
-├── run get <evalSetRunId>           Get details of a specific run
-├── run results <evalSetRunId>       View per-item results
+├── run get <eval-set-run-id>           Get details of a specific run
+├── run results <eval-set-run-id>       View per-item results
 ├── evaluator list/get/create/update/delete Manage evaluators
 ├── eval-set list/get/create/update/delete  Manage eval sets (dataset containers)
 ├── evaluation list/get/create/update/delete Manage data points within eval sets
@@ -154,7 +154,7 @@ Output code: `EvaluatorList`. Fields: EvaluatorId, ExternalId, Name, Description
 ### evaluator get
 
 ```bash
-uip eval evaluator get <evaluatorId> --process-key <guid> [--tenant <tenant>] --output json
+uip eval evaluator get <evaluator-id> --process-key <guid> [--tenant <tenant>] --output json
 ```
 
 Output code: `EvaluatorDetails`.
@@ -193,7 +193,7 @@ Output code: `EvaluatorCreated`.
 ### evaluator update
 
 ```bash
-uip eval evaluator update <evaluatorId> \
+uip eval evaluator update <evaluator-id> \
   --process-key <guid> \
   [--name <name>] \
   [--description <text>] \
@@ -211,7 +211,7 @@ Output code: `EvaluatorUpdated`.
 ### evaluator delete
 
 ```bash
-uip eval evaluator delete <evaluatorId> --process-key <guid> [--tenant <tenant>] --output json
+uip eval evaluator delete <evaluator-id> --process-key <guid> [--tenant <tenant>] --output json
 ```
 
 Output code: `EvaluatorDeleted`.
@@ -233,7 +233,7 @@ Output code: `EvalSetList`. Fields: EvalSetId, Name, Description, Version, Batch
 ### eval-set get
 
 ```bash
-uip eval eval-set get <evalSetId> --process-key <guid> [--tenant <tenant>] --output json
+uip eval eval-set get <eval-set-id> --process-key <guid> [--tenant <tenant>] --output json
 ```
 
 Output code: `EvalSetDetails`.
@@ -270,7 +270,7 @@ Output code: `EvalSetCreated`.
 ### eval-set update
 
 ```bash
-uip eval eval-set update <evalSetId> \
+uip eval eval-set update <eval-set-id> \
   --process-key <guid> \
   [--name <name>] \
   [--description <text>] \
@@ -288,7 +288,7 @@ Output code: `EvalSetUpdated`.
 ### eval-set delete
 
 ```bash
-uip eval eval-set delete <evalSetId> --process-key <guid> [--tenant <tenant>] --output json
+uip eval eval-set delete <eval-set-id> --process-key <guid> [--tenant <tenant>] --output json
 ```
 
 Output code: `EvalSetDeleted`.
@@ -316,7 +316,7 @@ Output code: `EvaluationList`. Fields: EvaluationId, EvalSetId, Name, Inputs, Ex
 ### evaluation get
 
 ```bash
-uip eval evaluation get <evaluationId> \
+uip eval evaluation get <evaluation-id> \
   --process-key <guid> \
   --eval-set-id <guid> \
   [--tenant <tenant>] \
@@ -359,7 +359,7 @@ Output code: `EvaluationCreated`.
 ### evaluation update
 
 ```bash
-uip eval evaluation update <evaluationId> \
+uip eval evaluation update <evaluation-id> \
   --process-key <guid> \
   --eval-set-id <guid> \
   [--name <name>] \
@@ -379,7 +379,7 @@ Output code: `EvaluationUpdated`.
 ### evaluation delete
 
 ```bash
-uip eval evaluation delete <evaluationId> \
+uip eval evaluation delete <evaluation-id> \
   --process-key <guid> \
   --eval-set-id <guid> \
   [--tenant <tenant>] \
@@ -455,7 +455,7 @@ Output code: `EvalSetRunList`. Fields: EvalSetRunId, EvalSetId, Status, Score, E
 ### run get
 
 ```bash
-uip eval run get <evalSetRunId> --process-key <guid> [--tenant <tenant>] --output json
+uip eval run get <eval-set-run-id> --process-key <guid> [--tenant <tenant>] --output json
 ```
 
 Output code: `EvalSetRunDetails`.
@@ -463,7 +463,7 @@ Output code: `EvalSetRunDetails`.
 ### run results
 
 ```bash
-uip eval run results <evalSetRunId> --process-key <guid> [--tenant <tenant>] --output json
+uip eval run results <eval-set-run-id> --process-key <guid> [--tenant <tenant>] --output json
 ```
 
 Output code: `EvalRunResults`. Fields: EvalRunId, DataPoint, Status, Result, CreatedAt.
@@ -495,11 +495,11 @@ Output code: `EvalScheduleCreated`. Fields: ScheduleId, WorkloadId, ProcessKey, 
 
 ```bash
 uip eval schedule list --process-key <guid> --output json
-uip eval schedule get <scheduleId> --process-key <guid> --output json
-uip eval schedule update <scheduleId> --process-key <guid> [--eval-set-id <guid>] [--cron <expr>] --output json
-uip eval schedule pause <scheduleId> --process-key <guid> --output json
-uip eval schedule resume <scheduleId> --process-key <guid> --output json
-uip eval schedule delete <scheduleId> --process-key <guid> --output json
+uip eval schedule get <schedule-id> --process-key <guid> --output json
+uip eval schedule update <schedule-id> --process-key <guid> [--eval-set-id <guid>] [--cron <expr>] --output json
+uip eval schedule pause <schedule-id> --process-key <guid> --output json
+uip eval schedule resume <schedule-id> --process-key <guid> --output json
+uip eval schedule delete <schedule-id> --process-key <guid> --output json
 ```
 
 Output codes: `EvalScheduleList`, `EvalScheduleDetails`, `EvalScheduleUpdated`, `EvalSchedulePaused`, `EvalScheduleResumed`, `EvalScheduleDeleted`.

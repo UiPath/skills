@@ -122,7 +122,7 @@ Fetch the region-specific catalog and apply the **default-provision filter** (`p
 
 ```bash
 uip admin tenants services list-available --region "<REGION>" --output json \
-  --output-filter "[?provisioningMode=='Implicit' && isVisible==\`true\` && isAlwaysProvision==\`false\`].name"
+  --output-filter "[?ProvisioningMode=='Implicit' && IsVisible==\`true\` && IsAlwaysProvision==\`false\`].Name"
 ```
 
 > Filter root is the `Data` array itself — start the expression with `[?...]`, NOT `Data[?...]`.
@@ -247,10 +247,10 @@ uip admin tenants services list --tenant-id <TENANT_ID> --output json
 Or, when you need a single service's status, filter the tenant record:
 
 ```bash
-uip admin tenants get <TENANT_ID> --output-filter "tenantServiceInstances[?serviceType=='<SVC>']" --output json
+uip admin tenants get <TENANT_ID> --output-filter "TenantServiceInstances[?ServiceType=='<SVC>']" --output json
 ```
 
-Surface the resulting `status` to the user. For `disable`, confirm the row now reads `Disabled`; for `remove`, confirm it reads `Disabled` / `Deleted` rather than disappearing silently. See [tenants-commands.md — Concepts](tenants-commands.md#concepts-and-safety-rules) for the list of services where `disable` / `remove` is a no-op despite the Success code.
+Surface the resulting `Status` to the user. For `disable`, confirm the row now reads `Disabled`; for `remove`, confirm it reads `Disabled` / `Deleted` rather than disappearing silently. See [tenants-commands.md — Concepts](tenants-commands.md#concepts-and-safety-rules) for the list of services where `disable` / `remove` is a no-op despite the Success code.
 
 ## Workflow: Soft-Remove Tenant Services
 

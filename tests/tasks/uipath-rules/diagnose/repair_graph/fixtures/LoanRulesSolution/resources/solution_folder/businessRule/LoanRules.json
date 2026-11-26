@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "LoanRules",
+    "kind": "businessRule",
+    "apiVersion": "orchestrator.uipath.com/v2",
+    "projectKey": "e8ff0b6d-7c20-4bad-858a-bcc3f62c747d",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "LoanRules"
+    },
+    "locks": [],
+    "key": "2e04e1c1-22f5-41e6-91e4-e4e0871824e7",
+    "files": []
+  }
+}

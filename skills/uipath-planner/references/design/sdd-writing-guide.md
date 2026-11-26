@@ -249,8 +249,8 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 <INTERVIEW RAN, when items are open: the open items counted by role, and `interview <SDD_PATH>` to ask them ([interview-guide.md](../interview/interview-guide.md) § Asking rule 7).>
 
 **Next — branch on the handoff `Status`:**
-- `ready` — `design` is complete and the SDD is on disk. Open default-carried SME items gate production sign-off — confirm them before production. <REQUEST ASKED FOR A GENOME OR A BUILD: "The genome is written from it on the next turn, then <the build | nothing more>."> <OTHERWISE: one line offering the genome and the build: "Ask for its genome to get the build blueprint, or to build it."> A design a build skill handed over gets no genome.
-- `draft` (blocking SME items) — Blocked on: <BLOCKING_ITEMS>. Answer these and the SDD finalizes to `ready`; no genome is written before then.
+- `ready` — `design` is complete and the SDD is on disk. Open default-carried SME items gate production sign-off — confirm them before production. <REQUEST ASKED FOR A GENOME OR A BUILD: "The genome, the step-by-step build specification a coding agent follows, is written from it on the next turn, then <the build, which asks only the setup questions this SDD does not already answer, first offering to take the defaults it carries | nothing more>."> <OTHERWISE: one line offering the genome and the build: "Ask for its genome to get the build blueprint, or to build it."> A design a build skill handed over gets no genome.
+- `draft` (blocking SME items) — Blocked on: <BLOCKING_ITEMS>. Answer these and the SDD finalizes to `ready`; no genome is written until then.
 ```
 
 ### Step 5: Next Turns — the Genome and the Build, on Demand

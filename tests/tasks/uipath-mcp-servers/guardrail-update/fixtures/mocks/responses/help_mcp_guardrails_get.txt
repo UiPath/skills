@@ -1,0 +1,50 @@
+                        uip agenthub mcp-guardrails get                         
+       Get an MCP server's guardrail of one validator, with its settings.       
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip agenthub mcp-guardrails get [options]                                    │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --validator <validator>        The built-in validator.                       │
+│ --mcp <slug>                   Parent MCP server slug, not its display name. │
+│ --folder-key <key>             Orchestrator folder key (GUID). Use           │
+│                                --folder-path for the folder name or          │
+│                                fully-qualified path.                         │
+│ --folder-path <path>           Orchestrator folder display name or           │
+│                                fully-qualified path (e.g. 'Shared' or        │
+│                                'Foo/Shared'). Resolved to the folder key via │
+│                                the Orchestrator SDK.                         │
+│ --login-validity <minutes>     Interactive-login token lifetime.             │
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ <table|json|yaml|plain|markd                                                 │
+│ own>                                                                         │
+│ --output-filter <expression>   JMESPath expression applied to the Data field │
+│                                of the response envelope                      │
+│ --log-level                    Log level threshold (default: warn)           │
+│ <debug|info|warn|error>                                                      │
+│ --log-file <path>              Write logs to file instead of stderr          │
+│ --profile <name>               Use a named login profile                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Examples ───────────────────────────────────────────────────────────────────┐
+│ Get a server's PII guardrail                                                 │
+│                                                                              │
+│   $ uip agenthub mcp-guardrails get --validator pii-detection --mcp vendor-mcp --folder-path Shared │
+│                                                                              │
+│   validator  pii-detection                                                   │
+│   action     block                                                           │
+│   enabled    true                                                            │
+│   scope      server                                                          │
+│   settings:                                                                  │
+│     action  block                                                            │
+│     reason  Personal data is not allowed                                     │
+│     entities  Email                                                          │
+│     entityThresholds:                                                        │
+│       Email  0.7                                                             │
+│   id         3f6c1d2e-8a4b-4c7d-9e1f-0a2b3c4d5e6f                            │
+│   name       PII Detection                                                   │
+│   managed    true                                                            │
+└──────────────────────────────────────────────────────────────────────────────┘
