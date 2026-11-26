@@ -18,7 +18,7 @@ sandbox:
   python: {}
   template_sources:
     - type: template_dir
-      path: fixtures
+      path: ../templates/initial_table
 
 reference:
   directory: ../..
