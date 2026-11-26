@@ -1,0 +1,17 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-11-26T07:58:54.766Z",
+      "Message": "Deserialize order status: Root element is missing.\r\nin Main.xaml\r\n    at DeserializeXml \"Deserialize order status\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\n--- .NET stack trace ---\r\nSystem.Xml.XmlException\r\n   at System.Xml.XmlTextReaderImpl.Throw(Exception e)\r\n   at System.Xml.XmlTextReaderImpl.ThrowWithoutLineInfo(String res)\r\n   at System.Xml.XmlTextReaderImpl.ParseDocumentContent()\r\n   at System.Xml.Linq.XDocument.Load(XmlReader reader, LoadOptions options)\r\n   at System.Xml.Linq.XDocument.Parse(String text, LoadOptions options)\r\n   at UiPath.Web.Activities.DeserializeXml.Execute(CodeActivityContext context)\r\n   at System.Activities.CodeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\r\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)"
+    }
+  ]
+}

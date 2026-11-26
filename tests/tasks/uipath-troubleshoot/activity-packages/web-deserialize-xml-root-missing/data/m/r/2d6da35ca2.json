@@ -1,0 +1,28 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 10,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "Key": "4fa9cfe0-3a24-4502-a498-cf8672b1f3d8",
+      "State": "Faulted",
+      "ProcessName": "OrderStatusSync",
+      "ReleaseKey": "48d3be77-9c3f-406f-bae2-2b4f0de020fa",
+      "FolderKey": "5bffc5bf-04ab-4211-ba5d-d811999ed403",
+      "FolderPath": "original_email@test.com's workspace",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "HostMachineName": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-11-26T07:58:51.643Z",
+      "EndTime": "2026-11-26T07:58:55.417Z",
+      "CreationTime": "2026-11-26T07:58:19.887Z"
+    }
+  ]
+}

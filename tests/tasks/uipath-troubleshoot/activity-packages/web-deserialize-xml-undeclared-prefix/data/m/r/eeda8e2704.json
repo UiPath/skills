@@ -1,0 +1,17 @@
+{
+  "Result": "Success",
+  "Code": "FolderGet",
+  "Data": {
+    "Name": "original_email@test.com's workspace",
+    "Id": 1908624,
+    "Key": "5bffc5bf-04ab-4211-ba5d-d811999ed403",
+    "Description": "No description",
+    "Path": "original_email@test.com's workspace",
+    "ParentID": 159234,
+    "FolderType": "Personal",
+    "IsPersonal": "Yes",
+    "ProvisionType": "Automatic",
+    "PermissionModel": "FineGrained",
+    "FeedType": "PersonalWorkspace"
+  }
+}

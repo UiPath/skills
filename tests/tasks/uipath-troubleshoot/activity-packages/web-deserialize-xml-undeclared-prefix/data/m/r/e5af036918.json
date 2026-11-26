@@ -1,0 +1,48 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "08f043df-d089-4e8e-aa22-31cde10662b4",
+    "StartTime": "2026-11-26T07:58:18.980Z",
+    "EndTime": "2026-11-26T07:58:22.357Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "SpecificPriorityValue": 45,
+    "Release": {
+      "Key": "8718d747-13bc-49f6-afc8-1b27e59e7b37"
+    },
+    "Source": "Manual",
+    "SourceType": "Manual",
+    "BatchExecutionKey": "4eacd12b-1d04-4856-92d5-0beb0ce4ffeb",
+    "Info": "'soapenv' is an undeclared prefix. Line 1, position 2.\r\n\r\nin Main.xaml\r\n    at DeserializeXml \"Deserialize quote body\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\nSystem.Xml.XmlException: 'soapenv' is an undeclared prefix. Line 1, position 2.\r\n   at System.Xml.XmlTextReaderImpl.Throw(Exception e)\r\n   at System.Xml.XmlTextReaderImpl.Throw(String res, String arg, Int32 lineNo, Int32 linePos)\r\n   at System.Xml.XmlTextReaderImpl.LookupNamespace(NodeData node)\r\n   at System.Xml.XmlTextReaderImpl.ElementNamespaceLookup()\r\n   at System.Xml.XmlTextReaderImpl.ParseElement()\r\n   at System.Xml.XmlTextReaderImpl.ParseDocumentContent()\r\n   at System.Xml.Linq.XDocument.Load(XmlReader reader, LoadOptions options)\r\n   at System.Xml.Linq.XDocument.Parse(String text, LoadOptions options)\r\n   at UiPath.Web.Activities.DeserializeXml.Execute(CodeActivityContext context)\r\n   at System.Activities.CodeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\r\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)",
+    "CreationTime": "2026-11-26T07:58:18.583Z",
+    "ReleaseName": "QuoteLookup",
+    "Type": "Unattended",
+    "EnvironmentVariables": "",
+    "OutputArguments": "{}",
+    "HostMachineName": "MOCK-HOST",
+    "HasMediaRecorded": false,
+    "HasVideoRecorded": false,
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": false,
+    "ReleaseVersionId": 30798973,
+    "EntryPointPath": "Main.xaml",
+    "OrganizationUnitId": 1908624,
+    "FolderKey": "5bffc5bf-04ab-4211-ba5d-d811999ed403",
+    "Reference": "",
+    "ProcessType": "Process",
+    "EntryPointType": "Process",
+    "Machine": {
+      "Key": "d1b97b70-280e-4fe5-ae0f-bada2f103a0a"
+    },
+    "ResumeOnSameContext": false,
+    "LocalSystemAccount": "UIPATH\\user1",
+    "OrchestratorUserIdentity": "original_email@test.com",
+    "RemoteControlAccess": "None",
+    "LastModificationTime": "2026-11-26T07:58:22.357Z",
+    "JobError": {},
+    "ErrorCode": "Robot",
+    "TraceId": "08f043dfd0894e8eaa2231cde10662b4",
+    "Id": 85536186
+  }
+}
