@@ -4,5 +4,5 @@
   "maestro case pack": "served by the Studio Web host: UiPath/Autopilot subcommandInterceptors/maestro.ts (UiPath/Autopilot#8066)",
   "maestro flow debug": "served by the Studio Web host: UiPath/Autopilot src/packages/autopilot-plugin-studioweb/src/cli/interceptors/maestro.ts (`uip maestro <flow|case|bpmn> debug`)",
   "rpa init": "served by the Studio Web host: UiPath/Autopilot subcommandInterceptors/index.ts",
-  "rules debug": "served by the Studio Web host: UiPath/Autopilot src/packages/autopilot-plugin-studioweb/src/cli/interceptors.ts (`rules:debug` route to the debug interceptor, UiPath/Autopilot#9969)"
+  "rules debug": "served by the Studio Web host: UiPath/Autopilot src/packages/autopilot-plugin-studioweb/src/cli/interceptors.ts (UiPath/Autopilot#9969)"
 }
