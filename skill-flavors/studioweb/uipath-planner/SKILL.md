@@ -13,7 +13,3 @@ and the host plan authored in plan mode when a plan is reviewed;
 <!--skill-flavor:host-tools-task-list:start-->
 Studio Web has no task tools, so create no tasks: the host derives the task list from the approved plan, and the plan file records progress;
 <!--skill-flavor:host-tools-task-list:end-->
-
-<!--skill-flavor:deploy-after-build:start-->
-Publishing the open Studio Web solution (`uip solution publish`) is the user's call: when the request asks to publish, deploy or go live, the closing summary tells the user to publish it. When Solutions (`.uipx`) are blocked for the SDD's `Delivery model` — standalone, Automation Suite older than 2.2510, or a user exclusion ([platform-availability-guide.md](references/shared/platform-availability-guide.md)) — the publish goes per package to Orchestrator through `uipath-platform`.
-<!--skill-flavor:deploy-after-build:end-->

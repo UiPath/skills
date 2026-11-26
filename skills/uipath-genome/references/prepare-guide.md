@@ -39,7 +39,7 @@ The sections:
    It ends on `Status:`. Usually answered by: each system's owner.
 5. **Build environment** — the tasks of the machine that builds that no question asks:
    - a Robot that may run the workflows on the build machine, when test runs are wanted;
-   - the UiPath CLI signed in to a tenant the build may read;
+   - the UiPath CLI signed in to a tenant the build may read, and write to where the Platform resources answer creates them;
    - the package feed, with every library the automation consumes;
    - data the build's test runs may change, or none.
 

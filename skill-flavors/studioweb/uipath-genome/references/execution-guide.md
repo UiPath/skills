@@ -15,6 +15,10 @@ The host keeps the open solution's resources in sync and packages it only when i
    - **When that discovery needs a project** (the docs an installed package brings), read the docs of the packages the open solution's projects already install, and the owning skill's own guidance otherwise: Studio Web works on its one open solution, so discovery makes no scratch project.
 <!--skill-flavor:capability-discovery-scratch:end-->
 
+<!--skill-flavor:platform-resources-gain:start-->
+What the Platform resources options give and rule out: created, the resources and the entities' records are in the tenant, with the build's values, before the user publishes the solution, and an entity exists for the workflows that use it; under None each is left to whoever deploys the solution, and a workflow that uses an entity waits until it exists.
+<!--skill-flavor:platform-resources-gain:end-->
+
 <!--skill-flavor:deploy-on-answer:start-->
 Publishing the open solution (`uip solution publish`) is the user's call. Once the hand-off is written, the final message says so, and names `open-items.md` as what the tenant it is deployed to still needs.
 <!--skill-flavor:deploy-on-answer:end-->

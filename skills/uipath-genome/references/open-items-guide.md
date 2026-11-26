@@ -21,7 +21,7 @@ Complete these steps in order in the target Orchestrator before the automation's
 ## Access
 Give the automation a folder and the robots that run it.
 
-- [ ] Create or choose the folder **`<folder>`**.
+- [ ] <Create or choose the folder **`<folder>`** | Name the new folder the solution's deployment creates, **`<folder>`**, and the folder it goes under, `<parent folder>`; once the deployment has created it, give it these>.
   - Robot accounts: `<accounts>` (unattended)
   - Machines: `<machine or machine template>`
   - Roles: `<roles>` for the people who operate the automation
@@ -106,13 +106,14 @@ Setup outside UiPath that the robot machines and the network need.
 - [ ] Install the UiPath extension in `<browser>` on the robot machines and allow it to run in incognito mode. <Only when the automation opens the browser in incognito.>
 
 ## Triggers
-Create the triggers last: once a trigger is on, the automation starts running.
+Create the triggers last, switched off, and switch each on once every step above is done: once a trigger is on, the automation starts running.
 
-- [ ] **`<TriggerName>`**
+- [ ] Create **`<TriggerName>`**, switched off.
   - Process: `<process>`
   - Type: <Time | Queue>
   - When it starts: <the schedule in words — the days and the time | when new items arrive in the queue `<QueueName>`>
   - Robots: at most <n> at a time
+- [ ] Switch **`<TriggerName>`** on. <Not in a refactor: its Cutover section switches the triggers on.>
 ````
 
 Rules:

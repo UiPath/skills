@@ -17,7 +17,7 @@ Execution ends with a hand-off for the engineer who maintains and deploys the bu
 | `integration-check.md` | the independent review of the projects against each other and what became of each finding | after every project is built (§ 3.5) |
 | `reports/<project-slug>.md` | each project's group reports: files, validation and link counts, the activity kinds read, what each step's source defects became | at each group's end (§ 2.2 step 4) |
 
-The README is the completion report. It is written for a reader who has this folder and the build but no working folder: in full sentences, with steps and components by the names the genome gives them ([configuration-questions-guide.md](configuration-questions-guide.md) rule 2b), source objects by the names their author wrote, and each decision with its reason, never by a ruling, part or finding number. It states each fact once: the tables stay in their files, and the README counts and links them. The final message to the user is the README's Status section and its path, followed by the deploy question ([execution-guide.md § 3.6](execution-guide.md)). A change to the build after the hand-off is written re-checks the hand-off's tables and counts against the built projects before the build is delivered again.
+The README is the completion report. It is written for a reader who has this folder and the build but no working folder: in full sentences, with steps and components by the names the genome gives them ([configuration-questions-guide.md](configuration-questions-guide.md) rule 2b), source objects by the names their author wrote, and each decision with its reason, never by a ruling, part or finding number. It states each fact once: the tables stay in their files, and the README counts and links them. The final message to the user is the README's Status section and its path, followed by the deploy question when the build asks one ([execution-guide.md § 3.6](execution-guide.md)). A change to the build after the hand-off is written re-checks the hand-off's tables and counts against the built projects before the build is delivered again.
 
 ````markdown
 # <Solution or project>: hand-off
@@ -40,7 +40,7 @@ The README is the completion report. It is written for a reader who has this fol
 - UI targets: <screens>/<elements> (<high/medium/low>), <created>/<reused>/<parametrised>; <n> verified, <n> shape-verified on <instance>, <n> offline-unverified; <n> live checks open (`live-checks/`); <n> placeholders.
 - Tests: per test case, `Checkpoints: <source> / <asserted> / <not asserted: reasons> / <added>` (`parity/`).
 - Test data: <n> seed records, <variation files> filled from source rows, <n> credential assets declared | none.
-- Platform resources: <n> created in <the folder `<folder>` | the tenant> of `<tenant>` — <each by kind and name>; <n> records loaded; <n> waiting on the user (a connection's sign-in, a credential) | none created — every one is an open item.
+- Platform resources: <n> created in <the folder `<folder>` | the tenant> of `<tenant>` — <each by kind and name, an entity with whether its seed records are loaded>; <n> waiting on the user (a connection's sign-in, a credential or Secret asset) | none created — every one is an open item.
 - Refactor: <the line of refactor-guide.md § Done> | not a refactor.
 - Before the first run: <n> setup steps (`open-items.md`).
 - Deployed: <version> into the folder `<folder>` of `<tenant>`; <each process and its folder, each app's address>; <n> steps left to a person | not deployed — `open-items.md` deploys it in any tenant.
@@ -53,7 +53,7 @@ The README is the completion report. It is written for a reader who has this fol
 ## Configuration answers
 | Question | Answer |
 |---|---|
-| <the question in plain words> | <the answer>, with its source's label where the user did not give it in a batch: "(from the SDD)", "(from the request)" or "(from the refactor answers)" where the genome records it as decided, "(from the answers file)" where a file of answers gave it, "(SDD default)" where an SDD item left blank gave its default, "(source)" where the source's values answered it, "(default)" where no one answered |
+| <the question in plain words> | <the answer>, with its source's label where the user did not give it in a batch: "(from the SDD)", "(from the request)" or "(from the refactor answers)" where the genome records it as decided, "(from the answers file)" where a file of answers gave it, "(SDD default)" where the user's choice of the SDD's defaults gave it, "(source)" where the source's values answered it, "(default)" where no one answered |
 
 ## Acceptance criteria
 | # | Criterion | Verdict | Where, or what is missing |
