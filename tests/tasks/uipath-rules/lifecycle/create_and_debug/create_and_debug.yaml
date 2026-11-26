@@ -81,9 +81,6 @@ success_criteria:
     pass_threshold: 1.0
 
 pre_run:
-  # A tenant that cannot run Business Rules ends the run as ERROR, not as a skill failure.
-  - command: 'python3 _setup/canary.py'
-    timeout: 300
   # What is already on disk is not ours to delete; `solution_cleanup.py` says why.
   - command: 'python3 _setup/solution_cleanup.py record RiskRules'
     timeout: 60
