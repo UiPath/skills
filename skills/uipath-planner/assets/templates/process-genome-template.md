@@ -130,7 +130,7 @@ Legend: ⏰ time trigger · 🔔 queue trigger · ⚡ event or API trigger · �
 
 ## Business Rules
 
-{Cross-cutting rules only. Rules scoped to one component stay in that component's genome.}
+{Cross-cutting rules of the work only (genome format guide § Two Levels rule 3); how components connect is Handoffs. Rules scoped to one component stay in that component's genome.}
 
 - {Rule}
 
