@@ -25,7 +25,7 @@ Content rules for every genome, however produced — `author`, `extract` and `ed
 
 | Level | File | Scope | Use when |
 |---|---|---|---|
-| **Component genome** | `<slug>-genome.md` | One buildable project (RPA process, Flow, BPMN, agent, API workflow, coded app, function, IXP model, business rule, case plan) | Automation is one project. Only file for a standalone automation. |
+| **Component genome** | `<slug>-genome.md` | One buildable project (RPA process, Flow, BPMN, agent, API workflow, coded app, function, IXP model, decision table, case plan) | Automation is one project. Only file for a standalone automation. |
 | **Process genome** | `<slug>-genome.md` plus `<slug>-genome/<component-slug>-genome.md` per component | Business process realised by two or more buildable projects | Solution with ≥2 projects, coordinator (Flow / BPMN / Case) invoking other automations, or described process clearly needing ≥2 components |
 
 Rules:

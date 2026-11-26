@@ -56,7 +56,7 @@ The enum is closed — exactly these seventeen literals, used verbatim as the SD
 | `api-workflow` | calling a **coded / API workflow** directly (multi-step HTTP, serverless logic) |
 | `flow-process` | starting a **deployed Maestro Flow** that already packages the steps, named by its flow name and folder |
 | `function` | invoking a **deployed Coded Function** — deterministic Python / JS/TS logic, no LLM, no UI |
-| `business-rule` | evaluating a **deployed Business Rule** (a decision table, or a graph of several decisions) on case data and storing the decision it returns |
+| `business-rule` | evaluating a **deployed Business Rule** (a decision table) on case data and storing the decision it returns |
 | `document-extraction` | reading fields from a **document (invoice, form, contract) with a deployed IXP model**, named by its deployment |
 | `case-management` | the step **launches / coordinates a child case** |
 | `execute-connector-activity` | one **operation on an Integration Service connector** against a SaaS system (push) |

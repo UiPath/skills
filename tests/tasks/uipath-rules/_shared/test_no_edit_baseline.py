@@ -17,15 +17,21 @@ exactly which ones pass. Two assertions:
 Graders that shell out to `uip` are out of scope: they need a CLI and, for the
 e2e ones, a tenant. `uip rules validate` passing on a valid fixture is correct
 anyway — the fixture is valid, which is the point of staging it.
+
+Regex, not PyYAML: this suite's CI job installs only pytest, and a module-level
+`import yaml` would error at collection and take the whole suite with it — the
+same reason `uipath-maestro-flow/_shared/test_criterion_budgets.py` parses by
+regex. Every reader below asserts it found something, so a task layout this
+parser stops understanding fails the suite instead of quietly grading nothing.
 """
 
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
 
 import pytest
-import yaml
 
 SUITE = Path(__file__).resolve().parent.parent
 
@@ -43,19 +49,67 @@ PASSES_ON_A_NO_OP: dict[str, dict[int, str]] = {
 }
 
 
+_REFERENCE_DIR = re.compile(r"^reference:\s*?\n\s+directory:\s*(\S+)", re.M)
+# `- type: template_dir` then its `path:`, and `mount_point:` when the source has one.
+_TEMPLATE_DIR = re.compile(
+    r"^\s*-\s+type:\s*template_dir\s*?\n((?:\s+\w+:.*\n)+)", re.M)
+_KEY = lambda key: re.compile(rf"^\s+{key}:\s*(\S+)", re.M)  # noqa: E731
+# Each criterion starts at a `- type:` inside success_criteria; its body runs to the next one.
+_CRITERIA_BLOCK = re.compile(r"^success_criteria:\s*?\n(.*?)(?=\n\S|\Z)", re.S | re.M)
+_CRITERION = re.compile(r"^  -\s+type:", re.M)
+_COMMAND = re.compile(r"^\s+command:\s*[\"']?(.*?)[\"']?\s*$", re.M)
+_WEIGHT = re.compile(r"^\s+weight:\s*([\d.]+)", re.M)
+_DESCRIPTION = re.compile(r"^\s+description:\s*[\"']?(.*?)[\"']?\s*$", re.M)
+
+
+def _criteria(text: str) -> list[dict]:
+    """Each `success_criteria` entry as `{command, weight, description}`, in order."""
+    block = _CRITERIA_BLOCK.search(text)
+    if not block:
+        return []
+    body = block.group(1)
+    starts = [m.start() for m in _CRITERION.finditer(body)]
+    out = []
+    for index, start in enumerate(starts):
+        end = starts[index + 1] if index + 1 < len(starts) else len(body)
+        chunk = body[start:end]
+        command = _COMMAND.search(chunk)
+        weight = _WEIGHT.search(chunk)
+        description = _DESCRIPTION.search(chunk)
+        out.append({"command": command.group(1) if command else "",
+                    "weight": float(weight.group(1)) if weight else 0.0,
+                    "description": description.group(1) if description else ""})
+    return out
+
+
+def _staged_dirs(text: str, task_dir: Path) -> list[Path]:
+    """The `template_dir` sources that land at the sandbox root, i.e. have no mount point."""
+    found = []
+    for match in _TEMPLATE_DIR.finditer(text):
+        body = match.group(1)
+        if _KEY("mount_point").search(body):
+            continue
+        path = _KEY("path").search(body)
+        if path:
+            found.append((task_dir / path.group(1)).resolve())
+    return found
+
+
 def _tasks() -> list[tuple[str, dict, list[Path]]]:
-    """`(relative yaml path, document, staged source dirs)` for each task staging a fixture."""
+    """`(relative yaml path, parsed bits, staged source dirs)` for each task staging a fixture."""
     found = []
     for path in sorted(SUITE.rglob("*.yaml")):
         if "__pycache__" in path.parts:
             continue
-        document = yaml.safe_load(path.read_text(encoding="utf-8"))
-        if not isinstance(document, dict) or not document.get("success_criteria"):
+        text = path.read_text(encoding="utf-8")
+        criteria = _criteria(text)
+        if not criteria:
             continue
-        sources = [(path.parent / source["path"]).resolve()
-                   for source in ((document.get("sandbox") or {}).get("template_sources") or [])
-                   if source.get("type") == "template_dir" and not source.get("mount_point")]
+        reference = _REFERENCE_DIR.search(text)
+        sources = _staged_dirs(text, path.parent)
         if sources:
+            document = {"success_criteria": criteria,
+                        "reference": {"directory": reference.group(1) if reference else "."}}
             found.append((path.relative_to(SUITE).as_posix(), document, sources))
     return found
 
@@ -106,6 +160,23 @@ def test_every_task_with_a_fixture_is_collected():
     assert len(TASKS) >= 7, IDS
     assert set(PASSES_ON_A_NO_OP) <= set(IDS), (
         f"PASSES_ON_A_NO_OP names tasks that are not here: {sorted(set(PASSES_ON_A_NO_OP) - set(IDS))}")
+
+
+@pytest.mark.parametrize("name,document,sources", TASKS, ids=IDS)
+def test_the_parser_read_every_criterion(name, document, sources):
+    """The regex parse agrees with the file: one criterion per `- type:`, each with a command.
+
+    Without this, a task whose layout the parser stops understanding yields no criteria, the
+    checks below find nothing to run and skip, and the file goes green while grading nothing —
+    the exact failure mode it exists to catch. Cross-checked against PyYAML when it was written;
+    this keeps it honest afterwards.
+    """
+    text = (SUITE / name).read_text(encoding="utf-8")
+    block = _CRITERIA_BLOCK.search(text)
+    assert block, f"{name}: no success_criteria block found"
+    assert len(document["success_criteria"]) == len(_CRITERION.findall(block.group(1))), name
+    assert all(c["command"] or c["description"] for c in document["success_criteria"]), name
+    assert sources and all(p.is_dir() for p in sources), f"{name}: staged sources {sources}"
 
 
 @pytest.mark.parametrize("name,document,sources", TASKS, ids=IDS)
