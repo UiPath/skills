@@ -71,11 +71,11 @@ uipath-uipath-dataservice --action <event>` to re-run when the event's rules are
 missing; `RESOURCE_PICKER_KIND_UNKNOWN` prints the `prepare` to re-run for an
 operation prepared before its picker was recorded. Run each, then `check` again.
 The resource form needs `@uipath/maestro-builder-sdk` <NEXT_SDK_VERSION> or
-later. An older SDK compiles it without an error but writes the object itself as
-the parameter (an `entity()` token: the name alone), with no picker and no
-binding pair. Tenant fields work on both. There is no `entity` option on
+later. An older SDK cannot write the picker: `check` reports a type error on
+the object, or the field compiles to a plain value with no binding pair. Tenant
+fields work on both. Unlike BPMN, Flow never had an `entity` option on
 `onEvent`/`waitForEvent` (`FLOW_UNKNOWN_OPTION`; a Case subscription:
-`CASE_UNKNOWN_OPTION`).
+`CASE_UNKNOWN_OPTION`), so there is no older form to fall back to.
 <!--skill-flavor:event-entity-sdk-upgrade:start-->
 Read the version from the directory you run `uip` in (the workspace root):
 `node -p "require(require.resolve('@uipath/maestro-builder-sdk/package.json',{paths:[process.cwd()]})).version"`;
