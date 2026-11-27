@@ -1,0 +1,48 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "4fa9cfe0-3a24-4502-a498-cf8672b1f3d8",
+    "StartTime": "2026-11-26T07:58:51.643Z",
+    "EndTime": "2026-11-26T07:58:55.417Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "SpecificPriorityValue": 45,
+    "Release": {
+      "Key": "48d3be77-9c3f-406f-bae2-2b4f0de020fa"
+    },
+    "Source": "Manual",
+    "SourceType": "Manual",
+    "BatchExecutionKey": "8ce361f6-0ccd-4c26-b7ae-48f115a450f4",
+    "Info": "Root element is missing.\r\n\r\nin Main.xaml\r\n    at DeserializeXml \"Deserialize order status\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\nSystem.Xml.XmlException: Root element is missing.\r\n   at System.Xml.XmlTextReaderImpl.Throw(Exception e)\r\n   at System.Xml.XmlTextReaderImpl.ThrowWithoutLineInfo(String res)\r\n   at System.Xml.XmlTextReaderImpl.ParseDocumentContent()\r\n   at System.Xml.Linq.XDocument.Load(XmlReader reader, LoadOptions options)\r\n   at System.Xml.Linq.XDocument.Parse(String text, LoadOptions options)\r\n   at UiPath.Web.Activities.DeserializeXml.Execute(CodeActivityContext context)\r\n   at System.Activities.CodeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\r\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)",
+    "CreationTime": "2026-11-26T07:58:19.887Z",
+    "ReleaseName": "OrderStatusSync",
+    "Type": "Unattended",
+    "EnvironmentVariables": "",
+    "OutputArguments": "{}",
+    "HostMachineName": "MOCK-HOST",
+    "HasMediaRecorded": false,
+    "HasVideoRecorded": false,
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": false,
+    "ReleaseVersionId": 30798975,
+    "EntryPointPath": "Main.xaml",
+    "OrganizationUnitId": 1908624,
+    "FolderKey": "5bffc5bf-04ab-4211-ba5d-d811999ed403",
+    "Reference": "",
+    "ProcessType": "Process",
+    "EntryPointType": "Process",
+    "Machine": {
+      "Key": "d1b97b70-280e-4fe5-ae0f-bada2f103a0a"
+    },
+    "ResumeOnSameContext": false,
+    "LocalSystemAccount": "UIPATH\\user1",
+    "OrchestratorUserIdentity": "original_email@test.com",
+    "RemoteControlAccess": "None",
+    "LastModificationTime": "2026-11-26T07:58:55.417Z",
+    "JobError": {},
+    "ErrorCode": "Robot",
+    "TraceId": "4fa9cfe03a244502a498cf8672b1f3d8",
+    "Id": 85536189
+  }
+}

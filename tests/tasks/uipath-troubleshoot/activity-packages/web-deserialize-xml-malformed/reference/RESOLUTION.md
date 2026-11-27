@@ -10,7 +10,7 @@ System.Xml.XmlException: Data at the root level is invalid. Line 1, position 1.
 
 The DeserializeXml activity's XMLString is a hardcoded non-XML literal ("not a valid xml document"); XDocument.Parse rejects it at the root. No upstream HTTP activity in the workflow.
 
-Matches `activity-packages/web-activities/playbooks/deserialize-malformed-input.md`.
+Matches `activity-packages/web-activities/playbooks/deserialize-xml-malformed.md`.
 
 ## Fix
 

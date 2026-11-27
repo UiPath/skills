@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "_doc": "Faithful-replay mock rules. First match wins; specific rules precede generic ones.",
+  "rules": [
+    {
+      "match": "or jobs logs 4fa9cfe0-3a24-4502-a498-cf8672b1f3d8 --level Error",
+      "file": "b0734ac4f9.json"
+    },
+    {
+      "match": "or jobs logs 4fa9cfe0-3a24-4502-a498-cf8672b1f3d8",
+      "file": "5da83ccd36.json"
+    },
+    {
+      "match": "or jobs get 4fa9cfe0-3a24-4502-a498-cf8672b1f3d8",
+      "file": "6fa64a8f49.json"
+    },
+    {
+      "match": "or jobs history 4fa9cfe0-3a24-4502-a498-cf8672b1f3d8",
+      "file": "274eaf9e50.json"
+    },
+    {
+      "match": "traces spans get --job-key 4fa9cfe0-3a24-4502-a498-cf8672b1f3d8",
+      "file": "3b9145d9c2.json"
+    },
+    {
+      "match": "or folders get 5bffc5bf-04ab-4211-ba5d-d811999ed403",
+      "file": "eeda8e2704.json"
+    },
+    {
+      "match": "or jobs list --folder-key 5bffc5bf-04ab-4211-ba5d-d811999ed403 --state Faulted",
+      "file": "2d6da35ca2.json"
+    },
+    {
+      "match": "or jobs list --folder-key 5bffc5bf-04ab-4211-ba5d-d811999ed403",
+      "file": "8841370b44.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "75949d659e.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    }
+  ],
+  "unmocked_default": {
+    "response": {
+      "Result": "Success",
+      "Code": "Empty",
+      "Data": []
+    },
+    "exit_code": 0,
+    "_doc": "Empty result for any unmatched read-only uip query."
+  }
+}

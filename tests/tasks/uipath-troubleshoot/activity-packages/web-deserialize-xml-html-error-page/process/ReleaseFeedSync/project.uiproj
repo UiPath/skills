@@ -1,0 +1,6 @@
+{
+  "Name": "ReleaseFeedSync",
+  "ProjectType": "Process",
+  "Description": "Project",
+  "MainFile": "Main.xaml"
+}

@@ -1,0 +1,6 @@
+{
+  "Name": "OrderStatusSync",
+  "ProjectType": "Process",
+  "Description": "Project",
+  "MainFile": "Main.xaml"
+}

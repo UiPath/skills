@@ -20,7 +20,7 @@ Unlike connection-based packages (O365's `Office365Exception`, Integration Servi
 
 - **Deserialize JSON** (`DeserializeJson<T>`) — guards null/empty input with an explicit `ArgumentNullException`, then `JsonConvert.DeserializeObject<T>`. Malformed text → `JsonReaderException`; well-formed JSON whose shape does not fit `T` → `JsonSerializationException`.
 - **Deserialize JSON Array** (`DeserializeJsonArray`) — `JArray.Parse`. **No null guard** (contrast with `DeserializeJson`): null/unset input → `NullReferenceException`; malformed or non-array text → `JsonReaderException`.
-- **Deserialize XML** (`DeserializeXml`) — `XDocument.Parse`. Malformed XML → `System.Xml.XmlException`.
+- **Deserialize XML** (`DeserializeXml`) — `XDocument.Parse`. **No null guard**: null input → `ArgumentNullException (Parameter 's')`. Empty input → `XmlException: Root element is missing.`; malformed, fragment (undeclared namespace prefix), or HTML input → `System.Xml.XmlException`.
 
 ## Common failure patterns
 
@@ -28,8 +28,9 @@ Unlike connection-based packages (O365's `Office365Exception`, Integration Servi
 - **HTTP timeout** — `HttpClient` throws `System.TimeoutException` when the request exceeds `TimeoutMS`. `NetHttpRequest` timeouts arrive as `AggregateException` → inner `TaskCanceledException`.
 - **HTTP null reference** — `HttpClient` throws `System.NullReferenceException` when a request input (endpoint, header, cookie, parameter) resolves to null and is dereferenced during request building.
 - **Malformed payload** — `DeserializeJson` / `DeserializeJsonArray` throw `JsonReaderException`, `DeserializeXml` throws `XmlException`, when the input string is not valid JSON/XML. Frequently a **symptom of an upstream HTTP activity** that returned an HTML error page, an empty body, or a non-JSON error envelope.
+- **XML fragment without namespace** — `DeserializeXml` throws `XmlException: '<prefix>' is an undeclared prefix` when a SOAP element was cut out of its envelope (or XML was concatenated) and lost its `xmlns:<prefix>` declaration. Most frequent `DeserializeXml` fault in telemetry.
 - **Type mismatch** — `DeserializeJson` throws `JsonSerializationException` when well-formed JSON does not match the target type `T`.
-- **Null/empty payload** — `DeserializeJson` throws `ArgumentNullException` (param `JSON string`); `DeserializeJsonArray` throws `NullReferenceException` for the same null input.
+- **Null/empty payload** — `DeserializeJson` throws `ArgumentNullException` (param `JSON string`); `DeserializeJsonArray` throws `NullReferenceException`; `DeserializeXml` throws `ArgumentNullException` (param `s`) for the same null input.
 - **Payload rejected (400/415)** — a `POST`/`PUT` body or attachment is refused on media type: `Content-Type` vs body mismatch (`BodyFormat` defaults to `application/xml`) or a file sent with the wrong shape (`multipart/form-data` vs JSON). Reached the server; not auth/path/transport.
 - **Proxy-blocked egress** — `StatusCode 0` / `NULL` / `(407)` / timeout, robot-only, when the environment's corporate proxy is not in the request path (the activities expose no proxy property).
 - **Design-time package/Studio mismatch** — `MissingMethodException` "Method not found: 'Void UiPath.Web.Activities...'" on open/validate/wizard when `UiPath.WebAPI.Activities` is incompatible with the installed Studio or skewed against `UiPath.System.Activities`. Not a runtime fault.

@@ -1,0 +1,28 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 10,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "Key": "08f043df-d089-4e8e-aa22-31cde10662b4",
+      "State": "Faulted",
+      "ProcessName": "QuoteLookup",
+      "ReleaseKey": "8718d747-13bc-49f6-afc8-1b27e59e7b37",
+      "FolderKey": "5bffc5bf-04ab-4211-ba5d-d811999ed403",
+      "FolderPath": "original_email@test.com's workspace",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "HostMachineName": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-11-26T07:58:18.980Z",
+      "EndTime": "2026-11-26T07:58:22.357Z",
+      "CreationTime": "2026-11-26T07:58:18.583Z"
+    }
+  ]
+}
