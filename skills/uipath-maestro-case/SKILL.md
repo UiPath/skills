@@ -163,8 +163,10 @@ Use `.unresolved('<kind>')` for an explicitly unresolved process, agent, RPA,
 API workflow, Coded Function, or sub-case; never fabricate a name or folder. A destination's
 `selected-stage-completed` entry does not imply a source `exitToStage` hand-off.
 An unresolved connector is `.unresolved('connector')` or
-`.unresolved('wait-for-connector')`; never pick a real connector to stand in,
-and a placeholder takes no outputs.
+`.unresolved('wait-for-connector')`; never pick a real connector or another
+operation to stand in, and a placeholder takes no outputs. Find an operation
+the SDD names by `Activity Type ID` with
+[Registry resolution § Connector operations](references/registry-resolution.md#connector-operations).
 
 ## Evidence boundary
 

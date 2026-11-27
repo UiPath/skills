@@ -97,3 +97,41 @@ three folders plus `Use a placeholder`. The user picks `Finance/Prod`, so that
 entry becomes
 `"selected": {"name": "InvoiceCheck", "identifierField": "entityKey", "identifier": "<entityKey>", "folder": "Finance/Prod"}`
 with `"gateDecision": "pick:InvoiceCheck"`.
+
+## Connector operations
+
+`sdd resolve` leaves every task whose SDD block states an `Activity Type ID`
+unresolved ("names no resource"): that id, not a name, identifies the
+connector operation. Resolve each such task before authoring it:
+
+1. `uip maestro registry search --activity-type-id <ACTIVITY_TYPE_ID> --output json`.
+   None of these answers is a miss; fix the cause and search again:
+
+   | Answer | Do |
+   |---|---|
+   | "needs a pulled connector library" | `uip maestro registry pull --output json` |
+   | `ConfigError` naming `search-activity-type-id` | Builder SDK predates the flag: upgrade it as the message says. Never retry without the flag. |
+   | Command fails naming a definition it could not read, or `Data.UnreadDefinitions` above `0` ("The search is incomplete") | `uip maestro registry pull --force --output json`. Still failing or incomplete: stop and report it. Never author a placeholder from an incomplete search. |
+
+2. `Data.Total` is `1`: bind that operation's `NodeType`.
+3. `Data.Total` above `1`: the rows share the id. Pick by what differs.
+   - `NodeType` differs (`…connector.event.…`, `…connector.trigger.…`): forms
+     of one operation. Take the form the task type needs.
+   - `NodeType` is the same and `ObjectName` differs: a generic operation, one
+     row per object. Take the row whose `ObjectName` is the `objectName` the
+     SDD's `Operation` line states; adding it as a query word returns that row
+     alone: `uip maestro registry search <OBJECT_NAME> --activity-type-id <ACTIVITY_TYPE_ID> --output json`.
+     Pass that name as the connector call's `object` option, and as `--object`
+     to `registry describe` and `registry prepare`. `NodeType` alone fails
+     `check` with `CONNECTOR_OBJECT_REQUIRED`.
+   - Fewer rows returned than `Data.Total`: repeat with `--limit <TOTAL>`
+     before picking.
+4. `Data.Total` is `0` with no `Data.UnreadDefinitions`: run
+   `uip maestro registry pull --force --output json` once, then search again.
+   Still `0`: author the task as `.unresolved('connector')` or
+   `.unresolved('wait-for-connector')` and record the miss as in step 6 of
+   [Steps](#steps). Never bind another operation in its place, even one on the
+   same connector with the same object name.
+5. Never list a connector to pick an operation by name
+   (`registry search --connector <CONNECTOR_KEY>` with no id): a long list is
+   cut off, and two operations can share an object name.
