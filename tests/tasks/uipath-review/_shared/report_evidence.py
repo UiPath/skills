@@ -25,9 +25,12 @@ SKIPPED_HEADING = re.compile(r"^#+\s*Rules Skipped\s*$", re.MULTILINE)
 # "the live guardrail catalog established a missing applicable safety control" --
 # a sentence saying the catalog WORKED. Hence `missing` requires a copula
 # ("is/was missing") or "missing from"; adjectival "a missing <finding>" no
-# longer counts.
+# longer counts. Second observed false positive (run 2026-11-20_04-22-52,
+# skill-review-agents-lowcode-guardrail-misapplied): "The catalog was not
+# unavailable" -- a double negative saying the catalog WORKED. Hence the
+# lookbehind on `unavailable`.
 _UNAVAILABLE = (
-    r"(unavailable|not\s+available|not\s+installed|could\s+not\s+be\s+(run|fetched|retrieved)|failed"
+    r"((?<!\bnot\s)unavailable|not\s+available|not\s+installed|could\s+not\s+be\s+(run|fetched|retrieved)|failed"
     r"|does\s+not\s+(provide|support|have)|unknown\s+command"
     r"|(?:is|was|are|were|be)\s+missing|missing\s+from|unsupported)"
 )

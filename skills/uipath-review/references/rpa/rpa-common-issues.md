@@ -146,6 +146,8 @@ grep -ri "password\s*=" --include="*.xaml" --include="*.cs" --include="*.json" .
 grep -ri "apikey\|api_key\|secret\|token" --include="*.xaml" --include="*.cs" --include="*.json" .
 ```
 
+Read the `Code` of every `Invoke Code` activity (`ui:InvokeCode`) too. A literal there (`new NetworkCredential("user", "…")`, a connection string, `client.DefaultRequestHeaders.Add("Authorization", "…")`) has no `password=` shape, so the greps miss it.
+
 **Fix:** Use Orchestrator Credential Assets, CyberArk, Azure Key Vault, HashiCorp Vault, or Windows Credential Manager. Retrieve with `Get Credential`.
 
 ### SecureString Misuse

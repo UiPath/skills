@@ -1,0 +1,38 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "OrderArchive",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "0f9e8d7c-6b5a-4c3d-8e2f-1a0b9c8d7e6f",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "OrderArchive"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "runtimeProfile": "Standard",
+      "type": "Flow",
+      "name": "OrderArchive",
+      "package": {
+        "key": "3c2b1a09-8f7e-4d6c-b5a4-39281f0e7d6c"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "7b1e0c55-2f4a-4d6e-9a31-5c8e7f2b1a90",
+    "files": []
+  }
+}

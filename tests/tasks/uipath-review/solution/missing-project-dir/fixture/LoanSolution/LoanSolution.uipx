@@ -1,0 +1,22 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "5ce90c8f-0437-4364-af86-b63bb0ffbb27",
+  "Projects": [
+    {
+      "Type": "Process",
+      "ProjectRelativePath": "LoanIntake/project.json",
+      "Id": "80855055-0c9e-4840-ad73-842cd295f90e"
+    },
+    {
+      "Type": "Process",
+      "ProjectRelativePath": "LoanScoring/project.json",
+      "Id": "d9cb51c2-4cce-43cc-9e5d-672b04bee924"
+    },
+    {
+      "Type": "Process",
+      "ProjectRelativePath": "LoanNotify/project.json",
+      "Id": "b46db97e-60b9-429e-9c73-8415de499282"
+    }
+  ]
+}

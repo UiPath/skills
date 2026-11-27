@@ -1,0 +1,20 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "/content/QuoteFollowUp.bpmn#Start_1",
+      "uniqueId": "8e6c4a20-9f7d-4b5c-a3e1-0d2f4b6a8c1e",
+      "type": "ProcessOrchestration",
+      "input": {
+        "type": "object",
+        "properties": {}
+      },
+      "output": {
+        "type": "object",
+        "properties": {}
+      },
+      "displayName": "Quote sent"
+    }
+  ]
+}

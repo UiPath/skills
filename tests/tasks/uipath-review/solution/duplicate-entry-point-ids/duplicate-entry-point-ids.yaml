@@ -1,0 +1,70 @@
+task_id: skill-review-solution-duplicate-entry-point-ids
+description: >
+  Publish-readiness review. `entry-points.json` declares two entry points (web
+  and in-store start events) that share one `uniqueId`; duplicates block
+  publishing and make one entry point unreachable. The report must flag the
+  duplicated entry-point id.
+tags: [uipath-review, integration, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 1500
+  max_turns: 40
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  A UiPath Maestro BPMN project exists at `ReturnsProcess` in the current directory.
+  Review it and produce a structured review report with Critical / Warning /
+  Info findings.
+
+  Use the `uipath-review` skill to perform this review.
+
+  This is a read-only review. Do NOT modify, create, or delete any files
+  inside `ReturnsProcess/`. Do NOT run the automation. Do NOT ask for approval,
+  confirmation, or feedback.
+
+  Produce the review in TWO places, identical content:
+    1. As the chat output (the normal review surface), AND
+    2. Saved to a file at `./_review_report.md` at the sandbox root
+       (NOT inside `ReturnsProcess/`).
+
+  Writing the file copy first, before the chat report, is encouraged — the
+  file is the source of truth the test harness will check.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside ReturnsProcess/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*ReturnsProcess/'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside ReturnsProcess/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*ReturnsProcess/'
+    weight: 3.0
+
+  - type: run_command
+    description: "Report flags the duplicated entry-point uniqueId"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/check_planted_defect.py
+      --marker "ReturnsProcess/entry-points.json::5d2c8e41-7a39-4b6f-9c10-3e8f1a2b4c6d::2"
+      --flag "duplicate|duplicated|not unique|non-unique|same uniqueid|same id|share|identical|collid|reused|appears twice|used twice"
+      --subject "5d2c8e41|uniqueId|entry-points.json|entry point|entry-point|entrypoint"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

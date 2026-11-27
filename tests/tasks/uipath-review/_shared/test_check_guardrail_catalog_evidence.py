@@ -91,6 +91,18 @@ def test_reachable_but_report_claims_unavailable_fails(tmp_path):
     assert "which -a uip" in r.stderr
 
 
+def test_reachable_and_report_says_not_unavailable_passes(tmp_path):
+    """Run 2026-11-20_04-22-52, skill-review-agents-lowcode-guardrail-misapplied: a
+    Rules Skipped row explaining a re-fetch ended "The catalog was not unavailable."
+    A double negative says the catalog WORKED; it must not read as the claim."""
+    report = SILENT_REPORT.replace(
+        "None. The live guardrail catalog was available.",
+        "| Guardrail catalog single-fetch/cache procedure | A second fetch recovered "
+        "exact evidence. The catalog was not unavailable. |")
+    r = run(tmp_path, report, _fake_uip(tmp_path, CATALOG_OK))
+    assert r.returncode == 0, r.stderr
+
+
 # --- unreachable: the hole `require_success: true` could not close -----------
 
 def test_unreachable_and_report_silent_fails(tmp_path):

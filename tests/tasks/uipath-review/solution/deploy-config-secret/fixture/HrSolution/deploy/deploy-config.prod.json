@@ -1,0 +1,39 @@
+{
+  "resources": [
+    {
+      "kind": "process",
+      "name": "HrOnboarding",
+      "resourceKey": "c4f2a1d7-3b6e-4f80-9d21-7a5c3e1b9f04",
+      "folderPaths": [
+        "solution_folder"
+      ],
+      "configuration": {
+        "jobPriority": "Medium"
+      }
+    },
+    {
+      "kind": "asset",
+      "name": "HrPortalUrl",
+      "resourceKey": "a9e7c5b3-1d2f-4a6b-8c0e-2f4a6c8e0b1d",
+      "folderPaths": [
+        "solution_folder"
+      ],
+      "configuration": {
+        "value": "https://hr.contoso.example/portal",
+        "description": "HR portal base URL"
+      }
+    },
+    {
+      "kind": "asset",
+      "name": "HrPortalPassword",
+      "resourceKey": "e1b3d5f7-9a2c-4e6f-b8d0-1c3e5a7b9d2f",
+      "folderPaths": [
+        "solution_folder"
+      ],
+      "configuration": {
+        "value": "Summer_FAKE_2026_DoNotUse",
+        "description": "HR portal service account password"
+      }
+    }
+  ]
+}

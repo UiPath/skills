@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "InvoicePerformer",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "edb8a28d-216b-44ae-a2bf-8dc38add5eb5",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "InvoicePerformer"
+    },
+    "locks": [],
+    "key": "34713cc7-ec11-4f60-8280-caaa3af4af58",
+    "files": []
+  }
+}

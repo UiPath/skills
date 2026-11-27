@@ -1,0 +1,38 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ShipmentStatus",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "af47d11e-4894-433a-85de-1a096e6c3b92",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "ShipmentStatus"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "runtimeProfile": "Standard",
+      "type": "Flow",
+      "name": "ShipmentStatus",
+      "package": {
+        "key": "b9c90963-58f9-4fa7-9548-7a8a14bb0660"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "31a130a5-a8d8-4850-b959-f1f233c9cbd1",
+    "files": []
+  }
+}

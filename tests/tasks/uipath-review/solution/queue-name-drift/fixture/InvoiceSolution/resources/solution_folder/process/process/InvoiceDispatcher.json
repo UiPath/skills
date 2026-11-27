@@ -1,0 +1,43 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "InvoiceDispatcher",
+    "kind": "process",
+    "type": "process",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "ce840e32-4fd8-40bd-9328-2d2c259e4085",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "InvoiceDispatcher"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Process",
+      "name": "InvoiceDispatcher",
+      "package": {
+        "key": "a4b15ea5-1b8e-42f2-9271-75a223a361db"
+      },
+      "jobPriority": "Medium",
+      "jobRecording": "Disabled",
+      "targetFrameworkValue": "Portable",
+      "duration": 40,
+      "frequency": 500,
+      "quality": 100,
+      "remoteControlAccess": "None",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "271fce58-2195-41cc-9f21-f233b13a338b",
+    "files": []
+  }
+}

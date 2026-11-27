@@ -1,0 +1,83 @@
+task_id: skill-review-solution-pack-read-only
+description: >
+  Read-only contract for solution reviews. `uip solution pack` without `--dry-
+  run` writes into the solution folder even when it fails, so a reviewer that
+  packs for real mutates the project it was asked not to touch. Graded on the
+  outcome: every file of the solution is byte-identical to the fixture and
+  nothing was added (managed `.local/` caches aside). A real pack is also
+  recorded as a forbidden command.
+tags: [uipath-review, integration, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 1500
+  max_turns: 40
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  A UiPath solution exists at `OrderEnrichSolution` in the current directory.
+  Review it and produce a structured review report with Critical / Warning /
+  Info findings.
+
+  Use the `uipath-review` skill to perform this review.
+
+  This is a read-only review. Do NOT modify, create, or delete any files
+  inside `OrderEnrichSolution/`. Do NOT run the automation. Do NOT ask for approval,
+  confirmation, or feedback.
+
+  Produce the review in TWO places, identical content:
+    1. As the chat output (the normal review surface), AND
+    2. Saved to a file at `./_review_report.md` at the sandbox root
+       (NOT inside `OrderEnrichSolution/`).
+
+  Writing the file copy first, before the chat report, is encouraged — the
+  file is the source of truth the test harness will check.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside OrderEnrichSolution/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*OrderEnrichSolution/'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside OrderEnrichSolution/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*OrderEnrichSolution/'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "No `uip solution pack` without --dry-run (it writes into the solution)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+pack\b(?![^\n;&|]*--dry-run)'
+    weight: 3.0
+
+  - type: command_executed
+    description: "Advisory: the pack check ran as `uip solution pack --dry-run` — recorded, not gating"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+pack\b[^;&|\n]*--dry-run'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "Solution folder is byte-identical to the fixture after the review"
+    command: >-
+      python3 $REFERENCE_DIR/solution/pack-read-only/check_pack_read_only.py
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

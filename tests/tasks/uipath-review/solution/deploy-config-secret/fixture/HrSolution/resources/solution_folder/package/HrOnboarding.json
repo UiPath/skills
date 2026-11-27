@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "HrOnboarding",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "4a1dc555-61f0-48d2-8a14-cab1f21e4b54",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "HrOnboarding"
+    },
+    "locks": [],
+    "key": "ff774efd-c85f-4b21-8685-0d564e73cdc3",
+    "files": []
+  }
+}
