@@ -1,0 +1,134 @@
+task_id: skill-rules-operate-stop-forbidden
+description: >
+  Stop condition, against a mocked `uip`. The agent reads the contract of
+  PayrollBands in the Finance folder, and every read answers 403: the account
+  lacks the BusinessRules.View permission there. A permission failure never
+  resolves by retrying. Grades that the agent read the contract with
+  `describe`, retried neither `describe` nor `get`, and that the agent did
+  not change the login or tenant. The bodies are what UiPath/cli main prints for a 403 from the
+  Business Rules service (`permission_denied`, `RetryWillNotFix`).
+tags: [uipath-rules, integration, "mode:operate", "lifecycle:discover"]
+
+sandbox:
+  python: {}
+  record_cli:
+    - tool: uip
+      exit_code: 1
+      # Not the repo's usual "not connected to a tenant" fallback: in these tasks that
+      # text is itself a stop condition, and an agent stops on it before the graded step.
+      stderr: "uip (mock): no recorded answer for this command.\n"
+      responses:
+        - when:
+            verb: "login status"
+          stdout: >-
+            {"Result":"Success","Code":"LoginStatus","Data":{"Status":"Logged in",
+            "Identity":"analyst@example.com","IdentityType":"User","AuthFlow":"Interactive",
+            "CredentialSource":"SavedLogin","Provider":"File","UserId":"00000000-0000-4000-8000-000000000901",
+            "UserEmail":"analyst@example.com","UserName":"Example Analyst","BaseUrl":"https://cloud.uipath.com",
+            "Organization":"example-org","OrganizationId":"00000000-0000-4000-8000-000000000902",
+            "Tenant":"DefaultTenant","TenantId":"00000000-0000-4000-8000-000000000903",
+            "ExpirationDate":"2026-06-02T10:14:05.000Z"}}
+
+        - when:
+            verb: "rules describe"
+          exit_code: 1
+          stdout: >-
+            {"Result":"AuthenticationError","ErrorCode":"permission_denied",
+            "Message":"Failed to describe business rule",
+            "Instructions":"Forbidden (403). The account lacks permission for this operation, or the token carries no scope for this API. Run `uip login status --detailed` to see the token's scopes.",
+            "Retry":"RetryWillNotFix","Context":{"Session":{"Profile":"default","Organization":"example-org","Tenant":"DefaultTenant"}}}
+
+        - when:
+            verb: "rules get"
+          exit_code: 1
+          stdout: >-
+            {"Result":"AuthenticationError","ErrorCode":"permission_denied",
+            "Message":"Failed to get business rule",
+            "Instructions":"Forbidden (403). Reading business rules needs the BusinessRules.View permission in the folder, on an environment with Business Rules turned on.",
+            "Retry":"RetryWillNotFix","Context":{"Session":{"Profile":"default","Organization":"example-org","Tenant":"DefaultTenant"}}}
+
+        - when:
+            verb: "rules versions"
+          exit_code: 1
+          stdout: >-
+            {"Result":"AuthenticationError","ErrorCode":"permission_denied",
+            "Message":"Failed to list business rule versions",
+            "Instructions":"Forbidden (403). Reading business rules needs the BusinessRules.View permission in the folder, on an environment with Business Rules turned on.",
+            "Retry":"RetryWillNotFix","Context":{"Session":{"Profile":"default","Organization":"example-org","Tenant":"DefaultTenant"}}}
+
+        - when:
+            verb: "rules list"
+          exit_code: 1
+          stdout: >-
+            {"Result":"AuthenticationError","ErrorCode":"permission_denied",
+            "Message":"Failed to list business rules",
+            "Instructions":"Forbidden (403). Reading business rules needs the BusinessRules.View permission in the folder, on an environment with Business Rules turned on.",
+            "Retry":"RetryWillNotFix","Context":{"Session":{"Profile":"default","Organization":"example-org","Tenant":"DefaultTenant"}}}
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  What inputs and outputs does the deployed business rule PayrollBands in our
+  Finance folder take?
+
+  The `uip` CLI here is a mock that answers like a live tenant. Do not ask for
+  confirmation.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-rules skill"
+    skill_name: "uipath-rules"
+    expected_skill: "uipath-rules"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Agent read the PayrollBands contract with rules describe"
+    tool: uip
+    verb: "rules describe"
+    positional: ["PayrollBands"]
+    value_flags: [output, folder-path, folder-key, inputs, limit, offset, output-filter, log-level, log-file, profile]
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Agent did not retry describe on a 403"
+    tool: uip
+    verb: "rules describe"
+    positional: ["PayrollBands"]
+    value_flags: [output, folder-path, folder-key, inputs, limit, offset, output-filter, log-level, log-file, profile]
+    min_count: 0
+    max_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Agent did not retry get on a 403"
+    tool: uip
+    verb: "rules get"
+    positional: ["PayrollBands"]
+    value_flags: [output, folder-path, folder-key, inputs, limit, offset, output-filter, log-level, log-file, profile]
+    min_count: 0
+    max_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Agent did not switch tenants (login tenant set) to get around the permission"
+    tool: uip
+    verb: "login tenant set"
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Agent did not log out to try another login"
+    tool: uip
+    verb: "logout"
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0

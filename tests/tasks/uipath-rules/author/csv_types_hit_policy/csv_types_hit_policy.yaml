@@ -1,0 +1,71 @@
+task_id: skill-rules-author-csv-types-hit-policy
+description: >
+  Agent authors a Business Rules project from two CSV files, offline. One CSV
+  is a matrix whose rows never overlap, keyed on a `date` input, with two
+  result columns: a UNIQUE table with two outputs. The other answers with
+  every matching row: a COLLECT table. A third decision reads one output of
+  the two-output table as `name.column`. Grades skill activation, `uip rules
+  validate` and `uip rules format` run by the grader, both hit policies, the
+  `date` input, the `name.column` read, the JSON Schema type of each argument
+  in `entry-points.json`, and the values on 45 cases.
+tags: [uipath-rules, integration, "mode:build", "lifecycle:generate"]
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Create a UiPath Business Rules project named LeaveRules for our leave
+  requests. The policy is in the two CSV files in this folder:
+
+  - `approval-matrix.csv`: each request matches exactly one row, and the
+    caller reads both the approver and the notice days of that row.
+  - `required-documents.csv`: a request needs every document whose row
+    matches, so the caller reads `documents` as a list.
+
+  Requests that the Director approves go to the "Executive desk" channel. All
+  other requests go to the "Team inbox" channel.
+
+  The caller sends `leaveType` (string), `startDate` (date) and `days`
+  (number), and reads `approver` (string), `noticeDays` (number), `documents`
+  (list of strings) and `channel` (string).
+
+  There is no tenant to evaluate against, so do not run `uip rules debug`.
+  Do not ask for confirmation.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-rules skill"
+    skill_name: "uipath-rules"
+    expected_skill: "uipath-rules"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rules validate passes on the project"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py validate LeaveRules"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The diagram matches the model: uip rules format changes nothing"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py format LeaveRules"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "UNIQUE and COLLECT tables, a date input, a name.column read, a typed contract, and the policy's values"
+    command: "python3 $REFERENCE_DIR/author/csv_types_hit_policy/check_csv_types_hit_policy.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

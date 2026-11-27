@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "c5c331dc-a980-4096-abfc-94f13c00bfad",
+  "Projects": [
+    {
+      "Type": "BusinessRules",
+      "ProjectRelativePath": "ShippingRules/project.uiproj",
+      "Id": "9851a1bd-9c31-4516-b89f-b076c2a7ebe3"
+    }
+  ]
+}

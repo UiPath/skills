@@ -13,6 +13,7 @@ ElementTree.
 
 from __future__ import annotations
 
+import datetime
 import json
 import re
 import shutil
@@ -42,6 +43,21 @@ UIPATH_NS = "http://uipath.com/schema/1.0/dmn/authoring"
 # that is right for a rule that is one decision table: `decision-graph` opens it on the canvas
 # instead, a worse editor for the thing the user asked for. `validate` reports neither.
 TABLE_SURFACE, GRAPH_SURFACE = "decision-table", "decision-graph"
+DATE = r'date\(\s*"[^"]*"\s*\)'
+# One end of a comparison or a range: a number, or a FEEL date literal.
+ENDPOINT = rf"(?:{NUMBER}|{DATE})"
+
+
+def endpoint(text: str) -> float | datetime.date:
+    """A comparison end as the value it names. `date("2026-01-31")` is a calendar date."""
+    if re.fullmatch(NUMBER, text):
+        return float(text)
+    iso = re.fullmatch(r'date\(\s*"([^"]*)"\s*\)', text).group(1)
+    try:
+        return datetime.date.fromisoformat(iso)
+    except ValueError:
+        fail(f"date({iso!r}) is not an ISO 8601 calendar date YYYY-MM-DD")
+        raise AssertionError
 
 
 def fail(message: str) -> None:
@@ -260,8 +276,19 @@ def check_contract(project: Path, dmn_file: Path, root: ET.Element, inputs: dict
     return entry
 
 
+def comparable(cell: str, bound: float | datetime.date, value: object) -> None:
+    """Fails unless `value` is the kind of value `bound` is. FEEL compares a number only with a
+    number and a date only with a date; any other pair is null, never a match."""
+    if isinstance(bound, datetime.date):
+        # `datetime` is a `date` subclass, but FEEL keeps `date` and `date and time` apart.
+        if isinstance(value, datetime.datetime) or not isinstance(value, datetime.date):
+            fail(f"cell {cell!r} tests a non-date value {value!r}")
+    elif isinstance(value, bool) or not isinstance(value, (int, float)):
+        fail(f"cell {cell!r} tests a non-numeric value {value!r}")
+
+
 def unary_test(cell: str, value: object) -> bool:
-    """Evaluates the FEEL unary tests a numeric, boolean, or string column uses."""
+    """Evaluates the FEEL unary tests a numeric, date, boolean, or string column uses."""
     cell = cell.strip()
     if cell in ("", "-"):
         return True
@@ -278,16 +305,18 @@ def unary_test(cell: str, value: object) -> bool:
         return value is (cell == "true")
     if re.fullmatch(r'"[^"]*"', cell):
         return value == cell[1:-1]
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        fail(f"cell {cell!r} tests a non-numeric value {value!r}")
-    match = re.fullmatch(rf"(<=|>=|<|>|=)?\s*({NUMBER})", cell)
+    match = re.fullmatch(rf"(<=|>=|<|>|=)?\s*({ENDPOINT})", cell)
     if match:
-        op, number = match.group(1) or "=", float(match.group(2))
-        return {"<": value < number, "<=": value <= number, ">": value > number,
-                ">=": value >= number, "=": value == number}[op]
-    match = re.fullmatch(rf"([\[\(\]])\s*({NUMBER})\s*\.\.\s*({NUMBER})\s*([\]\)\[])", cell)
+        op, bound = match.group(1) or "=", endpoint(match.group(2))
+        comparable(cell, bound, value)
+        return {"<": value < bound, "<=": value <= bound, ">": value > bound,
+                ">=": value >= bound, "=": value == bound}[op]
+    match = re.fullmatch(rf"([\[\(\]])\s*({ENDPOINT})\s*\.\.\s*({ENDPOINT})\s*([\]\)\[])", cell)
     if match:
-        low, high = float(match.group(2)), float(match.group(3))
+        low, high = endpoint(match.group(2)), endpoint(match.group(3))
+        if type(low) is not type(high):
+            fail(f"range {cell!r} mixes a number and a date")
+        comparable(cell, low, value)
         above = value >= low if match.group(1) == "[" else value > low
         below = value <= high if match.group(4) == "]" else value < high
         return above and below
@@ -347,16 +376,23 @@ def read_name(names: dict, text: str) -> tuple[bool, object]:
 
 
 def evaluate(table: ET.Element, inputs: dict, names: dict | None = None) -> dict | None:
-    """The single result the table's hit policy returns, keyed by output name.
+    """The result the table's hit policy returns, keyed by output name.
 
     An output entry that is one of `names` returns that name's value, as a
     decision that passes an upstream result through does.
+
+    FIRST, UNIQUE and ANY answer with one row, or None when no row matches. COLLECT
+    answers with every matching row in rule order, so each output holds a list, empty
+    when no row matches. DMN leaves COLLECT order unspecified, so `check_cases`
+    compares those lists as multisets.
     """
     names = names or {}
     columns = input_columns(table)
     policy = table.get("hitPolicy", "UNIQUE")
-    if policy not in ("FIRST", "UNIQUE", "ANY"):
-        fail(f"hit policy {policy} is outside the single-result policies this check evaluates")
+    if policy not in ("FIRST", "UNIQUE", "ANY", "COLLECT"):
+        fail(f"hit policy {policy} is outside the policies this check evaluates")
+    if policy == "COLLECT" and table.get("aggregation"):
+        fail(f"COLLECT with aggregation {table.get('aggregation')} is outside what this check evaluates")
     hits = []
     for rule in table.findall("dmn:rule", NS):
         cells = [(e.findtext("dmn:text", default="", namespaces=NS) or "") for e in rule.findall("dmn:inputEntry", NS)]
@@ -378,6 +414,10 @@ def evaluate(table: ET.Element, inputs: dict, names: dict | None = None) -> dict
         fail(f"{inputs} matches {len(hits)} rows of a UNIQUE table")
     if policy == "ANY" and any(hit != hits[0] for hit in hits):
         fail(f"{inputs} matches rows of an ANY table with different outputs")
+    if policy == "COLLECT":
+        collected = {name: [hit[name] for hit in hits] for name in output_names(table)}
+        # One unreadable row makes the whole list unknown; callers test for UNEVALUABLE itself.
+        return {name: UNEVALUABLE if UNEVALUABLE in values else values for name, values in collected.items()}
     return hits[0] if hits else None
 
 
@@ -386,6 +426,9 @@ def check_cases(table: ET.Element, output: str, cases: list) -> None:
         actual = (evaluate(table, inputs) or {}).get(output)
         if actual is UNEVALUABLE:
             fail(f"output {output} for {inputs} is a call or a formula; grade it with 'graph_check.py engine'")
+        # A list is a COLLECT result, whose order DMN leaves to the engine.
+        if isinstance(actual, list) and isinstance(expected, list):
+            actual, expected = sorted(actual, key=repr), sorted(expected, key=repr)
         if actual != expected:
             fail(f"{inputs} returned {actual!r}, expected {expected!r}")
 

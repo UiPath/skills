@@ -1,0 +1,5 @@
+leave_type,start_date,approver,notice_days
+Annual,before 2027-01-01,Manager,14
+Annual,on or after 2027-01-01,Team lead,7
+Sick,any,Team lead,0
+Unpaid,any,Director,30

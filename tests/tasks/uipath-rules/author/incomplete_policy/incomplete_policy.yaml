@@ -1,0 +1,86 @@
+task_id: skill-rules-author-incomplete-policy
+description: >
+  Agent authors a supplier rating from a policy that leaves on-time rates from
+  80 up to 90 undefined, offline, with a simulated user. The skill says to ask
+  only what the request leaves open, in one question. Only the simulated user
+  knows the answer, held back as WITHHELD: Red below 85 and Amber from 85, not
+  the obvious Amber for the whole range. So a run that guesses instead of
+  asking fails the cases in that range. Grades skill activation, `uip rules
+  validate` and `uip rules format` run by the grader, and the rating on 10
+  cases.
+tags: [uipath-rules, integration, "mode:build", "lifecycle:generate", simulation]
+
+sandbox:
+  python: {}
+
+reference:
+  directory: ../..
+
+# No initial_prompt — the simulator generates turn 1 from its persona + goal.
+
+simulation:
+  enabled: true
+
+  persona: |
+    You are the procurement manager who owns the supplier rating policy. You
+    are busy and answer in one or two sentences, in plain business language.
+
+  goal: |
+    You want a UiPath Business Rules project that rates suppliers on their
+    on-time delivery rate.
+
+    OPENING MESSAGE: in a few short sentences, ask for a UiPath Business Rules
+    project named "SupplierRatings". It reads `onTimeRate` (a number, the
+    percentage of on-time deliveries from 0 to 100) and answers `rating`, one
+    of "Green", "Amber" or "Red". State the two rules you are sure of: a rate
+    below 80 is Red, and a rate of 90 or more is Green. Say there is no tenant
+    to test against, so it must not run `uip rules debug`. Say nothing about
+    rates from 80 up to 90.
+
+    WITHHELD — reveal this ONLY if the agent asks about rates from 80 up to 90:
+      - From 80 up to but not including 85 is Red, and from 85 up to but not
+        including 90 is Amber.
+
+  constraints:
+    - "Do not mention rates from 80 up to 90 unless the agent asks about them."
+    - "If the agent asks you anything, answer every outstanding question in ONE message, stating any withheld fact it asked about plainly, and then let it build."
+    - "Accept any other reasonable choice the agent proposes."
+    - "Do not authorize running, publishing, or deploying the rule."
+    - "The moment the agent reports it has built the rule, the conversation is over: reply with exactly <<<END>>> on its own line. Do not ask for changes or raise a requirement you have not mentioned yet — the grader verifies the result from here."
+  max_turns: 6
+  stop_token: "<<<END>>>"
+  stop_on_criteria_pass: false
+  check_criteria: end_of_dialog
+  n_trials: 1
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-rules skill"
+    skill_name: "uipath-rules"
+    expected_skill: "uipath-rules"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rules validate passes on the project"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py validate SupplierRatings"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The diagram matches the model: uip rules format changes nothing"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py format SupplierRatings"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The rating follows the policy, including the range only the user could define"
+    command: "python3 $REFERENCE_DIR/author/incomplete_policy/check_incomplete_policy.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

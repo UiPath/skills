@@ -1,0 +1,41 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "/Business rule.dmn#decision_checks",
+      "uniqueId": "2c3124ee-29ec-46f8-88cf-bf7c47cc3da9",
+      "type": "BusinessRules",
+      "displayName": "Supplier check level",
+      "input": {
+        "type": "object",
+        "properties": {
+          "annualSpend": {
+            "type": "number",
+            "title": "annualSpend"
+          },
+          "riskLevel": {
+            "type": "string",
+            "title": "riskLevel"
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "checks": {
+            "type": "object",
+            "properties": {
+              "checkLevel": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [],
+        "x-uipath-decision-keyed": true
+      }
+    }
+  ]
+}

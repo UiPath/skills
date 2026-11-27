@@ -1,0 +1,154 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "/Business rule.dmn",
+      "uniqueId": "a4a9f216-22d2-481d-b87f-7a3d6304962b",
+      "type": "BusinessRules",
+      "displayName": "OrderRules",
+      "input": {
+        "type": "object",
+        "properties": {
+          "customerSpend": {
+            "type": "number",
+            "title": "customerSpend"
+          },
+          "orderTotal": {
+            "type": "number",
+            "title": "orderTotal"
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "discount": {
+            "type": "object",
+            "properties": {
+              "discountPct": {
+                "type": "number"
+              }
+            }
+          },
+          "priority": {
+            "type": "object",
+            "properties": {
+              "shipping": {
+                "type": "string"
+              }
+            }
+          },
+          "tier": {
+            "type": "object",
+            "properties": {
+              "tier": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [],
+        "x-uipath-decision-keyed": true
+      }
+    },
+    {
+      "filePath": "/Business rule.dmn#decision_discount",
+      "uniqueId": "555a7af7-7a89-473f-b376-9babe7712d3d",
+      "type": "BusinessRules",
+      "displayName": "Loyalty discount",
+      "input": {
+        "type": "object",
+        "properties": {
+          "customerSpend": {
+            "type": "number",
+            "title": "customerSpend"
+          },
+          "orderTotal": {
+            "type": "number",
+            "title": "orderTotal"
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "discount": {
+            "type": "object",
+            "properties": {
+              "discountPct": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "required": [],
+        "x-uipath-decision-keyed": true
+      }
+    },
+    {
+      "filePath": "/Business rule.dmn#decision_priority",
+      "uniqueId": "f476c7a5-5665-44cb-b50f-cd4a20e335b3",
+      "type": "BusinessRules",
+      "displayName": "Shipping priority",
+      "input": {
+        "type": "object",
+        "properties": {
+          "orderTotal": {
+            "type": "number",
+            "title": "orderTotal"
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "priority": {
+            "type": "object",
+            "properties": {
+              "shipping": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [],
+        "x-uipath-decision-keyed": true
+      }
+    },
+    {
+      "filePath": "/Business rule.dmn#decision_tier",
+      "uniqueId": "91b8f342-f658-4c33-b3da-51b903152aa7",
+      "type": "BusinessRules",
+      "displayName": "Customer tier",
+      "input": {
+        "type": "object",
+        "properties": {
+          "customerSpend": {
+            "type": "number",
+            "title": "customerSpend"
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "tier": {
+            "type": "object",
+            "properties": {
+              "tier": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [],
+        "x-uipath-decision-keyed": true
+      }
+    }
+  ]
+}

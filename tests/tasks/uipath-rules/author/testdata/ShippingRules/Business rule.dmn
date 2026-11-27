@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:uipath="http://uipath.com/schema/1.0/dmn/authoring" id="definitions_ShippingRules" name="ShippingRules" namespace="http://uipath.com/dmn/ns_ShippingRules" xmlns:kie="https://kie.org/dmn/extensions/1.0">
+  <extensionElements>
+    <uipath:authoring surface="decision-table" />
+  </extensionElements>
+  <decision id="decision_carrier" name="carrier" label="carrier">
+    <extensionElements>
+      <uipath:authoring editor="decision-table" />
+    </extensionElements>
+    <variable id="variable_carrier" name="carrier" typeRef="string" />
+    <informationRequirement id="ir_carrier_inputData_weightKg">
+      <requiredInput href="#inputData_weightKg" />
+    </informationRequirement>
+    <informationRequirement id="ir_carrier_inputData_zone">
+      <requiredInput href="#inputData_zone" />
+    </informationRequirement>
+    <decisionTable id="dt_carrier" hitPolicy="UNIQUE">
+      <input id="in_carrier_0" label="weightKg">
+        <inputExpression id="ie_carrier_0" typeRef="number">
+          <text>weightKg</text>
+        </inputExpression>
+      </input>
+      <input id="in_carrier_1" label="zone">
+        <inputExpression id="ie_carrier_1" typeRef="string">
+          <text>zone</text>
+        </inputExpression>
+      </input>
+      <output id="out_carrier_carrier" label="carrier" name="carrier" typeRef="string" />
+      <annotation name="Annotation" />
+      <rule id="rule_carrier_0">
+        <inputEntry id="ie_carrier_0_0">
+          <text>&gt; 30</text>
+        </inputEntry>
+        <inputEntry id="ie_carrier_0_1">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="oe_carrier_0_0">
+          <text>&quot;Freight&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Oversized</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_carrier_1">
+        <inputEntry id="ie_carrier_1_0">
+          <text>&lt;= 30</text>
+        </inputEntry>
+        <inputEntry id="ie_carrier_1_1">
+          <text>&quot;Domestic&quot;</text>
+        </inputEntry>
+        <outputEntry id="oe_carrier_1_0">
+          <text>&quot;Post&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Domestic parcel</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_carrier_2">
+        <inputEntry id="ie_carrier_2_0">
+          <text>&lt;= 30</text>
+        </inputEntry>
+        <inputEntry id="ie_carrier_2_1">
+          <text>&quot;International&quot;</text>
+        </inputEntry>
+        <outputEntry id="oe_carrier_2_0">
+          <text>&quot;Courier&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>International parcel</text>
+        </annotationEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <inputData id="inputData_weightKg" name="weightKg" label="weightKg">
+    <variable id="variable_in_weightKg" name="weightKg" typeRef="number" />
+  </inputData>
+  <inputData id="inputData_zone" name="zone" label="zone">
+    <variable id="variable_in_zone" name="zone" typeRef="string" />
+  </inputData>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_3f777913-8332-42a8-8fe2-0de6443605db">
+      <dmndi:DMNShape id="DMNShape_1c480d4c-ab15-43e5-bbd0-3201c28d539d" dmnElementRef="decision_carrier">
+        <dc:Bounds x="112" y="0" width="288" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_d55fdf21-fd9b-41f5-b204-dfbe8572d27e" dmnElementRef="inputData_weightKg">
+        <dc:Bounds x="0" y="208" width="240" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_ccb2d7ec-dad9-43b8-8606-6a6fa5e367e5" dmnElementRef="inputData_zone">
+        <dc:Bounds x="272" y="208" width="240" height="96" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

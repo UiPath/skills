@@ -1,0 +1,48 @@
+task_id: skill-rules-lifecycle-pack-only
+description: >
+  Local only: the Logistics solution with a finished Business Rules project,
+  ShippingRules, is staged on disk, and the user asks for a deployable package
+  without publishing it, offline. The Business Rules counterpart of
+  `uipath-maestro-case/pack/pack_only`. Graded from artifacts: a solution zip
+  whose ShippingRules .uirule carries the project's `.dmn` and
+  `entry-points.json`, with the project unchanged. Guards check that nothing
+  was published, uploaded, deployed, or debugged. Studio Web is unsupported
+  because production `pack` writes no local file.
+tags: [uipath-rules, integration, "mode:operate", "lifecycle:generate", studio-web-unsupported, "studio-web-unsupported:local-package"]
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../_fixtures/solution_with_rule
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  The Logistics solution in ./Logistics is finished. Package it so our release
+  team can deploy it to Orchestrator later. Do not publish or upload it
+  anywhere yourself, and don't change the rule. Do not ask for confirmation.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Advisory: agent invoked a skill that packs the solution"
+    skill_name: "uipath-solution"
+    expected_skill: "uipath-solution"
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: run_command
+    description: "A solution package holds the ShippingRules .uirule with the project's .dmn and contract, and the project is unchanged"
+    command: "python3 $REFERENCE_DIR/lifecycle/pack_only/check_pack_only.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Nothing published, uploaded, deployed, or debugged: packing is not consent to publish"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(solution\s+(publish|upload|deploy\s+(run|activate|upgrade|uninstall|delete))|rules\s+debug)\b(?!\s+--help)'
+    weight: 3.0
+    pass_threshold: 1.0

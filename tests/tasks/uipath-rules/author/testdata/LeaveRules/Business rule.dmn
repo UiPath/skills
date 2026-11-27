@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:uipath="http://uipath.com/schema/1.0/dmn/authoring" id="definitions_LeaveRules" name="LeaveRules" namespace="http://uipath.com/dmn/ns_LeaveRules" xmlns:kie="https://kie.org/dmn/extensions/1.0">
+  <extensionElements>
+    <uipath:authoring surface="decision-graph" />
+  </extensionElements>
+  <decision id="decision_approval" name="approval" label="approval">
+    <extensionElements>
+      <uipath:authoring editor="decision-table" />
+    </extensionElements>
+    <variable id="variable_approval" name="approval" typeRef="Any" />
+    <informationRequirement id="ir_approval_inputData_leaveType">
+      <requiredInput href="#inputData_leaveType" />
+    </informationRequirement>
+    <informationRequirement id="ir_approval_inputData_startDate">
+      <requiredInput href="#inputData_startDate" />
+    </informationRequirement>
+    <decisionTable id="dt_approval" hitPolicy="UNIQUE">
+      <input id="in_approval_0" label="leaveType">
+        <inputExpression id="ie_approval_0" typeRef="string">
+          <text>leaveType</text>
+        </inputExpression>
+      </input>
+      <input id="in_approval_1" label="startDate">
+        <inputExpression id="ie_approval_1" typeRef="date">
+          <text>startDate</text>
+        </inputExpression>
+      </input>
+      <output id="out_approval_approver" label="approver" name="approver" typeRef="string" />
+      <output id="out_approval_noticeDays" label="noticeDays" name="noticeDays" typeRef="number" />
+      <annotation name="Annotation" />
+      <rule id="rule_approval_0">
+        <inputEntry id="ie_approval_0_0">
+          <text>&quot;Annual&quot;</text>
+        </inputEntry>
+        <inputEntry id="ie_approval_0_1">
+          <text>&lt; date(&quot;2027-01-01&quot;)</text>
+        </inputEntry>
+        <outputEntry id="oe_approval_0_0">
+          <text>&quot;Manager&quot;</text>
+        </outputEntry>
+        <outputEntry id="oe_approval_0_1">
+          <text>14</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Annual, current matrix</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_approval_1">
+        <inputEntry id="ie_approval_1_0">
+          <text>&quot;Annual&quot;</text>
+        </inputEntry>
+        <inputEntry id="ie_approval_1_1">
+          <text>&gt;= date(&quot;2027-01-01&quot;)</text>
+        </inputEntry>
+        <outputEntry id="oe_approval_1_0">
+          <text>&quot;Team lead&quot;</text>
+        </outputEntry>
+        <outputEntry id="oe_approval_1_1">
+          <text>7</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Annual, new matrix</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_approval_2">
+        <inputEntry id="ie_approval_2_0">
+          <text>&quot;Sick&quot;</text>
+        </inputEntry>
+        <inputEntry id="ie_approval_2_1">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="oe_approval_2_0">
+          <text>&quot;Team lead&quot;</text>
+        </outputEntry>
+        <outputEntry id="oe_approval_2_1">
+          <text>0</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Sick leave</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_approval_3">
+        <inputEntry id="ie_approval_3_0">
+          <text>&quot;Unpaid&quot;</text>
+        </inputEntry>
+        <inputEntry id="ie_approval_3_1">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="oe_approval_3_0">
+          <text>&quot;Director&quot;</text>
+        </outputEntry>
+        <outputEntry id="oe_approval_3_1">
+          <text>30</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Unpaid leave</text>
+        </annotationEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="decision_requiredDocuments" name="requiredDocuments" label="requiredDocuments">
+    <extensionElements>
+      <uipath:authoring editor="decision-table" />
+    </extensionElements>
+    <variable id="variable_requiredDocuments" name="requiredDocuments" typeRef="Any" />
+    <informationRequirement id="ir_requiredDocuments_inputData_leaveType">
+      <requiredInput href="#inputData_leaveType" />
+    </informationRequirement>
+    <informationRequirement id="ir_requiredDocuments_inputData_days">
+      <requiredInput href="#inputData_days" />
+    </informationRequirement>
+    <decisionTable id="dt_requiredDocuments" hitPolicy="COLLECT">
+      <input id="in_requiredDocuments_0" label="leaveType">
+        <inputExpression id="ie_requiredDocuments_0" typeRef="string">
+          <text>leaveType</text>
+        </inputExpression>
+      </input>
+      <input id="in_requiredDocuments_1" label="days">
+        <inputExpression id="ie_requiredDocuments_1" typeRef="number">
+          <text>days</text>
+        </inputExpression>
+      </input>
+      <output id="out_requiredDocuments_documents" label="documents" name="documents" typeRef="string" />
+      <annotation name="Annotation" />
+      <rule id="rule_requiredDocuments_0">
+        <inputEntry id="ie_requiredDocuments_0_0">
+          <text>&quot;Sick&quot;</text>
+        </inputEntry>
+        <inputEntry id="ie_requiredDocuments_0_1">
+          <text>&gt;= 4</text>
+        </inputEntry>
+        <outputEntry id="oe_requiredDocuments_0_0">
+          <text>&quot;Medical certificate&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Long sick leave</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_requiredDocuments_1">
+        <inputEntry id="ie_requiredDocuments_1_0">
+          <text>&quot;Unpaid&quot;</text>
+        </inputEntry>
+        <inputEntry id="ie_requiredDocuments_1_1">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="oe_requiredDocuments_1_0">
+          <text>&quot;Signed request form&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Unpaid leave</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_requiredDocuments_2">
+        <inputEntry id="ie_requiredDocuments_2_0">
+          <text>-</text>
+        </inputEntry>
+        <inputEntry id="ie_requiredDocuments_2_1">
+          <text>&gt;= 11</text>
+        </inputEntry>
+        <outputEntry id="oe_requiredDocuments_2_0">
+          <text>&quot;Coverage plan&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Long absence</text>
+        </annotationEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="decision_routing" name="routing" label="routing">
+    <extensionElements>
+      <uipath:authoring editor="decision-table" />
+    </extensionElements>
+    <variable id="variable_routing" name="routing" typeRef="string" />
+    <informationRequirement id="ir_routing_decision_approval">
+      <requiredDecision href="#decision_approval" />
+    </informationRequirement>
+    <decisionTable id="dt_routing" hitPolicy="UNIQUE">
+      <input id="in_routing_0" label="approval.approver">
+        <inputExpression id="ie_routing_0" typeRef="string">
+          <text>approval.approver</text>
+        </inputExpression>
+      </input>
+      <output id="out_routing_channel" label="channel" name="channel" typeRef="string" />
+      <annotation name="Annotation" />
+      <rule id="rule_routing_0">
+        <inputEntry id="ie_routing_0_0">
+          <text>&quot;Director&quot;</text>
+        </inputEntry>
+        <outputEntry id="oe_routing_0_0">
+          <text>&quot;Executive desk&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Director approves</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_routing_1">
+        <inputEntry id="ie_routing_1_0">
+          <text>not(&quot;Director&quot;)</text>
+        </inputEntry>
+        <outputEntry id="oe_routing_1_0">
+          <text>&quot;Team inbox&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Everyone else</text>
+        </annotationEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <inputData id="inputData_leaveType" name="leaveType" label="leaveType">
+    <variable id="variable_in_leaveType" name="leaveType" typeRef="string" />
+  </inputData>
+  <inputData id="inputData_startDate" name="startDate" label="startDate">
+    <variable id="variable_in_startDate" name="startDate" typeRef="date" />
+  </inputData>
+  <inputData id="inputData_days" name="days" label="days">
+    <variable id="variable_in_days" name="days" typeRef="number" />
+  </inputData>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_d5860522-c42d-4240-983f-28335ed3bdaa">
+      <dmndi:DMNShape id="DMNShape_e17dcef0-f35e-4ccc-beed-a1d22e231585" dmnElementRef="decision_approval">
+        <dc:Bounds x="96" y="208" width="288" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_daf7db3b-3343-49fb-ab0a-edd3d47a4ab4" dmnElementRef="decision_requiredDocuments">
+        <dc:Bounds x="416" y="208" width="288" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_58e262dc-0704-47b0-996a-d9fc4a3e4300" dmnElementRef="decision_routing">
+        <dc:Bounds x="256" y="0" width="288" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_9941477b-6926-4e86-8131-ae8b485f0a98" dmnElementRef="inputData_leaveType">
+        <dc:Bounds x="272" y="416" width="240" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_e3439c7a-9767-4df7-8216-35248898a809" dmnElementRef="inputData_startDate">
+        <dc:Bounds x="0" y="416" width="240" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_d009629f-5dd1-4b02-97a6-b25f3d51d546" dmnElementRef="inputData_days">
+        <dc:Bounds x="544" y="416" width="240" height="96" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

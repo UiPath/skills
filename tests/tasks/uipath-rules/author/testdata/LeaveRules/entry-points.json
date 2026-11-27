@@ -1,0 +1,181 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "/Business rule.dmn",
+      "uniqueId": "374010a7-a152-4fe2-8fc6-50640dfdd51d",
+      "type": "BusinessRules",
+      "displayName": "LeaveRules",
+      "input": {
+        "type": "object",
+        "properties": {
+          "leaveType": {
+            "type": "string",
+            "title": "leaveType"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "title": "startDate"
+          },
+          "days": {
+            "type": "number",
+            "title": "days"
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "requiredDocuments": {
+            "type": "object",
+            "properties": {
+              "documents": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "routing": {
+            "type": "object",
+            "properties": {
+              "channel": {
+                "type": "string"
+              }
+            }
+          },
+          "approval": {
+            "type": "object",
+            "properties": {
+              "approver": {
+                "type": "string"
+              },
+              "noticeDays": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "required": [],
+        "x-uipath-decision-keyed": true
+      }
+    },
+    {
+      "filePath": "/Business rule.dmn#decision_requiredDocuments",
+      "uniqueId": "c52b0f0b-87ee-456c-a5af-622a69ae2c8b",
+      "type": "BusinessRules",
+      "displayName": "requiredDocuments",
+      "input": {
+        "type": "object",
+        "properties": {
+          "leaveType": {
+            "type": "string",
+            "title": "leaveType"
+          },
+          "days": {
+            "type": "number",
+            "title": "days"
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "requiredDocuments": {
+            "type": "object",
+            "properties": {
+              "documents": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "required": [],
+        "x-uipath-decision-keyed": true
+      }
+    },
+    {
+      "filePath": "/Business rule.dmn#decision_routing",
+      "uniqueId": "404e4b3d-5e15-41d2-b6df-b807e40ed012",
+      "type": "BusinessRules",
+      "displayName": "routing",
+      "input": {
+        "type": "object",
+        "properties": {
+          "leaveType": {
+            "type": "string",
+            "title": "leaveType"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "title": "startDate"
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "routing": {
+            "type": "object",
+            "properties": {
+              "channel": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [],
+        "x-uipath-decision-keyed": true
+      }
+    },
+    {
+      "filePath": "/Business rule.dmn#decision_approval",
+      "uniqueId": "aeef6e0f-1ec1-435c-b766-01cb985aef72",
+      "type": "BusinessRules",
+      "displayName": "approval",
+      "input": {
+        "type": "object",
+        "properties": {
+          "leaveType": {
+            "type": "string",
+            "title": "leaveType"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "title": "startDate"
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "approval": {
+            "type": "object",
+            "properties": {
+              "approver": {
+                "type": "string"
+              },
+              "noticeDays": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "required": [],
+        "x-uipath-decision-keyed": true
+      }
+    }
+  ]
+}

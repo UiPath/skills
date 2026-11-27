@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:uipath="http://uipath.com/schema/1.0/dmn/authoring" id="definitions_OrderRules" name="OrderRules" namespace="http://uipath.com/dmn/ns_OrderRules" xmlns:kie="https://kie.org/dmn/extensions/1.0">
+  <extensionElements>
+    <uipath:authoring surface="decision-graph" />
+  </extensionElements>
+  <decision id="decision_tier" name="tier" label="Customer tier">
+    <extensionElements>
+      <uipath:authoring editor="decision-table" />
+    </extensionElements>
+    <variable id="variable_tier" name="tier" typeRef="string" />
+    <informationRequirement id="ir_tier_inputData_customerSpend">
+      <requiredInput href="#inputData_customerSpend" />
+    </informationRequirement>
+    <decisionTable id="dt_tier" hitPolicy="UNIQUE">
+      <input id="in_tier_0" label="customerSpend">
+        <inputExpression id="ie_tier_0" typeRef="number">
+          <text>customerSpend</text>
+        </inputExpression>
+      </input>
+      <output id="out_tier_tier" label="tier" name="tier" typeRef="string" />
+      <annotation name="Annotation" />
+      <rule id="rule_tier_0">
+        <inputEntry id="ie_tier_0_0">
+          <text>&gt;= 5000</text>
+        </inputEntry>
+        <outputEntry id="oe_tier_0_0">
+          <text>&quot;Gold&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Top spender</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_tier_1">
+        <inputEntry id="ie_tier_1_0">
+          <text>[1000..5000)</text>
+        </inputEntry>
+        <outputEntry id="oe_tier_1_0">
+          <text>&quot;Silver&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Regular spender</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_tier_2">
+        <inputEntry id="ie_tier_2_0">
+          <text>&lt; 1000</text>
+        </inputEntry>
+        <outputEntry id="oe_tier_2_0">
+          <text>&quot;Standard&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>New or occasional</text>
+        </annotationEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="decision_discount" name="discount" label="Discount">
+    <extensionElements>
+      <uipath:authoring editor="decision-table" />
+    </extensionElements>
+    <variable id="variable_discount" name="discount" typeRef="number" />
+    <informationRequirement id="ir_discount_decision_tier">
+      <requiredDecision href="#decision_tier" />
+    </informationRequirement>
+    <informationRequirement id="ir_discount_inputData_orderTotal">
+      <requiredInput href="#inputData_orderTotal" />
+    </informationRequirement>
+    <decisionTable id="dt_discount" hitPolicy="UNIQUE">
+      <input id="in_discount_0" label="tier">
+        <inputExpression id="ie_discount_0" typeRef="string">
+          <text>tier</text>
+        </inputExpression>
+      </input>
+      <input id="in_discount_1" label="orderTotal">
+        <inputExpression id="ie_discount_1" typeRef="number">
+          <text>orderTotal</text>
+        </inputExpression>
+      </input>
+      <output id="out_discount_discountPct" label="discountPct" name="discountPct" typeRef="number" />
+      <annotation name="Annotation" />
+      <rule id="rule_discount_0">
+        <inputEntry id="ie_discount_0_0">
+          <text>&quot;Gold&quot;</text>
+        </inputEntry>
+        <inputEntry id="ie_discount_0_1">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="oe_discount_0_0">
+          <text>15</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Gold</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_discount_1">
+        <inputEntry id="ie_discount_1_0">
+          <text>&quot;Silver&quot;</text>
+        </inputEntry>
+        <inputEntry id="ie_discount_1_1">
+          <text>&gt;= 100</text>
+        </inputEntry>
+        <outputEntry id="oe_discount_1_0">
+          <text>10</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Silver, large order</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_discount_2">
+        <inputEntry id="ie_discount_2_0">
+          <text>&quot;Silver&quot;</text>
+        </inputEntry>
+        <inputEntry id="ie_discount_2_1">
+          <text>&lt; 100</text>
+        </inputEntry>
+        <outputEntry id="oe_discount_2_0">
+          <text>5</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Silver, small order</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_discount_3">
+        <inputEntry id="ie_discount_3_0">
+          <text>&quot;Standard&quot;</text>
+        </inputEntry>
+        <inputEntry id="ie_discount_3_1">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="oe_discount_3_0">
+          <text>0</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Standard</text>
+        </annotationEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="decision_priority" name="priority" label="Shipping priority">
+    <extensionElements>
+      <uipath:authoring editor="decision-table" />
+    </extensionElements>
+    <variable id="variable_priority" name="priority" typeRef="string" />
+    <informationRequirement id="ir_priority_inputData_orderTotal">
+      <requiredInput href="#inputData_orderTotal" />
+    </informationRequirement>
+    <decisionTable id="dt_priority" hitPolicy="UNIQUE">
+      <input id="in_priority_0" label="orderTotal">
+        <inputExpression id="ie_priority_0" typeRef="number">
+          <text>orderTotal</text>
+        </inputExpression>
+      </input>
+      <output id="out_priority_shipping" label="shipping" name="shipping" typeRef="string" />
+      <annotation name="Annotation" />
+      <rule id="rule_priority_0">
+        <inputEntry id="ie_priority_0_0">
+          <text>&gt;= 1000</text>
+        </inputEntry>
+        <outputEntry id="oe_priority_0_0">
+          <text>&quot;Express&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Large order</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_priority_1">
+        <inputEntry id="ie_priority_1_0">
+          <text>&lt; 1000</text>
+        </inputEntry>
+        <outputEntry id="oe_priority_1_0">
+          <text>&quot;Normal&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Other orders</text>
+        </annotationEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <inputData id="inputData_customerSpend" name="customerSpend" label="customerSpend">
+    <variable id="variable_in_customerSpend" name="customerSpend" typeRef="number" />
+  </inputData>
+  <inputData id="inputData_orderTotal" name="orderTotal" label="orderTotal">
+    <variable id="variable_in_orderTotal" name="orderTotal" typeRef="number" />
+  </inputData>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_42531348-4751-46bc-aa7c-b19866cae07e">
+      <dmndi:DMNShape id="DMNShape_1c1fefb6-df32-4205-87da-530a8a33d3f9" dmnElementRef="decision_tier">
+        <dc:Bounds x="0" y="208" width="288" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_04ed2db2-2b32-4125-b148-a73d86978d90" dmnElementRef="decision_discount">
+        <dc:Bounds x="160" y="0" width="288" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_58e2086b-4fe9-4379-9467-191c5530c357" dmnElementRef="decision_priority">
+        <dc:Bounds x="320" y="208" width="288" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_cb4a63d9-6e17-4db4-9bd7-9d0703894678" dmnElementRef="inputData_customerSpend">
+        <dc:Bounds x="48" y="416" width="240" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_fbc41e30-e8cb-4af5-b6f3-074395ed5608" dmnElementRef="inputData_orderTotal">
+        <dc:Bounds x="320" y="416" width="240" height="96" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

@@ -1,0 +1,87 @@
+task_id: skill-rules-author-shape-judgement
+description: >
+  Agent authors a Business Rules project from a policy whose prompt names no
+  DMN construct, offline, so the shape is the agent's own judgement against
+  the skill's "When to split" table. Row `single`: one answer reached through
+  an intermediate step stays one decision. Row `shared`: a value decided once
+  and read by two answers is its own decision, not a knowledge model. Row
+  `model`: one calculation run on two different arguments is a knowledge
+  model each answer calls. Grades skill activation, `uip rules validate` and
+  `uip rules format` run by the grader, the shape, and the values where the
+  offline evaluator can run them (rows `single` and `shared`).
+tags: [uipath-rules, integration, "mode:build", "lifecycle:generate"]
+
+sandbox:
+  python: {}
+
+reference:
+  directory: ../..
+
+dataset:
+  rows:
+    - id: single
+      project: ShippingRules
+      policy: |
+        Parcels heavier than 30 kg are oversized, and oversized parcels always
+        go by "Freight". Other parcels go by "Post" when `zone` is "Domestic"
+        and by "Courier" when it is "International". The caller sends
+        `weightKg` (number) and `zone` (string) and reads `carrier` (string).
+
+    - id: shared
+      project: ClaimsRules
+      policy: |
+        A claim is "Large" when `claimAmount` is above 10000, otherwise
+        "Standard". Standard claims are always approved. Large claims are
+        approved only when `customerYears` is 5 or more. Large claims go to the
+        "Senior" queue and Standard claims to the "General" queue. The caller
+        sends `claimAmount` and `customerYears` (both numbers) and reads
+        `approved` (boolean) and `queue` (string).
+
+    - id: model
+      project: MemberPrices
+      policy: |
+        A member price is the price reduced by 10%, rounded to 2 decimal
+        places. Members get the member price on the item and, separately, on
+        the delivery fee. The caller sends `itemPrice` and `deliveryFee` (both
+        numbers) and reads `memberItemPrice` and `memberDeliveryFee` (both
+        numbers).
+
+initial_prompt: |
+  Create a UiPath Business Rules project named ${row.project} for this policy:
+
+  ${row.policy}
+
+  There is no tenant to evaluate against, so do not run `uip rules debug`.
+  Do not ask for confirmation.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-rules skill"
+    skill_name: "uipath-rules"
+    expected_skill: "uipath-rules"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rules validate passes on the project"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py validate ${row.project}"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The diagram matches the model: uip rules format changes nothing"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py format ${row.project}"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The rule has the shape the policy calls for (row ${row.id}) and returns its values"
+    command: "python3 $REFERENCE_DIR/author/shape_judgement/check_shape_judgement.py ${row.id}"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

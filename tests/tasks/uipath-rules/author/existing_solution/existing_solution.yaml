@@ -1,0 +1,81 @@
+task_id: skill-rules-author-existing-solution
+description: >
+  The sandbox holds the Logistics solution with one Business Rules project,
+  ShippingRules, offline. Row `new`: the agent adds ReturnsRules. The grader
+  checks that the sandbox still holds only Logistics.uipx, that the manifest
+  lists ReturnsRules once, that the project sits in the solution folder, and
+  that its return window matches the policy. Row `existing`: the request names
+  ShippingRules, which already exists. Its files must stay byte-identical,
+  because `uip rules init` refuses the name and `--force` keeps the `.dmn`;
+  where the agent puts the new policy is its choice. Both rows grade
+  ShippingRules unchanged, and `uip rules validate` and `uip rules format`
+  run by the grader.
+tags: [uipath-rules, integration, "mode:build", "lifecycle:generate"]
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../_fixtures/solution_with_rule
+
+reference:
+  directory: ../..
+
+dataset:
+  rows:
+    - id: new
+      project: ReturnsRules
+      request: |
+        Add a UiPath Business Rules project named ReturnsRules to our Logistics
+        solution, for our returns policy:
+
+        - Input: `daysSinceDelivery` (number).
+        - Output: `returnable` (boolean): true up to and including 30 days,
+          otherwise false.
+
+    - id: existing
+      project: ShippingRules
+      request: |
+        Create a UiPath Business Rules project named ShippingRules for our
+        parcel surcharge:
+
+        - Input: `weightKg` (number).
+        - Output: `surcharge` (number): 5 above 20 kg, otherwise 0.
+
+initial_prompt: |
+  ${row.request}
+
+  There is no tenant to evaluate against, so do not run `uip rules debug`.
+  Do not ask for confirmation.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-rules skill"
+    skill_name: "uipath-rules"
+    expected_skill: "uipath-rules"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "One solution, and the work stays inside it without changing ShippingRules (row ${row.id})"
+    command: "python3 $REFERENCE_DIR/author/existing_solution/check_existing_solution.py ${row.id}"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rules validate passes on ${row.project}"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py validate ${row.project}"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The diagram matches the model: uip rules format changes nothing on ${row.project}"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py format ${row.project}"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
