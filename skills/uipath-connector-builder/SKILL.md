@@ -164,7 +164,7 @@ For a base URL or id derived at connection time: use a token-response `postReque
 ```text
 uip is connectors                      # tenant/catalog + design-connector lifecycle (needs `uip login`)
   list | get <key> | swagger <key> | export <key> | audit-logs | event-operations
-  download <key> | import | publish | publish-status <id> | probe
+  download <key> | import | publish | publish-status <id>
   builder                              # author a connector ON DISK
     init                               # create-or-EDIT the connector shell in ONE verb
                                        #   (folds the old scaffold / metadata / global / base+pagination preset)
