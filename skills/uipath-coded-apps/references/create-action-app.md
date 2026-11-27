@@ -259,6 +259,8 @@ cd <app-name>/source && npm pkg set name=<app-name> && npm install @uipath/coded
 
 If SDK services are needed, also run the `@uipath/uipath-typescript` install above.
 
+On init's starter, first remove the starter files § Generated Files replaces, so each is written fresh rather than read first (as create-web-app.md Step 3.4 does): `rm -f vite.config.ts src/main.tsx src/App.tsx src/uipath.ts`, plus `uipath.json` when SDK services are needed.
+
 - **The project root in § Generated Files is `<app-name>/source/`**, for every file except `action-schema.json`.
 - **`action-schema.json` goes in `<app-name>/`, next to `project.uiproj`.** Write the confirmed schema there, over init's starter schema: `uip solution pack` ships that copy, and the starter schema is not this app's (it also fails the validator). Validate it there. If you will run `uip codedapp push` from `source/`, which reads it from there, also copy it to `<app-name>/source/action-schema.json` and edit both together.
 - **Deploy with the solution** (`uip solution pack`, then `publish` and `deploy`, per [/uipath:uipath-solution](/uipath:uipath-solution)), not with § Deploy Action App. Init's `--type Action` already makes the project a Coded Action app.

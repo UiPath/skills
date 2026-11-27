@@ -106,7 +106,7 @@ Then confirm the scaffold, following the line that matches `Data.Files`:
 
 Init comes first, into a folder that does not exist yet: it refuses one that is not empty. If `<app-name>` already exists, ask the user for another name rather than passing `--force` to write into it.
 
-Then `cd` into `<app-name>/source` and name the package after the app (`create-vite` names it after its folder, `source`):
+Then `cd` into `<app-name>/source` and name the package after the app (`create-vite` names it after its folder, `source`; init's starter already carries the app's name, so there this changes nothing):
 
 ```bash
 npm pkg set name=<app-name>
