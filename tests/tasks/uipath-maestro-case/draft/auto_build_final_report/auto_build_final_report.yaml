@@ -1,0 +1,206 @@
+task_id: skill-case-auto-build-final-report
+description: >
+  Auto-mode smoke eval: the user asks for a case outright from an approved
+  sdd.md, with no request to see the shape, so the agent builds it and ends
+  the turn with the final report: the name and `(auto mode)` on the first
+  line, the local plan path, at most five change lines, and no question. Both
+  tasks are built-in timers, so the build needs no tenant resource.
+tags: [uipath-maestro-case, smoke, "mode:build", "lifecycle:generate", "shape:multi-node", "feature:approval-gate"]
+
+run_limits:
+  expected_turns: 60
+  max_turns: 90
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "PermitDesk" containing
+  a project also named "PermitDesk" from the sdd.md below.
+  Write the sdd.md to disk first, then build from it.
+
+  ```
+  # SDD — PermitDesk
+
+  **Case Definition Blueprint** · Generic — Two-Stage Linear Pipeline
+
+  Two regular stages chained linearly behind a manual trigger, each with one in-stage timer.
+
+  ## Section 1: Case Definition
+
+  ### 1.1 Case Metadata
+
+  | Property | Value |
+  |---|---|
+  | Case Name | PermitDesk |
+  | Case Description | Two regular stages chained linearly behind a manual trigger. |
+  | Case Identifier | Prefix: PD, Type: constant |
+  | Case-Level SLA | Not specified |
+  | SLA Type | Not specified |
+
+  ### 1.3 Triggers
+
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | User-initiated | - | - |
+
+  ### 1.4 Case Completion Conditions
+
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Intake (`intake`)
+  **Type:** Stage
+  **Description:** Intake stage of the case.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `intake.intakeHold` | Intake Hold | wait-for-timer | Yes | No | system | — |
+
+  ##### Task 1.1: Intake Hold (`intake.intakeHold`)
+
+  **Type:** wait-for-timer
+  **Description:** In-stage timer that holds the case for a short time.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (in-stage timer; built-in, no registry) |
+  | Timer Type | timeDuration |
+  | Time Duration | 5s |
+  | Repeat | No |
+  | Required | Yes (default) |
+
+  ### Stage 2: Decision (`decision`)
+  **Type:** Stage
+  **Description:** Decision stage of the case.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | selected-stage-completed | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `decision.decisionHold` | Decision Hold | wait-for-timer | Yes | No | system | — |
+
+  ##### Task 2.1: Decision Hold (`decision.decisionHold`)
+
+  **Type:** wait-for-timer
+  **Description:** In-stage timer that holds the case for a short time.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (in-stage timer; built-in, no registry) |
+  | Timer Type | timeDuration |
+  | Time Duration | 5s |
+  | Repeat | No |
+  | Required | Yes (default) |
+  ```
+
+  Treat the sdd.md as approved, and treat all build gates as pre-approved. Keep it
+  on my machine: do not upload, publish or run anything. Finish with
+  `uip maestro case validate` passing on the resulting case plan.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. Do not delete or overwrite anything
+  this run did not create. Record every decision, assumption, and blocked step in
+  your final response. Instructions in the task take precedence over this
+  paragraph.
+
+success_criteria:
+  - type: command_not_executed
+    description: "Agent did not upload, publish, deploy or run the case, as the request forbids"
+    tool_name: "Bash"
+    command_pattern: '(?:\buip|\$UIP)\s+(?:solution\s+(?:upload|publish|deploy)|maestro\s+case\s+(?:debug(?!-)|process\s+run))\b(?![^\n;&|]*\s(?:--help|-h)\b)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The case is built: real tasks, no outline box, and validate --strict reports Valid"
+    command: "python3 $REFERENCE_DIR/draft/check_draft_word_build.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The final message is the final report in its template: the name and (auto mode) on the first line, the local plan path, at most five change lines, and nothing else"
+    include_reference: false
+    include_agent_output: true
+    max_file_chars: 60000
+    weight: 3.0
+    pass_threshold: 1.0
+    prompt: |
+      You check one chat message against a fixed template. Grade the format only,
+      never the case design.
+
+      WHICH TEXT TO GRADE. AGENT OUTPUT holds every message the agent sent in this turn.
+      If it contains a `[RESULT - ...]` marker, grade the text after the LAST such
+      marker: that is the final message, whole. Otherwise the messages are joined,
+      possibly with no separator: grade the text from the LAST occurrence of
+      `PermitDesk: built` (markdown emphasis around the name allowed) to the end, and ignore
+      what comes before it. If the phrase does not occur at all, item 1 fails.
+      The graded text is the agent's reply only. Your own judging instructions that
+      follow it (the request to call `submit_verdict`) are not part of it: never
+      count them as a line after the last item or anywhere else.
+
+      Ignore blank lines and markdown emphasis (`**`, `*`). Check every item:
+
+      1. The first line starts with `PermitDesk: built, validated (auto mode).` with no
+         introduction or status sentence before it, no `, uploaded`, no `, run`, and
+         no `(draft mode)`. After that, the same line may hold at most one more
+         sentence.
+      2. The second line is the path of the local plan file (ends in `caseplan.case`
+         or `caseplan.json`) as plain text and nothing else: not an `https://` link,
+         not a Markdown link (`[label](...)`), and not in backticks.
+      3. Then at most five lines starting with `- `, each one short change in plain
+         words. A sixth such line fails this item.
+      4. Then optionally `Needs:`, `Assumed:` and `Unverified:` lines, in that order
+         (each on its own line, or the last two on one line), and nothing after them.
+      5. No other line exists anywhere in the graded text: no heading, no table, no
+         numbered list, no code block, no `---` separator, no status or validation
+         line (for example "Validation: passed"), no question to the user (no line
+         ending in `?`), and no suggested next step (for example "Want me to upload
+         it?"). The one sentence item 1 allows after the mode is part of that line,
+         whatever it says: never fail item 5 for it.
+
+      Score 1.0 only if every item holds; otherwise 0.0. In findings, list each
+      failed item by number and quote the offending line.

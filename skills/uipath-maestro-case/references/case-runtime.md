@@ -20,7 +20,8 @@ make from syntax alone. Exact signatures remain in the generated API.
 
   `object` and `subscription` are mutually exclusive. Only a live
   subscription proves the payload shape.
-  A placeholder trigger never starts the case. When you report the result,
+  A placeholder trigger never starts the case. When you report the result
+  (the [final report](final-report-template.md)'s `Needs:`),
   list each placeholder trigger and what the user must set in the designer:
   connector, connection, object, event and filter. Say that the case cannot
   start on its own until they do.
@@ -115,7 +116,7 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!-- RULE:case.recipient.no-silent-default -->
 - Before `uip solution upload` or `uip solution publish`, tell the user the
   list below, and repeat that list in the final summary of every build or
-  edit. List each assignee the user did not name as the production assignee: an input default, a literal
+  edit (the [final report](final-report-template.md)'s `Assumed:`). List each assignee the user did not name as the production assignee: an input default, a literal
   `recipient`, or an SLA escalation target (`toUser`, `toGroup`). These include
   a test mailbox, the user's own email, and `<UNRESOLVED: ...>`. For each one,
   give the address or group, the actions or escalations it routes, and what

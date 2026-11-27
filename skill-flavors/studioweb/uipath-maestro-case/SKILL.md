@@ -133,3 +133,7 @@ uip maestro case validate <Plan> --strict --output json                 # no SDD
 In Studio Web on cloud the connector library of the session is always loaded, so `check` reads it with no pull: `uip maestro registry pull` has no effect.
 With no session library (Automation Suite), `check` and `compile` fetch a missing operation through `uip` themselves, so re-run `check`.
 <!--skill-flavor:library-pull:end-->
+
+<!--skill-flavor:draft-upload-summary:start-->
+The skeleton is on the canvas when the turn ends. Upload nothing.
+<!--skill-flavor:draft-upload-summary:end-->

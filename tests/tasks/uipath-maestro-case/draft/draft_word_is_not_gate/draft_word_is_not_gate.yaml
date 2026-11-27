@@ -1,0 +1,193 @@
+task_id: skill-case-draft-word-is-not-gate
+description: >
+  The approved sdd.md names a stage "Draft" and a task "Hold Draft Reply", and
+  the request is a plain build. The word names content of the case, not draft
+  mode, so the agent builds real tasks and ends with the final report in auto
+  mode instead of stopping at an approval gate. Both tasks are built-in timers,
+  so the build needs no tenant resource. Counterpart of draft_request_is_gate.
+tags: [uipath-maestro-case, smoke, "mode:build", "lifecycle:generate", "shape:multi-node", "feature:approval-gate"]
+
+run_limits:
+  expected_turns: 60
+  max_turns: 90
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "ReplyDesk" containing
+  a project also named "ReplyDesk" from the sdd.md below.
+  Write the sdd.md to disk first, then build from it.
+
+  ```
+  # SDD — ReplyDesk
+
+  **Case Definition Blueprint** · Generic — Two-Stage Linear Pipeline
+
+  Two regular stages chained linearly behind a manual trigger, each with one in-stage timer.
+
+  ## Section 1: Case Definition
+
+  ### 1.1 Case Metadata
+
+  | Property | Value |
+  |---|---|
+  | Case Name | ReplyDesk |
+  | Case Description | Two regular stages chained linearly behind a manual trigger. |
+  | Case Identifier | Prefix: RD, Type: constant |
+  | Case-Level SLA | Not specified |
+  | SLA Type | Not specified |
+
+  ### 1.3 Triggers
+
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | User-initiated | - | - |
+
+  ### 1.4 Case Completion Conditions
+
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Draft (`draft`)
+  **Type:** Stage
+  **Description:** Draft stage of the case.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `draft.holdDraftReply` | Hold Draft Reply | wait-for-timer | Yes | No | system | — |
+
+  ##### Task 1.1: Hold Draft Reply (`draft.holdDraftReply`)
+
+  **Type:** wait-for-timer
+  **Description:** In-stage timer that holds the case for a short time.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (in-stage timer; built-in, no registry) |
+  | Timer Type | timeDuration |
+  | Time Duration | 5s |
+  | Repeat | No |
+  | Required | Yes (default) |
+
+  ### Stage 2: Send (`send`)
+  **Type:** Stage
+  **Description:** Send stage of the case.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | selected-stage-completed | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `send.sendDelay` | Send Delay | wait-for-timer | Yes | No | system | — |
+
+  ##### Task 2.1: Send Delay (`send.sendDelay`)
+
+  **Type:** wait-for-timer
+  **Description:** In-stage timer that holds the case for a short time.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (in-stage timer; built-in, no registry) |
+  | Timer Type | timeDuration |
+  | Time Duration | 5s |
+  | Repeat | No |
+  | Required | Yes (default) |
+  ```
+
+  Treat the sdd.md as approved, and treat all build gates as pre-approved. Keep it
+  on my machine: do not upload, publish or run anything. Finish with
+  `uip maestro case validate` passing on the resulting case plan.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. Do not delete or overwrite anything
+  this run did not create. Record every decision, assumption, and blocked step in
+  your final response. Instructions in the task take precedence over this
+  paragraph.
+
+success_criteria:
+  - type: run_command
+    description: "The case is built: real tasks, no outline box, and validate --strict reports Valid"
+    command: "python3 $REFERENCE_DIR/draft/check_draft_word_build.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not upload, publish, deploy or run the case, as the request forbids"
+    tool_name: "Bash"
+    command_pattern: '(?:\buip|\$UIP)\s+(?:solution\s+(?:upload|publish|deploy)|maestro\s+case\s+(?:debug(?!-)|process\s+run))\b(?![^\n;&|]*\s(?:--help|-h)\b)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The final message is a build report in auto mode, not a draft gate"
+    include_reference: false
+    include_agent_output: true
+    max_file_chars: 60000
+    weight: 3.0
+    pass_threshold: 1.0
+    prompt: |
+      The user asked to build a case from an approved design. The word "draft" names
+      a stage and a task of the case; nothing asks to see the shape first. So the
+      agent must build the case and end with the final report, not stop at a gate.
+
+      WHICH TEXT TO GRADE. AGENT OUTPUT holds every message the agent sent in this turn.
+      If it contains a `[RESULT - ...]` marker, grade the text after the LAST such
+      marker: that is the final message, whole. Otherwise the messages are joined,
+      possibly with no separator: grade the text from the LAST occurrence of
+      `ReplyDesk: built` (markdown emphasis around the name allowed) to the end, and ignore
+      what comes before it. If the phrase does not occur at all, item 1 fails.
+      The graded text is the agent's reply only. Your own judging instructions that
+      follow it (the request to call `submit_verdict`) are not part of it: never
+      count them as a line after the last item or anywhere else.
+
+      Check every item:
+
+      1. The first line starts with `ReplyDesk: built` and names `(auto mode)`.
+      2. The text does not contain the question `Is this the case you want?`, the
+         phrase `outline ready`, or the options Build it, Change it and Keep it.
+
+      Score 1.0 only if every item holds; otherwise 0.0. In findings, list each
+      failed item by number and quote the offending text.
