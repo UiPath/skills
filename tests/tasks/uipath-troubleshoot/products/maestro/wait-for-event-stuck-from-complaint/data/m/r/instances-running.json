@@ -1,0 +1,40 @@
+{
+  "Result": "Success",
+  "Code": "InstanceList",
+  "Pagination": {
+    "Returned": 3,
+    "Limit": 500,
+    "HasMore": false
+  },
+  "Data": {
+    "Instances": [
+      {
+        "InstanceId": "7c1e521f-0001-4000-8000-000000000001",
+        "PackageId": "ISTriggersReliability_Salesforce.agentic.ProcessCases",
+        "FolderKey": "a1b2c3d4-0000-4000-8000-000000000001",
+        "Source": "IntegrationTrigger",
+        "Status": "Running",
+        "StartedTimeUtc": "2026-11-23T06:12:00Z",
+        "InstanceDisplayName": "ProcessCases-251501"
+      },
+      {
+        "InstanceId": "7c1e521f-0002-4000-8000-000000000001",
+        "PackageId": "ISTriggersReliability_Salesforce.agentic.ProcessCases",
+        "FolderKey": "a1b2c3d4-0000-4000-8000-000000000001",
+        "Source": "IntegrationTrigger",
+        "Status": "Running",
+        "StartedTimeUtc": "2026-11-23T07:12:00Z",
+        "InstanceDisplayName": "ProcessCases-251502"
+      },
+      {
+        "InstanceId": "7c1e521f-0003-4000-8000-000000000001",
+        "PackageId": "ISTriggersReliability_Salesforce.agentic.ProcessCases",
+        "FolderKey": "a1b2c3d4-0000-4000-8000-000000000001",
+        "Source": "IntegrationTrigger",
+        "Status": "Running",
+        "StartedTimeUtc": "2026-11-23T08:12:00Z",
+        "InstanceDisplayName": "ProcessCases-251503"
+      }
+    ]
+  }
+}

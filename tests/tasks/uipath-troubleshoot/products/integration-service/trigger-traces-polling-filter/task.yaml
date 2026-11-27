@@ -1,0 +1,97 @@
+task_id: skill-troubleshoot-is-trigger-traces-polling-filter
+description: >
+  An Outlook polling trigger whose filter rejects every message it fetches. The
+  evidence lives under result.filter / result.matches / result.nonMatches,
+  which is the polling span shape -- not the webhook DataFilters.input/output
+  keys the guide originally named as if universal. An agent that looks only for
+  DataFilters finds nothing and reports "no filter data" at the step that
+  decides the diagnosis. Guards the shape-agnostic rewrite of Step 3.
+tags: [uipath-troubleshoot, integration-service, e2e, mode:diagnose]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Grep", "Glob", "Skill", "TodoWrite"]
+
+run_limits:
+  expected_turns: 12
+  task_timeout: 2400
+  max_turns: 40
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../_shared/mock_template
+    - type: template_dir
+      path: data
+  mock_path_dirs:
+    - m
+
+pre_run:
+  - command: "python m/seal"
+    timeout: 60
+    fail_on_error: true
+
+reference:
+  directory: reference
+
+initial_prompt: |
+  My ProcessEmails trigger in folder ISTriggersReliability/Outlook has not
+  started anything today, but I have definitely been receiving mail. The
+  trigger is ProcessEmails_EventTrigger-Wait for Email.
+
+  Find out why and tell me which specific messages it rejected, if any. Do not
+  run mutating commands; give me the commands instead.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: command_executed
+    description: "Agent read the trigger's traces"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+is\s+trigger-traces\s+list'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent opened the spans to read the filter"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+spans\s+get'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent reads the polling filter shape and names the rejected messages"
+    weight: 4.0
+    pass_threshold: 0.7
+    include_reference: false
+    files:
+      - $REFERENCE_DIR/RESOLUTION.md
+    include_dialog: true
+    include_agent_output: true
+    prompt: |
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      The decisive behaviour is whether the agent read the POLLING filter shape
+      (`result.filter`, `result.matches`, `result.nonMatches`) rather than
+      giving up because the webhook keys (`DataFilters.input.filter`,
+      `DataFilters.output.matched`) are absent.
+
+        1.0  Names the filter `(parentFolderName == 'Inbox')` AND at least one
+             rejected message id from result.nonMatches.
+        0.8  Identifies the filter as the cause and that mail was fetched but
+             rejected, without listing ids.
+        0.5  Says the trigger polled fine and matched nothing, but does not
+             reach the filter.
+        0.2  Blames the connection, permissions, or the subscription.
+        0.0  Reports that there is no filter data, that the spans are empty, or
+             reaches no conclusion.
+
+      Score 0.0 if the agent claims the trace recorded no filter information —
+      that is the exact false negative this task exists to catch.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}

@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "TriggerList",
+  "Data": [
+    {
+      "Key": "5bd87595-39bd-4f52-83ee-7ce521e371b5",
+      "Name": "ProcessIssues_EventTrigger-Wait for Issue Created",
+      "Enabled": true,
+      "ReleaseName": "ProcessIssues",
+      "ConnectorKey": "uipath-atlassian-jira",
+      "Operation": "ISSUE_CREATED",
+      "ObjectName": "issues",
+      "TriggerActionId": "571ca280-16d1-f111-bf5b-000d3a66d571"
+    }
+  ]
+}

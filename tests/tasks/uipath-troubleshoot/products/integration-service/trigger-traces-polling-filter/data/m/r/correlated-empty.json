@@ -1,0 +1,6 @@
+{
+  "Result": "Success",
+  "Code": "CorrelatedJobList",
+  "Data": [],
+  "Warning": "The trace dispatched nothing. Check EventsMatched on the trace itself with 'uip is trigger-traces list' \u2014 a trace that matched no events correlates to no jobs."
+}

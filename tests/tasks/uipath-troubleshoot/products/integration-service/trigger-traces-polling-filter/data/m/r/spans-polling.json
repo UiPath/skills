@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "TraceSpans",
+  "Data": [
+    {
+      "Id": "b1",
+      "Name": "Data - 1",
+      "TraceId": "bb000000-0000-4000-8000-000000000000",
+      "Attributes": "{\"request\": {\"query\": {\"where\": \"receivedDateTime>='2026-11-23T13:50:00Z' AND isDraft='false'\", \"pageSize\": 50}, \"path\": \"/hubs/productivity/me/messages\"}, \"response\": [{\"id\": \"AAMkAD-0001\", \"created\": \"2026-11-23T13:52:00Z\", \"folder\": \"Archive\"}, {\"id\": \"AAMkAD-0002\", \"created\": \"2026-11-23T13:54:00Z\", \"folder\": \"Archive\"}, {\"id\": \"AAMkAD-0003\", \"created\": \"2026-11-23T13:56:00Z\", \"folder\": \"Archive\"}, {\"id\": \"AAMkAD-0004\", \"created\": \"2026-11-23T13:58:00Z\", \"folder\": \"Archive\"}]}"
+    },
+    {
+      "Id": "b2",
+      "Name": "UserFilters - 1",
+      "TraceId": "bb000000-0000-4000-8000-000000000000",
+      "Attributes": "{\"result\": {\"filter\": \"(parentFolderName == 'Inbox')\", \"matches\": [], \"nonMatches\": [{\"id\": \"AAMkAD-0001\", \"eventType\": \"CREATED\"}, {\"id\": \"AAMkAD-0002\", \"eventType\": \"CREATED\"}, {\"id\": \"AAMkAD-0003\", \"eventType\": \"CREATED\"}, {\"id\": \"AAMkAD-0004\", \"eventType\": \"CREATED\"}]}}"
+    }
+  ]
+}

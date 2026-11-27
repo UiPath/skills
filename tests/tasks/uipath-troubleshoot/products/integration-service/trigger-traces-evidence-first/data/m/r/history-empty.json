@@ -1,0 +1,12 @@
+{
+  "Result": "Success",
+  "Code": "TriggerHistory",
+  "Pagination": {
+    "Returned": 0,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [],
+  "Instructions": "Trigger has no recorded fire failures."
+}

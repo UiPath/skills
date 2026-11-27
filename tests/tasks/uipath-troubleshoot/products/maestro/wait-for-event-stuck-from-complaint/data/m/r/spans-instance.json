@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "TraceSpans",
+  "Data": [
+    {
+      "Id": "s0",
+      "Name": "Instance: 7c1e521f-0001-4000-8000-000000000001",
+      "Attributes": "{\"spanType\": \"ProcessRun\", \"status\": \"Running\"}"
+    },
+    {
+      "Id": "s1",
+      "Name": "Wait for Case Created",
+      "Attributes": "{\"spanType\": \"ElementRun\", \"status\": \"Completed\", \"elementId\": \"Event_Start\", \"elementType\": \"StartEvent\", \"connectorKey\": \"uipath-salesforce-sfdc\"}"
+    },
+    {
+      "Id": "s2",
+      "Name": "Wait for Case Updated",
+      "Attributes": "{\"spanType\": \"ElementRun\", \"status\": \"Running\", \"elementId\": \"Activity_WFE\", \"elementType\": \"ReceiveTask\", \"elementExtensionType\": \"Intsvc.WaitForEvent\", \"connectorKey\": \"uipath-salesforce-sfdc\", \"intSvcTriggerId\": \"4dd972ba-c0e2-f111-91f2-000d3ab0541e\"}"
+    }
+  ]
+}

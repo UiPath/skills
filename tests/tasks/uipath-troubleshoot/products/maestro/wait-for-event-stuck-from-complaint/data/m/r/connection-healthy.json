@@ -1,0 +1,8 @@
+{
+  "Result": "Success",
+  "Code": "ConnectionPing",
+  "Data": {
+    "State": "Enabled",
+    "IsConnected": true
+  }
+}

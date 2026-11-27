@@ -1,0 +1,100 @@
+{
+  "Result": "Success",
+  "Code": "TriggerTraceList",
+  "Pagination": {
+    "Returned": 8,
+    "Limit": 60,
+    "Total": 8,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "TraceId": "bb000000-0000-4000-8000-000000000000",
+      "StartTime": "2026-11-23T14:00:00Z",
+      "EndTime": "2026-11-23T14:00:01Z",
+      "Outcome": "Success",
+      "EventsMatched": 0,
+      "EventsFetched": 4,
+      "Notified": false,
+      "DataReceived": true,
+      "ConnectionId": "0b9f0b26-1b26-4d6d-9b59-6bb3e8f5a1cc"
+    },
+    {
+      "TraceId": "bb010000-0000-4000-8000-000000000001",
+      "StartTime": "2026-11-23T13:50:00Z",
+      "EndTime": "2026-11-23T13:50:01Z",
+      "Outcome": "Success",
+      "EventsMatched": 0,
+      "EventsFetched": 4,
+      "Notified": false,
+      "DataReceived": true,
+      "ConnectionId": "0b9f0b26-1b26-4d6d-9b59-6bb3e8f5a1cc"
+    },
+    {
+      "TraceId": "bb020000-0000-4000-8000-000000000002",
+      "StartTime": "2026-11-23T13:40:00Z",
+      "EndTime": "2026-11-23T13:40:01Z",
+      "Outcome": "Success",
+      "EventsMatched": 0,
+      "EventsFetched": 4,
+      "Notified": false,
+      "DataReceived": true,
+      "ConnectionId": "0b9f0b26-1b26-4d6d-9b59-6bb3e8f5a1cc"
+    },
+    {
+      "TraceId": "bb030000-0000-4000-8000-000000000003",
+      "StartTime": "2026-11-23T13:30:00Z",
+      "EndTime": "2026-11-23T13:30:01Z",
+      "Outcome": "Success",
+      "EventsMatched": 0,
+      "EventsFetched": 4,
+      "Notified": false,
+      "DataReceived": true,
+      "ConnectionId": "0b9f0b26-1b26-4d6d-9b59-6bb3e8f5a1cc"
+    },
+    {
+      "TraceId": "bb040000-0000-4000-8000-000000000004",
+      "StartTime": "2026-11-23T13:20:00Z",
+      "EndTime": "2026-11-23T13:20:01Z",
+      "Outcome": "Success",
+      "EventsMatched": 0,
+      "EventsFetched": 4,
+      "Notified": false,
+      "DataReceived": true,
+      "ConnectionId": "0b9f0b26-1b26-4d6d-9b59-6bb3e8f5a1cc"
+    },
+    {
+      "TraceId": "bb050000-0000-4000-8000-000000000005",
+      "StartTime": "2026-11-23T13:10:00Z",
+      "EndTime": "2026-11-23T13:10:01Z",
+      "Outcome": "Success",
+      "EventsMatched": 0,
+      "EventsFetched": 4,
+      "Notified": false,
+      "DataReceived": true,
+      "ConnectionId": "0b9f0b26-1b26-4d6d-9b59-6bb3e8f5a1cc"
+    },
+    {
+      "TraceId": "bb060000-0000-4000-8000-000000000006",
+      "StartTime": "2026-11-23T13:00:00Z",
+      "EndTime": "2026-11-23T13:00:01Z",
+      "Outcome": "Success",
+      "EventsMatched": 0,
+      "EventsFetched": 4,
+      "Notified": false,
+      "DataReceived": true,
+      "ConnectionId": "0b9f0b26-1b26-4d6d-9b59-6bb3e8f5a1cc"
+    },
+    {
+      "TraceId": "bb070000-0000-4000-8000-000000000007",
+      "StartTime": "2026-11-23T12:50:00Z",
+      "EndTime": "2026-11-23T12:50:01Z",
+      "Outcome": "Success",
+      "EventsMatched": 0,
+      "EventsFetched": 4,
+      "Notified": false,
+      "DataReceived": true,
+      "ConnectionId": "0b9f0b26-1b26-4d6d-9b59-6bb3e8f5a1cc"
+    }
+  ]
+}
