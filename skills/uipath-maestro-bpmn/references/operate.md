@@ -41,9 +41,9 @@ Two Studio Web uploads are the exceptions, as [Studio Web upload](#studio-web-up
    `refresh` needs the project's `project.uiproj` (`bpmn init` wrote it) and
    rewrites the four derived files — `bindings_v2.json`, `entry-points.json`,
    `operate.json`, `package-descriptor.json`; `Data.WrittenFiles` names the ones
-   that were stale, which is the drift report. Never hand-edit those files and
-   never use the deprecated `update-metadata`: it does not materialize `Intsvc.*`
-   connection bindings, so a package it wrote validates and faults at run time.
+   that were stale, which is the drift report. Never hand-edit those files;
+   `init` creates them and `refresh` rewrites them, including the `Intsvc.*`
+   connection bindings in `bindings_v2.json`.
 
    When the process calls other Orchestrator processes, queues, agents or
    connections, `bindings_v2.json` must be the versioned object

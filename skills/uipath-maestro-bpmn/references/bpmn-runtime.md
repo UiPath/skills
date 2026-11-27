@@ -701,9 +701,7 @@ binding half, which is the same for every connector-backed node.
   uip maestro bpmn refresh <project-dir> --output json   # `Demo/` here; needs its project.uiproj
   ```
 
-  `Data.WrittenFiles` names the files that were stale. Do not use the deprecated
-  `update-metadata`: it does not materialize `Intsvc.*` connection bindings, so a
-  package it wrote passes `validate` and faults at run time.
+  `Data.WrittenFiles` names the files that were stale.
 
   For `Demo.bpmn` with root start event `start`, `init` plus `refresh` write these
   values (other fields omitted):
