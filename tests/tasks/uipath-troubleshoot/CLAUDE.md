@@ -14,7 +14,7 @@ Trigger:
 Skip:
 
 - Tweaking an existing scenario's manifest or fixtures — edit them directly, no generation pass needed.
-- Adding tests for *other* skills — use `.claude/commands/generate-tasks.md` instead.
+- Adding tests for *other* skills — use `.claude/commands/generate-task.md` instead.
 
 ## Inputs
 
@@ -230,7 +230,7 @@ The PR smoke gate (`.github/workflows/smoke-skills.yml`) treats **any** change u
 Rules:
 
 1. New scenarios get `e2e` (+ product/domain tags) — **do NOT add `smoke`**.
-2. Do not add `smoke` to any scenario to "make it run in CI"; the e2e suite (`tests/experiments/e2e.yaml`) covers scenarios.
+2. Do not add `smoke` to any scenario to "make it run in CI"; the nightly run (`tests/experiments/nightly.yaml`) covers scenarios.
 3. The only file that may carry `smoke` is `smoke-manifest-commands/task.yaml`.
 
 ### Investigation output location
@@ -327,7 +327,7 @@ Every `llm_judge` criterion across all troubleshoot tasks uses the **same** prom
 
 That is **all** the context the judge gets. The contract: agent's diagnosis (wherever it appears in the dialog) vs. RESOLUTION.md → score. Tool calls are deliberately excluded — the judge grades the presented diagnosis, not how it was reached.
 
-`include_dialog` is what makes "wherever it appears in the dialog" true. Without it the judge receives only the final turn, and the simulator keeps talking past the diagnosis — so the graded turn is an acknowledgement ("Will do.", "You're welcome.") and a correct investigation scores `0.00`. Six scenarios failed this way in the 2026-07-28 nightly. `scripts/check-judge-dialog.py` (CI: `judge-dialog-gate.yml`) blocks a PR that reintroduces it.
+`include_dialog` is what makes "wherever it appears in the dialog" true. Without it the judge receives only the final turn, and the simulator keeps talking past the diagnosis — so the graded turn is an acknowledgement ("Will do.", "You're welcome.") and a correct investigation scores `0.00`. Six scenarios failed this way in the 2026-07-28 nightly.
 
 **Forbidden on `llm_judge`:**
 
