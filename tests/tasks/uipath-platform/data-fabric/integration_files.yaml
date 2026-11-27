@@ -12,6 +12,14 @@ sandbox:
     - type: template_dir
       path: _setup
       mount_point: _setup
+    - type: template_dir
+      path: _cli_recorder
+      mount_point: _cli_recorder
+  # Pass-through recorder: runs the real uip and logs each `uip df records`/`uip df files` call,
+  # so the records lookup and files upload/download/delete checks see calls made from scripts
+  # as well as typed in Bash.
+  # Upload checks accept `--file X`, `--file=X` and `-f X`.
+  mock_path_dirs: [_cli_recorder]
 run_limits:
   expected_turns: 25
   turn_timeout: 1200
@@ -54,75 +62,93 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent looked up the seed record (records query / list / get)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+(query|list|get)\s+'
-    min_count: 1
+    command: >-
+      python3 _setup/verify_recorded_call.py --log _cli_recorder/uip-calls.jsonl
+      --pattern 'uip\s+df\s+records\s+(?:query|list|get)\s'
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent deleted the file attachment"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+files\s+delete\s+'
-    min_count: 1
+    command: >-
+      python3 _setup/verify_recorded_call.py --log _cli_recorder/uip-calls.jsonl
+      --pattern 'uip\s+df\s+files\s+delete\s'
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent uploaded the original attachment"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+files\s+upload.*--file\s+\S*original\.txt'
-    min_count: 1
+    command: >-
+      python3 _setup/verify_recorded_call.py --log _cli_recorder/uip-calls.jsonl
+      --pattern 'uip\s+df\s+files\s+upload[^\n]*(?:--file[=\s]|\s-f\s)\s*\S*original\.txt'
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent uploaded the replacement attachment"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+files\s+upload.*--file\s+\S*updated\.txt'
-    min_count: 1
+    command: >-
+      python3 _setup/verify_recorded_call.py --log _cli_recorder/uip-calls.jsonl
+      --pattern 'uip\s+df\s+files\s+upload[^\n]*(?:--file[=\s]|\s-f\s)\s*\S*updated\.txt'
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent downloaded the original attachment"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+files\s+download.*--destination\s+\S*downloaded\.txt'
-    min_count: 1
+    command: >-
+      python3 _setup/verify_recorded_call.py --log _cli_recorder/uip-calls.jsonl
+      --pattern 'uip\s+df\s+files\s+download[^\n]*--destination[=\s]\s*\S*downloaded\.txt'
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent downloaded the replacement attachment"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+files\s+download.*--destination\s+\S*verify_update\.txt'
-    min_count: 1
+    command: >-
+      python3 _setup/verify_recorded_call.py --log _cli_recorder/uip-calls.jsonl
+      --pattern 'uip\s+df\s+files\s+download[^\n]*--destination[=\s]\s*\S*verify_update\.txt'
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent attempted the empty-file upload"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+files\s+upload.*--file\s+\S*empty\.txt'
-    min_count: 1
+    command: >-
+      python3 _setup/verify_recorded_call.py --log _cli_recorder/uip-calls.jsonl
+      --pattern 'uip\s+df\s+files\s+upload[^\n]*(?:--file[=\s]|\s-f\s)\s*\S*empty\.txt'
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent attempted the unicode-filename upload"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+files\s+upload.*--file\s+.*caf.*txt'
-    min_count: 1
+    command: >-
+      python3 _setup/verify_recorded_call.py --log _cli_recorder/uip-calls.jsonl
+      --pattern 'uip\s+df\s+files\s+upload[^\n]*(?:--file[=\s]|\s-f\s)[^\n]*caf[^\n]*txt'
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent attempted the traversal-shaped filename upload"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+files\s+upload.*--file\s+.*etc-passwd\.txt'
-    min_count: 1
+    command: >-
+      python3 _setup/verify_recorded_call.py --log _cli_recorder/uip-calls.jsonl
+      --pattern 'uip\s+df\s+files\s+upload[^\n]*(?:--file[=\s]|\s-f\s)[^\n]*etc-passwd\.txt'
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
@@ -224,6 +250,10 @@ pre_run:
   - command: >-
       python3 _setup/seed_entity.py --entity-name CE_IntegrationAssets --schema-file _setup/seeds/integration_assets.schema.json --records-file _setup/seeds/integration_assets.records.json --reset
     timeout: 180
+    fail_on_error: true
+  # Grade only the agent's uip calls, whatever PATH pre_run ran with.
+  - command: rm -f _cli_recorder/uip-calls.jsonl
+    timeout: 10
     fail_on_error: true
 
 post_run:
