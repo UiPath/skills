@@ -44,7 +44,7 @@ uip is connectors builder validate
 ```
 
 Then import and publish as in SKILL.md. The connector publishes to your tenant as `custom-{org}-{slug}`.
-To offer it in the community catalog afterwards, follow [community-submit-guide.md](community-submit-guide.md).
+After `publish --wait` succeeds, ask the user whether to submit it to the community catalog (SKILL.md, "Share with the community catalog"). On a yes, follow [community-submit-guide.md](community-submit-guide.md).
 
 ## Rules
 

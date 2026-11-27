@@ -1,17 +1,19 @@
 # Submit a Connector to the Community Catalog
 
 A connector in the community catalog is one any tenant can install from the Flow canvas.
-You submit the same folder you built and published privately. It works for a legacy and a community-route (`--v4`) connector alike.
+You submit the same folder you built and published privately. Only a community-route (`--v4`) connector is submitted; a legacy connector stays private.
 
 These steps run only in a terminal: `uip extension` needs the desktop CLI and `submit` needs the `gh` CLI. In Studio Web, stop and tell the user to run them from a terminal.
 
-The "community route" (`--v4`) and the "community catalog" are two things. The route decides how activities run. The catalog is where a finished connector is shared.
+The "community route" (`--v4`) and the "community catalog" are two things. The route decides how activities run. The catalog is where a finished connector is shared, and it takes only connectors built on that route.
 
 ## Before you start
 
-1. The connector validates and is published to your own tenant (`uip is connectors publish --wait`), and you tested it there.
-2. `uip extension` is available. Run `uip extension --help`. If the command is unknown, stop and tell the user their CLI build has no community commands.
-3. `gh` is signed in with push access to the index repository. `submit` and `submit --dry-run` both read the index and stop without it. `init` and `validate` need neither `gh` nor a login.
+1. The connector is on the community route: `flags.v4Compatible` is `true` in `app/element/element-metadata.json`. If it is not, stop and tell the user a legacy connector cannot be submitted. Do not convert it by setting the flag: the activities need scripts ([v4-flow.md](v4-flow.md)).
+2. The connector validates and is published to your own tenant (`uip is connectors publish --wait`), and you tested it there.
+3. The user said yes to submitting. After a publish the skill asks once; a publish alone is not a yes.
+4. `uip extension` is available. Run `uip extension --help`. If the command is unknown, stop and tell the user their CLI build has no community commands.
+5. `gh` is signed in with push access to the index repository. `submit` and `submit --dry-run` both read the index and stop without it. `init` and `validate` need neither `gh` nor a login.
 
 ## Node id and key
 
@@ -58,7 +60,7 @@ An upgrade changes every flow in a tenant that uses the connector, so pick the l
 | What changed | Level |
 |---|---|
 | A fix, a description, the icon. No activity, field, parameter or connection field is added, removed or renamed. | `patch` |
-| Something was added and nothing existing changed: a new activity, a new optional field or parameter, a new trigger. | `minor` |
+| Something was added and nothing existing changed: a new activity, a new optional field or parameter. | `minor` |
 | Something a flow may already use changed: an activity, field or parameter was removed or renamed, an optional one became required, a type changed, or the auth type or a connection field changed. | `major` |
 
 When both an addition and a breaking change are present, the level is `major`.
@@ -68,8 +70,8 @@ When both an addition and a breaking change are present, the level is `major`.
    gh api repos/UiPath/uipath-extensions/contents/nodes/<PUBLISHER>/<NAME>/app/element/element.json \
      -H "Accept: application/vnd.github.raw"
    ```
-   Read the other files under `app/element/` the same way: `standard-resources/<RESOURCE>.json` on the legacy route, `v4/activities.json` and `v4/objects/<RESOURCE>/metadata.json` on the community route.
-2. **Compare it with the folder.** Compare activities, methods, fields, parameters, triggers, the auth type and the connection fields. Ignore the key and the version: the catalog's copy holds `custom-community-…` and its own version, the folder holds `design-<ORG>-<NAME>` and the tenant's.
+   Read the other files under `app/element/` the same way: `v4/activities.json` and `v4/objects/<RESOURCE>/metadata.json`.
+2. **Compare it with the folder.** Compare activities, methods, fields, parameters, the auth type and the connection fields. Ignore the key and the version: the catalog's copy holds `custom-community-…` and its own version, the folder holds `design-<ORG>-<NAME>` and the tenant's.
 3. **Propose a level** from the table, with the one change that decides it.
 4. **Ask the user to confirm** (`AskUserQuestion`) before `submit`. Never send `major` without a yes, and never lower a level the user chose.
 5. **If the catalog's copy cannot be read**, ask the user what changed since the last catalog version. Do not guess a level.
@@ -98,3 +100,4 @@ Nothing checks the level today: `submit` accepts any of the three. A wrong `patc
 4. Validating a fork without its node id, which checks the shared key instead (step 2).
 5. Sending `--bump patch` out of habit, or any level without comparing the folder with the catalog's copy and asking the user.
 6. Reporting done on `validate` alone. `submit` also checks the index: the version, the fork rule and a key clash.
+7. Submitting a legacy connector, or setting `flags.v4Compatible` by hand to make one pass.
