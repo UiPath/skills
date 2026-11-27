@@ -182,7 +182,8 @@ for (const b of text.split(/^(?=#{3,5} )/m)) {
     const m = t && b.match(/^\*\*Activation Mode:\*\*\s*`?([^`\s]+)/m);
     if (!m) continue;
     const row = modeOf.get(strip(t[1]));
-    if (row && row !== m[1]) fails.push(`task '${strip(t[1])}': Tasks table Activation Mode '${row}', task block '${m[1]}' — one literal in both (a task that starts after another is never parallel)`);
+    const lit = (s) => s.toLowerCase().match(/[a-z-]+/)?.[0] ?? "";
+    if (row && lit(row) !== lit(m[1])) fails.push(`task '${strip(t[1])}': Tasks table Activation Mode '${row}', task block '${m[1]}' — one literal in both (a task that starts after another is never parallel)`);
   }
 }
 

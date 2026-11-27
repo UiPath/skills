@@ -238,3 +238,9 @@ def test_a_table_activation_mode_differing_from_its_block_fails(check, sound):
     rc, out = check(sound.replace(row, row.replace("sequential |", "parallel |")))
     assert rc == 1
     assert "task 'Validate Claim Details': Tasks table Activation Mode 'parallel', task block 'sequential'" in out
+
+
+def test_a_table_activation_mode_in_other_case_or_with_prose_passes(check, sound):
+    row = "| 1 | Validate Claim Details | api-workflow | sequential |"
+    rc, out = check(sound.replace(row, row.replace("sequential |", "Sequential (after intake) |")))
+    assert "Tasks table Activation Mode" not in out, out

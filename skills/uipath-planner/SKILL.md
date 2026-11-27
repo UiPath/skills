@@ -81,8 +81,19 @@ they NEVER write automation code (XAML, C#, Python) or project or scaffold files
 7. **Never invent selectors or UI targets.** Selectors need the application inspected at development time; an SDD, a plan and an authored genome leave them to the specialist. A target carried over from the source is not invented: `extract` records where the source's targets live (objects, ids, counts) in the Source Map, and `uipath-genome` migrates them at build.
 8. **Gate every product by the platform.** The delivery model (Automation Cloud, Automation Suite, standalone Orchestrator) blocks unavailable products through [platform-availability-guide.md](references/shared/platform-availability-guide.md), in every verb that chooses a product (`design`, `decompose`, `author` without an SDD, `extract` for its targets); a product the user excluded is never offered again in the session.
 9. **Prompt budget.** `design` runs its own checkpoint model ([design-guide.md](references/design/design-guide.md)); `decompose` caps at **5 structured questions**. `design`, `author` and `extract` offer the interview once; accepted, its rounds count against no cap ([interview-guide.md](references/interview/interview-guide.md)). Ask execution autonomy **exactly once**, at `design` entry — never when a caller's request carries `execution` — and write it into the handoff header; `author` on an SDD reads it and never asks again. Scope and UI answers resolved in `design` flow forward through the SDD.
+10. **No turn ends on an SDD whose checks have not printed `OK`.** Every SDD file `design` writes or changes, a `*.draft.md` included, runs its § Check scripts before the turn ends — also when the request says not to validate or polish it: those words set how much detail the blocks carry, never whether the template's mechanical rules hold.
 
 ## Check
+
+SDD — run each that applies on every SDD file written or changed, repair each `FAIL:` line in the file, and run it again until it prints `OK`:
+
+```bash
+node "<SKILL_DIR>/scripts/scope-check.mjs" "<SDD_PATH>"              # every SDD
+node "<SKILL_DIR>/scripts/case-sdd-check.mjs" "<NAME>.md"            # Case Management SDD
+node "<SKILL_DIR>/scripts/case-sdd-check.mjs" --draft "<NAME>.draft.md"   # Case Management draft
+```
+
+Genome:
 
 ```bash
 node "<SKILL_DIR>/scripts/check-genome.mjs" <component|process> "<GENOME_MD>" --profile strict
