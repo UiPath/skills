@@ -173,7 +173,7 @@ The skills follow the open [Agent Skills](https://agentskills.io) standard. Thes
 | OpenHands | `openhands` |
 | Any other agent that reads `.agents/skills`, such as Gemini CLI | `agents` |
 
-Zed, Warp, Pi, OpenHands and `agents` are not detected automatically; pass `--agent <name>`. Because these agents share one folder, uninstalling for one of them removes the skills for all of them.
+Zed, Warp, OpenHands and `agents` are not detected automatically; pass `--agent <name>`. Because these agents share one folder, uninstalling for one of them removes the skills for all of them.
 
 ### Claude Code
 
