@@ -30,10 +30,12 @@ initial_prompt: |
   For slack, do NOT use any activity or node marked 'beta'. Use the non-beta Slack activity.
   Wire the file output of the download operation to the channel input of the slack send file.  
   Validate the final flow file.
-  For the Google Drive Download File activity, use the first available file.
+  For the Google Drive Download File activity, download the file "DoNotDelete_Results.json":
+  pass its file ID '1-atzuyOpo5s84M_8AwmGj5N-vYfkhVHq' as the fileId value as it is, without
+  resolving it by name.
   For Send File, send as `user`.
   For google drive, use the connection name 'is.sandboxes.test@gmail.com', and for slack
-  use the connection name 'is-sandboxes'.
+  use the connection name 'is-sandboxes', both in the 'uipath-maestro-flow' folder.
 
   This run is headless. No user is present and nobody will answer a question or
   grant an approval, so do not ask, do not pause, and do not wait for input.
