@@ -29,6 +29,8 @@ In every reference, `<Project>` is the target's folder, `<Name>` its file name w
 
 **A read-only page refuses every write.** When the page shows "Locked by you" and an Edit button, writes fail, sometimes as `[object Object]`. Ask the user to click Edit, then retry.
 
+**A reply without a tool call ends your turn.** Send no progress note ("checking the connection next"): make that call. Write text only when done, blocked, or the user must act.
+
 **The Flow SDK can be off for this user.** When an SDK verb answers `ConfigError` "this host has no way to run …", it is off. Say so, and stop.
 
 Every `uip` call prints a harmless `[WARN] [Telemetry] applicationinsights package not available`.
@@ -59,7 +61,7 @@ For a command that is not available, use the Studio Web route this guide gives. 
 <!--skill-flavor:sdk-project-layout:end-->
 
 <!--skill-flavor:sdk-connector-discovery:start-->
-Integrations with non-UiPath systems use connectors. **Choose the node before writing it.** For an external service or data (weather, Slack, a REST API), run `uip maestro registry search '<brand or service name>'`, unless the request names the transport itself ("over HTTP, not a connector" means `http()`). A hit is a connector. `"total": 0` is a miss and means `http()` (not for an external agent: see the table). For another tenant capability (agent, process), run the `uip maestro flow registry search` of that family ([`references/agent.md`](references/agent.md)). For document extraction, default to a published IXP model ([`references/ixp.md`](references/ixp.md)); the Extract document node only when asked for by name or already in the flow ([`references/extract-document-node.md`](references/extract-document-node.md)). A `script()` that returns fixed values is never a stand-in for that step, and `mock()` only marks a capability that the search proved absent.
+Integrations with non-UiPath systems use connectors. **Choose the node before writing it.** For an external service or data (weather, Slack, a REST API), run `uip maestro registry search '<brand or service name>'`, unless the request names the transport itself ("over HTTP, not a connector" means `http()`). A hit is a connector. `"total": 0` is a miss and means `http()` (not for an external agent: see the table). For another tenant capability (agent, process), run the `uip maestro flow registry search` of that family ([`references/agent.md`](references/agent.md)). For document extraction, default to a published IXP model ([`references/ixp.md`](references/ixp.md)); with none that fits, invoke the `uipath-ixp` skill to build one. The Extract document node only when asked for by name, already in the flow, or IXP is not enabled ([`references/extract-document-node.md`](references/extract-document-node.md)). A `script()` that returns fixed values is never a stand-in for that step, and `mock()` only marks a capability that the search proved absent.
 
 ### The connector loop in Studio Web
 

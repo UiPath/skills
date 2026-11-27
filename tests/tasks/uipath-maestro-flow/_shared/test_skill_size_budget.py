@@ -92,7 +92,10 @@ SECTION_BUDGETS = {
 # every edit turn).
 # Project layout 9,600 -> 10,000 for the `--automate` rule in UV-17734 (9,963).
 # Project layout 10,000 -> 10,200 for the `extraction check` row in #4644 (10,120).
-STUDIOWEB_SECTION_BUDGETS = {**SECTION_BUDGETS, "Project layout": 10_200, "Lifecycle": 3_700}
+# Project layout 10,200 -> 10,450 in #5301 (10,420, +265 / ~100 tok): the turn-end
+# rule (a reply without a tool call ends the turn) and the `uipath-ixp` handoff
+# for extraction with no fitting model. Both fixed nightly eval failures.
+STUDIOWEB_SECTION_BUDGETS = {**SECTION_BUDGETS, "Project layout": 10_450, "Lifecycle": 3_700}
 
 BYTES_PER_TOKEN = 2.56
 

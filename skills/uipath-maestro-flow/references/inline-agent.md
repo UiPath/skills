@@ -67,6 +67,8 @@ Tool signatures:
 - `{ kind: 'process' | 'agent' | 'api' | 'flow' | 'maestro', key, name, folderPath, inputs?, returns? }`
 - `{ kind: 'ixp', projectId, name, description?, versionTag?, attachment? }`
 
+For a deployed tool, copy `folderPath` exactly from the `folderPath` binding `default` that `uip maestro flow registry get` prints, often `<parent folder>/<ToolName>`; never shorten it to the parent folder.
+
 For a sibling project, a `process` / `agent` / `api` / `flow` / `maestro` / `function` tool uses `key` = `resource.key` from `resources/solution_folder/process/*/<Project>.json` (the tail of its `uip maestro flow registry list --local` tool type) and `folderPath: 'solution_folder'`. A `ProcessOrchestration` project (folder `processOrchestration`, tool type `…tool.processorchestration.*`) is `kind: 'maestro'`, never `'process'`; every other kind is its tool type's namespace. A tool has no `location` or `projectId`. Declare it on `inlineAgent` so compile writes its `resource.json`; a node created with `uip maestro flow nodes create` gets none.
 
 A connector tool needs `connection` and `folder`, with `bindings.json` labels resolved like `connector()`'s (see [bindings.md](bindings.md)). Missing either produces `FLOW_AGENT_TOOL_CONNECTOR_NO_CONNECTION` from `check` (`INLINE_AGENT_TOOL_CONNECTOR_NO_CONNECTION` on SDKs older than 6.88.2). Write the
