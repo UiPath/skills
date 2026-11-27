@@ -97,7 +97,18 @@ Open with one line stating how many marker constructions were scanned, how many 
 
 ## Fix
 
-**Apply every change with the `Edit` tool**: targeted find/replace on the exact attribute or element (drop `IsLoose="True"`, move/delete a specific `NApplicationCard`, rewrite one annotation line). Each fix is a handful of precise edits. **Do NOT** rewrite the file with a script (Bash/Python string surgery, XML re-serialization, whole-file `Write`): that reflows formatting, risks encoding/whitespace/BOM changes across untouched activities, and can corrupt the XAML. Read the surrounding XAML, edit the minimal snippet, move on. Annotation texts differ slightly between package versions; copy the exact line from the file into the edit, never from memory.
+The RPA authoring skill makes the edits; this procedure decides them. Fix 1, Fix 2 and Annotation rewrite below define each change. Hand all confirmed changes over in one brief:
+
+- Host has a subagent tool: spawn one subagent and tell it to invoke the RPA authoring skill, named as the skill list shows it (`uipath:uipath-rpa` in the plugin install, `uipath-rpa` otherwise). Never load that skill in this session.
+- No subagent tool: invoke the skill in this session.
+- Skill not installed: edit nothing and report each planned finding as `manual-review`, its fix as the recipe.
+
+The brief:
+
+1. Per file, each change: the activity's `DisplayName` and `IdRef`, the change in this section's words, the annotation line to replace, copied from the file since texts differ between package versions, and the line that replaces it.
+2. Only those constructs change, by targeted edits, never a script or a whole-file rewrite. No selector value is authored or rewritten; Fix 1's OCR branch is the one exception.
+3. Never run or debug the project (SKILL.md Rule 11).
+4. Validate each edited file with the command under Validate, written for the editing shell as SKILL.md Rule 8 says; pass that rule's text on. Validate only: this procedure builds.
 
 ### Fix 1 — unwrap generated card (S1-nested, element-only value)
 
@@ -128,7 +139,7 @@ A **healthy** construction (a redundant full-value generated card with its wrapp
 
 ## Validate
 
-After each edited file:
+Each edited file comes back validated with:
 
 ```bash
 env -u UIPATH_STUDIO_PID uip rpa validate --project-dir "<MIGRATED_DIR>" --file-path "<project-relative.xaml>" --min-severity error --output json
