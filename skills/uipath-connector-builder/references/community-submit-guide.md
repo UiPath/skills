@@ -83,8 +83,7 @@ Nothing checks the level today: `submit` accepts any of the three. A wrong `patc
 3. **Two version counters.** `latestVersion` in the folder is the version your tenant publishes; bump it for each private re-publish. The catalog version is set by `submit`: `1.0.0` for the first one, then the highest approved version plus `--bump patch|minor|major`. They do not have to match.
 4. **Fix findings in the folder.** A gate message may quote the catalog key. The file paths are the folder's own. Change the folder, test in your tenant if the change affects behavior, then run the same command again.
 5. **A failed or pending pull request is updated, not replaced.** Run the same `submit` command again. It updates the open pull request and keeps the same version, because an open pull request adds no approved version. Never edit the index branch by hand.
-6. **After a merge, the next submit needs `--bump`** and opens a new pull request.
-7. **`--bump` is for connectors only.** It takes `patch`, `minor` or `major`, chosen as in [Choosing the bump](#choosing-the-bump).
+6. **After a merge, the next submit needs `--bump`** and opens a new pull request. Choose the level as in [Choosing the bump](#choosing-the-bump).
 
 ## What the catalog does not do
 
