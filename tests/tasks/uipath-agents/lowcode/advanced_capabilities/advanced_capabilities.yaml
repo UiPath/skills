@@ -1,0 +1,59 @@
+task_id: skill-agent-lowcode-advanced-capabilities
+description: >
+  Skill-guided evaluation: agent builds a low-code advanced agent that may
+  read files but never create, change, or delete them. Tests whether the skill
+  teaches `settings.advancedAgent.builtInTools` (agent-definition.md § Advanced
+  Agents): `mode` "advanced", the full eight-tool map with `write_file`,
+  `edit_file`, and `delete` off, `read_file` on, no `task` entry, and no
+  guardrails. A partial map turns every unlisted tool off.
+tags: [uipath-agents, smoke, mode:build, lifecycle:generate, low-code]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+run_limits:
+  max_turns: 50
+  turn_timeout: 1200
+
+sandbox:
+  python: {}
+
+reference:
+  directory: .
+
+initial_prompt: |
+  Create a UiPath low-code advanced agent "InvoiceReader" that reads invoice
+  files and returns the vendor name and total. The solution should be named
+  "InvoiceSol". The agent must never be able to create, change, or delete
+  files; it may only read and search them.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Complete the entire task end-to-end in a
+  single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Advanced mode with the full built-in tool map: write_file, edit_file, delete off; read_file on; no task (§ Advanced Agents)"
+    command: "python3 $REFERENCE_DIR/check_advanced_capabilities.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip agent validate passes on the final project (storage-schema check)"
+    command: "uip agent validate InvoiceSol/InvoiceReader --output json"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
