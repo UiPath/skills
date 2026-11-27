@@ -597,6 +597,16 @@ The `--all` flag on `config set` only works with `conflictFixingAction`. It cann
 
 `--folder-path` / `--folder-key` filter server-side on the folder the deployment was installed into: full path, no subfolders, and not the row's own `FolderKey`. An empty result usually means a short path, a subfolder, or the wrong key — see [Step 6](#step-6-list-deployments).
 
+### Triggers Deploy Disabled
+
+`deploy config get` writes an Integration Service event trigger with `enabled: false`, so `deploy run` creates it switched off. Check `enabled` on each trigger in the config, and turn it on before the deploy (or enable it in Orchestrator afterwards):
+
+```bash
+uip solution deploy config set config.json "<trigger-name>" enabled true
+```
+
+A trigger left off never fires, and nothing reports it as a failure.
+
 ### Units Mismatch
 
 `--poll-interval` is in **milliseconds** (default 5000ms = 5s). `--timeout` is in **seconds** (default 360s = 6min). Do not confuse the two.
