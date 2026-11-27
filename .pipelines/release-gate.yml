@@ -57,6 +57,11 @@ resources:
       name: UiPath/AzurePipelinesTemplates
       ref: refs/heads/stable/uipath.security.scans-v3
       endpoint: github.com_UiPath
+    - repository: autopilot
+      type: github
+      name: UiPath/Autopilot
+      ref: refs/heads/main
+      endpoint: github.com_UiPath
 
 stages:
   # FOSSA blocks stable promotions only. A new transitive-dependency finding
@@ -74,3 +79,9 @@ stages:
     parameters:
       poolName: ${{ parameters.scanPoolName }}
       sourceCommit: ${{ parameters.sourceCommit }}
+
+  # Delegate bundles this package; its build fails on a tree it cannot ship.
+  # The template runs Delegate's own checks from UiPath/Autopilot main, so they never drift.
+  - template: .pipelines/ci/templates/uipath-skills-contract.stage.yml@autopilot
+    parameters:
+      poolName: ${{ parameters.scanPoolName }}
