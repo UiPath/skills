@@ -248,6 +248,24 @@ def test_action_required_with_no_item_ids_is_not_checked(check, tmp_path):
     assert MISPLACED not in check(text, profile="strict")[1]
 
 
+NO_QUESTION = "has no question before its parenthesis"
+
+
+def test_decided_entry_without_its_question_fails_strict_only(check):
+    text = with_decisions(COMPONENT, "1. (decided 2026-01-02: dates are checked; totals are checked)\n")
+    assert NO_QUESTION not in check(text)[1]
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert f"Open Decisions entry 1 {NO_QUESTION}: an entry keeps its own question and number when decided or withdrawn" in out
+
+
+def test_entries_leading_with_their_question_have_no_question_finding(check):
+    text = with_decisions(COMPONENT, "1. Must the total be above zero? (decided 2026-01-02: yes)\n"
+                                     "2. Are credit notes entered? (withdrawn: none arrive)\n")
+    assert NO_QUESTION not in check(text, profile="strict")[1]
+    assert NO_QUESTION not in check(COMPONENT, profile="strict")[1]
+
+
 def test_entry_withdrawn_as_a_question_without_its_cq_mark_fails_strict(check):
     text = with_decisions(COMPONENT, "1. Which portal address? (withdrawn: asked as Configuration Question 4) — SDD item 1\n")
     finding = "Open Decisions entry 1 is withdrawn as Configuration Question 4, and no line carries *[Inferred: CQ4]*"

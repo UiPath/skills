@@ -27,7 +27,8 @@
 //           rows the transactional shape allows, split options named by letter with only their Requires and Changes cells,
 //           complete for every unit and alternative unit, a decided flow's too, a `Decided:` project chain on option B only and naming two
 //           or more projects, retry and consecutive-failure stop; step table cells
-//           holding references only; Open Decisions entries open, decided or withdrawn and numbered without a gap,
+//           holding references only; Open Decisions entries open, decided or withdrawn, each leading with its own
+//           question, and numbered without a gap,
 //           every `*[Inferred]*` mark naming an open entry or a Configuration Question that exists (`*[Inferred: D3]*`,
 //           `process D3`, `CQ2`), a withdrawn configuration question kept in place, an entry withdrawn as Configuration Question <n> with a line marked
 //           `*[Inferred: CQ<n>]*`; Platform Dependencies' tables
@@ -103,6 +104,7 @@ export const DECISION_TIERS = ["business outcome", "run behaviour", "reading", "
 const OPEN_ENTRY = new RegExp(`\\((?:${DECISION_TIERS.join("|")}); answered by: `);
 const DECIDED_ENTRY = /\(decided \d{4}-\d{2}-\d{2}: /;
 const WITHDRAWN_ENTRY = /\(withdrawn: /;
+const ENTRY_STATE = new RegExp(`${OPEN_ENTRY.source}|${DECIDED_ENTRY.source}|${WITHDRAWN_ENTRY.source}`);
 const NO_DECISIONS = "No open decisions";
 // `*[Inferred]*`, `*[Inferred: D3]*`, `*[Inferred: process D3]*`, `*[Inferred: CQ2]*`
 const INFERRED_MARK = /\*\[Inferred(?::\s*([^\]]*))?\]\*/g;
@@ -414,6 +416,10 @@ function checkOpenDecisions(text, r, processEntries = null, namedElsewhere = new
   });
   for (const [num, status] of entries) {
     if (status === "malformed") r.strict(`Open Decisions entry ${num} is none of '({tier}; answered by: …', '(decided YYYY-MM-DD: …' or '(withdrawn: …' — tiers: ${DECISION_TIERS.join(", ")}`);
+  }
+  for (const [, num, entry] of section.matchAll(/^(\d+)\. (.*)$/gm)) {
+    const state = entry.search(ENTRY_STATE);
+    if (state >= 0 && !/[A-Za-z]/.test(entry.slice(0, state))) r.strict(`Open Decisions entry ${num} has no question before its parenthesis: an entry keeps its own question and number when decided or withdrawn, one entry per point — '${num}. {Question}? (decided YYYY-MM-DD: {the answer})'`);
   }
   const questions = new Set([...sectionBody(text, "Configuration Questions").matchAll(/^(\d+)\. /gm)].map((m) => Number(m[1])));
   const unnamed = [];
