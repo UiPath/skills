@@ -111,7 +111,7 @@ The body is its own sequence scope: give it its own `.flowMode('sequence')`, sta
 When the request names no store, do not invent an entity or connection, and do not stop to ask: keep `sequential: true`, which collects results correctly, and put on the final report's `Assumed:` line that items run one at a time because no store was named.
 With a store, write each item's outcome to it, one Data Fabric record per item: a `.dataService()` `op: 'create'` in place of `recordResult` (`ok: true`) and another in place of `recordItemFailure` (`ok: false`).
 Declare `.var('batchId', 'string')`, set it before the sub-process with `.task('newBatch', { set: { batchId: '=js:"BATCH-" + Date.now()' } })`, and write it on every record.
-After the sub-process, read the batch back with a `.dataService()` `query`, ``where: "=js:`batchId = '${vars.batchId}'`"``, with `limit` at or above the batch size (it defaults to 100 and silently drops the rest).
+After the sub-process, read the batch back with a `.dataService()` `query`, ``where: "=js:`batchId = '${vars.batchId}'`"``, with `limit` at or above the batch size (it defaults to 100 and silently drops the rest); a batch that can pass 1,000 items pages the read ([Paging](../bpmn-runtime.md#connectors-and-bindings)).
 Keep `aggregate` a `.scriptTask()` that totals the records from `vars.<queryId>_response` and writes `batchSummary` and `policySatisfied` through `outputs`, as the Shape does.
 A `.task()` without `set` compiles to a no-op `bpmn:task` and leaves `policySatisfied` at its `false` default.
 On a tenant entity the response is a bare array of records, `[]` when none (read `.length` and `.filter` on it directly).

@@ -453,6 +453,28 @@ binding half, which is the same for every connector-backed node.
   wrong in ways `validate` does not report. `examples/ContractRegistry.bpmn.ts` is
   the full lifecycle.
 
+<!-- RULE:bpmn.connector.data-service-paging -->
+- A `query` returns at most `limit` records (`100` when omitted), and `limit` stops at `1000`: the connector returns the first 1,000 and nothing says the rest were dropped.
+  When the design reads every record ("every row", "all open invoices"), page it unless the design caps the entity at 1,000 records; never one query:
+  ```ts
+  .var('pageStart', 'integer', { default: 0 })
+  .var('rows', 'array', { default: [] })
+  // …
+  .exclusiveGateway('nextPage')
+  .dataService('page', { ...df, op: 'query', sortBy: 'Id', ascending: true, start: '=js:vars.pageStart', limit: 1000 })
+  .task('collect', { set: { rows: '=js:vars.rows.concat(vars.page_response)', pageStart: '=js:vars.pageStart + 1000' } })
+  .choose('more', [
+    { when: '=js:vars.page_response.length === 1000', body: (b) => b.goto('nextPage') },
+    { otherwise: true, body: (b) => b },
+  ])
+  .sequenceFlow('nextPage', 'page')
+  ```
+  Sort on a field that never changes, such as `Id`, or a page repeats or skips records. Keep the `where` the design gives on `page`. The gateway is the loop's join: without it `check` warns `FAKE_JOIN`.
+  The loop is the design's one read; name it on the final report's `Assumed:` line (Critical Rule 8).
+<!--skill-flavor:sdk-df-query-paging:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.120.0 or later; an older `check` refuses `start: '=js:vars.pageStart'` with `TS2322`, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` and check again.
+<!--skill-flavor:sdk-df-query-paging:end-->
+
 <!-- RULE:bpmn.connector.data-service-folder-entity -->
 - An entity that lives in an Orchestrator folder (the picker shows it under a folder; the request says "folder entity" or "entity scope: folder") is `entity: { name, folder: '<folder path>' }`, not a plain name and not hand-found keys.
   `bpmn check --source` reports it as `RESOURCE_UNRESOLVED` and prints the command that records its keys, `uip maestro registry prepare --entity <name> --folder-path <path>`; run it, then `check` again.
