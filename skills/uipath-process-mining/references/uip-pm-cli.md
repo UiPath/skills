@@ -105,11 +105,12 @@ true` as the reminder. A SQL-only change is the opposite — `apply`, don't re-i
 
 ## Field ids come from `query info`
 
-`query run`/`percentile` bodies reference **hashed field ids**
-(`F__<Table>__<Col>__<hash>`), not column names. Discover them with `query info`, or —
-better — let the sugar resolve human names: `query run <app> --group-by <col> --metric
-<col>:<fn>` (`fn ∈ average|count|sum|min|max`). Full AST + restrictions in
-[`querying.md`](querying.md).
+Raw query bodies reference **field ids** (hashed `F__<Table>__<Col>__<hash>`,
+process fields `PF__…`), not column names. Discover them with `query info`, or —
+better — let the CLI resolve column names: `query run <app> --group-by <col> --metric
+<col>:<fn>` and `query percentile <app> --field <col>`. `apps model fields set` also
+finds a field by its display name or column when exactly one field matches. Full AST +
+restrictions in [`querying.md`](querying.md).
 
 ## Quick Start — CSV → queryable process app
 
@@ -120,7 +121,9 @@ better — let the sugar resolve human names: `query run <app> --group-by <col> 
 # 1. Discover the template + its target fields
 uip pm app-types list --output-filter "[].{Key:AppTypeKey,Version:Version,Name:DefaultName}"
 
-# 2. Create the app from a data mapping (isNotNull/isUnique default per field)
+# 2. Create the app from a data mapping (isNotNull/isUnique default per field).
+#    Returns once the app has finished setting up (Data.AppStatus: CREATED), so step 3
+#    can run straight away.
 uip pm apps create "My Process" --type uipath.custom --data-mapping ./mapping.json
 
 # 3. Upload + ingest (block until done; prints the loader error on failure)
