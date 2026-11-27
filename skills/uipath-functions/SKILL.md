@@ -58,7 +58,7 @@ Job-startable functions are invoked from Maestro BPMN/Flow (Service Task), coded
 4. **Typed I/O is mandatory** — Pydantic `BaseModel`, `pydantic.dataclasses.dataclass`, stdlib `@dataclass`, or a thin typed class; apply `@traced(name=..., run_type="uipath")` to the entrypoint for LLM Ops Traces.
 5. **`pyproject.toml` needs `authors`** (else `pack` rejects: `Project authors cannot be empty`) and no `[build-system]` section.
 6. **`uip function new -l py` produces a function scaffold** — `uipath.json` with a `functions` map, no `langgraph.json` — regardless of any agent framework package (`uipath-langchain`, `uipath-llamaindex`, `uipath-openai-agents`) installed in the venv.
-7. **Bindings are derived from `uipath` SDK calls — never left empty, never guessed.** `init` leaves `"resources": []`. Every `sdk().assets` / `queues` / `processes` / `buckets` / `context_grounding` / `connections` / `mcp` / `tasks` call needs a matching `bindings.json` entry, produced by the sync workflow in [references/python/bindings-reference.md](references/python/bindings-reference.md). Without it the project packs and publishes cleanly, surfaces no resource for mapping at deploy time, and fails at runtime. `uip function push` resolves the entries against the Resource Catalog exactly as `uip codedagent push` does.
+7. **Bindings are derived from `uipath` SDK calls and from the connector event that starts the function — never left empty, never guessed.** `init` leaves `"resources": []`. Every `sdk().assets` / `queues` / `processes` / `buckets` / `context_grounding` / `connections` / `mcp` / `tasks` call needs a matching `bindings.json` entry, produced by the sync workflow in [references/python/bindings-reference.md](references/python/bindings-reference.md). Without it the project packs and publishes cleanly, surfaces no resource for mapping at deploy time, and fails at runtime. A connector-event start needs an `EventTrigger` entry written from connector discovery ([references/event-trigger-guide.md](references/event-trigger-guide.md)). `uip function push` resolves the entries against the Resource Catalog exactly as `uip codedagent push` does.
 
 ### JS/TS
 
@@ -162,6 +162,7 @@ uip function runtime-install         # JS/TS — one-time runtime pre-install (o
 | JS/TS: bindings — entry-points.json, bindings_v2.json, overrides | [js/bindings-guide.md](references/js/bindings-guide.md) |
 | JS/TS: call UiPath APIs from a function (uipath-typescript, IS) | [js/calling-uipath-apis-guide.md](references/js/calling-uipath-apis-guide.md) |
 | JS/TS: wire a Coded App frontend to a function backend | [js/coded-app-wiring-guide.md](references/js/coded-app-wiring-guide.md) |
+| Both languages: start a function on a connector event — `EventTrigger` / `Property` bindings, discovery, filter expression, event inputs | [event-trigger-guide.md](references/event-trigger-guide.md) |
 
 ## Anti-patterns
 
