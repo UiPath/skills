@@ -1,0 +1,172 @@
+# File Sync Guide
+
+Push and pull coded app source code between your local development environment and UiPath Studio Web.
+
+## Overview
+
+File sync lets you develop coded web apps locally with your preferred tools and IDE, then push the build output to Studio Web for collaboration, testing, and integration. You can also pull existing Studio Web projects to work on locally.
+
+| Command | Direction | Description |
+|---------|-----------|-------------|
+| `uip codedapp push` | Local → Studio Web | Upload local build output to a Studio Web project |
+| `uip codedapp pull` | Studio Web → Local | Download project files from Studio Web to local |
+
+## Prerequisites
+
+- **Authentication**: Run `uip login` before push/pull
+- **Project ID**: Required for both commands. Can be:
+  - Auto-created during `push` (first time only)
+  - Set as `UIPATH_PROJECT_ID` in `.env`
+  - Passed with `--project-id <id>`
+
+## Push Workflow
+
+### First-Time Push (Auto-Create Project)
+
+When no `UIPATH_PROJECT_ID` exists, `push` creates a new Studio Web solution with a Coded App project inside it. The two names are separate: the **solution** is the container that holds the app and its resources, and the **project** is the app end users open.
+
+**When you cannot answer prompts, pass both names as flags.** Without them, push stops with "Project ID is required". Pick names that describe what the user is building, for example the product for the solution and the user-facing app for the project. Ask the user if you cannot tell. Do not use placeholders like `App` or `Solution`; the user would have to rename them in Studio Web.
+
+```bash
+# 1. Build your app
+npm run build
+
+# 2. First push: create the solution and project
+uip codedapp push --solution-name "Product Announcements" --project-name "Announcements Portal" --output json
+```
+
+Run interactively, push asks instead. It offers a new or an existing solution, then prompts for both names, defaulting to the folder name:
+```
+? No project ID found. Would you like to create a new solution or use an existing one? Create a new solution
+? Enter a name for the new solution (the Studio Web container for your app and its resources): Product Announcements
+? Enter a name for the new Coded App (the app end users open): Announcements Portal
+✔ Created solution "Product Announcements" with coded app project "Announcements Portal" (ID: abc-123-def)
+  Saved UIPATH_PROJECT_ID to .env
+```
+
+The project ID is automatically saved to `.env` for future pushes. The name flags only apply to that first push: once a project ID is set (by `--project-id`, `UIPATH_PROJECT_ID`, or `.env`), passing them makes push fail instead of pushing into that project. To create another solution from the same folder, remove `UIPATH_PROJECT_ID` from `.env` first.
+
+### Subsequent Pushes
+
+Once `UIPATH_PROJECT_ID` is in `.env`, pushes are one-command:
+
+```bash
+npm run build
+uip codedapp push
+```
+
+### Push Options
+
+```bash
+# Push with explicit project ID (overrides .env)
+uip codedapp push --project-id abc-123-def
+
+# Push a custom build directory (default: dist)
+uip codedapp push --build-dir build
+
+# Skip importing referenced resources
+uip codedapp push --ignore-resources
+```
+
+### What Gets Pushed
+
+The command uploads the contents of the build directory (default: `dist/`) to Studio Web. This includes:
+- HTML, CSS, JavaScript files
+- Static assets (images, fonts, etc.)
+- Any other files in the build output
+
+Alongside the build output, `push` uploads the app's source files from the project root (dotfiles and the build directory itself excepted). Files matched by the app's `.gitignore` or by a `.uipignore` are skipped. `.uipignore` uses the same `.gitignore` syntax (for example `fixtures/` or `*.map`) and is the one ignore file shared with `uip solution upload`; the build directory is always uploaded whole. The older `.uipathignore` name is still read but deprecated — rename it to `.uipignore`.
+
+The `--ignore-resources` flag skips importing referenced resources (connections, assets) that may be declared in the app.
+
+## Pull Workflow
+
+### Basic Pull
+
+```bash
+# Pull using project ID from .env
+uip codedapp pull
+
+# Pull with explicit project ID
+uip codedapp pull --project-id abc-123-def
+```
+
+### Pull to a Specific Directory
+
+```bash
+uip codedapp pull --target-dir ./my-app
+```
+
+### Handling File Conflicts
+
+By default, `pull` prompts before overwriting existing local files:
+
+```bash
+# Overwrite without prompting
+uip codedapp pull --overwrite
+```
+
+## Common Workflows
+
+### Local Development with Studio Web Sync
+
+```bash
+# 1. Auth once
+uip login
+
+# 2. Initial push (creates project)
+npm run build
+uip codedapp push
+
+# 3. Development loop
+#    - Edit source code locally
+#    - Build
+#    - Push changes
+npm run build
+uip codedapp push
+```
+
+### Pulling an Existing Project
+
+```bash
+# 1. Auth
+uip login
+
+# 2. Pull the project (get project ID from Studio Web URL)
+uip codedapp pull --project-id <project-id> --target-dir ./my-app
+
+# 3. Install dependencies
+cd my-app
+npm install
+```
+
+### Team Collaboration
+
+```bash
+# Developer A pushes changes
+npm run build
+uip codedapp push
+
+# Developer B pulls latest
+uip codedapp pull --overwrite
+```
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `UIPATH_PROJECT_ID` | Studio Web project ID (auto-saved on first push) |
+
+Authentication is handled by `uip login` and the coded app CLI. **NEVER** read, print, source, or manually set cached access-token environment variables.
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| `Not authenticated` | Run `uip login` |
+| `Project not found` | Verify the project ID exists in Studio Web |
+| `dist/ directory not found` | Run `npm run build` before pushing |
+| File conflict on pull | Use `--overwrite` to force, or manually resolve |
+| `UIPATH_PROJECT_ID` not saved | Check `.env` file permissions; set it manually |
+| `Project ID is required` on the first push | You cannot answer the prompts. Pass `--solution-name <name> --project-name <name>` |
+| `a project ID is already set by …` | `--solution-name` / `--project-name` were passed with a project ID already set. Drop the flags to push to that project, or remove `UIPATH_PROJECT_ID` from `.env` to create a new solution |

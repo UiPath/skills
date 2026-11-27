@@ -1,0 +1,433 @@
+# Reference Resolution
+
+How to resolve reference fields — fields whose values must be looked up from another resource before create/update operations.
+
+> Full command syntax and options: `uip is --help`, and `--help` on each subcommand. Domain-specific usage patterns are shown inline below.
+
+## Contents
+- Reference IDs Are Connection-Scoped (CRITICAL)
+- When the Lookup Call Fails (CRITICAL)
+- Reference Fields (CRITICAL)
+- 4.0.0 Activities — Script References (`scriptRef`)
+- Scope Filtering (CRITICAL)
+- Search References (filterPattern)
+- Field Dependency Chains
+- Inferring References Without Describe
+- Static Reference-Value Labeling
+- Validate Required Fields Before Executing
+
+---
+
+## Reference IDs Are Connection-Scoped (CRITICAL)
+
+Every reference ID resolves only within the account authenticated by the connection used to resolve it. A `MailFolder` ID from one Outlook mailbox is invalid in another. A Slack channel ID from one workspace is invalid in another. A Jira project ID from one Atlassian site is invalid in another.
+
+**Never carry a reference ID from one flow, one connection, or one session into another.** Always re-run the lookup — `uip is resources run list`, or `uip is resources run script` for a `4.0.0` activity (see [Script References](#400-activities--script-references-scriptref)) — against the `--connection-id` bound to the current flow — even if you believe you already know the ID from a prior task or earlier in the same session.
+
+A reused reference ID:
+- Passes `uip is resources describe` / `node configure` / `flow validate` cleanly (no API call checks the value against the connection).
+- Faults at runtime when the connector tries to use the ID against a mailbox/workspace/site that does not contain it.
+- Surfaces as a silent fault or generic "no matching resource" error — hard to diagnose without tracing back to the authoring step.
+
+**Rule:** resolve every reference ID fresh, against the current connection, every time. Treat any ID from your context or memory as unverified until re-listed.
+
+---
+
+## When the Lookup Call Fails (CRITICAL)
+
+The rules above assume the lookup call (`uip is resources run list`, or `uip is resources run script` for `4.0.0` activities) returns. When the call itself fails — `403`/`401` (expired, revoked, or reauthorization-required grant), a `5xx`, or a connector error — you have **no ID**, and there is no value you may write in its place.
+
+**Never substitute:**
+
+| Substitute | Why it is wrong |
+|---|---|
+| The display name you searched by | `reference.lookupValue` names the field to write; `lookupNames` only names the fields to match *against*. |
+| A vendor "well-known" alias | Accepted by some vendor APIs directly, but the connector stores what you write and the field is typed as an ID. |
+| An ID from context, memory, or another connection | See [Reference IDs Are Connection-Scoped](#reference-ids-are-connection-scoped-critical). |
+| A plausible-looking placeholder | Passes `describe` / `node configure` / `flow validate`; faults at runtime. |
+
+Every one of these produces an artifact that validates clean and fails later, with the original cause no longer visible.
+
+**Do this instead:**
+
+1. Retry per [agent-workflow.md — Error Recovery](agent-workflow.md#error-recovery) (max 2 semantic retries).
+2. On an auth failure, ping the connection (`uip is connections ping <id>`) to confirm the diagnosis.
+3. If it still fails, **stop and report**: name the connection, the object you could not list, and the vendor error. The fix is the user's (reauthorize, widen scopes, wait out an outage), not a value you choose.
+
+Non-interactively (CI/headless), stop and report the blocked step. Do not proceed with a value you could not verify.
+
+Say the resolve failed. Reporting a substituted value as "resolved" hides the fault from the only person who can fix it.
+
+---
+
+## Reference Fields (CRITICAL)
+
+Entries in the describe `requestFields` AND `parameters` (query/path parameters) can have a `reference` section — their value must be looked up from another resource before executing. Scan both arrays: on some connectors the activity's primary input is a path parameter with a reference, and scanning only `requestFields` misses it.
+
+### Reference structure
+
+```json
+{
+  "name": "channel",
+  "type": "string",
+  "displayName": "Channel name/ID",
+  "required": true,
+  "reference": {
+    "objectName": "curated_channels?types=public_channel,private_channel",
+    "lookupNames": ["name", "id"],
+    "lookupValue": "id",
+    "path": "/curated_channels?fields=id,name"
+  }
+}
+```
+
+| Property | Meaning |
+|---|---|
+| **`reference.objectName`** | The resource to list (use as `<object>` in `run list`). May include query params. |
+| **`reference.lookupNames`** | Fields to match the user's input against (e.g., match "general" against `name`) |
+| **`reference.lookupValue`** | The field to extract as the resolved value (e.g., `id`) |
+| **`reference.path`** | The API path — use `reference.objectName` for the list call |
+| **`reference.filterPattern`** | Search endpoint pattern — substitute the user's input into `{filter}` and pass as `--query`. See [Search References](#search-references-filterpattern). |
+| **`reference.childPath`** | Scoped child path — used for drill-down references (e.g., folder subfolders) |
+
+> **`objectName` fallback.** If `run list <reference.objectName>` returns 404, the connector uses a symbolic objectName the runner can't resolve (e.g. Data Service `system` → "Entity system does not exist"). Retry with the resource segment of `reference.path`: `/standard-objects` → `run list "<connector-key>" "standard-objects"`.
+
+### Resolution workflow
+
+```bash
+# 1. Describe → find entries with "reference" in requestFields AND parameters
+uip is resources describe "<connector-key>" "<resource>" \
+  --connection-id "<id>" --operation Create --output json
+
+# 2. For each reference field, list the referenced object
+#    Use reference.objectName as the object name (including any query params)
+uip is resources run list "<connector-key>" "<reference.objectName>" \
+  --connection-id "<id>" --output json
+
+# 3. Match the user's input against reference.lookupNames in the results
+#    Extract reference.lookupValue as the resolved ID
+
+# 4. Execute with resolved IDs (not display names)
+uip is resources run create "<connector-key>" "<resource>" \
+  --connection-id "<id>" --body '{"channel": "<resolved-id>"}' --output json
+```
+
+### Example: Resolving a Slack channel (list reference)
+
+User says: "Send a message to #general"
+
+1. **Describe** returns `channel` field with `reference.objectName: "curated_channels?types=public_channel,private_channel"`
+2. **List** the referenced object:
+   ```bash
+   uip is resources run list "uipath-salesforce-slack" \
+     "curated_channels?types=public_channel,private_channel" \
+     --connection-id "<id>" --output json
+   ```
+3. **Match** "general" against `lookupNames` (`name` field) in results → find `{ "name": "general", "id": "C02CAP3LAAG" }`
+4. **Use** the `lookupValue` (`id`) → `"C02CAP3LAAG"` in the `--body`
+
+**Present options to the user** when multiple matches exist. Always use the resolved `lookupValue` (not display names) in `--body` or `--query`.
+
+**Zero matches:** if the completed lookup (`Data.Pagination.HasMore` is `"false"`) finds no entry matching the user's value, do not execute with it — ask the user, presenting the closest candidates as options. Proceed with the unverified value only if the user confirms it.
+
+---
+
+## 4.0.0 Activities — Script References (`scriptRef`)
+
+Reference fields on `4.0.0` activities (the activity's `configuration` JSON reports `"version":"4.0.0"`) are backed by a **published connector script**, not a listable object. The `reference` block carries `scriptRef` and has **no `objectName` / `path`**:
+
+```json
+{
+  "name": "usergroup",
+  "type": "string",
+  "displayName": "User group",
+  "required": true,
+  "reference": {
+    "scriptRef": "list_usergroups",
+    "lookupValue": "id",
+    "lookupNames": ["id", "name"]
+  }
+}
+```
+
+| Property | Meaning |
+|---|---|
+| **`reference.scriptRef`** | The published script to run (use as `--script-ref`). |
+| **`reference.lookupNames`** | Fields to match the user's input against. May be dotted paths into nested objects (`profile.real_name`, `profile.email`). |
+| **`reference.lookupValue`** | The field to extract as the resolved value (e.g. `id`). |
+
+`run list` cannot resolve these — there is no object to list. Run the script instead:
+
+```bash
+# 1. Describe with --activity-version 4.0.0 AND --operation <verb> — without --operation the
+#    response is an operation summary and carries no requestFields/reference blocks
+uip is resources describe "<connector-key>" "<object-name>" \
+  --activity-version 4.0.0 --operation <METHOD> --output json
+
+# 2. For each reference field, run its script against the bound connection
+uip is resources run script --connection-id "<id>" \
+  --connector-key "<connector-key>" --script-ref "<reference.scriptRef>" --output json
+
+# 3. Match the user's input against reference.lookupNames in the returned rows
+#    Extract reference.lookupValue as the resolved ID
+
+# 4. Write the resolved ID (never the display name) into the node / --body
+```
+
+`--connection-id` and `--connector-key` are both required with `--script-ref`. The metadata itself is not connection-scoped, but the **lookup is**: the script runs with the connection's credential, so the same connection-scoping rules apply ([Reference IDs Are Connection-Scoped](#reference-ids-are-connection-scoped-critical)).
+
+### Reading the response
+
+The response is the vendor's own answer, so the envelope differs from `run list`:
+
+- `Data.Status` — the **vendor's** HTTP status. A vendor `4xx`/`5xx` still returns `Result: "Success"`; check `Data.Status`, never assume success from the envelope.
+- `Data.Body` — the vendor's response, parsed. For `list_*` scripts it is an array of records.
+- `--output-filter` reaches into the body as `Body`, not `Data.Body`. The expression is evaluated against `Data`, so a `Data.`-prefixed path resolves to null:
+
+```bash
+uip is resources run script --connection-id "<id>" \
+  --connector-key "uipath-salesforce-slack" --script-ref "list_usergroups" --output json \
+  --output-filter "Body[?name=='<user input>'].id"
+```
+
+Match against every entry in `lookupNames`, resolving dotted paths (`profile.email` → `row.profile.email`). Zero matches, multiple matches, and failed calls follow the same rules as `run list`: ask with candidates, or stop and report — see [When the Lookup Call Fails](#when-the-lookup-call-fails-critical). There is no `Data.Pagination` block; the script returns its complete result set.
+
+### Where `scriptRef` is visible
+
+`uip is resources describe … --activity-version 4.0.0 --operation <METHOD>` exposes it as `Reference.ScriptRef`. Flow `registry get` output (`uip maestro flow registry get`) may show the same field's `reference` with only `lookupValue`/`lookupNames` — an object with **neither `objectName` nor `scriptRef`** on a `4.0.0` node means a script-backed reference: read `scriptRef` from `describe`. Do not fall back to `run list` with a guessed object name.
+
+---
+
+## Scope Filtering (CRITICAL)
+
+`uip is resources run list <connector> <reference-object>` may return BOTH global entries (`scope: null`) and project-scoped entries (`scope.type: "PROJECT"`) — often with the **same display name**. Picking the first match by `.name` silently picks the wrong scope.
+
+**Concrete failure:** Jira issuetype "Task" exists globally as `id=3` and per-project as `id=10659` scoped to project `10851`. Selecting `id=10659` for a different project fails at runtime.
+
+### Rule
+
+When picking a reference value for a curated cascade root field (e.g. `fields.issuetype.id` on Jira), ALWAYS inspect `.scope`:
+
+- `scope: null` → globally applicable, safe.
+- `scope.type: "PROJECT"` → valid only when the cascade parent (e.g. `fields.project.key`/`id`) matches `scope.project.id`.
+
+### jq filter
+
+```bash
+uip is resources run list "<connector>" "<reference-object>" \
+  --connection-id "<id>" --output json \
+| jq '.Data | map(select(.scope == null or .scope.project.id == "<target-project-id>"))'
+```
+
+Apply the same filter to any reference whose entries carry `scope` — not just Jira.
+
+---
+
+## Search References (filterPattern)
+
+Some reference fields point to **search endpoints** that require user input as a query parameter. These have a `filterPattern` property with a `{filter}` placeholder.
+
+### Search reference structure
+
+```json
+{
+  "name": "productId",
+  "displayName": "Product ID",
+  "description": "ID of the product to which the ticket is mapped",
+  "required": false,
+  "reference": {
+    "objectName": "search_products",
+    "lookupNames": ["productCode", "id"],
+    "lookupValue": "id",
+    "path": "/search_products",
+    "filterPattern": "productCode={filter}"
+  }
+}
+```
+
+### How to detect
+
+If `reference.filterPattern` exists, the reference supports server-side filtering. Omitting the filter does NOT reliably error — some connectors (Microsoft Graph-backed: Teams, Outlook) return the **entire unfiltered collection** instead (thousands of rows, 50/page). Arbitrary query params (`searchTerm=`, `where=`, `filter=`) are silently ignored — only the exact `filterPattern` key filters. Always apply it; never brute-force paginate a large directory when a `filterPattern` exists.
+
+`filterPattern` is surfaced only by `uip is resources describe` (IS-level metadata). Representations that strip it (e.g. Maestro flow `registry get` reference object, which keeps only `objectName`/`lookupValue`/`lookupNames`/`path`/`childPath`) are not authoritative — re-describe at IS level before concluding a reference cannot be filtered.
+
+### Resolution workflow (search)
+
+1. **Get the user's search input** — the value they want to look up (e.g., product name, code)
+2. **Substitute into filterPattern** — replace `{filter}` with the user's input
+3. **Pass as `--query`** when listing the referenced object:
+
+```bash
+# filterPattern: "productCode={filter}"
+# User input: "Widget Pro"
+uip is resources run list "<connector-key>" "search_products" \
+  --connection-id "<id>" --query "productCode=Widget Pro" --output json
+```
+
+4. **Match results** against `lookupNames` and extract `lookupValue` as usual
+
+### Example: Resolving a Zoho Desk product
+
+User says: "Create a ticket for product Widget Pro"
+
+1. **Describe** returns `productId` with `reference.filterPattern: "productCode={filter}"`
+2. **Search** with user input:
+   ```bash
+   uip is resources run list "uipath-zoho-desk" "search_products" \
+     --connection-id "<id>" --query "productCode=Widget Pro" --output json
+   ```
+   → `{ "productCode": "WP-100", "id": "1892000000056007" }`
+3. **Use** the `lookupValue` (`id`) → `"1892000000056007"` in `--body`
+
+### Example: Resolving a Microsoft Teams user (OData `$filter`)
+
+`filterPattern` may be a full OData `$filter` expression, not just `key={filter}`. Same mechanic: substitute `{filter}`, pass the whole string as `--query`.
+
+1. **Describe** the activity's object (e.g. `bot_direct_messages`) → `userId` reference has `filterPattern: "$filter=startswith(userPrincipalName,'{filter}')"`
+2. **Substitute and pass as `--query`.** Single-quote the value so the shell does not expand the literal `$`:
+   ```bash
+   uip is resources run list "uipath-microsoft-teams" "users" \
+     --connection-id "<id>" \
+     --query '$filter=startswith(userPrincipalName,'"'"'jane.doe'"'"')' --output json
+   ```
+   → one row: `{ "id": "7a621d6b-…", "userPrincipalName": "jane.doe@example.com" }`
+3. **Use** `lookupValue` (`id`) as the resolved value.
+
+Without the `$filter` this `/users` listing returns the full tenant directory (50/page, thousands of rows). A dedicated by-key endpoint (e.g. Teams `user-by-email/{email}`) is a fallback only when no `filterPattern` exists.
+
+> **If the user doesn't provide a search term**, ask them. Search references cannot be resolved without user input — do NOT call the search endpoint with an empty filter.
+
+---
+
+## Field Dependency Chains
+
+Some reference fields **depend on other fields** — the child field's valid values are scoped by the parent field's selection. Dependencies are expressed in `reference.path` templates containing `{otherField}` variables that must be substituted.
+
+### How to detect dependencies
+
+Check if `reference.path` contains `{fieldName}` template variables. If so, that field depends on the referenced field. Resolve the parent first.
+
+**CRITICAL: If a parent field value is NOT in the user's prompt, you MUST ask the user for it BEFORE attempting to resolve any child fields.** Do not resolve child fields without a scoped parent — the results will be wrong or ambiguous.
+
+### Dependency chain example
+
+A resource has two reference fields with a dependency chain:
+
+```
+Field A → no template variables in path    → resolve first (list resource, pick value)
+Field B → path contains {Field A}          → resolve after A (list scoped by A's value)
+```
+
+**Wrong** — listing Field B's resource globally returns duplicates from all scopes.
+
+**Correct** — resolve Field A first, then list Field B's resource scoped to Field A's resolved value:
+
+```bash
+# Step 1: Resolve Field A (no dependencies)
+uip is resources run list "<connector-key>" "<resource-a>" \
+  --connection-id "<id>" --output json
+# → pick value
+
+# Step 2: Resolve Field B scoped to Field A's value
+uip is resources run list "<connector-key>" "<resource-a>/<resolved-value>/sub-resource" \
+  --connection-id "<id>" --output json
+# → only values valid for this scope
+```
+
+### General rule
+
+When resolving reference fields:
+1. **Sort fields by dependency** — fields with no `{template}` in their reference path come first
+2. **Resolve parent fields** — list the parent resource, pick the value
+3. **Substitute into child path** — replace `{parentField}` in the child's reference path with the resolved value
+4. **Resolve child fields** — list the scoped resource using the substituted path
+
+This pattern applies across all connectors wherever child fields are scoped by parent selections.
+
+---
+
+## Inferring References Without Describe
+
+When describe metadata is unavailable (see [resources.md — Describe Failures](resources.md#describe-failures)), infer reference fields from naming conventions:
+
+- Fields ending in **`Id`** (e.g., `PromotionId`, `AccountId`) typically reference the object with the matching base name (`Promotion`, `Account`).
+- List the inferred object to resolve the ID: `is resources run list "<connector-key>" "<base-name>" --connection-id "<id>" --output json`
+- Match the user's value by `Name` or `DisplayName` in the results.
+
+---
+
+## Static Reference-Value Labeling
+
+When baking a **static value** for a field that has a `.reference` block (any connector — Jira `fields.project.key`/`fields.issuetype.id`, Slack `send_as`/`channel`, Outlook `outputTimezone`/`calendarID`, etc.), the AgentHub edit-UI cannot resolve the display label on its own and renders the raw scalar. Persist labels alongside the bound values via `designTimeMetadata.designTimeLookups`.
+
+### Persisted shape
+
+```jsonc
+"designTimeMetadata": {
+  "designTimeLookups": {
+    "<dotted-field-name>": "<displayName> - <value>"
+    // e.g. "fields.project.key": "Orchestrator - OR"
+    // e.g. "fields.issuetype.id": "Task - 3"
+    // e.g. "send_as": "Bot - bot"
+    // e.g. "channel": "general - C02CAP3LAAG"
+  }
+}
+```
+
+- Shape is `Record<string, string>`. NOT the array-of-`{id,title}` form that the FE library's TypeScript types may suggest — that is the internal Redux shape, different from persistence.
+- Key = the same dotted field name used in `staticValues.<bucket>.<field>`.
+- Value = `"<displayName> - <baked-value>"` (literal ` - ` separator).
+
+### Resolving `displayName`
+
+```bash
+uip is resources run list "<connector>" "<reference.objectName>" \
+  --connection-id "<id>" --output json
+```
+
+Match the baked value against `lookupValue` (from the field's `reference` block). Take `lookupNames[0]` from the matching entry as `displayName`.
+
+### Cascade-scoped references
+
+When `reference.path` contains `{parent.field}` placeholders (e.g. Jira `fields.issuetype.id` → `/project/{fields.project.key}/issuetypes`), the reference is logically scoped to a parent value but the CLI's `run list` does not accept a parent-context flag. `reference.objectName` in this case names the path's root (`project`), not the leaf collection you actually want.
+
+Two-step resolution:
+
+1. **Pick the leaf object.** Take the last path segment singular form. For `/project/{fields.project.key}/issuetypes` use `issuetype` (drop trailing `s` if present).
+2. **List the leaf object and filter by scope.** Many connectors return both global (`scope: null`) and parent-scoped rows in the same listing:
+   ```bash
+   uip is resources run list "<connector>" "<leaf-object>" \
+     --connection-id "<id>" --output json
+   ```
+   - If your baked value resolves to a global entry, pick the row with `scope: null`.
+   - If it resolves to a parent-scoped entry, pick the row whose `scope.<parentType>.<id>` matches the baked parent value (resolved through its own reference first).
+   - Match by `reference.lookupValue` as in the flat case. Take `reference.lookupNames[0]` as the label.
+
+Concrete Jira example — baked `fields.project.key="OR"`, `fields.issuetype.id="3"`:
+- Project: `run list … project` → match `key=OR` → `name="Orchestrator"` → `"Orchestrator - OR"`.
+- Issuetype: `run list … issuetype` returns ~400+ rows. `id=3` matches `name="Task"` → `"Task - 3"`.
+
+**Jira issuetype scope caveat.** The CLI surfaces every issuetype row with `scope: null` even when Jira itself project-scopes the type (the connector flattens scope). Filtering by `scope` is therefore unreliable for Jira issuetype disambiguation. When multiple rows share a display name (e.g., several `Epic` entries at different ids), verify the candidate id by re-running the cascade describe with `(project.key, issuetype.id)` — a successful describe means the id is valid for that project. Other connectors that return scope honestly still match by `scope.<parentType>.<id>` as described above.
+
+Do NOT re-issue `uip is resources describe -f <parent>=<value>` solely for label resolution — the cascade is intended for required-field expansion. For Jira `curated_create_issue` specifically, omit `--action`; passing it triggers `No api-type ObjectAction matched for fields [...]`.
+
+### Applies to
+
+Every connector with reference-typed fields. Emit one `designTimeLookups` entry per static reference value baked into `staticValues` — Jira, Slack, Outlook, Salesforce, ServiceNow, Workday, and so on.
+
+---
+
+## Validate Required Fields Before Executing
+
+After resolving references, **check every required field** from the describe response against what the user provided. This is a hard gate — do NOT execute until all required fields have values.
+
+**Process:**
+1. Collect all fields where `required: true` from the describe output
+2. For each required field, check if the user's prompt contains a value for it
+3. If any required field is missing, **ask the user** before proceeding:
+   - List the missing fields with their `displayName` and `description`
+   - For reference fields, explain what kind of value is expected
+   - Wait for the user's response before continuing
+4. Only after all required fields are accounted for, proceed to execute
+
+> **Do NOT guess or skip missing required fields.** A missing required field will cause a runtime error. It is always better to ask than to assume.

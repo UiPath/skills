@@ -1,0 +1,546 @@
+# Solution-Level Files for External Process Tools — Hand-Authoring Reference
+
+When `uip solution resources refresh` cannot produce solution-level files (offline, missing RCS match, custom deployment), hand-author them using the templates below. For the standard auto-generated path, see [process.md](process.md).
+
+It also documents the Releases API + `GetPackageEntryPointsV2` + JWT decoding extraction path — used when `uip solution resources get` is unavailable (older `uip` builds, RCS unreachable, custom deployments). For the standard CLI-driven extraction, see [process.md § Discovery](process.md#discovery).
+
+> **`folders[].fullyQualifiedName` carries the literal `Folder`** (e.g., `"Shared"`, `"Shared/Sales"`) returned by `uip solution resources list` — the same value the agent-level `resource.json` writes into `properties.folderPath` and that `bindings_v2.json` propagates. Templates show `<Folder>` as the placeholder; examples show `"Shared"` as a concrete value. Auto-generated declarations for **solution-internal projects** (created when the agent project is registered with the solution — by `uip agent init` auto-registration or by the `uip solution projects add` fallback) keep `"solution_folder"` instead — they have no fixed Orchestrator folder until deploy. See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Rule 11.
+
+## Directory Structure
+
+```
+<SolutionName>/
+├── <SolutionName>.uipx
+├── <AgentName>/
+│   ├── agent.json
+│   └── resources/
+│       └── <ToolName>/
+│           └── resource.json            # Agent-level resource (see process.md)
+├── resources/
+│   └── solution_folder/
+│       ├── package/
+│       │   ├── <AgentName>.json         # Agent package (auto-generated when project is registered with solution)
+│       │   └── <PackageName>.json       # External tool package declaration (YOU CREATE THIS)
+│       └── process/
+│           ├── agent/
+│           │   └── <AgentName>.json     # Agent process (auto-generated when project is registered with solution)
+│           ├── process/                 # ← RPA processes (type: "process")
+│           ├── api/                     # ← API workflows (type: "api")
+│           └── processOrchestration/    # ← Agentic processes (type: "processOrchestration")
+│               └── <ToolName>.json      # External tool process declaration (YOU CREATE THIS)
+└── userProfile/
+    └── <userId>/
+        └── debug_overwrites.json        # Folder resolution for Studio Web (YOU CREATE THIS)
+```
+
+The process declaration directory depends on the tool type. Place the file in the subdirectory matching the `ProcessType` from the Releases API: `process/` for RPA, `agent/` for agents, `api/` for API workflows, `processOrchestration/` for agentic processes.
+
+## Process Declaration
+
+**Path:** `resources/solution_folder/process/<type_dir>/<ToolName>.json`
+
+Declares the external process as a solution resource. The structure differs between RPA processes and all other types (Agent, API, Agentic Process). Get the values from the Releases API and `GetPackageEntryPointsV2` (see § How to Get the Values below).
+
+| ProcessType | `resource.type` | `spec.type` | Directory | Schema approach |
+|---|---|---|---|---|
+| `Process` (RPA) | `process` | `Process` | `process/process/` | `inputArgumentsSchema`/`outputArgumentsSchema` (raw .NET arrays) |
+| `Agent` | `agent` | `Agent` | `process/agent/` | `inputArgumentsSchemaV2`/`outputArgumentsSchemaV2` (JSON Schema) |
+| `Api` | `api` | `Api` | `process/api/` | `inputArgumentsSchemaV2`/`outputArgumentsSchemaV2` (JSON Schema) |
+| `ProcessOrchestration` | `processOrchestration` | `ProcessOrchestration` | `process/processOrchestration/` | `inputArgumentsSchemaV2`/`outputArgumentsSchemaV2` (JSON Schema) |
+
+**Key differences:**
+- **RPA**: Uses `inputArgumentsSchema`/`outputArgumentsSchema` (raw .NET type arrays from `Arguments.Input`/`Arguments.Output`). V2 schema fields and entry point fields are `null`. Has extra spec fields: `jobPriority`, `jobRecording`, `duration`, `frequency`, `quality`, `remoteControlAccess`.
+- **Agent/API/Agentic**: Uses `inputArgumentsSchemaV2`/`outputArgumentsSchemaV2` (JSON Schema from `GetPackageEntryPointsV2`). Populates `entryPointUniqueId`, `entryPointName`, `entryPoints`. Old-style schema fields are `null`. Agent type adds `agentMemory`, `targetRuntime`, `environmentVariables`, `referencedAssets`.
+
+### Template A — RPA Process (`type: "process"`)
+
+**Path:** `resources/solution_folder/process/process/<ToolName>.json`
+
+Uses `inputArgumentsSchema`/`outputArgumentsSchema` (raw .NET type arrays from `Arguments.Input`/`Arguments.Output`). Entry point fields and V2 schema fields are `null`.
+
+```jsonc
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "<ToolName>",
+    "kind": "process",
+    "type": "process",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [
+      {
+        "name": "<PackageName>",
+        "kind": "Package"
+      }
+    ],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      { "fullyQualifiedName": "<Folder>" }
+    ],
+    "spec": {
+      "type": "Process",
+      "jobPriority": "Medium",
+      "jobRecording": "Disabled",
+      "duration": 40,
+      "frequency": 500,
+      "quality": 100,
+      "remoteControlAccess": "None",
+      "name": "<ToolName>",
+      "package": {
+        "name": "<PackageName>",
+        "key": "<PackageName>:<Version>"
+      },
+      "packageName": "<PackageName>",
+      "packageVersion": "<Version>",
+      "entryPointUniqueId": null,
+      "entryPointName": null,
+      "inputArguments": null,
+      "inputArgumentsSchema": "<raw Arguments.Input string from Releases API>",
+      "outputArgumentsSchema": "<raw Arguments.Output string from Releases API>",
+      "inputArgumentsSchemaV2": null,
+      "outputArgumentsSchemaV2": null,
+      "hiddenForAttendedUser": false,
+      "alwaysRunning": false,
+      "autoStartProcess": false,
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "retentionBucketRef": null,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180,
+      "staleRetentionBucketRef": null,
+      "entryPoints": null,
+      "connections": null,
+      "tags": [],
+      "description": null
+    },
+    "locks": [],
+    "key": "<release-key-guid>"
+  }
+}
+```
+
+#### Example: RPA Process
+
+**Path:** `resources/solution_folder/process/process/TestRPA.json`
+
+```jsonc
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TestRPA",
+    "kind": "process",
+    "type": "process",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [
+      {
+        "name": "TestRPA.process.TestRPA",
+        "kind": "Package"
+      }
+    ],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      { "fullyQualifiedName": "Shared" }
+    ],
+    "spec": {
+      "type": "Process",
+      "jobPriority": "Medium",
+      "jobRecording": "Disabled",
+      "duration": 40,
+      "frequency": 500,
+      "quality": 100,
+      "remoteControlAccess": "None",
+      "name": "TestRPA",
+      "package": {
+        "name": "TestRPA.process.TestRPA",
+        "key": "TestRPA.process.TestRPA:1.0.0"
+      },
+      "packageName": "TestRPA.process.TestRPA",
+      "packageVersion": "1.0.0",
+      "entryPointUniqueId": null,
+      "entryPointName": null,
+      "inputArguments": null,
+      "inputArgumentsSchema": "[\n  {\n    \"name\": \"name\",\n    \"type\": \"System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e\",\n    \"required\": false,\n    \"hasDefault\": true\n  }\n]",
+      "outputArgumentsSchema": "[\n  {\n    \"name\": \"greeting\",\n    \"type\": \"System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e\"\n  }\n]",
+      "inputArgumentsSchemaV2": null,
+      "outputArgumentsSchemaV2": null,
+      "hiddenForAttendedUser": false,
+      "alwaysRunning": false,
+      "autoStartProcess": false,
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "retentionBucketRef": null,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180,
+      "staleRetentionBucketRef": null,
+      "entryPoints": null,
+      "connections": null,
+      "tags": [],
+      "description": null
+    },
+    "locks": [],
+    "key": "cc69568b-e686-4737-bf62-7ed6ddb0849b"
+  }
+}
+```
+
+### Template B — Agent / API Workflow / Agentic Process
+
+**Path:** `resources/solution_folder/process/<type_dir>/<ToolName>.json` where `<type_dir>` is `agent/`, `api/`, or `processOrchestration/`.
+
+Uses `inputArgumentsSchemaV2`/`outputArgumentsSchemaV2` (JSON Schema strings from `GetPackageEntryPointsV2`). Populates `entryPointUniqueId`, `entryPointName`, and `entryPoints`. Old-style schema fields are `null`. No RPA-specific spec fields (`jobPriority`, `jobRecording`, etc.).
+
+```jsonc
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "<ToolName>",
+    "kind": "process",
+    "type": "<type>",                       // "agent", "api", or "processOrchestration"
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [
+      {
+        "name": "<PackageName>",
+        "kind": "Package"
+      }
+    ],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      { "fullyQualifiedName": "<Folder>" }
+    ],
+    "spec": {
+      "type": "<Type>",                     // "Agent", "Api", or "ProcessOrchestration" (PascalCase)
+      // Agent-only fields (include ONLY when type = "agent"):
+      // "agentMemory": false,
+      // "targetRuntime": "pythonAgent",
+      // "environmentVariables": "",
+      // "referencedAssets": null,
+      "name": "<ToolName>",
+      "package": {
+        "name": "<PackageName>",
+        "key": "<PackageName>:<Version>"
+      },
+      "packageName": "<PackageName>",
+      "packageVersion": "<Version>",
+      "entryPointUniqueId": "<UniqueId from GetPackageEntryPointsV2>",
+      "entryPointName": "<Path from GetPackageEntryPointsV2>",
+      "inputArguments": null,
+      "inputArgumentsSchema": null,
+      "outputArgumentsSchema": null,
+      "inputArgumentsSchemaV2": "<InputArguments JSON Schema string from GetPackageEntryPointsV2>",
+      "outputArgumentsSchemaV2": "<OutputArguments JSON Schema string from GetPackageEntryPointsV2>",
+      "hiddenForAttendedUser": false,
+      "alwaysRunning": false,
+      "autoStartProcess": false,
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "retentionBucketRef": null,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180,
+      "staleRetentionBucketRef": null,
+      "entryPoints": "<serialized JSON array — see below>",
+      "connections": null,
+      "tags": [],
+      "description": null
+    },
+    "locks": [],
+    "key": "<release-key-guid>"
+  }
+}
+```
+
+**`entryPoints` serialized JSON format** (for Agent/API/Agentic Process only):
+
+Construct a JSON array, then serialize it as a string. Use data from `GetPackageEntryPointsV2`:
+
+```jsonc
+[{
+  "UniqueId": "<UniqueId>",
+  "Path": "<Path>",
+  "DisplayName": null,
+  "InputArguments": "<InputArguments string>",   // Same as inputArgumentsSchemaV2
+  "OutputArguments": "<OutputArguments string>", // Same as outputArgumentsSchemaV2
+  "Type": <numeric_type>,                       // 1=Process, 2=ProcessOrchestration, 4=Agent, 6=Api
+  "TargetRuntime": null,
+  "ContentRoot": null,
+  "DataVariation": null,
+  "Id": <Id>
+}]
+```
+
+#### Example: Agent
+
+**Path:** `resources/solution_folder/process/agent/TestAgent.json`
+
+```jsonc
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TestAgent",
+    "kind": "process",
+    "type": "agent",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [
+      {
+        "name": "TestAgentSolution.agent.TestAgent",
+        "kind": "Package"
+      }
+    ],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      { "fullyQualifiedName": "Shared" }
+    ],
+    "spec": {
+      "type": "Agent",
+      "agentMemory": false,
+      "targetRuntime": "pythonAgent",
+      "environmentVariables": "",
+      "referencedAssets": null,
+      "name": "TestAgent",
+      "package": {
+        "name": "TestAgentSolution.agent.TestAgent",
+        "key": "TestAgentSolution.agent.TestAgent:1.0.0"
+      },
+      "packageName": "TestAgentSolution.agent.TestAgent",
+      "packageVersion": "1.0.0",
+      "entryPointUniqueId": "02ff7040-604a-481f-8336-235de71e2b4b",
+      "entryPointName": "content/agent.json",
+      "inputArguments": null,
+      "inputArgumentsSchema": null,
+      "outputArgumentsSchema": null,
+      "inputArgumentsSchemaV2": "{\n  \"type\": \"object\",\n  \"properties\": {}\n}",
+      "outputArgumentsSchemaV2": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"content\": {\n      \"type\": \"string\",\n      \"description\": \"Output content\"\n    }\n  }\n}",
+      "hiddenForAttendedUser": false,
+      "alwaysRunning": false,
+      "autoStartProcess": false,
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "retentionBucketRef": null,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180,
+      "staleRetentionBucketRef": null,
+      "entryPoints": "[{\"UniqueId\":\"02ff7040-604a-481f-8336-235de71e2b4b\",\"Path\":\"content/agent.json\",\"DisplayName\":null,\"InputArguments\":\"{\\n  \\\"type\\\": \\\"object\\\",\\n  \\\"properties\\\": {}\\n}\",\"OutputArguments\":\"{\\n  \\\"type\\\": \\\"object\\\",\\n  \\\"properties\\\": {\\n    \\\"content\\\": {\\n      \\\"type\\\": \\\"string\\\",\\n      \\\"description\\\": \\\"Output content\\\"\\n    }\\n  }\\n}\",\"Type\":4,\"TargetRuntime\":null,\"ContentRoot\":null,\"DataVariation\":null,\"Id\":790954}]",
+      "connections": null,
+      "tags": [],
+      "description": null
+    },
+    "locks": [],
+    "key": "f6084607-a81c-45f1-90e4-ffe8fed22c53"
+  }
+}
+```
+
+## Package Declaration
+
+**Path:** `resources/solution_folder/package/<PackageName>.json`
+
+Declares the package for the external process. The `<PackageName>` is the `ProcessKey` from the `/odata/Releases` response — e.g., `MyProcess.process.MyProcess`. Format is **identical for all 4 process types** — only the package name and version change.
+
+**Important:** If the package is in a solution-specific feed (its `FeedId` from the Releases API differs from the tenant feed), append `?feedId=<FEED_ID>` to the download URL. This applies to **all** process types (agents, API workflows, agentic processes, RPA), not just agents. Without this, Studio Web reports "Resource '...' is missing in this environment."
+
+```jsonc
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "<PackageName>",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [
+      {
+        "name": "<PackageName>.<Version>.nupkg",
+        "kind": "Package",
+        "version": "<Version>",
+        "url": "<orchBase>/odata/Processes/UiPath.Server.Configuration.OData.DownloadPackage(key='<URL_ENCODED_PACKAGE_KEY>')",
+        "key": "<PackageName>_<Version_underscores>"   // Dots replaced with underscores: "MyProcess.process.MyProcess_1_0_0"
+      }
+    ],
+    "folders": [
+      {
+        "fullyQualifiedName": "<Folder>"
+      }
+    ],
+    "spec": {
+      "fileName": "<PackageName>.<Version>.nupkg",
+      "fileReference": "<PackageName>_<Version_underscores>",  // Same as files[0].key
+      "name": "<PackageName>",
+      "description": null
+    },
+    "locks": [],
+    "key": "<PackageName>:<Version>"       // e.g., "MyProcess.process.MyProcess:1.0.0" (colon separator)
+  }
+}
+```
+
+**URL construction:**
+- `<orchBase>` = `${UIPATH_URL}/${UIPATH_ORGANIZATION_NAME}/${UIPATH_TENANT_NAME}/orchestrator_`
+- `<URL_ENCODED_PACKAGE_KEY>` = URL-encode `<PackageName>:<Version>` (e.g., `MyProcess.process.MyProcess%3A1.0.0`)
+- `<Version_underscores>` = version with dots replaced by underscores (e.g., `1.0.0` → `1_0_0`)
+- **Solution-feed packages:** If the external tool was deployed from a solution (its `FeedId` from the Releases API differs from the tenant-level feed), append `?feedId=<FEED_ID>` to the download URL. This applies to **all** process types (agents, API workflows, agentic processes, RPA), not just agents. Without this, Studio Web reports "Resource '...' is missing in this environment."
+
+### Example: Package Declaration
+
+```jsonc
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TestRPA.process.TestRPA",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [
+      {
+        "name": "TestRPA.process.TestRPA.1.0.0.nupkg",
+        "kind": "Package",
+        "version": "1.0.0",
+        "url": "<orchestrator-download-url>",
+        "key": "TestRPA.process.TestRPA_1_0_0"
+      }
+    ],
+    "folders": [
+      { "fullyQualifiedName": "Shared" }
+    ],
+    "spec": {
+      "fileName": "TestRPA.process.TestRPA.1.0.0.nupkg",
+      "fileReference": "TestRPA.process.TestRPA_1_0_0",
+      "name": "TestRPA.process.TestRPA",
+      "description": null
+    },
+    "locks": [],
+    "key": "TestRPA.process.TestRPA:1.0.0"
+  }
+}
+```
+
+## debug_overwrites.json (process kind)
+
+**Path:** `userProfile/<userId>/debug_overwrites.json`
+
+Maps `solution_folder` to the actual Orchestrator folder so Studio Web can resolve external tool references during import and debugging. **Required for external tools** — without this file, Studio Web will show "resource is missing in this environment".
+
+```jsonc
+{
+  "docVersion": "1.0.0",
+  "tenants": [
+    {
+      "tenantKey": "<TENANT_ID>",   // Data.TenantId from `uip login status --output json`
+      "resources": [
+        {
+          "solutionResourceKey": "<release-key-guid>",  // Same as referenceKey in agent resource
+          "reprovisioningIndex": 0,
+          "overwrite": {
+            "resourceKey": "<release-key-guid>",
+            "resourceName": "<ToolName>",
+            "folderKey": "<folder-key-guid>",            // FolderKey from `uip solution resources list --kind Process`
+            "folderFullyQualifiedName": "<folder-path>", // Folder from the same (e.g., "Shared/MyFolder")
+            "folderPath": "<parent-key>.<folder-key>",   // If folder has parent: "parentKey.folderKey". If no parent: just "folderKey"
+            "type": "Reference",
+            "kind": "process"
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Multiple external tools:** Add one entry per tool to the `resources` array. If a resource with the same `solutionResourceKey` already exists, replace it.
+
+For the generic debug_overwrites shape (capability-agnostic), see [../../solution-resources.md](../../solution-resources.md) § Debug Overwrites.
+
+## How to Get the Values
+
+> **Fallback path.** When `uip solution resources get` is available, use it instead — see [process.md § Discovery](process.md#discovery). The steps below are for older `uip` builds, RCS-unreachable environments, or custom deployments where the CLI cannot supply the full configuration.
+
+> **SECURITY: Never read the CLI's credentials file or extract the access token** — it must not appear in Claude's context. Make the Orchestrator calls below with `uip api`, which adds base URL, organization, tenant and token itself and returns only the response (`Data.Body`). If `uip api` is an unknown command, run `uip update`, then retry.
+
+### Step 1: Discover the process and its folder
+
+```bash
+uip solution resources list --kind Process --source remote --search "<NAME>" --output json
+```
+
+Returns, for each match:
+- `Key` — release Key GUID. Use as `referenceKey` in the agent resource and `key` in the process declaration.
+- `Type` — maps 1:1 to the agent resource `type` and the process declaration directory:
+  - `process` → `process/process/`
+  - `agent` → `process/agent/`
+  - `api` → `process/api/`
+  - `processOrchestration` → `process/processOrchestration/`
+- `Folder` — literal Orchestrator folder path (e.g., `"Shared/Sales"`). Use as: agent-level `resource.json` `properties.folderPath`, solution-level `folders[].fullyQualifiedName` (in both process and package declarations), and `folderFullyQualifiedName` in `debug_overwrites.json`.
+- `FolderKey` — folder GUID. Use as `X-UIPATH-FolderKey` header in Steps 2-3 and as `folderKey` in `debug_overwrites.json`.
+
+### Step 2: Query `/odata/Releases` for ProcessKey, ProcessVersion, FeedId, and raw .NET schemas (RPA)
+
+Query the Releases API with `uip api`. Filter by `ProcessKey` (string, exact match):
+
+```bash
+uip api "orchestrator_/odata/Releases?\$filter=ProcessKey%20eq%20'<PROCESS_KEY>'&\$top=1&\$select=Key,Name,ProcessKey,ProcessVersion,ProcessType,FeedId,TargetRuntime,Description,Arguments,Id" \
+  --folder-key "<FOLDER_KEY_GUID>" --output json
+```
+
+Orchestrator's OData rejects `Key eq <guid>` (Edm.Guid mismatch); filter by `ProcessKey` (string) or `Name` instead. The `Key` GUID from Step 1 is used as `referenceKey` and process-declaration `key`, never as a filter value.
+
+Returns:
+- `ProcessKey` / `ProcessVersion` → build `"<ProcessKey>:<Version>"` package key for Step 3
+- `FeedId` → package feed ID, required by `GetPackageEntryPointsV2` in Step 3
+- `TargetRuntime` → `"pythonAgent"` for agents, `null` for others — used in agent process declarations
+- `Arguments.Input` / `Arguments.Output` → raw .NET type array strings (only populated for RPA processes, `null` for others) — used as `inputArgumentsSchema` / `outputArgumentsSchema` in RPA process declarations
+
+### Step 3: Query `GetPackageEntryPointsV2` for schemas and entry point data
+
+This API returns JSON Schema format input/output arguments and entry point metadata. It works for **all 4 process types**.
+
+```bash
+uip api "orchestrator_/odata/Processes/UiPath.Server.Configuration.OData.GetPackageEntryPointsV2(key='<PROCESS_KEY>:<VERSION>')?feedId=<FEED_ID>" \
+  --folder-key "<FOLDER_KEY_GUID>" --output json
+```
+
+- `<PROCESS_KEY>:<VERSION>` — e.g., `TestRPA.process.TestRPA:1.0.0` (from Step 2: `ProcessKey` + `ProcessVersion`)
+- `feedId` — from Step 2 `FeedId`. Always pass it; required for agents published via solution feeds.
+
+Returns (array — take the first entry):
+- `UniqueId` → `entryPointUniqueId` in process declaration (non-RPA types)
+- `Path` → `entryPointName` in process declaration (non-RPA types)
+- `InputArguments` → JSON Schema string — use for agent-level `inputSchema` (parse the JSON) and `inputArgumentsSchemaV2` in process declaration (non-RPA types)
+- `OutputArguments` → JSON Schema string — use for agent-level `outputSchema` (parse the JSON) and `outputArgumentsSchemaV2` in process declaration (non-RPA types)
+- `Type` → numeric entry point type (1=Process, 2=ProcessOrchestration, 4=Agent, 6=Api) — used in `entryPoints` serialized array
+- `Id` → entry point ID — used in `entryPoints` serialized array
+
+### Step 4: Build agent-level inputSchema/outputSchema
+
+Parse the `InputArguments`/`OutputArguments` JSON Schema strings from Step 3 and use them directly as the `inputSchema`/`outputSchema` in the agent-level `resource.json`. This works for all 4 types.
+
+**Fallback for RPA only:** If `GetPackageEntryPointsV2` is unavailable, parse `Arguments.Input`/`Arguments.Output` from Step 2 using this .NET type mapping:
+
+| .NET Type | JSON Schema Type |
+|-----------|-----------------|
+| `System.String` | `"string"` |
+| `System.Int32`, `System.Int64`, `System.Decimal`, `System.Double` | `"number"` |
+| `System.Boolean` | `"boolean"` |
+| Unknown | `"string"` (default) |
+
+Extract the short type name: split by `,` → take first part → split by `.` → take last part. Example: `"System.String, System.Private.CoreLib, ..."` → `"String"` → `"string"`.
+
+### Step 5: Extract userId from JWT
+
+Decode the JWT access token payload (base64) and read the `sub` claim. This is the userId for `debug_overwrites.json`.
+
+## References
+
+- [process.md](process.md) — capability overview + happy-path walkthrough using refresh
+- [../../solution-resources.md](../../solution-resources.md) § Refresh Mechanics, § Debug Overwrites

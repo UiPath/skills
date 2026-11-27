@@ -1,0 +1,189 @@
+# Coded vs XAML Decision Guide
+
+When to use coded workflows (C#), XAML workflows (low-code), Coded Source Files, or InvokeCode — and how they interact in hybrid projects.
+
+## Mode is a per-workflow choice, not a project setting
+
+`uip rpa init` produces a mode-agnostic project — both `project.uiproj` and `project.json` are scaffolded, and the project can host coded workflows (`.cs`), XAML workflows (`.xaml`), or both. The coded vs XAML decision happens when you add a workflow to the project (or when an existing project's dominant mode dictates the default — see step 1 below).
+
+## Decision Flowchart
+
+Follow top-down. Stop at the first match.
+
+0. **Did the user specify a mode?** ("coded workflow", "XAML workflow", "create a .cs file", "low-code") → **Use what they asked for. Do not second-guess.**
+1. **Check the project's existing mode.** Match it unless there is a clear reason not to:
+   - **XAML-only project** → default to XAML. Only go coded if steps 3-6 below apply.
+   - **Coded-only project** → default to coded. Activities (Excel, Mail, UI automation) are available via services on `CodedWorkflow`.
+   - **Hybrid project** → either mode is fine; pick the one that fits the task best using steps 2-7.
+   - **New project** → **default to XAML.** "Create a workflow", "automate X", "build an automation" all mean XAML. Continue to step 2 ONLY if the user used a coded-specific phrase ("coded workflow", ".cs", "C# workflow") or named a coded-specific trigger (data models, unit tests on business logic, complex algorithmic logic). Otherwise stop here and use XAML.
+2. **Can existing activities handle the task directly?** (read Excel, send email, move file, UI click/type, queue processing, connector calls) → **XAML.** This covers the bulk of RPA work. No coded mode needed.
+3. **Does it define data models, DTOs, enums, or custom classes?** → **Coded Source File** (plain `.cs`, no `CodedWorkflow` base). XAML cannot define types — this is the one case where going hybrid is always justified.
+4. **Does it involve complex algorithmic logic?** (5+ nested branches, LINQ aggregation, regex extraction, REST API pagination/retry, sorting/dedup/fuzzy matching) → **Coded Workflow** for that step. Standard if/else, simple loops, and connector calls are fine in XAML — only escalate when a single XAML workflow grows past ~50 activities.
+5. **Does it need unit tests or assertions on business logic?** → **Coded Workflow** + **Coded Test Case** for the logic under test. UI/integration tests can stay XAML.
+6. **Is it reusable utility code?** (helpers, formatters, validators, extension methods) → **Coded Source File**.
+7. **Default** → XAML.
+
+---
+
+## Use Coded Workflows When
+
+1. **Custom data models** — You need classes with properties to represent business entities (`InvoiceLineItem`, `CustomerRecord`). Without coded source files, you're stuck with `DataTable` or `Dictionary<string, object>` and lose type safety.
+   ```csharp
+   // Coded Source File: OrderModels.cs
+   public class OrderLine { public string ProductId; public decimal Price; public int Qty; }
+   ```
+
+2. **Complex data transformation** — JSON deserialization into typed objects, CSV parsing with conditional logic, LINQ aggregation, regex extraction. Coded gives you full `System.Text.Json`, LINQ, and string interpolation without nested InvokeCode activities.
+
+3. **Heavy branching logic** — Nested if/else-if chains, switch statements with 5+ cases, loops with `break`/`continue`. XAML flowcharts become unreadable past 3-4 decision nodes.
+
+4. **REST API integrations** — Building HTTP requests, handling pagination, managing auth tokens with retry logic. `HttpClient` patterns in C# are far cleaner than chaining HTTP Request + Deserialize JSON activities.
+
+5. **Reusable utility libraries** — Date formatting, validation helpers, encryption, file path manipulation. Define as a Coded Source File, callable from any workflow.
+
+6. **Unit-testable business logic** — Pure functions (input → output, no UI) that need automated assertions. Coded Test Cases can call coded workflows directly.
+
+7. **Algorithm-heavy work** — Sorting, deduplication, fuzzy matching, tree traversal — anything that would require dozens of Assign + If activities in XAML.
+
+---
+
+## Use XAML Workflows When
+
+**XAML is the default for any RPA task that does not explicitly require coded.** The list below covers the typical cases — but if a task is ambiguous, the answer is XAML.
+
+1. **Standard business automation** — Excel, email, PDF, web forms, file ops, SAP, Salesforce, ServiceNow, and other connector-driven work. The pre-built activity packages handle authentication, pagination, and error handling out of the box.
+
+2. **UI automation** — Click, type, scrape, verify on desktop or web. XAML is the default for UI automation; the visual selector builder, recording, and indication tools are built around it. Coded UI automation via `uiAutomation` service exists but is the niche path, not the default.
+
+3. **Simple linear processes** — Read Excel → filter rows → send email → move file. Straight pipelines of 5-10 activities with minimal branching read better as XAML.
+
+4. **Process orchestration** — REFramework, queue-based transaction processing, retry patterns. The XAML templates for these are battle-tested.
+
+5. **Mixed workloads** — When some steps are activity-heavy and others involve light logic. Use XAML for orchestration; extract only the genuinely complex logic into a coded workflow invoked via `Invoke Workflow File`.
+
+---
+
+## InvokeCode: When to Extract
+
+InvokeCode embeds C#/VB code inline in a XAML activity. It works for small snippets but becomes a maintenance problem quickly.
+
+### Extraction Rules
+
+1. **Code exceeds ~15 lines** → extract to a Coded Source File (utility) or Coded Workflow (if it needs `CodedWorkflow` services).
+2. **Code defines classes or types** → extract to a Coded Source File. InvokeCode cannot define reusable types.
+3. **Same code is copy-pasted across multiple XAML files** → extract to a Coded Workflow and invoke it via `Invoke Workflow File`.
+4. **Code needs unit tests** → extract to a Coded Workflow + Coded Test Case.
+5. **Code uses complex .NET APIs** (HttpClient, LINQ, JSON serialization) → extract to a Coded Workflow for better readability and error handling.
+
+### Comparison Table
+
+| Criterion | InvokeCode | Coded Source File | Coded Workflow |
+|-----------|-----------|-------------------|----------------|
+| **Where it lives** | Inline in XAML activity | Standalone `.cs` file | `.cs` file |
+| **Inherits CodedWorkflow** | No | No | Yes |
+| **Access to services** (`excel`, `mail`, etc.) | No | No | Yes |
+| **Can define classes/types** | No | Yes | No (one class per file, must be workflow) |
+| **Reusable across workflows** | No (copy-paste) | Yes (import namespace) | Yes (invoke from any workflow) |
+| **Unit testable** | No | Indirectly | Yes (via Coded Test Case) |
+| **Recommended max size** | ~15 lines | No limit | No limit |
+| **Entry point in project.json** | N/A | No | Process only |
+
+---
+
+## Hybrid Project Patterns
+
+Hybrid projects mix coded and XAML files. The `workflows` property provides strongly-typed access to **all** workflows — both `.cs` and `.xaml` — so there is no friction in cross-invocation.
+
+### Interop Mechanisms
+
+| From | To | Mechanism | Notes |
+|------|----|-----------|-------|
+| XAML | Coded Workflow | Invoke Workflow File (path to `.cs` file) | Arguments via In/Out parameters |
+| Coded | XAML Workflow | `workflows.XamlName()` | Strongly typed, same as coded-to-coded |
+| Coded | Coded Workflow | `workflows.Name()` | Strongly typed |
+| Any | Any (dynamic) | `RunWorkflow("path", dict)` | String-based fallback — use only when path is determined at runtime |
+
+XAML invoking a coded workflow: each argument's `x:Key` is the name the coded signature produces — never an `out_*`/`in_*` XAML-style name. Name and direction rules: [coded/operations-guide.md § Add a Workflow File to Existing Project, step 3](coded/operations-guide.md#add-a-workflow-file-to-existing-project).
+
+### Pattern 1: XAML Root + Coded Logic
+
+XAML handles sequencing and simple activities. Coded workflows handle complex business logic. Coded Source Files define shared data models.
+
+```
+OrderProcessing/
+├── project.json
+├── Main.xaml                    # XAML: orchestrates the full process
+├── ScrapeOrderPortal.xaml       # XAML: UI automation with selectors
+├── SendConfirmationEmail.xaml   # XAML: Mail activities (straightforward)
+├── ValidateAndTransform.cs      # Coded workflow: 12 validation rules + LINQ transforms
+├── OrderModels.cs               # Coded source file: Order, LineItem, ValidationResult
+└── TransformHelpers.cs          # Coded source file: date parsing, currency conversion
+```
+
+**When to use:** The process has a clear linear flow (orchestrate in XAML) but contains pockets of complex logic (coded workflows) and needs typed data models (coded source files).
+
+### Pattern 2: Coded Root + XAML for Activities
+
+Coded workflow drives the process. XAML workflows wrap activity-heavy steps that are simpler to express visually.
+
+```
+InvoiceProcessor/
+├── project.json
+├── Main.cs                      # Coded: orchestrates, calls all steps
+├── ExtractInvoiceData.cs        # Coded: PDF parsing + JSON deserialization
+├── PostToSAP.xaml               # XAML: SAP connector activities
+├── GenerateReport.xaml           # XAML: Excel activities (write range, format, save)
+├── InvoiceModels.cs             # Coded source file: Invoice, LineItem DTOs
+└── TestExtractInvoice.cs        # Coded test case
+```
+
+**When to use:** The core logic is algorithmic (coded) but some steps are best expressed with pre-built activity packages (SAP, Excel).
+
+### Pattern 3: Shared Data Models
+
+Coded Source Files define typed models that both XAML and coded workflows use via arguments.
+
+```
+// OrderModels.cs — Coded Source File (no CodedWorkflow, no entry point)
+namespace OrderProcessing
+{
+    public class Order
+    {
+        public string OrderId { get; set; }
+        public string CustomerName { get; set; }
+        public List<LineItem> Items { get; set; }
+        public decimal Total => Items?.Sum(i => i.Price * i.Quantity) ?? 0;
+    }
+
+    public class LineItem
+    {
+        public string ProductId { get; set; }
+        public decimal Price { get; set; }
+        public int Quantity { get; set; }
+    }
+}
+```
+
+Both XAML workflows (via typed arguments) and coded workflows (via direct reference) can use these types, eliminating `DataTable` column-name guessing and `Dictionary` key typos.
+
+---
+
+## Anti-Patterns
+
+1. **50+ lines of C# in InvokeCode.** Extract to a Coded Source File or Coded Workflow.
+2. **Using `RunWorkflow("path")` when `workflows.*` is available.** The `workflows` property is strongly typed and works for both `.cs` and `.xaml` files.
+3. **Duplicating logic in both XAML and coded form.** Pick one, invoke it from the other.
+4. **Using `DataTable` or `Dictionary<string, object>` when a typed class would prevent errors.** Create a Coded Source File with a proper class.
+5. **Defaulting to coded for ambiguous requests.** "Create a workflow", "automate X", "build a process" mean XAML. Switch to coded only on explicit coded phrasing or a coded-specific trigger (custom types, complex algorithms, unit tests on business logic).
+6. **Overriding the user's explicit choice.** If the user says "coded workflow", create a coded workflow — do not suggest XAML instead. Same the other way: if the user says "XAML", do not suggest coded.
+7. **Picking coded for UI automation by default.** UI automation defaults to XAML. Coded UI automation via the `uiAutomation` service is the exception, not the rule.
+
+---
+
+## Related References
+
+- [coded/operations-guide.md](coded/operations-guide.md) — How to create coded workflows, test cases, and source files
+- [coded/operations-guide.md § Coding Guidelines](coded/operations-guide.md#coding-guidelines) — C# coding rules and common issues
+- [xaml/xaml-basics-and-rules.md](xaml/xaml-basics-and-rules.md) — XAML authoring workflow, anatomy, and editing
+- [xaml/common-pitfalls.md](xaml/common-pitfalls.md) — InvokeCode language property gotcha
+- [environment-setup.md § Designing Project Structure](environment-setup.md#designing-project-structure) — Project layout examples including hybrid

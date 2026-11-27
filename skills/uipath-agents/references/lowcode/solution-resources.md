@@ -1,0 +1,290 @@
+# Solution Resources Internals
+
+Solution architecture, UUID cross-references, bindings, debug_overwrites, and `uip solution resources refresh` mechanics. Capability-agnostic — every capability that produces solution-level files relies on the patterns documented here.
+
+## Solution Architecture
+
+A solution is a container for multiple automation projects deployed together. For low-code agents:
+
+```
+MySolution/
+├── Agent/             ← agent project (agent.json, project.uiproj, ...)
+├── Agent2/            ← another agent project
+├── resources/         ← solution-level Orchestrator resource definitions
+│   └── solution_folder/
+│       ├── package/   ← deployment packages (one per project)
+│       ├── process/   ← runnable processes (agent/, process/, api/, processOrchestration/)
+│       ├── connection/ ← IS connections needed by agents
+│       ├── index/     ← semantic search indexes
+│       └── bucket/    ← storage buckets for indexes
+├── SolutionStorage.json
+└── MySolution.uipx
+```
+
+The `resources/solution_folder/` directory contains JSON resource definitions. When a solution is deployed, these resources are **provisioned** in the target Orchestrator folder (called the "solution folder").
+
+## Agent's-Own Package
+
+**Path:** `resources/solution_folder/package/{AgentName}.json`
+
+Links an agent project to its deployable NuGet package. Auto-generated when the agent project is registered with its solution — by `uip agent init` (registers with the parent `.uipx` inside a solution, or auto-scaffolds `<Name>Solution/` and registers when run outside one) or by the `uip solution projects add` fallback.
+
+```jsonc
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "Agent",                    // Must match project name
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "<uuid>",             // Must match SolutionStorage.json ProjectId
+    "isOverridable": true,              // Can be overridden at deployment config
+    "spec": {
+      "fileName": null,                 // Set by packager at build time
+      "fileReference": null,
+      "name": "Agent"
+    },
+    "key": "<unique-uuid>"              // Stable UUID for this resource
+  }
+}
+```
+
+The `projectKey` MUST match the agent's `ProjectId` in `SolutionStorage.json`.
+The package `name` becomes part of the package identifier: `{SolutionName}.agent.{Name}`.
+
+## Agent's-Own Process
+
+**Path:** `resources/solution_folder/process/agent/{AgentName}.json`
+
+Makes the agent available as a runnable process in Orchestrator. One file per agent project. Auto-generated when the agent project is registered with its solution — by `uip agent init` (registers with the parent `.uipx` inside a solution, or auto-scaffolds `<Name>Solution/` and registers when run outside one) or by the `uip solution projects add` fallback.
+
+```jsonc
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "Agent",
+    "kind": "process",
+    "type": "agent",                    // "agent" for low-code; "process" for RPA XAML
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "<uuid>",             // Same as package projectKey
+    "isOverridable": true,
+    "dependencies": [
+      {
+        "name": "Agent",                // Must match the package resource name
+        "kind": "package",
+        "key": "<package-resource-uuid>"
+      }
+    ],
+    "spec": {
+      "type": "Agent",
+      "packageName": "MySolution.agent.Agent",   // {SolutionName}.agent.{AgentName}
+      "package": {
+        "name": "MySolution.agent.Agent",
+        "key": "<package-resource-uuid>"
+      },
+      "agentMemory": false,
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionPeriod": 180,
+      "targetFrameworkValue": "Portable"
+    },
+    "key": "<unique-uuid>"
+  }
+}
+```
+
+**`packageName` convention:** `{SolutionName}.agent.{AgentName}` where `AgentName` has spaces replaced with `.`.
+
+Example:
+- Solution: `MySolution`
+- Agent project: `Agent 2`
+- packageName: `MySolution.agent.Agent.2`
+
+## UUID Cross-References
+
+Resources must reference each other correctly:
+
+```
+SolutionStorage.json
+  └── Projects[].ProjectId  ──────┐
+                                  │
+package/Agent.json                │
+  └── resource.projectKey  ───────┤ same UUID
+                                  │
+process/agent/Agent.json          │
+  └── resource.projectKey  ───────┘
+
+process/agent/Agent.json
+  └── resource.dependencies[].key  ──┐
+  └── resource.spec.package.key   ───┤ same UUID
+                                     │
+package/Agent.json                   │
+  └── resource.key              ─────┘
+
+index/MyIndex.json
+  └── resource.dependencies[].key  ──┐
+  └── resource.spec.storageBucket.key┤ same UUID
+                                     │
+bucket/orchestratorBucket/...        │
+  └── resource.key              ─────┘
+```
+
+## Bindings
+
+`uip agent refresh` reads each `resources/{Name}/resource.json` and `features/{Name}/feature.json`, then writes one binding entry per external dependency into `bindings_v2.json`. Every binding carries `name`; **Process, Index, App, and MemorySpace bindings also carry `folderPath`** propagated verbatim from the agent-level resource or feature. Connection bindings are exempt (bound by `connection.id`). `uip agent validate` performs the same read-only check without writing — it fails with `AgentValidationOutdated` if the file is behind.
+
+| Binding kind | `name` source | `folderPath` source | Notes |
+|---|---|---|---|
+| `process` (local or external) | `properties.processName` | `properties.folderPath` (literal `Folder` from `uip solution resources list` — typically `"solution_folder"` for local, Orchestrator path for external) | One per process tool |
+| `index` | `indexName` | top-level `folderPath` (literal `Folder`) | StorageBucket-backed only |
+| `app` (escalation) | `channel.properties.appName` | `channel.properties.folderName` (literal `Folder`, translated to binding `folderPath`) | One per Action Center channel |
+| `app` (guardrail escalation) | `action.app.name` | `action.app.folderName` (literal `Folder`, translated to binding `folderPath`) | One per `$actionType: "escalate"` guardrail action |
+| `memorySpace` | `memorySpaceName` | `folderPath` from `features/{FeatureName}/feature.json` | One per attached memory space, deduped by memory space name + folder |
+| `connection` | `properties.connection.name` | — (omitted) | Bound by `connection.id` |
+
+```jsonc
+// Solution-internal tool — placeholder until deploy
+{
+  "resource": "process",
+  "key": "Agent2",
+  "value": {
+    "name":       { "defaultValue": "Agent2",          "isExpression": false },
+    "folderPath": { "defaultValue": "solution_folder", "isExpression": false }
+  },
+  "metadata": { "subType": "Agent", "bindingsVersion": "2.2", "solutionsSupport": "true" }
+}
+```
+
+```jsonc
+// External tool — literal Folder from `uip solution resources list`
+{
+  "resource": "process",
+  "key": "TestRPA",
+  "value": {
+    "name":       { "defaultValue": "TestRPA",      "isExpression": false },
+    "folderPath": { "defaultValue": "Shared/Sales", "isExpression": false }
+  },
+  "metadata": { "subType": "process", "bindingsVersion": "2.2", "solutionsSupport": "true" }
+}
+```
+
+```jsonc
+// External Index (Context Grounding RAG) — folderPath is now propagated
+{
+  "resource": "index",
+  "key": "MyIndex",
+  "value": {
+    "name":       { "defaultValue": "MyIndex",          "isExpression": false, "displayName": "Index Name" },
+    "folderPath": { "defaultValue": "Shared/Knowledge", "isExpression": false }
+  },
+  "metadata": { "bindingsVersion": "2.2", "solutionsSupport": "true" }
+}
+```
+
+```jsonc
+// External Action Center App (escalation) — folderPath is now propagated
+{
+  "resource": "app",
+  "key": "ApprovalApp",
+  "value": {
+    "name":       { "defaultValue": "ApprovalApp",      "isExpression": false },
+    "folderPath": { "defaultValue": "Shared/Approvals", "isExpression": false }
+  },
+  "metadata": { "bindingsVersion": "2.2", "solutionsSupport": "true" }
+}
+```
+
+```jsonc
+// External memory space — generated from uip agent memory
+{
+  "resource": "memorySpace",
+  "key": "support-memory.Shared",
+  "value": {
+    "name":       { "defaultValue": "support-memory", "isExpression": false, "displayName": "Memory name" },
+    "folderPath": { "defaultValue": "Shared",         "isExpression": false, "displayName": "Folder Path" }
+  },
+  "metadata": { "bindingsVersion": "2.2", "solutionsSupport": "true" }
+}
+```
+
+```jsonc
+// Connection binding — exempt from folderPath propagation
+{
+  "resource": "connection",
+  "key": "<connection-id>",
+  "value": {
+    "name": { "defaultValue": "my-connection", "isExpression": false }
+  },
+  "metadata": { "bindingsVersion": "2.2", "solutionsSupport": "true" }
+}
+```
+
+The `solutionsSupport: "true"` metadata flag signals to the deployment engine that this resource participates in the solution deployment.
+
+> **Note 1: `solutionsSupport` is a stringified boolean** (`"true"`, not `true`). `uip agent refresh` and `uip solution resources refresh` emit the string form — preserve it verbatim when round-tripping. Re-typing it as a JSON boolean breaks downstream parsing.
+>
+> **Note 2: do not hand-edit `bindings_v2.json`.** The binding's `folderPath` is generated from the agent-level `resource.json` or memory feature file. Edit the resource.json, or use `uip agent memory` for memory features, then re-run `uip agent refresh`; never patch the binding directly. See [critical-rules/critical-rules.md](critical-rules/critical-rules.md) Anti-pattern 19 and [critical-rules/autonomous-critical-rules.md](critical-rules/autonomous-critical-rules.md) Anti-pattern 2.
+
+## Debug Overwrites
+
+Each developer can have personal resource overrides for debug sessions. This avoids reprovisioning existing resources.
+
+**Path:** `userProfile/<userId>/debug_overwrites.json`
+
+Generic shape:
+
+```jsonc
+{
+  "docVersion": "1.0.0",
+  "tenants": [
+    {
+      "tenantKey": "<tenant-uuid>",
+      "resources": [
+        {
+          "solutionResourceKey": "<resource-uuid-from-resources/solution_folder>",
+          "reprovisioningIndex": 0,
+          "overwrite": {
+            "resourceKey": "<existing-orchestrator-resource-key>",
+            "resourceName": "ExistingResourceName",
+            "folderKey": "<orchestrator-folder-uuid>",
+            "folderFullyQualifiedName": "Shared",
+            "folderPath": "Shared",
+            "type": "Reference",   // "Reference" = link to existing; "New" = provision new
+            "kind": "index"        // resource kind
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+For capability-specific debug_overwrites entries (process / connection / index / app), see the relevant capability file. For external process tools the canonical template lives in [capabilities/process/solution-files.md](capabilities/process/solution-files.md).
+
+## Refresh Mechanics
+
+```bash
+uip solution resources refresh [solutionPath] --output json
+```
+
+Re-scans all projects in the solution and syncs resource declarations from their `bindings_v2.json` files. For each external binding, refresh uses the **joint key `(name, kind, folderPath)`** read from the binding to look up the matching resource in the appropriate catalog — Resource Catalog Service for `Process`, `App`, and `MemorySpace` bindings, ECS for `Index` bindings, the local IS connection cache for `Connection` bindings. The folder dimension disambiguates resources that share a name across folders. If no match is found, refresh creates a virtual placeholder in the solution and warns.
+
+Solution-internal bindings (`folderPath: "solution_folder"`) skip the RCS lookup — they are resolved at deploy time against the solution folder.
+
+**Run this after `uip agent refresh`** whenever external tools, memory spaces, index contexts, app escalations, or connections have been added or changed.
+
+Handled kinds and what refresh produces:
+
+| Binding kind | Solution-level files | `debug_overwrites.json` entry |
+|---|---|---|
+| `Queue`, `Asset`, `Bucket` | Virtual resource in solution | none required |
+| `Process` (RPA / agent / api / processOrchestration) | `process/<type>/<Name>.json` + `package/<Name>.json` | `kind: "process"` — populated with real `folderKey`, `folderFullyQualifiedName`, `folderPath` from the RCS match |
+| `Connection` | `connection/<connectorKey>/<Name>.json` | `kind: "connection"` |
+| `Index` (StorageBucket-backed only) | `index/<Name>.json` + `bucket/orchestratorBucket/<BucketName>.json` | two entries (`kind: "index"` + `kind: "bucket"`) |
+| `MemorySpace` | `memorySpace/<Name>.json` | `kind: "memorySpace"` when imported from RCS |
+| `App` (guardrail escalation via `agent.json`) | `app/workflow Action/<Name>.json` + `appVersion/<Name>.json` + `package/<Name>.json` + `process/webApp/<Name>.json` | two entries (`kind: "app"` + `kind: "process"`) |
+
+**Not yet handled by refresh** (write the solution-level files and `debug_overwrites.json` entries by hand — see [capabilities/process/solution-files.md](capabilities/process/solution-files.md)):
+
+- `Index` bindings whose data source is not `StorageBucket` (GoogleDrive / OneDrive / Dropbox / Confluence / Attachments) — refresh emits a warning and skips.
+- `Context` resources of type `datafabricentityset`.
+- Escalation resource channels of type `email`, `slack`, or `teams` — recognised by the runtime but refresh does not auto-generate solution-level files for these channel types.

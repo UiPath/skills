@@ -1,0 +1,185 @@
+# Manual Trigger
+
+The manual trigger is the default start node. It represents an on-demand call
+from a person, test, API, or parent automation; there is no factory call.
+
+Signature: omit `.trigger(...)` and declare caller values with `.input(...)`.
+Pass `.trigger(manual(), { updates })` only when the default root needs its own
+variable rows ([below](#other-variable-updates-on-a-trigger)).
+
+```ts
+export default flow('lookup').input({ id: types.string }).output({ value: types.string })
+  .step('read', script({ code: 'return $vars.start.output.id;' }))
+  .return({ value: out('read') }).build();
+```
+
+Choose this trigger only when something will supply each run's inputs. A local
+run is a valid execution of that contract, but it does not prove that any
+external caller or deployment integration exists.
+
+A flow's declared inputs are published as the trigger node's OUTPUT, so
+`input('name')` reads `$vars.start.output.name` — `out('start', 'name')` is the
+same reference spelled the long way. Do not read an input as a bare `$vars.name`.
+It resolves only by accident — a manual trigger also emits a process-level copy of
+each input — and is null under any other trigger. The designer reports it as
+"Property 'name' does not exist", and `check`, `compile` and `uip maestro flow
+validate` all refuse it. `$vars.name` is the spelling for a `.var()` or an output.
+
+This holds for EVERY trigger kind, not just the manual one. A declared input is
+bound to whichever node starts the flow (that binding is the `triggerNodeId` on
+the emitted variable), so an `onEvent(...)` flow reads its inputs through its
+trigger too. The difference is only in what ELSE is there: an event trigger's
+output carries the connector's payload alongside the declared inputs, so
+`$vars.start.output.subject` and `$vars.start.output.queueName` can both be
+live references on the same node.
+
+The node's id is `start` by default and is addressable. Rename it with
+`.triggerId('intake')` and every input reference follows
+(`$vars.intake.output.name`).
+
+Inside a `subflow` body the same form addresses the CHILD's own start node,
+which the compiler names `<callerStepId>Start` — `input()` renders it for you,
+so this matters only if you hand-write a `$vars.…` string in a child script.
+
+## At a glance
+
+The default start node accepts on-demand caller input; omit `.trigger(...)`.
+
+Signature: `flow(id).input({...}).step(...).build()`.
+
+Choose it when a caller, test, or another process should start each run.
+
+## Multiple entry points
+
+A flow may have more than one root. `.trigger()` / `.input()` stay the DEFAULT
+root unless an entry point says `default: true`;
+`.entryPoint(id, trigger, { inputs?, version?, updates?, default? }, prefixFn?)` adds another
+— its own trigger node, its own scoped inputs (read them with
+`entryInput('<id>', '<name>')`, i.e. `$vars.<id>.output.<name>`), and an
+optional prefix that runs before the root joins the first shared step. A prefix
+that ends terminally (or hands off with `.stepToRef(...)`) joins nothing.
+
+`{ default: true }` on one `.entryPoint()` makes that root the default
+(`isDefaultEntryPoint`) instead of `.trigger()`. `.trigger()` keeps its id, its
+inputs and every `input()` read. Decompile writes it when the `.flow` has a root
+named `start` and marks a different root as the default, for instance a trigger
+added to the `.flow` outside the SDK source. A `.flow` with no root named
+`start` opens with its marked root as `.trigger()` and needs no `default`. Keep
+the option when you edit the source. Two entry points with `default: true` are
+refused (`ENTRY_POINT_DEFAULT`).
+
+The option needs an SDK that lists the `flow-entry-point-default` capability.
+An older SDK refuses the option when it compiles. Do not delete it to get
+past that: without it, `.trigger()` becomes the default and the flow starts
+from a different trigger. Leave the original `.flow` unchanged and report that
+the SDK in use is too old for this flow.
+
+Every root's inputs need their own names. Inputs, outputs and vars share one
+namespace, `uip maestro flow validate` refuses two globals with the same id even
+on different triggers, and each entry point's caller-facing input is keyed by
+that id. So two roots cannot both take `amount`; `check` reports
+`ENTRY_POINT_INPUT_COLLISION`.
+
+To run a root other than the default, pass `--entry-point <id>` (the `id` you
+gave `.entryPoint`; the default root's trigger is `start` unless the flow sets
+`.triggerId(...)`) to `uip maestro flow debug` or `uip maestro flow process run`.
+
+### One input, whichever root fired: `{ shared }`
+
+This is the default way to hand the shared body "the input, whichever root
+started the run". Mark each root's input with the variable it feeds, and read
+that variable in the body:
+
+```ts
+export default flow('refund-intake')
+  .input({ amount: { type: types.number, shared: 'refundAmount' } })             // default root
+  .entryPoint('review', manual(), {
+    inputs: { reviewedAmount: { type: types.number, shared: 'refundAmount' } },  // second root
+  })
+  .output({ summary: types.string })
+  .step('summarize', script({ code: 'return "refund of " + $vars.refundAmount;', returns: 'string' }))
+  .return({ summary: out('summarize') })
+  .build();
+```
+
+`manual()` is the factory `.entryPoint` takes for an on-demand root; the
+default root still omits `.trigger(...)` unless it needs its own `{ updates }`.
+
+- **The SDK declares the variable** once, unless a `.var('refundAmount', …)` or
+  `.output({ refundAmount })` already exists. Declare the `.var()` yourself to give
+  it a default. When the input feeds an output, the copy writes the output's
+  backing Variable, `refundAmountValue` ([return.md](return.md)).
+- **The copy is one row per root on its TRIGGER node**, in
+  `variables.variableUpdates[<triggerId>]`. This is the same construct `{ updates }`
+  writes for a step. Here `start` gets `refundAmount ← $vars.start.output.amount`
+  and `review` gets `refundAmount ← $vars.review.output.reviewedAmount`.
+- **The copy runs before that root's prefix**, so a prefix can read
+  `$vars.refundAmount` too.
+- **Read it as a var:** `v('refundAmount')` in an Expr slot, `$vars.refundAmount`
+  in script code. For a plain copy use `shared`, not a copy step or a
+  hand-written trigger `{ updates }` row: decompile gives back only the copy
+  shape as `{ shared }`.
+- **A root that feeds nothing** leaves the variable at its default, or null.
+
+`check` codes (`compile` throws on the errors even when its `check` pass is skipped):
+
+| code | level | means |
+|---|---|---|
+| `SHARED_INPUT_TYPE_MISMATCH` | error | an input's type differs from the variable's |
+| `SHARED_INPUT_TARGET_IS_INPUT` | error | the variable is named after an input |
+| `SHARED_INPUT_SAME_ROOT` | error | one root feeds the variable from two inputs |
+| `SHARED_INPUT_IN_SUBFLOW` | error | `shared` on a subflow child's input (a subflow has one root, its caller) |
+| `SHARED_INPUT_ROOT_MISSING` | warning | some root feeds nothing and the variable has no default |
+
+Decompile turns a trigger-level copy of exactly this shape back into
+`{ shared }`; any other update on a trigger node comes back as that trigger's
+own `{ updates }` (below).
+
+### Other variable updates on a trigger
+
+Needs `@uipath/maestro-builder-sdk` 6.85.7 or later: check that
+`entryPoint(` in `dist/flow-sdk.d.ts` of the SDK copy in use takes
+`'version' | 'label' | 'updates'`. An older SDK refuses `.trigger(spec, { updates })`
+(`UPDATES_NOT_SUPPORTED`) and compiles `.entryPoint(id, spec, { updates })`
+with no row at all. Upgrade the copy in use: `npm install
+@uipath/maestro-builder-sdk@latest` in a workspace that has its own
+`node_modules` copy (it is used before the global one), else `npm install -g
+@uipath/maestro-builder-sdk@latest`. If you can't upgrade, set the variable in
+the first step's `{ updates }` instead.
+
+`.trigger(spec, { updates })` and `.entryPoint(id, spec, { updates })` write any
+other row on that root's trigger node. The rows run when the root fires, after
+its `{ shared }` copies, in the order written, and can read what the trigger
+published. For instance, take a field of the payload and keep the variable's
+own value when the field is missing:
+
+```ts
+flow('investigate')
+  .input({ payload: types.object })
+  .var('doc', types.object)
+  .trigger(manual(), { updates: { doc: js`${input('payload')}.document ?? ${v('doc')}` } })
+```
+
+This writes `doc ← $vars.start.output.payload.document ?? $vars.doc` under
+`variableUpdates.start`. `check` judges the targets as it does a step's
+(`UPDATE_INPUT_READONLY`, `UPDATE_UNKNOWN_VAR`). A subflow child's
+`.trigger(manual(), { updates })` writes the rows on its Start node.
+
+### Reshaping per root: a prefix
+
+When a root's input needs *reshaping* before the body can use it (a lookup, a
+default, a different shape), not a plain copy, give that root a prefix. The
+prefix runs on that root only, then joins the first shared step:
+
+```ts
+flow('order-intake')
+  .input({ order: types.object })                       // default (manual) root
+  .entryPoint('nightly', scheduled({ every: 'R/P1D' }), {
+    inputs: { batchDate: types.string },
+  }, (b) => b.step('loadBatch', script({
+    code: 'return { note: $vars.nightly.output.batchDate };', returns: 'object' })))
+  .step('normalize', script({ code: 'return 1;' }))     // shared body
+```
+
+The two combine: `shared` copies what is the same on every root, and a prefix
+reshapes the rest.

@@ -1,0 +1,40 @@
+{
+  "id": "base-responses",
+  "description": "The basic Responses probe every product runs on OpenAiResponses.",
+  "source": "BaseResponseApiCompatibilityProbe",
+  "apiFlavor": "OpenAiResponses",
+  "order": 90,
+  "path": "/v1/responses",
+  "body": {
+    "max_output_tokens": 2048,
+    "input": [
+      {
+        "content": "Give me the first capital letter of the english alphabet and this letter only",
+        "role": "user"
+      }
+    ],
+    "model": "{{model}}"
+  },
+  "checks": [
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "output is an array",
+      "jq": "((.output // []) | type) == \"array\""
+    },
+    {
+      "reason": "MULTIPLE_RESPONSES",
+      "says": "exactly one message item in output (function calls aside)",
+      "jq": "(.output // []) as $o | ([$o[] | select(.type != \"function_call\")] | length) as $other | (if ($o | length) == 0 or $other == 0 then 1 else ([$o[] | select(.type == null or .type == \"message\")] | length) end) == 1"
+    },
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "output is not empty",
+      "jq": "((.output // []) | length) > 0"
+    },
+    {
+      "reason": "INCORRECT_RESPONSE",
+      "says": "the assistant's message is exactly A",
+      "jq": "([.output[] | select(.type == null or .type == \"message\")][0]) as $m | $m != null and $m.role == \"assistant\" and (($m.content[0].text // \"\") | gsub(\"^\\\\s+|\\\\s+$\"; \"\")) == \"A\""
+    }
+  ]
+}

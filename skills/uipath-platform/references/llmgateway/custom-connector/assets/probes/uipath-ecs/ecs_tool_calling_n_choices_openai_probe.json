@@ -1,0 +1,79 @@
+{
+  "id": "ecs_tool_calling_n_choices_openai_probe",
+  "description": "A forced call to ClaimCitationExtraction with n=4; the answer must hold more than one choice and a tool call.",
+  "source": "ProductDefinedProbes/Payloads/ecs_tool_calling_n_choices_openai_probe.json",
+  "apiFlavor": "OpenAiChatCompletions",
+  "optIn": true,
+  "order": 10,
+  "path": "/v1/chat/completions",
+  "body": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an expert document summarizer."
+      },
+      {
+        "role": "user",
+        "content": "Summarize the following text and extract claim-citation groups.\n\nSample text: The patient presented on 1 January 2024 with elevated blood pressure. [ABC123]"
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "ClaimCitationExtraction",
+          "description": "Extract claim-citation groups from a summary.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "groups": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "claim_text": {
+                      "type": "string"
+                    },
+                    "associated_citation_ids": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "claim_text",
+                    "associated_citation_ids"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "groups"
+            ]
+          }
+        }
+      }
+    ],
+    "tool_choice": "required",
+    "n": 4,
+    "model": "{{model}}"
+  },
+  "checks": [
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "choices is an array; each message's content is a string and each tool call's arguments a string",
+      "jq": "(.choices | type) == \"array\" and all(.choices[]; ((.message.content // \"\") | type) == \"string\" and all((.message.tool_calls // [])[]; (.function.arguments | type) == \"string\"))"
+    },
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "more than one choice",
+      "jq": "(.choices | length) > 1"
+    },
+    {
+      "reason": "MISSING_TOOL_CALL",
+      "says": "a choice calls a tool",
+      "jq": "any(.choices[]; ((.message.tool_calls // []) | length) > 0)"
+    }
+  ]
+}

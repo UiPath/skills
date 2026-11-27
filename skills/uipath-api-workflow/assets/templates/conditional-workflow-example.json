@@ -1,0 +1,276 @@
+{
+  "document": {
+    "dsl": "1.0.0",
+    "name": "Workflow",
+    "version": "0.0.1",
+    "namespace": "default",
+    "metadata": {
+      "variables": {
+        "schema": {
+          "format": "json",
+          "document": {
+            "type": "object",
+            "properties": {
+              "totalAmount": { "type": "number", "default": 0 },
+              "highValueCount": { "type": "number", "default": 0 },
+              "tier": { "type": "string", "default": "" },
+              "errorMsg": { "type": "string", "default": "" }
+            },
+            "title": "Variables"
+          }
+        }
+      }
+    }
+  },
+  "input": {
+    "schema": {
+      "format": "json",
+      "document": {
+        "type": "object",
+        "properties": {
+          "transactions": { "type": "array" }
+        },
+        "title": "Inputs"
+      }
+    }
+  },
+  "output": {
+    "schema": {
+      "format": "json",
+      "document": {
+        "type": "object",
+        "properties": {
+          "totalAmount": { "type": "number" },
+          "highValueCount": { "type": "number" },
+          "tier": { "type": "string" },
+          "errorMsg": { "type": "string" }
+        },
+        "title": "Outputs"
+      }
+    }
+  },
+  "do": [
+    {
+      "Sequence_1": {
+        "do": [
+          {
+            "WorkflowStart": {
+              "set": "${Object.entries($workflow.definition?.document?.metadata?.variables?.schema?.document?.properties || {}).reduce((acc, [name, def]) => ({ ...acc, [name]: def?.default }), {}) }",
+              "output": { "as": "${$input}" },
+              "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
+              "metadata": { "activityType": "Assign", "displayName": "Workflow start", "fullName": "Assign", "isTransparent": true }
+            }
+          },
+          {
+            "Try_Catch_1": {
+              "try": [
+                {
+                  "For_Each_1": {
+                    "for": {
+                      "each": "currentItem",
+                      "in": "${$workflow.input.transactions}",
+                      "at": "currentItemIndex"
+                    },
+                    "do": [
+                      {
+                        "For_Each_1#Body": {
+                          "do": [
+                            {
+                              "Javascript_1": {
+                                "run": {
+                                  "script": {
+                                    "language": "javascript",
+                                    "code": "if (typeof $currentItem.amount !== 'number') { throw new Error('Transaction ' + $currentItemIndex + ' has non-numeric amount'); } if ($currentItem.amount < 0) { throw new Error('Transaction ' + $currentItemIndex + ' has negative amount: ' + $currentItem.amount); } return { amount: $currentItem.amount, isHighValue: $currentItem.amount > 1000 };",
+                                    "arguments": "${{ \"$context\": $context, \"$workflow\": $workflow, \"$input\": $input }}"
+                                  }
+                                },
+                                "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"Javascript_1\": $output } }" },
+                                "metadata": { "activityType": "JsInvoke", "displayName": "Validate Transaction", "fullName": "JsInvoke" }
+                              }
+                            },
+                            {
+                              "If_1#Wrapper": {
+                                "do": [
+                                  {
+                                    "If_1": {
+                                      "switch": [
+                                        { "case": { "when": "${$context.outputs.Javascript_1.isHighValue}", "then": "If_1#Then" } },
+                                        { "default": { "then": "If_1#Else" } }
+                                      ],
+                                      "metadata": { "displayName": "If" }
+                                    }
+                                  },
+                                  {
+                                    "If_1#Then": {
+                                      "do": [
+                                        {
+                                          "Assign_AddTotalHigh": {
+                                            "set": { "totalAmount": "${$context.variables.totalAmount + $context.outputs.Javascript_1.amount}" },
+                                            "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
+                                            "metadata": { "activityType": "Assign", "displayName": "Add To Total (high)", "fullName": "Assign", "isTransparent": false }
+                                          }
+                                        },
+                                        {
+                                          "Assign_IncHighCount": {
+                                            "set": { "highValueCount": "${$context.variables.highValueCount + 1}" },
+                                            "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
+                                            "metadata": { "activityType": "Assign", "displayName": "Increment High Count", "fullName": "Assign", "isTransparent": false }
+                                          }
+                                        }
+                                      ],
+                                      "then": "exit"
+                                    }
+                                  },
+                                  {
+                                    "If_1#Else": {
+                                      "do": [
+                                        {
+                                          "Assign_AddTotalLow": {
+                                            "set": { "totalAmount": "${$context.variables.totalAmount + $context.outputs.Javascript_1.amount}" },
+                                            "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
+                                            "metadata": { "activityType": "Assign", "displayName": "Add To Total (low)", "fullName": "Assign", "isTransparent": false }
+                                          }
+                                        }
+                                      ],
+                                      "then": "exit"
+                                    }
+                                  }
+                                ],
+                                "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"If_1\": $output } }" },
+                                "metadata": { "activityType": "If", "displayName": "If", "fullName": "If" }
+                              }
+                            }
+                          ],
+                          "export": {
+                            "as": "{ ...$context, outputs: { ...$context?.outputs, \"For_Each_1\": { ...$context?.outputs?.For_Each_1, results: [ ...($currentItemIndex == 0 ? [] : ($context?.outputs?.For_Each_1?.results ?? [])), ...([$output] ?? []) ] } } }"
+                          }
+                        }
+                      }
+                    ],
+                    "output": { "as": "${$context.outputs.For_Each_1}" },
+                    "metadata": { "activityType": "ForEach", "displayName": "Process Transactions", "fullName": "ForEach" }
+                  }
+                },
+                {
+                  "If_2#Wrapper": {
+                    "do": [
+                      {
+                        "If_2": {
+                          "switch": [
+                            { "case": { "when": "${$context.variables.totalAmount > 10000}", "then": "If_2#Then" } },
+                            { "default": { "then": "If_2#Else" } }
+                          ],
+                          "metadata": { "displayName": "If" }
+                        }
+                      },
+                      {
+                        "If_2#Then": {
+                          "do": [
+                            {
+                              "Assign_TierPlatinum": {
+                                "set": { "tier": "${'PLATINUM'}" },
+                                "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
+                                "metadata": { "activityType": "Assign", "displayName": "Set PLATINUM", "fullName": "Assign", "isTransparent": false }
+                              }
+                            }
+                          ],
+                          "then": "exit"
+                        }
+                      },
+                      {
+                        "If_2#Else": {
+                          "do": [
+                            {
+                              "If_3#Wrapper": {
+                                "do": [
+                                  {
+                                    "If_3": {
+                                      "switch": [
+                                        { "case": { "when": "${$context.variables.totalAmount > 1000}", "then": "If_3#Then" } },
+                                        { "default": { "then": "If_3#Else" } }
+                                      ],
+                                      "metadata": { "displayName": "If" }
+                                    }
+                                  },
+                                  {
+                                    "If_3#Then": {
+                                      "do": [
+                                        {
+                                          "Assign_TierGold": {
+                                            "set": { "tier": "${'GOLD'}" },
+                                            "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
+                                            "metadata": { "activityType": "Assign", "displayName": "Set GOLD", "fullName": "Assign", "isTransparent": false }
+                                          }
+                                        }
+                                      ],
+                                      "then": "exit"
+                                    }
+                                  },
+                                  {
+                                    "If_3#Else": {
+                                      "do": [
+                                        {
+                                          "Assign_TierStandard": {
+                                            "set": { "tier": "${'STANDARD'}" },
+                                            "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
+                                            "metadata": { "activityType": "Assign", "displayName": "Set STANDARD", "fullName": "Assign", "isTransparent": false }
+                                          }
+                                        }
+                                      ],
+                                      "then": "exit"
+                                    }
+                                  }
+                                ],
+                                "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"If_3\": $output } }" },
+                                "metadata": { "activityType": "If", "displayName": "If", "fullName": "If" }
+                              }
+                            }
+                          ],
+                          "then": "exit"
+                        }
+                      }
+                    ],
+                    "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"If_2\": $output } }" },
+                    "metadata": { "activityType": "If", "displayName": "If", "fullName": "If" }
+                  }
+                }
+              ],
+              "catch": {
+                "as": "error",
+                "do": [
+                  {
+                    "Assign_ErrMsg": {
+                      "set": { "errorMsg": "${$error.title}" },
+                      "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
+                      "metadata": { "activityType": "Assign", "displayName": "Capture Error Message", "fullName": "Assign", "isTransparent": false }
+                    }
+                  },
+                  {
+                    "Assign_TierInvalid": {
+                      "set": { "tier": "${'INVALID'}" },
+                      "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
+                      "metadata": { "activityType": "Assign", "displayName": "Mark Tier INVALID", "fullName": "Assign", "isTransparent": false }
+                    }
+                  }
+                ]
+              },
+              "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"Try_Catch_1\": $output } }" },
+              "metadata": { "activityType": "TryCatch", "displayName": "Process With Recovery", "fullName": "TryCatch" }
+            }
+          },
+          {
+            "Response_1": {
+              "response": "${{ totalAmount: $context.variables.totalAmount, highValueCount: $context.variables.highValueCount, tier: $context.variables.tier, errorMsg: $context.variables.errorMsg }}",
+              "markJobAsFailed": false,
+              "then": "end",
+              "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"Response_1\": $output } }" },
+              "metadata": { "activityType": "Response", "displayName": "Response", "fullName": "Response" }
+            }
+          }
+        ],
+        "metadata": { "activityType": "Sequence", "displayName": "Sequence", "fullName": "Sequence" }
+      }
+    }
+  ],
+  "evaluate": { "mode": "strict", "language": "javascript" }
+}

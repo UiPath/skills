@@ -1,0 +1,452 @@
+# HITL QuickForm Node — Direct JSON Reference
+
+In a builder-SDK (`.flow.ts`) project, author the quick form with `hitl({ variant: 'quick-form', ... })` through the `uipath-maestro-flow` skill — see [hitl.md](../../uipath-maestro-flow/references/hitl.md). `compile` emits the node; never write it into the compiled `.flow`, because the next `compile` overwrites the file. The JSON below describes that compiled node, and is how a JSON-authored `.flow` is built.
+
+---
+
+## Step 1 — Extract the Schema Through Conversation
+
+**Never block on this.** Infer the answers to the questions below from the prompt and any upstream `.flow` data, and proceed straight to schema design — do not wait for a reply. If the user is present and volunteers this information unprompted, use it. Only stop and report the open decision if the request is genuinely too ambiguous to pick a sensible default.
+
+| What you need to know | Question to ask |
+|---|---|
+| What the reviewer sees | "What information does the reviewer need to make their decision?" |
+| What they fill in | "Does the reviewer need to enter any data, or just click Approve/Reject?" |
+| What actions they take | "What are the named actions — e.g. Approve/Reject, or something domain-specific like Accept/Negotiate/Decline?" |
+
+**Common business descriptions → schema translations:**
+
+| Business description | Schema shape |
+|---|---|
+| "Human reviews and approves/rejects an invoice" | `inputs: [invoiceId, amount]`, `outcomes: [Approve, Reject]` |
+| "Reviewer checks agent-drafted email before sending" | `inputs: [draftEmail, recipientName]`, `inOuts: [emailBody]`, `outcomes: [Approve, Reject]` |
+| "Escalate to human when confidence < 0.7" | `inputs: [agentReasoning, confidenceScore]`, `outputs: [action, notes]`, `outcomes: [Retry, Skip, Escalate]` |
+| "Human fills in missing vendor data" | `inputs: [rawExtract]`, `outputs: [vendorName, costCenter]`, `outcomes: [Submit]` |
+| "Approve before writing to ServiceNow" | `inputs: [proposedChange, targetSystem]`, `inOuts: [finalValue]`, `outcomes: [Approve, Reject]` |
+
+---
+
+## Step 1b — Discover Upstream Variables
+
+Before designing input field bindings, read **both** `workflow.variables.nodes` and `workflow.variables.globals` from the `.flow` file.
+
+### Node outputs (`variables.nodes`)
+
+Each entry exposes exactly what `$vars` paths are available:
+
+```json
+{ "id": "fetchInvoice.output", "type": "object", "binding": { "nodeId": "fetchInvoice", "outputId": "output" } }
+```
+
+The `id` field is the `$vars` path — `fetchInvoice.output` → `$vars.fetchInvoice.output`. Nested field access appends `.fieldName` (e.g., `$vars.fetchInvoice.output.invoiceId`).
+
+> **Binding path key = upstream script output key, not the HITL field `id`.** The HITL field `id` identifies the form field (lowercase, used for rendering). The binding path key is the property name in the upstream script's `return` statement. These are different things. If the script returns `{ supplierName: "Acme" }` and you give the HITL field `"id": "suppliername"`, the correct binding is `vars.fetchSupplier.output.supplierName` — NOT `vars.fetchSupplier.output.suppliername`. The field `id` is irrelevant to the binding path. Always look at the upstream script source to derive the key, never at the HITL field schema you are writing.
+
+**outputId by node type:**
+
+| Node type | outputId | Access pattern |
+|---|---|---|
+| HTTP node | `output` | `$vars.{nodeId}.output.body.{field}` |
+| Script node | `output` | `$vars.{nodeId}.output.{field}` |
+| Prior HITL node | `output`, `status` | `$vars.{nodeId}.output.{field}` |
+| Agent node | `output` | `$vars.{nodeId}.output.content` |
+| Trigger (manual) | `output` | `$vars.start.output.{field}` |
+
+### Flow-level globals (`variables.globals`)
+
+Also read `workflow.variables.globals`. Each entry has an `id` that maps directly to a `$vars` reference — no node prefix, no `.output` segment:
+
+```json
+{ "id": "customerName", "direction": "in", "type": "string" }
+```
+
+→ HITL binding: `"vars.customerName"` (no `=js:$` prefix — HITL binding is a raw path)
+
+**When to use globals instead of node outputs:** When data was declared as a flow-level input variable (e.g. the trigger passes it as a named parameter via `triggerNodeId`), it lives in `globals` with `direction: "in"`. Bind directly to `vars.<globalId>` — do not add `.output` or a node prefix.
+
+| Source | HITL `binding` format | Expression format (other nodes) |
+|---|---|---|
+| Node output | `vars.<nodeId>.output.<field>` | `=js:$vars.<nodeId>.output.<field>` |
+| Flow global (`direction: "in"`) | `vars.<globalId>` | `=js:$vars.<globalId>` |
+
+> **`binding` vs `variable` prefix rule:** `binding` (input/inOut fields) uses the full path starting with `vars.` because it references an existing variable path. `variable` (output/inOut fields) uses `vars.<name>` — the `vars.` prefix is required; it declares the global variable name.
+
+For the full variable system in a builder-SDK project, see the expression table in [uipath-maestro-flow SKILL.md § Builder frame](../../uipath-maestro-flow/SKILL.md#builder-frame)
+
+---
+
+## Step 2 — Design the Schema
+
+The node schema uses `fields[]` entries inside `inputs.schema`. Use these conceptual roles to plan the fields before writing the node JSON:
+
+| Role | `direction` value | Human can… | Use for |
+|---|---|---|---|
+| Input field | `"input"` | Read only | Context the human needs to make a decision |
+| Output field | `"output"` | Write | Data the automation needs back |
+| InOut field | `"inOut"` | Read + modify | Data the human can see and optionally correct |
+
+**Supported field types:** `string`, `number`, `boolean`, `date`, `file`
+
+**Design rules:**
+- Input fields: everything the human needs to decide — IDs, amounts, context; bind to upstream node output via `binding`
+- Output fields: only what downstream nodes actually use; set `required: true` for mandatory outputs
+- `outcomes`: use domain-specific names (Approve/Reject, not just Submit)
+- Keep it focused — don't add fields the automation won't use
+
+**Never block on this — write the node, don't wait to show the schema first.** Design the schema from the prompt and any upstream `.flow` data, write the node, and record the chosen schema prominently in the final report so the user can adjust it afterward. Only stop and report the open decision if the request is genuinely too ambiguous to pick a sensible default. (A prompt that already specifies the fields, outcomes, and output shape is never too ambiguous.)
+
+---
+
+## Full Node JSON
+
+```json
+{
+  "id": "invoiceReview1",
+  "type": "uipath.human-in-the-loop.quick-form",
+  "typeVersion": "1.0",
+  "display": { "label": "Invoice Review" },
+  "inputs": {
+    "title": "Invoice Review",
+    "recipient": {
+      "channels": ["Email", "ActionCenter"],
+      "connections": {},
+      "assignee": { "type": "group" }
+    },
+    "priority": "Low",
+    "schema": {
+      "schemaId": "a3f7c2d1-8b4e-4f9a-b2c5-6d8e1f3a7b9c",
+      "fields": [
+        {
+          "id": "invoiceid",
+          "label": "Invoice ID",
+          "type": "string",
+          "direction": "input",
+          "binding": "vars.fetchInvoice.output.invoiceId"
+        },
+        {
+          "id": "amount",
+          "label": "Amount",
+          "type": "number",
+          "direction": "input",
+          "binding": "vars.fetchInvoice.output.amount"
+        },
+        {
+          "id": "notes",
+          "label": "Notes",
+          "type": "string",
+          "direction": "output",
+          "variable": "vars.notes",
+          "required": false
+        },
+        {
+          "id": "decision",
+          "label": "Decision",
+          "type": "string",
+          "direction": "output",
+          "variable": "vars.decision",
+          "required": true
+        }
+      ],
+      "outcomes": [
+        { "id": "approve", "name": "Approve", "type": "string", "isPrimary": true,  "action": "Continue" },
+        { "id": "reject",  "name": "Reject",  "type": "string", "isPrimary": false, "action": "End" }
+      ]
+    }
+  },
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "Task result data",
+      "source": "=result",
+      "var": "output",
+      "properties": {
+        "notes":    { "type": "string" },
+        "decision": { "type": "string" },
+        "Action":   { "type": "string", "enum": ["Approve", "Reject"], "default": "Approve" }
+      }
+    },
+    "status": {
+      "type": "string",
+      "description": "Task completion status",
+      "source": "=result.Action",
+      "var": "status",
+      "enum": ["Approve", "Reject"],
+      "default": "Approve"
+    }
+  }
+}
+```
+
+**Required fields:** `id`, `type`, `typeVersion`. Position goes in the top-level `layout.nodes` object (keyed by node id), not on the node itself.
+
+**Node ID rule:** camelCase from the label, strip non-alphanumeric, append `1` (increment to `2`, `3`... until unique among existing node IDs). Example: `"Invoice Review"` → `invoiceReview1`.
+
+---
+
+## Definition Entry
+
+Every `.flow` file must have one definition entry for `uipath.human-in-the-loop.quick-form` in `workflow.definitions`. Add it exactly once — deduplicate by `nodeType`.
+
+```json
+{
+  "nodeType": "uipath.human-in-the-loop.quick-form",
+  "version": "1.0",
+  "category": "human-task",
+  "description": "Fast inline approvals with inline debug",
+  "tags": ["human-task", "hitl", "human-in-the-loop", "quick-form", "approval"],
+  "sortOrder": 27,
+  "display": {
+    "label": "Quick Form",
+    "icon": "users",
+    "shape": "square"
+  },
+  "handleConfiguration": [
+    {
+      "position": "left",
+      "handles": [
+        {
+          "id": "input",
+          "type": "target",
+          "handleType": "input"
+        }
+      ],
+      "visible": true
+    },
+    {
+      "position": "right",
+      "handles": [
+        { "id": "completed", "label": "Completed", "type": "source", "handleType": "output", "showButton": true, "constraints": { "forbiddenTargetCategories": ["trigger"] } }
+      ],
+      "visible": true
+    }
+  ],
+  "model": { "type": "bpmn:UserTask", "serviceType": "Actions.HITL" },
+  "inputDefaults": {
+    "schema": {
+      "fields": [],
+      "outcomes": [{ "id": "submit", "name": "Submit", "type": "string", "isPrimary": true, "action": "Continue" }]
+    },
+    "recipient": {
+      "channels": ["Email", "ActionCenter"],
+      "connections": {},
+      "assignee": { "type": "group" }
+    }
+  },
+  "outputDefinition": {
+    "output": { "type": "object", "description": "Task result data", "source": "=result", "var": "output" },
+    "status": { "type": "string", "description": "Task completion status", "source": "=result.Action", "var": "status" }
+  }
+}
+```
+
+---
+
+## Edge Wiring
+
+Wire one output handle per outcome to its downstream node — port `outcome-<outcome.id>` for each entry in `inputs.schema.outcomes[]`, using the outcome's own `id` verbatim (never a lowercased or otherwise derived value). Edge ID format: `{sourceNodeId}-{sourcePort}-{targetNodeId}-{targetPort}` (append `-2`, `-3` on collision).
+
+```json
+{ "id": "invoiceReview1-outcome-approve-processApproval1-input", "sourceNodeId": "invoiceReview1", "sourcePort": "outcome-approve", "targetNodeId": "processApproval1", "targetPort": "input" }
+{ "id": "invoiceReview1-outcome-reject-end1-input", "sourceNodeId": "invoiceReview1", "sourcePort": "outcome-reject", "targetNodeId": "end1", "targetPort": "input" }
+```
+
+**Wire every outcome's port.** A HITL node with any outcome port left unwired blocks the flow forever on that branch. `outcome-completed` (or bare `completed`) is a placeholder that exists only on a schema with zero outcomes — it disappears the instant `inputs.schema.outcomes` has any entry, including the shipped default `Submit` (id `submit`, port `outcome-submit`). Never wire it once outcomes exist.
+
+---
+
+## `variables.nodes` — Regenerate After Every Node Add/Remove
+
+The HITL node exposes two outputs (`output`, `status`). After adding it, **completely replace** `workflow.variables.nodes` by iterating all nodes and collecting their outputs:
+
+```json
+"variables": {
+  "nodes": [
+    {
+      "id": "invoiceReview1.output",
+      "type": "object",
+      "description": "Task result data",
+      "binding": { "nodeId": "invoiceReview1", "outputId": "output" }
+    },
+    {
+      "id": "invoiceReview1.status",
+      "type": "string",
+      "description": "Task completion status",
+      "binding": { "nodeId": "invoiceReview1", "outputId": "status" }
+    }
+  ]
+}
+```
+
+Include entries for **all** nodes in the flow, not just the HITL node. Replace the entire array — do not append. Add one `output` entry and one `status` entry per HITL node — no per-field entries. Output and inOut field values from the task are accessible via `$vars.<nodeId>.output.<fieldId>` at runtime (fields are embedded in the output object, not exposed as separate node variables).
+
+> **Scripts must always use `$vars.<nodeId>.output.<fieldId>`.** The `field.variable` property declares a name for the global alias — do NOT use that name directly in scripts. `$vars.decision` (global alias) and `$vars.<nodeId>.output.decision` (field ID access) are different paths and only the field ID path is reliable in script nodes. See Critical Rule 10 in SKILL.md.
+
+---
+
+## Canonical Field Shape (reference)
+
+This is the exact JSON a correctly authored QuickForm `fields[]` entry looks like for each direction. Use this as ground truth when writing or reviewing HITL nodes.
+
+```json
+{
+  "fields": [
+    {
+      "id": "invoiceid",
+      "type": "number",
+      "label": "Invoice ID",
+      "direction": "input",
+      "binding": "vars.fetchInvoice1.output.invoiceId"
+    },
+    {
+      "id": "vendorname",
+      "type": "string",
+      "label": "Vendor Name",
+      "direction": "input",
+      "binding": "vars.fetchInvoice1.output.vendorName"
+    },
+    {
+      "id": "approveddate",
+      "type": "date",
+      "label": "Approved Date",
+      "direction": "output",
+      "variable": "vars.approvedDate"
+    },
+    {
+      "id": "approved",
+      "type": "boolean",
+      "label": "Approved",
+      "direction": "output",
+      "variable": "vars.approved"
+    }
+  ],
+  "outcomes": [
+    {
+      "id": "submit",
+      "name": "Submit",
+      "type": "string",
+      "action": "Continue",
+      "isPrimary": true
+    }
+  ]
+}
+```
+
+**Key rules this sample encodes:**
+- `type`: always a JS/JSON type — `string`, `number`, `boolean`, `date`, or `file`. Never `"text"`.
+- `variable`: always `"vars.<name>"` — the `vars.` prefix is required.
+- `binding`: input/inOut fields only; raw path (`vars.<nodeId>.output.<field>`), no `=js:$` prefix.
+- Output/inOut fields have `variable`; input fields do not.
+
+---
+
+## Schema Conversion — Examples
+
+The agent translates the user's business description into the `fields[]` and `outcomes[]` arrays. No CLI needed — apply these rules directly.
+
+### Rules
+
+| What | Rule |
+|---|---|
+| field `id` | lowercase label, spaces→`-`, strip non-alphanumeric. `"Invoice ID"` → `"invoiceid"`, `"Due Date"` → `"due-date"` |
+| `direction` | `inputs[]` items → `"input"`, `outputs[]` → `"output"`, `inOuts[]` → `"inOut"` |
+| field `type` | Use the JS/JSON type: `string`, `number`, `boolean`, `date`, or `file` |
+| `binding` | **Input / inOut fields only.** Format: `"vars.<nodeId>.output.<field>"` for node outputs; `"vars.<globalId>"` for flow globals. **No `=js:$` prefix** — HITL binding is a raw path, not an expression. |
+| `variable` | **Output / inOut fields only** — absent on input fields. Format: `"vars.<name>"` (always include the `vars.` prefix). Defaults to `"vars.<camelCase id>"` if not specified. |
+| `required` | omit if false; set `true` for mandatory outputs |
+| outcome `id` | Same conversion as field `id`: lowercase name, spaces→`-`, strip non-alphanumeric. `"Approve"` → `"approve"`, `"Needs Info"` → `"needs-info"`. Required and non-empty — an outcome with no `id` renders no wiring handle at all, so an edge drawn to a guessed port name is a no-op. This `id` is also the wiring port verbatim: `outcome-<id>` (see this file's Edge Wiring section below — never lowercase or otherwise transform it again after this conversion). |
+| `outcomes[0]` | `isPrimary: true`, `action: "Continue"` |
+| `outcomes[1+]` | `isPrimary: false`, `action: "End"` |
+| `schema.schemaId` | Generate a fresh UUID (e.g. `crypto.randomUUID()` or any UUID v4) |
+
+### Example 1 — Simple approval (inputs only + outcomes)
+
+Business description: *"Reviewer sees invoice ID and amount, clicks Approve or Reject"*
+
+```json
+"fields": [
+  { "id": "invoiceid", "label": "Invoice ID", "type": "string",   "direction": "input", "binding": "vars.fetchData1.output.invoiceId" },
+  { "id": "amount",    "label": "Amount",     "type": "number", "direction": "input", "binding": "vars.fetchData1.output.amount" }
+],
+"outcomes": [
+  { "id": "approve", "name": "Approve", "type": "string", "isPrimary": true,  "action": "Continue" },
+  { "id": "reject",  "name": "Reject",  "type": "string", "isPrimary": false, "action": "End" }
+]
+```
+
+### Example 2 — Write-back validation (inOut — human can edit before confirming)
+
+Business description: *"Human sees the AI-drafted email, can edit it, then clicks Send or Discard"*
+
+```json
+"fields": [
+  { "id": "recipient",  "label": "Recipient",  "type": "string", "direction": "input", "binding": "vars.draft1.output.recipient" },
+  { "id": "emailbody",  "label": "Email Body", "type": "string", "direction": "inOut", "binding": "vars.draft1.output.body", "variable": "vars.emailBody" }
+],
+"outcomes": [
+  { "id": "send",    "name": "Send",    "type": "string", "isPrimary": true,  "action": "Continue" },
+  { "id": "discard", "name": "Discard", "type": "string", "isPrimary": false, "action": "End" }
+]
+```
+
+### Example 3 — Data enrichment (output — human fills in missing fields)
+
+Business description: *"Agent couldn't extract vendor name or cost center. Human fills them in and clicks Submit."*
+
+```json
+"fields": [
+  { "id": "rawextract",  "label": "Raw Extract",  "type": "string", "direction": "input",  "binding": "vars.extract1.output.rawText" },
+  { "id": "vendorname",  "label": "Vendor Name",  "type": "string", "direction": "output", "variable": "vars.vendorName",  "required": true },
+  { "id": "costcenter",  "label": "Cost Center",  "type": "string", "direction": "output", "variable": "vars.costCenter", "required": true }
+],
+"outcomes": [
+  { "id": "submit", "name": "Submit", "type": "string", "isPrimary": true, "action": "Continue" }
+]
+```
+
+### Example 4 — Exception escalation (multiple outcomes + notes output)
+
+Business description: *"If agent confidence is low, escalate. Human sees reasoning and score, can Retry, Skip, or Escalate further."*
+
+```json
+"fields": [
+  { "id": "reasoning",       "label": "Agent Reasoning",  "type": "string",   "direction": "input",  "binding": "vars.classify1.output.reasoning" },
+  { "id": "confidencescore", "label": "Confidence Score", "type": "number", "direction": "input",  "binding": "vars.classify1.output.score" },
+  { "id": "notes",           "label": "Notes",            "type": "string",   "direction": "output", "variable": "vars.notes" }
+],
+"outcomes": [
+  { "id": "retry",    "name": "Retry",    "type": "string", "isPrimary": true,  "action": "Continue" },
+  { "id": "skip",     "name": "Skip",     "type": "string", "isPrimary": false, "action": "End" },
+  { "id": "escalate", "name": "Escalate", "type": "string", "isPrimary": false, "action": "End" }
+]
+```
+
+> **`outcomeType` for middle outcomes:** Use `"Neutral"` when the outcome is neither clearly positive nor negative (e.g., Skip, Defer, Hold).
+
+---
+
+## Runtime Variables
+
+After the HITL node, downstream nodes can reference:
+
+| Variable | Type | What it contains |
+|---|---|---|
+| `$vars.<nodeId>.output` | object | All `output` and `inOut` field values keyed by **field `id`** |
+| `$vars.<nodeId>.output.<fieldId>` | varies | Individual field value using the field's `id` (e.g. `$vars.invoiceReview1.output.decision`) |
+| `$vars.<nodeId>.status` | string | Selected outcome name (e.g. `"Approve"`, `"Reject"`) |
+| `$vars.<globalId>` | varies | Workflow-global variable for output/inOut fields. `globalId` is `field.variable` with `vars.` stripped (e.g. `variable: "vars.notes"` → `$vars.notes`). **Do not use this path in scripts — use `$vars.<nodeId>.output.<fieldId>` instead.** |
+
+> **`fieldId` not `variable`**: The output object properties are keyed by the field's `id` (e.g. `"decision"`), not by the `variable` property. The `variable` property (`"approvalResult"`) creates a separate workflow-global variable (`$vars.approvalResult`) — it does not change the key used in the output object. If a field has `"id": "dec1"` and `"variable": "vars.approvalResult"`, access it via the object as `$vars.nodeId.output.dec1`, or directly as `$vars.approvalResult`.
+>
+> **Common mistake:** A field with `"id": "approved"` and `"variable": "vars.legalApproval"` must be read as `$vars.<nodeId>.output.approved` — **not** `$vars.<nodeId>.output.legalApproval`. Using the `variable` name as the key produces `undefined` at runtime; `flow validate` does not catch it.
+
+**In a downstream script node** — always access inline using `$vars.<nodeId>.output.<fieldId>`, not by destructuring:
+```javascript
+// Correct — field ID inline access
+const vendorName = $vars.invoiceReview1.output.vendorName;
+const costCenter = $vars.invoiceReview1.output.costCenter;
+if ($vars.invoiceReview1.status === "approve") {
+  await updateSystem(vendorName, costCenter);
+}
+// Wrong — do NOT destructure first:
+// const output = $vars.invoiceReview1.output;  // then output.vendorName misses the node path
+```

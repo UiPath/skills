@@ -1,0 +1,865 @@
+# XAML Activity Gotchas
+
+Common pitfalls that cause validation errors or runtime failures.
+
+Moved topical catalogs — one pointer each, content lives with its domain:
+
+- IS `ConnectorActivity` gotchas: [../is-connector-xaml-guide.md](../is-connector-xaml-guide.md)
+- Flowchart/StateMachine/ProcessDiagram node wiring (`x:Reference` / `__ReferenceID`): [canvas-layout-guide.md](canvas-layout-guide.md)
+- CLI usage pitfalls: [../cli-reference.md](../cli-reference.md)
+
+## Container/Scope Requirements
+
+These activities **must** be placed inside a specific parent scope:
+
+| Activity | Required Parent | Package |
+|----------|----------------|---------|
+| Read Range, Write Range, Read Cell, etc. | `ExcelApplicationScope` or `ExcelApplicationCard` | UiPath.Excel.Activities |
+| Click, Type Into, Get Text, Check/Uncheck, etc. | `Use Application/Browser` (`NApplicationCard`) | UiPath.UIAutomation.Activities |
+| All Word interop activities | `WordApplicationScope` | UiPath.Word.Activities |
+| PivotTableFieldX | `CreatePivotTableX` | UiPath.Excel.Activities |
+| InvokeVBA (classic) | `ExcelApplicationScope` or `ExcelApplicationCard` | UiPath.Excel.Activities |
+| All Office 365 child activities | `Office365ApplicationScope` | UiPath.MicrosoftOffice365.Activities |
+| All GSuite child activities | Corresponding GSuite scope | UiPath.GSuite.Activities |
+
+**Additional parent constraints (warnings, not errors):**
+
+| Activity | Recommended Parent | Notes |
+|----------|-------------------|-------|
+| ExcelApplicationCard | `ExcelProcessScopeX` | Warning if outside process scope ([§ Use Excel File Outside an Excel Process Scope](#use-excel-file-outside-an-excel-process-scope)) |
+| DeleteRowsX | NOT inside `ExcelForEachRowX` | Deleting rows during iteration causes unexpected behavior |
+
+**Nesting restrictions:**
+
+| Activity | Cannot Be Inside | Notes |
+|----------|-----------------|-------|
+| SequenceX | Another `SequenceX` or `ExcelProcessScopeX` | Validation error |
+| VerifyControlAttribute | Another `VerifyControlAttribute` | Validation error |
+| InvokeVBAX | Max 20 child `InvokeVBAArgumentX` | Validation error if exceeded |
+
+## Use Excel File Outside an Excel Process Scope
+
+`Use Excel File` (`ExcelApplicationCard`) with no `ExcelProcessScopeX` or `SequenceX` around it raises `UiPath recommends using “Use Excel File” inside an “Excel Process Scope"`. It is a validation warning of the activity, reported by `validate` and not by `build`, and not a numbered analyzer rule; an enclosing scope clears it whatever its `ProcessMode`. The scope's properties and modes: [ExcelProcessScopeX](../activity-docs/UiPath.Excel.Activities/3.6/activities/ExcelProcessScopeX.md).
+
+Put the Use Excel File activities of one step inside one scope: one Excel process serves them. At its end the scope quits that process if it started it and no workbook is left open; an Excel it reused keeps running.
+
+## Conflicting Property Pairs
+
+Setting both properties in these pairs causes a **validation error**:
+
+| Property A | Property B | Activity |
+|-----------|-----------|----------|
+| `Password` | `SecurePassword` | ExcelApplicationScope, PDF, Mail activities |
+| `EditPassword` | `SecureEditPassword` | ExcelApplicationScope |
+
+Only set one from each pair, never both.
+
+## OverloadGroup Patterns (Mutually Exclusive Properties)
+
+Many activities use `[OverloadGroup]` to define mutually exclusive property sets. Setting properties from more than one group causes a **validation error**.
+
+| Activity | Group A | Group B | Group C |
+|----------|---------|---------|---------|
+| LookupDataTable | `LookupColumnIndex` | `LookupColumnName` | `LookupDataColumn` |
+| ExchangeScope | `Server` (manual) | `EmailAutodiscover` | `ExistingExchangeService` |
+| ReadCsvFile, AppendWriteCsvFile | `FilePath` (string) | `PathResource` (ILocalResource) | — |
+| CopyFile, Delete, ExtractFiles | `Path` (string) | `PathResource` / `File` (IResource) | — |
+| WorkbookActivityBase | `Workbook` (use open) | `WorkbookPath` (file string) | `WorkbookPathResource` (IResource) |
+| WordDocumentActivity | `FilePath` (string) | `PathResource` (ILocalResource) | — |
+| PDF activities (ReadPDFText, GetPDFPageCount, ExtractPDFPageRange, ManagePDFPassword, ExportPDFPageAsImage, ExtractImagesFromPDF, ReadXPSText) | `FileName` (string) | `ResourceFile` (IResource) | — |
+
+**Key rule**: Exactly ONE group must have values. Setting properties from multiple groups OR no groups both cause validation errors.
+
+### ItemArgument and `.Item` Child Elements in OverloadGroup Activities
+
+`uip rpa activities get-default-xaml` returns activities with `.Item` child elements containing `ItemArgument` nodes. These are internal scaffolding for the FileName/ResourceFile overload group switching mechanism. **Do NOT include `.Item` child elements when writing XAML manually.** Simply set the desired overload group property (e.g., `FileName`) directly on the activity element and omit the `.Item` child entirely. Studio will auto-generate the internal `.Item` structure when it loads the workflow.
+
+**Example — correct (no `.Item` child):**
+```xml
+<upap:GetPDFPageCount DisplayName="Get PDF Page Count"
+    FileName="[pdfPath]" ResourceFile="{x:Null}" PageCount="[pageCount]" />
+```
+
+**Example — avoid (`.Item` child from `activities get-default-xaml`):**
+```xml
+<upap:GetPDFPageCount FileName="[pdfPath]" ResourceFile="{x:Null}" PageCount="[pageCount]">
+    <upap:GetPDFPageCount.Item>
+      <upap:ItemArgument x:TypeArguments="upr:IResource" FileName="{x:Null}" ResourceFile="{x:Null}" />
+    </upap:GetPDFPageCount.Item>
+</upap:GetPDFPageCount>
+```
+
+Including the `.Item` child with misconfigured `ItemArgument` properties can cause `"None of the overload groups have all their required/optional activity arguments configured"` validation errors. This applies to all activities that use the `ItemArgument` pattern, including PDF, Excel, and other file-based activities.
+
+## Conditional Property Requirements
+
+Some properties are only required when another property has a specific value:
+
+| Activity | Condition | Required Property |
+|----------|-----------|-------------------|
+| ExcelApplicationCard | `SensitivityOperation = Add` | `SensitivityLabel` must be set |
+| WordApplicationScope | `SensitivityOperation = Add` | `SensitivityLabel` must be set |
+| DeleteRowsX | `DeleteRowsOption = Specific` | `RowPositions` must be set with valid format (e.g. "1,3,5-7") |
+| FilterX | `ClearFilter = false` | `FilterArgument` and `ColumnName` must be set |
+| WordInsertHyperlink | `InsertRelativeTo = Text` | `TextToSearchFor` must be set |
+| ExchangeScope (Interactive auth) | `AuthenticationMode = Interactive` | `ApplicationId` must be set |
+| ExchangeScope | `ApplicationId` is set | `DirectoryId` must also be set (and vice versa — both or neither) |
+| WordApplicationScope | `CreateNewFile = true` | Path must be local (not a URL) |
+| ConvertHtmlToPDF, ConvertTextToPDF | `InputMode = File` | `FileName` or `ResourceFile` must be set |
+| ConvertHtmlToPDF | `InputMode = Content` | `Html` must be set |
+| ConvertTextToPDF | `InputMode = Content` | `Text` must be set |
+
+## Input Method Constraints (UIAutomation)
+
+- Type Into's `Text` can hold special-key codes (`[k(enter)]` presses Enter; `[d(ctrl)]a[u(ctrl)]` is Ctrl+A). They cannot be typed with `InteractionMode` `Simulate`, set on the activity or inherited from its card: validation fails, and codes that reach `Text` from a variable fail the run. Use `HardwareEvents`, or `DebuggerApi` in Chrome and Edge.
+- Choosing a method per application: the Input Methods task guide, routed from `ui-automation-guide.md` § Documentation.
+
+## NKeyboardShortcuts: `Shortcuts` vs `ShortcutsArgument`
+
+`NKeyboardShortcuts` has **two** shortcut properties — using the wrong one causes VB bracket parsing failures:
+
+- **`Shortcuts`** (`string`) — **Always use this** for hotkey encoding like `[d(hk)][d(ctrl)]a[u(ctrl)][u(hk)]`. Brackets are literal text.
+- **`ShortcutsArgument`** (`InArgument<string>`) — Only for dynamic/variable-driven values. Brackets here are parsed as VB expressions, so `[d(hk)]` would fail (VB tries to call function `d(hk)`).
+
+**Wrong:** `ShortcutsArgument="[d(hk)][d(ctrl)]a[u(ctrl)][u(hk)]"` → VB parser error
+**Correct:** `Shortcuts="[d(hk)][d(ctrl)]a[u(ctrl)][u(hk)]"` → literal string, works fine
+
+See `ui-automation.md` NKeyboardShortcuts section for the full hotkey encoding reference.
+
+## NTypeInto `Text` with literal `[k(...)]` special-key tokens
+
+When `Text` contains literal `[k(...)]`, `[d(...)]`, or `[u(...)]` special-key tokens, use the long-form element — never the attribute form. The attribute form runs correctly but the value does not render in Studio, so the workflow looks empty even though it works.
+
+**Wrong:** `Text="[&quot;13700132[k(enter)]&quot;]"` → runs, but `Text` shows blank in Studio.
+
+**Correct:**
+```xml
+<uix:NTypeInto ...>
+  <uix:NTypeInto.Text>
+    <InArgument x:TypeArguments="x:String">["13700132[k(enter)]"]</InArgument>
+  </uix:NTypeInto.Text>
+</uix:NTypeInto>
+```
+
+Alternatives:
+- Build the bracket characters with `ChrW(91)` / `ChrW(93)` so the string carries no literal `[` / `]`: `Text="[&quot;13700132&quot; &amp; ChrW(91) &amp; &quot;k(enter)&quot; &amp; ChrW(93)]"`.
+- Split the input: one `NTypeInto` for the digits, one `NKeyboardShortcuts` (or a second `NTypeInto`) for `[k(enter)]`.
+
+## UIA `N*` Activities Carry a `Version` — Never Strip It
+
+Every UIA `N*` activity carries a `Version` attribute in its `uip rpa activities get-default-xaml` starter (e.g. `NGetText Version="V5"`, `NApplicationCard Version="V2"`). Dropping it survives BOTH `validate` and `build` and fails only at runtime with `System.InvalidOperationException ... ThrowIfNotInTree` on the activity's argument bindings. Carry over **every** attribute the starter emits. See [csharp-activity-binding-guide.md § `ThrowIfNotInTree` at runtime](csharp-activity-binding-guide.md#throwifnotintree-at-runtime--two-causes).
+
+## OCR Engine Asks to "install the UiPath.CoreIPC package"
+
+If an OCR engine activity in XAML fails `build` or `run` with that message, read the PDF from a coded workflow that calls the PDF package's coded `ReadPdfWithOcr`, and invoke it from the XAML.
+
+## ActivityAction/ActivityFunc Initialization
+
+Scope activities (like `ExcelApplicationCard`, `Use Application/Browser`) use `ActivityAction` to wrap their child content. The XAML pattern is:
+
+```xml
+<scope:ScopeActivity>
+  <scope:ScopeActivity.Body>
+    <ActivityAction x:TypeArguments="scope:ScopeType">
+      <ActivityAction.Argument>
+        <DelegateInArgument x:TypeArguments="scope:ScopeType" Name="ScopeName" />
+      </ActivityAction.Argument>
+      <Sequence DisplayName="Do">
+        <!-- Child activities here -->
+      </Sequence>
+    </ActivityAction>
+  </scope:ScopeActivity.Body>
+</scope:ScopeActivity>
+```
+
+**Critical**: The `DelegateInArgument` must match the `x:TypeArguments` of the `ActivityAction`. Missing or mismatched types cause validation errors.
+
+**DelegateInArgument names must be valid identifiers** — validated in CacheMetadata.
+
+**Scope activities and their Body types:**
+
+| Scope Activity | Body Type | DelegateInArgument Type | Default Name |
+|---------------|-----------|------------------------|--------------|
+| ExcelApplicationCard | `ActivityAction<IWorkbookQuickHandle>` | `IWorkbookQuickHandle` | `"Excel"` |
+| ExcelProcessScopeX | `ActivityAction<IExcelProcess>` | `IExcelProcess` | `"ExcelProcessScopeTag"` |
+| WordApplicationScope | `ActivityAction<WordDocument>` | `WordDocument` | `"WordDocumentScope"` |
+| ExcelForEachRowX | `ActivityAction<CurrentRowQuickHandle, int>` | TWO args: row + index | `"CurrentRow"`, `"CurrentIndex"` |
+| ForEachSheetX | `ActivityAction<...>` | Sheet handle | — |
+
+**ExcelForEachRowX special case**: Has TWO delegate arguments (row and index), not one. Both must be initialized.
+
+## ForEach/Iterator Gotchas
+
+- **ForEach body variable scoping**: Variables modified inside a ForEach body don't persist after the loop exits. The DelegateInArgument is scoped to each iteration.
+- **ForEachRow**: DelegateInArgument name must be a valid C#/VB identifier — CacheMetadata validates this.
+- **DeleteRowsX inside ExcelForEachRowX**: Attempting to delete the current row during iteration throws a runtime error ("Cannot delete current row").
+
+## IResource / ILocalResource — String Path Conversion
+
+Many activities (O365, GSuite, Mail, file operations, Document Understanding) require `IResource` or `ILocalResource` properties, not string paths. Passing a string where `IResource` is expected causes a validation error. `LocalResource(string)` constructor is internal — you cannot call it directly.
+
+**Approach 1 — Path Exists activity (recommended, works in VB and C# projects):**
+
+Use the "Path Exists" activity with a file path as input. The output property **"Reference if path exists"** returns an `ILocalResource` (which also satisfies `IResource`). This both verifies the file exists and gives you the resource reference.
+
+**Approach 2 — `LocalResource.FromPath()` expression (works in VB and C# projects):**
+
+Use as an expression directly in activity properties — no existence check, creates the reference regardless:
+```
+LocalResource.FromPath(filePath)
+```
+
+In XAML (C# expression project):
+```xml
+<InArgument x:TypeArguments="upr:ILocalResource">
+  <CSharpValue x:TypeArguments="upr:ILocalResource">LocalResource.FromPath(filePath)</CSharpValue>
+</InArgument>
+```
+
+Requires namespace `UiPath.Platform.ResourceHandling` in the XAML header:
+```xml
+<x:String>UiPath.Platform.ResourceHandling</x:String>
+```
+
+This pattern applies to: `UploadFilesConnections`, `DownloadFileConnections`, `SendMail` attachments, `MoveFile`, `CopyFile`, `CompressZipFiles`, `ExtractDocumentData`, and any other activity with `IResource`/`ILocalResource` properties.
+
+## InvokeWorkflow Gotchas
+
+- **Auto-appends .xaml**: If the `WorkflowFileName` has no file extension, `.xaml` is appended automatically. Passing `"workflow.txt"` becomes `"workflow.txt.xaml"`.
+- **TargetSession validation**: `TargetSession.Secondary` (or any non-Current value) requires `UnSafe=True`. Without it, validation fails.
+- **Persistence with isolation**: Using `ResumeInstanceId` with Safe mode (`UnSafe=false`) without persistence support throws `NotSupportedException`.
+- **Callee argument named like an activity property**: a callee argument that shares its name with one of Invoke Workflow File's own properties (seen with `Level`) fails validation when bound, `... already exists with the name 'Level'`. Rename the argument in the callee (`MessageLevel`).
+
+### WorkflowFileName Must Be a Plain String Path
+
+Write `WorkflowFileName` as the plain relative path, never as an expression (`[&quot;…&quot;]`). An expression path runs, but Studio's designer then cannot read the invoked workflow: the Open workflow and Refresh arguments actions disappear from the activity, and no warning names an argument the call is missing.
+
+**Correct:**
+```xml
+<ui:InvokeWorkflowFile WorkflowFileName="ResetSpotify.xaml" />
+<ui:InvokeWorkflowFile WorkflowFileName="Workflows\ProcessData.xaml" />
+```
+
+**Wrong — VB expression string literal (common agent mistake):**
+```xml
+<ui:InvokeWorkflowFile WorkflowFileName="[&quot;Workflows\ProcessData.xaml&quot;]" />
+```
+
+The path is relative to the project root directory. Use backslashes for subfolder paths (e.g., `Workflows\SendEmail.xaml`). If the file is at the project root, use just the filename (e.g., `ResetSpotify.xaml`).
+
+### Arguments — Direct Children, the Form Studio Saves
+
+`InvokeWorkflowFile.Arguments` takes its entries as direct `InArgument`/`OutArgument`/`InOutArgument` children, or inside the `scg:Dictionary` that `uip rpa activities get-default-xaml` returns; both load and bind the same values. Studio saves a populated list as direct children, rewriting a wrapper with every entry kept, and an empty one as `<scg:Dictionary x:TypeArguments="x:String, Argument" />`. Write populated arguments as direct children, so a later Studio save leaves the block unchanged:
+
+```xml
+<ui:InvokeWorkflowFile WorkflowFileName="ResetSpotify.xaml"
+    DisplayName="ResetSpotify - Invoke Workflow File (ResetSpotify.xaml)" UnSafe="False">
+  <ui:InvokeWorkflowFile.Arguments>
+    <InArgument x:TypeArguments="x:String" x:Key="in_Argument1">someValue</InArgument>
+    <InArgument x:TypeArguments="x:String" x:Key="in_Argument2">anotherValue</InArgument>
+  </ui:InvokeWorkflowFile.Arguments>
+</ui:InvokeWorkflowFile>
+```
+
+**Rules for argument bindings:**
+1. Each argument key (`x:Key`) must match the argument name defined in the callee workflow's `x:Members` exactly (case-sensitive)
+2. Use the correct argument direction: `InArgument` for `in_*`, `OutArgument` for `out_*`, `InOutArgument` for `io_*`
+3. The `x:TypeArguments` must match the callee's argument type
+4. For literal string values, place the text directly in the element content (e.g., `<InArgument ...>someValue</InArgument>`)
+5. For variable bindings, follow the expression language rules in [xaml-basics-and-rules.md](xaml-basics-and-rules.md#respect-expression-language): VB uses `[bracket]` shorthand, C# uses `<CSharpValue>`/`<CSharpReference>` elements
+
+### OutArgument Bindings Must Be Variable References
+
+`OutArgument` and `InOutArgument` bindings on `InvokeWorkflowFile.Arguments` require a variable reference (lvalue), not a constructed expression. The callee writes its output into the variable; an inline-constructed `OutArgument` has no destination.
+
+**Wrong** — fails with `BC30035: Syntax error`:
+```xml
+<OutArgument x:TypeArguments="x:Boolean" x:Key="out_Discard">[New OutArgument(Of Boolean)()]</OutArgument>
+```
+
+**Correct** — declare a discard variable in the caller's scope:
+```xml
+<Sequence.Variables>
+  <Variable x:TypeArguments="x:Boolean" Name="discardShouldContinue" />
+</Sequence.Variables>
+...
+<OutArgument x:TypeArguments="x:Boolean" x:Key="out_Discard">[discardShouldContinue]</OutArgument>
+```
+
+If the caller does not consume an output but the callee declares it as required, declare a `discard*` variable per unused output and reference it. Omitting the binding fails validation when the callee has required out-arguments.
+
+### Out and InOut Arguments When the Callee Faults
+
+Callee throws and the exception reaches the caller → caller keeps pre-invoke values of every `out_*`/`io_*` binding, even ones already assigned. Mutations to an object passed `in_*` (dictionary add, field set) survive. Same for coded workflow return values. With `ContinueOnError="True"` on the Invoke Workflow File the caller continues instead, and every `out_*`/`io_*` value the callee assigned before it faulted is copied back — a partial result that reads like a completed call. `Isolated` changes neither case.
+
+- Never read `out_*`/`io_*` in the caller's catch.
+- Anything the caller must release on failure (connection, client, temp file): callee records it on a caller-created object passed `in_*`, not via `out_*`. REFramework: [../reframework-guide.md § Init and Close Run More Than Once](../reframework-guide.md#init-and-close-run-more-than-once-all-modes).
+
+## Empty Argument Values
+
+`<InArgument>` and `<OutArgument>` with **empty content** pass per-file `uip rpa validate` but fail project-level `uip rpa analyze` with `Value for a required activity argument 'Value' was not supplied` — no file or activity pointer.
+
+**Wrong:**
+```xml
+<Assign.Value>
+  <InArgument x:TypeArguments="x:String"></InArgument>
+</Assign.Value>
+```
+
+**Correct:**
+```xml
+<Assign.Value>
+  <InArgument x:TypeArguments="x:String">[String.Empty]</InArgument>
+</Assign.Value>
+```
+
+Or attribute form with explicit literal:
+```xml
+<Assign Value="[String.Empty]" />
+```
+
+**Detection rule.** When project-level `analyze` reports the missing-Value error with no activity ID, grep for `<InArgument [^>]*></InArgument>` and `<OutArgument [^>]*></OutArgument>` across all XAML files first.
+
+## Variable.Default — Attribute or Literal Content Only
+
+`<Variable.Default>` accepts an expression literal as element content or as the `Default` attribute. It does NOT accept a wrapped `<InArgument>` element — that form throws at activity load with `Set property 'System.Activities.Variable(...).Default' threw an exception. Value for a required activity argument 'Value' was not supplied.`
+
+**Wrong** — throws at activity load:
+```xml
+<Variable x:TypeArguments="scg:Dictionary(x:String, x:String)" Name="data">
+  <Variable.Default>
+    <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)">[New Dictionary(Of String, String)()]</InArgument>
+  </Variable.Default>
+</Variable>
+```
+
+**Correct — attribute form (preferred):**
+```xml
+<Variable x:TypeArguments="scg:Dictionary(x:String, x:String)" Name="data" Default="[New Dictionary(Of String, String)()]" />
+```
+
+**Correct — content form (no `InArgument` wrapper):**
+```xml
+<Variable x:TypeArguments="scg:Dictionary(x:String, x:String)" Name="data">
+  <Variable.Default>[New Dictionary(Of String, String)()]</Variable.Default>
+</Variable>
+```
+
+Or omit `Default` entirely if the variable is assigned before its first read.
+
+## InvokeCode Code Property — Attribute Form Only
+
+Author `Code` as an XML **attribute** (XML-escaped; each line break written as `&#xA;` — a literal line break inside an attribute value becomes a space too). In a child element — bare text or CDATA inside `<ui:InvokeCode.Code>` — each line break collapses into a space ([§ Runs of Whitespace](#runs-of-whitespace-in-element-text-collapse--use-xmlspacepreserve)). Code that depends on line breaks changes meaning: a C# `//` comment swallows every statement after it, which then never runs, and a VB body fails to compile with `BC30205: End of statement expected. At line 0`. A body that no longer compiles fails with the compiler's errors, at `validate` and `build` or at the latest when the activity runs (`No compiled code to run`); one that still compiles with a changed meaning, as the swallowed C# statements do, passes both and misbehaves only when it runs. A child `<x:String xml:space="preserve">` keeps the line breaks; `xml:space` on `<ui:InvokeCode.Code>` itself fails to load.
+
+**Correct:**
+```xml
+<ui:InvokeCode Language="VBNet" DisplayName="Process rows"
+               Code="Dim total As Decimal = 0&#xA;result = total.ToString()" />
+```
+
+**Fails (VB body as element text):**
+```xml
+<ui:InvokeCode Language="VBNet" DisplayName="Process rows">
+  <ui:InvokeCode.Code><![CDATA[Dim total As Decimal = 0
+result = total.ToString()]]></ui:InvokeCode.Code>
+</ui:InvokeCode>
+```
+
+## InvokeCode Language Property
+
+The `Language` property on `InvokeCode` uses the `UiPath.Core.Activities.NetLanguage` enum, which has **only two valid values**: `VBNet` and `CSharp`.
+
+**Critical:** The project-level `expressionLanguage` in `project.json` uses `"VisualBasic"`, but InvokeCode's `Language` attribute requires `"VBNet"` instead. Do NOT use `"VisualBasic"` or `"VB"` — neither is a valid `NetLanguage` value. `"CSharp"` is the same in both.
+
+**What happens:** `Language="VisualBasic"` (or `"VB"`) fails to load, and `validate` reports it:
+```
+Could not load <FILE> file: 'Failed to create a 'Language' from the text 'VisualBasic'.'
+```
+
+Without `Language`, the code compiles as VB.NET whatever the project's expression language: the default is `VBNet`. A C# body without `Language="CSharp"` fails with VB errors, at `validate` or at the latest when the activity runs:
+```
+error BC30800: Method arguments must be enclosed in parentheses.
+error BC30037: Character is not valid.
+```
+
+**Prevention:** Set `Language` on every Invoke Code: `CSharp` in a C# project, `VBNet` in a VB project.
+
+## C# XAML Expressions Compile as Expression Trees
+
+Each C# expression in a XAML workflow compiles as a lambda expression tree, which forbids constructs a normal method body allows:
+
+- **No optional-argument overloads** — `line.Split(',', StringSplitOptions.None)` fails with `CS0854: An expression tree may not contain a call ... that uses optional arguments`. Pass every argument explicitly: `line.Split(new char[]{ ',' })`.
+- **No `out` variables** — `int.TryParse(s, out var n)` cannot appear in an expression. Validate with a format guard short-circuited before `int.Parse(s, CultureInfo.InvariantCulture)`, or move the logic into `Invoke Code`.
+- **No statements** — no assignments, loops, or multi-statement blocks inside one expression.
+
+When a transform hits these limits, use `Invoke Code` — see [data-manipulation-guide.md](../data-manipulation-guide.md) for the escalation path.
+
+## Coded Source File Types in XAML Expressions Need a Namespace Import and Assembly Reference
+
+XAML expressions (C# or VB) use the types a project's coded source files (`.cs`) define — a DTO as a variable or argument type, a static helper called inside an expression — once the workflow imports the namespace the `.cs` file declares and references the assembly the coded files compile into, `<ProjectName>.Core` (`name` in `project.json`).
+
+- **Import and reference:** add `<x:String><Namespace></x:String>` to `TextExpression.NamespacesForImplementation` and `<AssemblyReference><ProjectName>.Core</AssemblyReference>` to `TextExpression.ReferencesForImplementation`, plus `System.Collections` ([§ Assembly References Studio Requires and the CLI Does Not Check](#assembly-references-studio-requires-and-the-cli-does-not-check)).
+- **Type argument:** a variable or argument of the type also needs a root prefix `xmlns:local="clr-namespace:<Namespace>;assembly=<ProjectName>.Core"`, then `x:TypeArguments="local:<Type>"`.
+- **Global variables** cannot take a type the coded source files define; type the global `Dictionary(String, Object)` or `Object` and cast where it is read.
+- **Static `void` method:** an expression must return a value, so a `void` helper is called with Invoke Method — `TargetType` names the class through the same prefix, and one positional `InArgument` child per parameter follows in declaration order:
+
+  ```xml
+  <InvokeMethod DisplayName="Append the backup" MethodName="AppendEntry" TargetType="{x:Type local:StateFiles}">
+    <InArgument x:TypeArguments="x:String">
+      <CSharpValue x:TypeArguments="x:String">backupPath</CSharpValue>
+    </InArgument>
+    <InArgument x:TypeArguments="x:String">
+      <CSharpValue x:TypeArguments="x:String">entry</CSharpValue>
+    </InArgument>
+  </InvokeMethod>
+  ```
+
+Without the import, `validate` and `build` fail with `CS0103` / `BC30451` on a helper's name and `CS0246` / `BC30002` on a type name. Types shared across projects belong in a library ([../library-authoring-guide.md](../library-authoring-guide.md)).
+
+The project's Studio host compiles the coded files when it loads the project, so a `.cs` file added later — or a member added or changed in an existing one — stays invisible to XAML: `validate`, `build` and `run` keep reporting the type or member as missing (`CS0103`, `CS0246`, VB `BC30451`, `BC30456`) with the import in place. Run `uip rpa project close --project-dir "<PROJECT_DIR>"` and validate again; the next command reloads the project.
+
+## WriteTextFile Emits a UTF-8 BOM When Encoding Is Set
+
+`WriteTextFile` with `Encoding="utf-8"` maps to .NET `Encoding.UTF8` **with preamble** — output starts with a BOM, which strict JSON parsers reject. Omitting the `Encoding` property writes BOM-less UTF-8.
+
+**Rule:** for machine-consumed output (JSON, or CSV for downstream parsers), omit `Encoding`. If explicit encoding control is required, write via `InvokeCode`: `File.WriteAllText(path, content, new UTF8Encoding(false))`.
+
+## AppendLine Writes the Line Break Before the Text, Never After
+
+`AppendLine` writes a line break before its text whenever the file already has content, and never after it. Two appends to a new file produce `a`, a line break, `b`, with no trailing line break. An append to a file that already ends with a line break therefore leaves an empty line: `x`, break, (empty), `a`. A file counts as empty at 0 bytes, or at exactly 3 bytes when read as UTF-8 (a lone BOM), so a 3-byte file such as `x` plus a line break gets no leading break. Creating the file, or appending to an empty one, writes a UTF-8 BOM first, also with `Encoding` unset; to write UTF-8 without it, leave `Encoding` empty and set `UseDefaultEncoding` (a set `Encoding` always wins over it). A reader of the file splits it on line breaks and skips empty lines rather than counting breaks, and strips the BOM (`﻿`) before comparing the first line.
+
+## CopyFolderX Copies Into `To`, Not As `To`
+
+`CopyFolderX` places the source folder inside `To`: copying folder `case1` with `To` set to folder `done` produces a `case1` folder inside `done`. `To` must already exist; otherwise the activity fails with `Source or destination folder missing.` Pass the parent folder as `To`.
+
+## `Chr()` / `Asc()` Break at Runtime in Modern Projects — Use `ChrW()` / `AscW()`
+
+`Chr(n)` / `Asc(c)` go through ANSI code page 1252, which .NET 6+ does not register. For `n ≥ 128` they throw `System.NotSupportedException: No data is available for encoding 1252` at runtime — after passing both `validate` and `build`. Use `ChrW(n)` / `AscW(c)` (Unicode, no code page) instead, or the BCL `Convert.ToChar(n)` / `CInt(c)`.
+
+`Chr`/`ChrW`/`Asc`/`AscW` live in `Microsoft.VisualBasic`, which is not auto-imported — `BC30451: 'ChrW' is not declared` means you must add `Microsoft.VisualBasic` to both `NamespacesForImplementation` and `ReferencesForImplementation`. The `Convert.*` BCL forms avoid this.
+
+`ContinueOnError=True` silently swallows the runtime exception (workflow looks successful, output is wrong/empty) — set it to `False` while debugging.
+
+## HTTP Request Activity Complexity
+
+The HTTP Request activity (`NetHttpRequest`) has extensive configuration:
+
+- **Authentication modes** (each requires different properties):
+  - `None`: No fields needed
+  - `Basic`: `BasicAuthUsername` required + either `BasicAuthPassword` OR `BasicAuthSecurePassword`
+  - `OAuth`: `OAuthToken` required
+  - `Negotiated`: OS or custom credentials
+- **Request body types**: None, FormData, Text, Binary, FormDataParts, File — each uses different properties
+- **ContinueOnError defaults to TRUE** — unusual compared to other activities. HTTP failures don't stop execution by default.
+- **Retry policies**: Complex interaction between `RetryPolicyType`, `RetryCount`, `PreferRetryAfterValue`, and `MaxRetryAfterDelay`
+- **Default timeout**: 10,000ms (10 seconds)
+
+**Studio re-expansion injects default expressions that need imports (CLI-clean, Studio-red).** `validate`/`build` accept a minimally-authored `NetHttpRequest`. When the file is later opened in Studio / Studio Web, Studio re-serializes the activity with its full default property set — including default expressions for `FormDataParts` (`New List(Of FormDataPart) From {New FileFormDataPart(), New BinaryFormDataPart(), New TextFormDataPart()}`) and `RetryStatusCodes`. `FormDataParts` names types from `UiPath.Web.Activities.Http.Models`, so Studio reports `BC30002: Type 'FormDataPart' is not defined` though the CLI was clean — even when `RequestBodyType="None"`. **Fix:** add `UiPath.Web.Activities.Http.Models` to `TextExpression.NamespacesForImplementation`. A type referenced by simple name in a VB expression must be **imported** there; an `xmlns:` prefix on the root element only resolves element/attribute type names, not expression compilation.
+
+**Two related Studio Web round-trip behaviors to author for.** On save, Studio Web (a) rewrites child-element argument bindings to attribute form — e.g. `<Throw.Exception><InArgument x:TypeArguments="s:Exception">[…]</InArgument></Throw.Exception>` becomes `Exception="[…]"` — and (b) prunes unused root `xmlns` declarations. Prefer attribute-form bindings where they work; it keeps round-trip diffs minimal and matches the shape Studio Web will produce anyway.
+
+## Connection Service Pattern (Office 365, GSuite, IS Connectors)
+
+- `ConnectionId` is marked `[Browsable(false)]` — it won't appear in the Properties panel, but it is **required** when `UseConnectionService=True`
+- `ConnectionId` must be a **literal string** (not a variable expression) for design-time validation to work. Dynamic ConnectionIds bypass validation and may fail at runtime.
+- Missing `ConnectionId` when `UseConnectionService=True` → `You must provide a value for Connection`. `{x:Null}`, which package docs leave when no connection resolves, gives this error; use the placeholder-GUID fallback below instead
+- Child activities expect their parent scope to have initialized OAuth extensions (`IGraphServiceClient`, `OAuthDataOptions`, etc.) — using them without a parent scope causes `NullReferenceException` at runtime
+
+- Connection lifecycle CLI (list / ping / create / edit) and the placeholder-GUID fallback when no connection exists: [../is-connector-xaml-guide.md](../is-connector-xaml-guide.md)
+
+## Deprecated Activities (Do Not Use)
+
+| Deprecated | Replacement | Notes |
+|-----------|-------------|-------|
+| Old trigger activities (`ClickTriggerActivity`, `KeyPressTriggerActivity`, etc.) | New trigger framework | Marked `[Browsable(false)]`, kept for backward compat only |
+| `ReplayUserEvent` | `ReplayUserEventV2` | Old version still loads but shouldn't be used |
+| `UiPath.<Vendor>.IntegrationService.Activities` packages | Generic `ConnectorActivity` via IS | Vendor-specific IS packages are deprecated |
+
+## Start Process Before an Application Card
+
+`StartProcess` is for a program the workflow does not drive. An application the workflow then acts in is opened by its Use Application/Browser card, a document passed as its argument where the application takes one, not started with Start Process and then attached.
+
+## Common Activity Name Confusions
+
+Activity tag names rarely match Studio display names. Guessing the tag from the display name fails at `build` (`Cannot create unknown type '...'`). Two examples:
+
+| Display Name | Wrong guess | Correct tag |
+|--------------|-------------|-------------|
+| Delete File | `ui:DeleteFile` | `ui:DeleteFileX` |
+| Wait | `ui:Wait` | `Delay` (MWF primitive — no prefix) |
+
+### `InvokeProcess` vs `StartProcess`
+
+To launch a local executable (`.exe`/`.cmd`/`.bat`), use `ui:StartProcess` (property `FileName` + `Arguments`). `ui:InvokeProcess` runs an Orchestrator process/package (property `ProcessName`) and has **no `FileName`** — reaching for one means you picked the wrong activity. Don't work around it with `Shell()`, `Process.Start`, or `InvokeCode`; for PowerShell use `InvokePowerShell<T>`.
+
+### Tag Verification Gate
+
+Before writing any `<prefix:Tag>` not already in the file:
+
+- **Doc check.** `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/<Tag>.md`, or `references/activity-docs/<PackageId>/<closest-version>/activities/<Tag>.md`. A missing file does not prove a missing tag: an activity can ship without a per-activity doc, so the CLI lookup decides.
+- **CLI lookup.** `uip rpa activities find --query "<verb>" --output json` → use the returned `ClassName`.
+
+Skipping both produces `Cannot create unknown type` at `build`.
+
+## Default Values That Matter
+
+| Activity | Property | Default | Impact |
+|----------|----------|---------|--------|
+| ExcelApplicationScope | `AutoSave` | `True` | File is saved automatically on scope exit |
+| ExcelApplicationScope | `Visible` | `True` | Excel window is visible during execution |
+| ExcelApplicationScope | `CreateNewFile` | `True` | Creates file if it doesn't exist |
+| Click | `ClickType` | `Single` | Single click (not double) |
+| Click | `MouseButton` | `Left` | Left mouse button |
+| Click | `AlterIfDisabled` | `False` | When selected, the activity executes the action even if the target element is disabled. Does not apply if the input mode is Hardware Events |
+| UI Automation activities | `Timeout` | `30` seconds, a double | The amount of time (in seconds) to wait for the operation to be performed before generating an error. Default and meaning vary by activity: check the activity's doc, `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/activities/<Activity>.md` |
+| UI Automation activities | `DelayBefore` | `0.2` seconds | Delay before action |
+| UI Automation activities | `DelayAfter` | `0.3` seconds | Delay after action; classic activities' millisecond values: [legacy/selector-guide.md](../legacy/selector-guide.md) |
+| ExtractData | `DelayBetweenPagesMS` | `300`ms | Between pagination clicks |
+| HTTP Request | `Timeout` | `10000` (10s) | Request timeout |
+| HTTP Request | `ContinueOnError` | `True` | Failures don't stop execution (unusual default) |
+| HTTP Request | `MaxRedirects` | `3` | Redirect limit |
+| WaitQueueItem | `PollTimeMS` | `30000` | Polling interval |
+| WaitQueueItem | `Timeout` | `300000` (5min) | Overall wait timeout |
+| LogMessage | `Level` | `Info` | Default log level |
+| ExcelApplicationScope | `InstanceCachePeriod` | — | Negative values cause validation error |
+
+## Namespace Mapping Gotchas
+
+| What You'd Expect | Actual Namespace | Notes |
+|-------------------|-----------------|-------|
+| `UiPath.UIAutomation.Activities` | `UiPath.UIAutomationNext.Activities` | Modern UI activities use "Next" namespace |
+| `UiPath.UIAutomation.Activities` (classic) | `UiPath.Core.Activities` | Classic UI activities are in Core |
+
+Use `uip rpa activities get-default-xaml` to get correct xmlns declarations — never guess namespace mappings.
+
+### `Delay` — no namespace prefix
+
+`Delay` is a Microsoft Workflow Foundation primitive (`System.Activities.Statements.Delay`), reached via the root `<Activity>` default xmlns and written unprefixed:
+
+```xml
+<Delay Duration="00:00:02" DisplayName="Wait for server" />
+```
+
+`<ui:Delay .../>` fails with `Cannot create unknown type '{...uipath...}Delay'`. The `ui:` prefix maps to `UiPath.Core.Activities`, which has no `Delay` override.
+
+**For other primitives** (`Sequence`, `If`, `Assign`, `ForEach`, `While`, `TryCatch`, `Switch`, …) UiPath provides `ui:`-prefixed overrides for many — which one to use depends on the behavior you want. Check with `uip rpa activities find --query "<name>"` before assuming MWF or UiPath; don't generalize from `Delay`.
+
+## Portable vs Windows Framework Limitations
+
+- Activities in `/Windows/` or `/NetFramework/` source folders are **Windows-only** and won't work in Portable projects
+- Some activities are explicitly hidden (`[Browsable(false)]`) when compiled for cross-platform (`XPLAT`)
+- Excel encryption activities, some interop-based activities, and `VerifyControlAttribute` (testing) have platform restrictions
+- Check `project.json` `targetFramework` before using Windows-only activities
+
+## DataTable Activity Gotchas
+
+Activity-level mechanics below. For the expression/code layer (LINQ filter/sort/group/join/diff, RegEx, DateTime, collections, JSON) see [data-manipulation-guide.md](../data-manipulation-guide.md).
+
+- **LookupDataTable column resolution**: When multiple column identifiers are set (shouldn't happen due to OverloadGroups), only the first non-null is used: `LookupColumnIndex ?? LookupColumnName ?? LookupDataColumn`
+- **FilterDataTable**: Column must exist AND be type-compatible with the filter operator. Filtering a DateTime column with "Contains" fails at CacheMetadata validation.
+- **BuildDataTable**: Uses a security-related allowed types list. DataTables with certain .NET types may fail to serialize/deserialize.
+- **BuildDataTable — `TableInfo` is designer-only.** The required `TableInfo` property is a serialized string with no documented format; activity docs say "configure through the designer instead". **Cannot be authored in agent-written XAML.** Skip the activity. Build the DataTable inline with `Assign` + `InvokeMethod` instead. Requires the standard `sd` namespace alias (matches the rest of the activity-docs corpus — see `ForEachRow.md` and `AddDataRow.md`) and `xmlns:s`.
+
+  **VB XAML** (`expressionLanguage: VisualBasic` — bracket shorthand `[expr]`, `New T()`, `GetType(T)`):
+  ```xml
+  <!-- Modern (Windows/Portable):
+       xmlns:sd="clr-namespace:System.Data;assembly=System.Data"
+       xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib" -->
+  <!-- Legacy (.NET Framework 4.6.1):
+       xmlns:sd="clr-namespace:System.Data;assembly=System.Data"
+       xmlns:s="clr-namespace:System;assembly=mscorlib" -->
+  <Variable x:TypeArguments="sd:DataTable" Name="dt_Data" Default="[New System.Data.DataTable()]" />
+  ...
+  <InvokeMethod MethodName="Add">
+    <InvokeMethod.TargetObject>
+      <InArgument x:TypeArguments="sd:DataColumnCollection">[dt_Data.Columns]</InArgument>
+    </InvokeMethod.TargetObject>
+    <InArgument x:TypeArguments="x:String">Name</InArgument>
+    <InArgument x:TypeArguments="s:Type">[GetType(System.String)]</InArgument>
+  </InvokeMethod>
+  <InvokeMethod MethodName="Add">
+    <InvokeMethod.TargetObject>
+      <InArgument x:TypeArguments="sd:DataColumnCollection">[dt_Data.Columns]</InArgument>
+    </InvokeMethod.TargetObject>
+    <InArgument x:TypeArguments="x:String">Amount</InArgument>
+    <InArgument x:TypeArguments="s:Type">[GetType(System.Decimal)]</InArgument>
+  </InvokeMethod>
+  ```
+  `TargetObject` MUST be the typed property-element form (`InArgument x:TypeArguments="sd:DataColumnCollection"`) — the attribute shorthand `TargetObject="[dt_Data.Columns]"` fails validation with `Set property 'InvokeMethod.TargetObject' threw an exception` because overload resolution can't see `Add` on the untyped target.
+  **C# XAML** (`expressionLanguage: CSharp`): replace bracket-shorthand expressions with `<CSharpValue x:TypeArguments="T">...</CSharpValue>` / `<CSharpReference x:TypeArguments="T">...</CSharpReference>` wrappers inside the `<InArgument>`/`<Default>` elements. See [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md) for the full binding form per property.
+
+  Note the `s:Type` argument — `x:Type` resolves to `TypeExtension` and fails (see § Invalid Use of `x:` Prefix). `assembly=System.Data` works in both targets via .NET type forwarding; `System.Data.Common` is the canonical home in modern .NET but the bundled UiPath docs standardize on `System.Data`.
+- **GetRowItem**: Must specify at least one of `Column`, `ColumnIndex`, or `ColumnName` — all three empty causes validation error.
+
+## Database Activity Gotchas (Connect to Database, Run Query, Run Command)
+
+Probed on SQL Server, `Microsoft.Data.SqlClient`.
+
+- `ExistingDbConnection` is `InArgument<DatabaseConnection>` (docs say `Property`): `<InArgument x:TypeArguments="udb:DatabaseConnection">`, `xmlns:udb="clr-namespace:UiPath.Database;assembly=UiPath.Database"`. Omitted `CommandType` = `Text`.
+- `Parameters`: direct `InArgument`/`OutArgument`/`InOutArgument` children (element = direction), `x:Key` = SQL name without `@` (`@` prefix also binds). `scg:Dictionary` wrapper also binds at runtime.
+- `null` value → SQL NULL; no `DBNull.Value` needed. SQL name without key → `SqlException: Must declare the scalar variable "@N".` Unused key ignored.
+- Type Out/InOut parameters explicitly: `OutArgument<Object>` returns a `String`. `OutArgument<String>` needs no size.
+- Generated key in one Run Command: `INSERT ...; SET @Id = SCOPE_IDENTITY();` + `<OutArgument x:TypeArguments="x:Int64" x:Key="Id">`. (`SELECT SCOPE_IDENTITY()` in Run Query returns `decimal`.)
+- Never concatenate values into `Sql`; only trusted identifiers.
+
+## Testing Activity Gotchas
+
+- **VerifyControlAttribute**: Cannot be nested inside another `VerifyControlAttribute` — validation error
+- **Assert activities** require `BookmarkResumptionHelper` extension (added via `metadata.RequireExtension<BookmarkResumptionHelper>()` in CacheMetadata)
+- **TakeScreenshotInCaseOfSucceedingAssertion** and **TakeScreenshotInCaseOfFailingAssertion** are `[RequiredArgument]` on assert activities even though they default to `false`
+
+## Enum-Valued Properties Fail the Whole File, Not Just the Activity
+
+Activity properties typed as enums (e.g. `Operator`, `ClickType`, `KeyModifiers`, `EmptyFieldMode`, comparison/filter strategies) accept only the exact members declared for the installed package version. An invalid identifier is a **deserialization** failure, not a localized property error: `validate` reports `Could not load <file>: 'Failed to create a '<Prop>' from the text '<value>''` and the entire activity tree fails to load, so a single bad enum value blocks the file — and blocks Object Repository linking against it, which needs the file to deserialize.
+
+Always read `{projectRoot}/.local/docs/packages/<PackageId>/activities/<Activity>.md` for the exact, package-version-specific enum members before authoring an enum-valued attribute. Do not infer values from naming intuition or from prose in this skill.
+
+## Package Version Changes Break XAML
+
+**The #1 cause of XAML breakage.** When upgrading or downgrading activity packages, XAML serialized with one version may not load with another.
+
+**What happens:**
+- Newer packages serialize activities with `Version` attributes the older package doesn't recognize (e.g., `Version="V5"` when max is V4)
+- Newer packages add properties that don't exist in older versions (e.g., `HealingAgentBehavior`, `ClipboardMode`)
+- Assembly names change between versions (e.g., `Box.V2` → `Box.V2.Core`)
+
+**Error messages:**
+- `"Failed to create a 'Version' from the text 'V5'"`
+- `"Cannot set unknown member 'UiPath.UIAutomationNext.Activities.NApplicationCard.HealingAgentBehavior'"`
+- `"Cannot set unknown member"` for any version-gated attribute
+
+**Fix when editing XAML manually:**
+1. Replace old assembly references in `xmlns` declarations (e.g., `assembly=Box.V2` → `assembly=Box.V2.Core`)
+2. Remove attributes that don't exist in the target version
+3. Cap `Version` attributes to the maximum supported by the target package
+4. Add `<AssemblyReference>netstandard</AssemblyReference>` if type resolution errors persist
+5. Use `uip rpa validate` to validate after changes
+
+**Prevention:** When using `uip rpa activities get-default-xaml`, the output matches the currently installed package version. Never copy XAML snippets from projects using different package versions.
+
+## Expression Language Mismatch
+
+Every XAML file must use the same expression language as the project (`expressionLanguage` in `project.json`).
+
+**What happens:**
+- Error: `"Main.xaml language 'VisualBasic' is incompatible with project's language 'CSharp'. This configuration is not supported"`
+- Copying a VB XAML file into a C# project (or vice versa) causes immediate validation failure
+
+**VB-specific gotchas:**
+- `Option Strict On` disallows late binding — `item.Body.ToString` fails without explicit casting
+- `Option Strict On` disallows implicit type conversions — `Object` to `DataRow` requires explicit `CType()`
+- VB uses `OrElse`/`AndAlso` (short-circuit) vs `Or`/`And` (non-short-circuit) — different behavior in XAML expressions
+
+**C#-specific gotchas:**
+- Expressions must use explicit `<CSharpValue>` / `<CSharpReference>` elements inside `<InArgument>` / `<OutArgument>` — do NOT use `[bracket]` shorthand (brackets create VB expression nodes). String interpolation (`$"..."`) is NOT supported — concatenate.
+- Attribute-form expressions, `OutArgument<T>` parse failures, and `ThrowIfNotInTree` are specific to **XAML projects with `expressionLanguage: CSharp`** — NOT to coded workflows (`.cs` files), which are plain C# and never use `CSharpValue`/`CSharpReference`: [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md).
+
+**Prevention:** Always check `project.json` `expressionLanguage` before writing any expression. Never mix languages.
+
+## Assembly References Studio Requires and the CLI Does Not Check
+
+Studio compiles expressions against `TextExpression.ReferencesForImplementation`; `validate`, `build` and `run` resolve against all project dependencies. A missing entry therefore passes every CLI gate and fails only in Studio (`BC30451 '<Name>' is not declared`, `BC30652 Reference required to assembly '<Assembly>'`, C# `The type '<Type>' is defined in an assembly that is not referenced`). Add these in the same edit as the expression that needs them:
+
+- **`<ProjectName>.Core`** — expressions use a type from the project's coded files ([§ Coded Source File Types in XAML Expressions Need a Namespace Import and Assembly Reference](#coded-source-file-types-in-xaml-expressions-need-a-namespace-import-and-assembly-reference)).
+- **`System.Collections`** — every XAML file of a project with coded files. Studio then compiles expressions against `<ProjectName>.Core`, built on the .NET reference assemblies that place `List<T>`, `Dictionary<TKey,TValue>` and `HashSet<T>` in `System.Collections`. Scaffolded files omit it, so the first coded file turns existing workflows red.
+
+```xml
+<AssemblyReference>System.Collections</AssemblyReference>
+```
+
+Other assemblies Studio reports missing: `System.Data`, `System.Data.Common`, `System.ComponentModel.TypeConverter`, `System.Net.Mail`, `netstandard` (fallback). A type from a package the project lacks needs `uip rpa packages install` first.
+
+## Workflow Argument Declarations Use `<x:Members>`, Not `<Activity.Properties>`
+
+**Error pattern (Studio refuses to open the file):**
+```
+Cannot create unknown type '{http://schemas.microsoft.com/netfx/2009/xaml/activities}Property'
+```
+
+**Root cause:** Workflow arguments (In/Out/InOut) must be declared in `<x:Members>` with `<x:Property>` children — both prefixed with `x:` (the XAML language schema, `http://schemas.microsoft.com/winfx/2006/xaml`). Writing `<Activity.Properties>` with bare `<Property>` elements resolves `Property` against the **default** xmlns (the activities namespace), where no such type exists — so the file fails to load entirely.
+
+**Correct:**
+```xml
+<x:Members>
+  <x:Property Name="in_Username" Type="InArgument(x:String)" />
+  <x:Property Name="out_LoginSuccess" Type="OutArgument(x:Boolean)" />
+</x:Members>
+```
+
+This is a hard-load error, not a validation warning — the file cannot even be opened in the designer. If a hand-written or generated workflow shows this symptom, search-and-replace `<Activity.Properties>` → `<x:Members>` and `<Property ` → `<x:Property ` (and the matching closing tags). The `<x:Members>` form appears in every starter from `uip rpa activities get-default-xaml` and in the canonical anatomy at [xaml-basics-and-rules.md § XAML File Anatomy](xaml-basics-and-rules.md#xaml-file-anatomy).
+
+---
+
+## Invalid Use of `x:` Prefix for Non-Builtin CLR Types
+
+**Error pattern:**
+```
+Cannot create unknown type '...Variable(...DateTime)'
+Cannot create unknown type '...Variable(...DateTimeOffset)'
+Cannot create unknown type '...Variable(...Guid)'
+Cannot create unknown type '...InArgument(...DateTime)'
+Cannot create unknown type '...Variable({http://schemas.microsoft.com/winfx/2006/xaml}String[])'
+```
+
+**Root cause:** `x:` and `s:` are not two different type systems — they are XML namespace aliases. `x:String` and `s:String` both refer to the same underlying `System.String`. The difference is purely which XML namespace schema registers the mapping:
+
+- `x:` maps to the **XAML language schema** (`http://schemas.microsoft.com/winfx/2006/xaml`), which only registers a small, fixed set of types.
+- `s:` maps to the **CLR System namespace** (`clr-namespace:System;assembly=System.Private.CoreLib`), which resolves types directly in `System` (e.g. `DateTime`, `Guid`) — subnamespaces like `System.IO` or `System.Collections.Generic` require their own separate aliases (e.g. `xmlns:sio`, `xmlns:scg`).
+
+The error occurs because the XAML language schema does not register `DateTime`, `DateTimeOffset`, `Guid`, etc. — so `x:DateTime` has no definition, while `s:DateTime` resolves correctly.
+
+**Types registered in the XAML language schema** (the only ones valid with the `x:` prefix):
+
+| Valid `x:` type | C# equivalent |
+|-----------------|---------------|
+| `x:String` | `string` |
+| `x:Int32` | `int` |
+| `x:Int64` | `long` |
+| `x:Double` | `double` |
+| `x:Boolean` | `bool` |
+| `x:Byte` | `byte` |
+| `x:Single` | `float` |
+| `x:Decimal` | `decimal` |
+| `x:Char` | `char` |
+| `x:Object` | `object` |
+| `x:TimeSpan` | `TimeSpan` |
+
+**If a type is not in that list, you cannot use `x:` for it** — even if it is a core .NET type.
+
+**Correct alternative prefixes for common System types** (requires `xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib"`):
+
+| Wrong | Correct | Notes |
+|----------|------------|-------|
+| `x:DateTime` | `s:DateTime` | — |
+| `x:DateTimeOffset` | `s:DateTimeOffset` | Often required by calendar/scheduling activities |
+| `x:Guid` | `s:Guid` | — |
+| `x:Uri` | `s:Uri` | — |
+| `x:Exception` | `s:Exception` | `<Catch x:TypeArguments="s:Exception">`, `Throw` argument types |
+| `x:Type` | `s:Type` | `<InArgument x:TypeArguments="x:Type">` silently resolves to `System.Activities.XamlIntegration.TypeExtension`, NOT `System.Type`. Passing `[GetType(System.String)]` fails with `BC30311: Value of type 'Type' cannot be converted to 'TypeExtension'`. Required by `InvokeMethod` calls into APIs that take `System.Type` (e.g. `DataColumnCollection.Add(name, type)`). |
+
+For types outside of `System`, add the matching CLR namespace alias. Examples:
+```xml
+xmlns:sio="clr-namespace:System.IO;assembly=System.Private.CoreLib"
+<Variable x:TypeArguments="sio:FileInfo" Name="file" />
+```
+
+**Do NOT use dotted full CLR names in `x:TypeArguments`** — `x:TypeArguments` accepts only XML-prefix-qualified names, never dotted full names. The XAML parser does not resolve dotted CLR identifiers; each subnamespace requires its own `xmlns` alias.
+
+Wrong — fails with `Cannot create unknown type` at load time:
+```xml
+<Variable x:TypeArguments="System.Security.SecureString" Name="var_SecurePass" />
+<OutArgument x:TypeArguments="System.Security.SecureString">[var_SecurePass]</OutArgument>
+```
+
+Correct — declare the alias once on the root `<Activity>`, then use it everywhere the type appears:
+```xml
+xmlns:ss="clr-namespace:System.Security;assembly=System.Private.CoreLib"
+<Variable x:TypeArguments="ss:SecureString" Name="var_SecurePass" />
+<OutArgument x:TypeArguments="ss:SecureString">[var_SecurePass]</OutArgument>
+```
+
+The same rule applies anywhere a type argument appears: `x:TypeArguments` on `Variable`, `InArgument`, `OutArgument`, `CSharpValue`, `CSharpReference`, `ActivityAction`, `DelegateInArgument`, etc.
+
+**Arrays:** an `x:` type takes no `[]` either. `x:String[]`, `x:Object[]` and `x:Int32[]` fail to load in every type argument, nested inside a generic too (`scg:List(x:Object[])`). Write the element type with a `clr-namespace` alias — `s:String[]`, `s:Object[]`, `scg:List(s:Object[])`; a package type takes `[]` on its own alias (`umo365fm:O365DriveRemoteItem[]`). Bind an array-typed property to an array of the same type: a `scg:List(…)` variable on an `OutArgument<T[]>` fails to load with `Set property '<Activity>.<Property>' threw an exception`, and a `List<T>` is not assignable to an `InArgument<T[]>`.
+
+```xml
+<Variable x:TypeArguments="s:String[]" Name="paths" />
+<ui:AddDataRow.ArrayRow>
+  <InArgument x:TypeArguments="s:Object[]">[New Object() {"Alice", 30}]</InArgument>
+</ui:AddDataRow.ArrayRow>
+```
+
+---
+
+## Variable Scope and "Not Declared" Errors
+
+**Error:** `"'variableName' is not declared. It may be inaccessible due to its protection level"`
+
+**Common causes:**
+1. Variable declared in a child scope (e.g., inside a `Sequence`) but referenced from a parent or sibling scope
+2. Variable name collision — same name in outer and inner scope causes `NullReferenceException` at runtime (UiPath only warns, doesn't error)
+3. Global variables defined in `globalVariables.json` that get corrupted or duplicated
+4. Activity output variable removed when the activity was deleted, but expressions still reference it
+
+**In XAML terms:** Variables defined inside `<Sequence.Variables>` are only visible within that `<Sequence>` and its children. Moving an activity that references a variable to a different scope breaks the reference.
+
+## "Value cannot be null. Parameter name: expression"
+
+**Error:** `"Value cannot be null. Parameter name: expression"` at validation time.
+
+**Causes:**
+- An activity property that expects an expression has been cleared/emptied in the XAML
+- The XAML has an `InArgument` or `OutArgument` element with no value or expression inside
+- Deleting an activity left behind orphaned argument references
+
+**Fix:** Find the activity with the empty expression in the XAML and either set a valid expression or remove the empty argument element.
+
+## A Folder Named Like a Workflow Beside It Fails `build` With CS0101
+
+`build` compiles a workflow file into a class named after the file and a folder that holds workflow files into a namespace named after the folder. `Invoice.xaml` beside a folder `Invoice\` that holds workflows therefore declares a class and a namespace both called `<Project>.Invoice`: `error CS0101: The namespace '<Project>' already contains a definition for 'Invoice'` — in any subfolder too (`'<Project>.Workflows'`), in VB and C# projects alike. Per-file `validate` passes on every file; only `build` reports it. Name a folder of helper workflows differently from every workflow file beside it (`Invoice.xaml` + `InvoiceSteps\`). A folder with no workflow file in it does not clash.
+
+## XAML File Size and Performance
+
+- XAML files over **5 MB** cause significant Studio slowdowns
+- Files approaching 7+ MB can take minutes to load
+- Very large files can cause Studio to hang during validation
+
+**Prevention:** Split large workflows into smaller XAML files and use `Invoke Workflow` to call them. Keep individual XAML files under ~500 activities.
+
+## {x:Null} vs Omitted Properties
+
+- `PropertyName="{x:Null}"` explicitly sets a property to null — this is serialized and persisted
+- Omitting a property entirely means "use the default value" — which may or may not be null
+- Some activities behave differently when a property is explicitly null vs absent (e.g., `Filter="{x:Null}"` may disable filtering, while omitting `Filter` uses a default filter)
+- When `uip rpa activities get-default-xaml` outputs properties with `{x:Null}`, preserve them — removing them may change behavior
+
+## Literal Curly Braces in Attribute Values
+
+- Attribute values starting with `{` are parsed as XAML markup extensions — `Search="{FullName}"` fails with `Could not find type 'FullName' in namespace '...'`
+- This affects **any** literal string property, not just `WordReplaceText.Search` — common with Word/text template placeholders like `{FullName}`, `{Email}`, `{DepartmentName}`
+- Expression-wrapped values (`Search="[&quot;{FullName}&quot;]"`) are not affected — the expression engine handles those, not the XAML parser
+
+**Fix:** Prefix with the XAML escape sequence `{}` to indicate a literal string: `Search="{}{FullName}"`
+
+## Runs of Whitespace in Element Text Collapse — Use `xml:space="preserve"`
+
+XAML normalises an element's text content: each run of spaces, tabs and line breaks becomes one space, and leading and trailing whitespace is dropped. Expressions and literals written as element text — `<CSharpValue>`, a VB `<InArgument>[…]</InArgument>`, a literal `<InArgument>…</InArgument>` — reach the compiler normalised: `"Net  Amount"` (two spaces) runs as `"Net Amount"`, and a line break inside a C# verbatim string becomes a space. `validate`, `build` and the run pass, and a comparison against the application's text never matches.
+
+Add `xml:space="preserve"` to each element whose text holds two consecutive spaces, a tab or a line break; Studio serialises such text with the same attribute:
+
+```xml
+<CSharpValue x:TypeArguments="x:String" xml:space="preserve">"Net  Amount"</CSharpValue>
+```
+
+Attribute values keep their spaces, so a VB `[…]` attribute and a literal attribute need no marker. A literal line break or tab inside an attribute value still becomes a space: write it as `&#xA;` or `&#x9;`.
+
+## ViewState Section Corruption
+
+The `<sap2010:WorkflowViewState.ViewStateManager>` section can become corrupted:
+- **Studio crashes during save** can truncate the ViewState, causing "Unexpected end of file" errors
+- **Duplicate `sap2010:WorkflowViewState.IdRef`** values break IdRef-addressed tooling (breakpoints, `focus-activity`) and designer-state correlation
+- **Renumbered or rewritten IdRefs** silently detach breakpoints and designer state from their activity — never change an existing IdRef; new activities take the next free number for their type ([xaml-basics-and-rules.md](xaml-basics-and-rules.md) Rule 25)
+- **Manual editing of ViewState** almost always causes problems — it contains serialized designer positions, expanded/collapsed states, and breakpoint info
+
+**Fix:** If ViewState is corrupted, use the `Edit` tool to delete the entire `<sap2010:WorkflowViewState.ViewStateManager>` section. Studio will regenerate it when the file is opened (you'll lose designer layout but not workflow logic).
+
+## Git and Version Control Issues
+
+- **XAML files may be detected as binary** by Git if they contain BOM or unusual characters — add `*.xaml diff` to `.gitattributes`
+- **Merge conflicts in XAML** are extremely difficult to resolve manually due to the XML structure and `__ReferenceID` numbering
+- **Simply opening a XAML file** in Studio can cause it to report changes (Studio normalizes formatting, updates ViewState) — this creates noise in Git diffs
+- **Recommendation:** Avoid parallel editing of the same XAML file. If merge conflicts occur, prefer taking one version entirely rather than manual conflict resolution
+
+## JitCustomTypesSchema.json not found or not updated
+
+The `.project/JitCustomTypesSchema.json` file can be missing or outdated.
+
+**Fix:** Use the `Read` tool to read it one more time only. If this also fails, then read the project structure.
+
+## DataTable.Select numeric comparisons on Excel-sourced data
+
+When reading Excel data with `ReadRangeX`, column types in the resulting `DataTable` may be `String` even when the Excel cells contain numbers. This causes `DataTable.Select("[Amount] > 1000")` to perform string comparison instead of numeric comparison (e.g., `"4200" < "800"` alphabetically), silently dropping rows.
+
+**Workarounds:**
+- Use LINQ with explicit conversion: `dt_Data.AsEnumerable().Where(Function(row) CDbl(row("Amount")) > 1000).CopyToDataTable()`
+- Convert the column type after reading: loop through rows and convert values, or clone the DataTable with the correct column types

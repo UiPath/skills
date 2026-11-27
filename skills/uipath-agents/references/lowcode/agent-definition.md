@@ -1,0 +1,526 @@
+# Agent Definition Reference
+
+Schemas for the core agent definition files: `agent.json`, `entry-points.json`, `project.uiproj`. Plus contentTokens construction, message templates, and Common Edits.
+
+## Project Directory Structure
+
+After `uip agent init <name>`:
+
+```
+<AgentName>/
+├── agent.json              # Main agent configuration (edit this)
+├── entry-points.json       # Entry point definition (must mirror agent.json schemas)
+├── project.uiproj          # Project metadata
+├── flow-layout.json        # UI layout — do not edit
+├── evals/                  # Evaluation sets and evaluators
+├── features/               # Agent features (memory spaces via uip agent memory)
+└── resources/              # Agent resources
+```
+
+## agent.json
+
+### Autonomous agent.json
+Primary configuration file for autonomous agent. Edit directly.
+
+```json
+{
+  "version": "1.2.0",
+  "settings": {
+    "model": "<MODEL_IDENTIFIER>",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 25,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "<FIELD_NAME>": {
+        "type": "string",
+        "description": "<FIELD_DESCRIPTION>"
+      }
+    },
+    "required": ["<FIELD_NAME>"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "<FIELD_NAME>": {
+        "type": "string",
+        "description": "<FIELD_DESCRIPTION>"
+      }
+    }
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false,
+    "targetRuntime": "pythonAgent"
+  },
+  "type": "lowCode",
+  "messages": [
+    {
+      "role": "system",
+      "content": "<SYSTEM_PROMPT>",
+      "contentTokens": [
+        { "type": "simpleText", "rawString": "<SYSTEM_PROMPT>" }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "{{input.fieldName}}",
+      "contentTokens": [
+        { "type": "variable", "rawString": "input.fieldName" }
+      ]
+    }
+  ],
+  "guardrails": [],
+  "projectId": "<AUTO_GENERATED_UUID>"
+}
+```
+
+### Conversational agent.json
+Primary configuration file for conversational agent. Edit directly.
+
+```json
+{
+  "version": "1.2.0",
+  "settings": {
+    "model": "<MODEL_IDENTIFIER>",
+    "maxTokens": 64000,
+    "temperature": 0,
+    "engine": "conversational-v1",
+    "maxIterations": 8,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "<FIELD_NAME>": {
+        "type": "string",
+        "description": "<FIELD_DESCRIPTION>"
+      }
+    },
+    "required": ["<FIELD_NAME>"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {}
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": true,
+    "showProjectCreationExperience": false,
+    "targetRuntime": "pythonAgent"
+  },
+  "type": "lowCode",
+  "messages": [
+    {
+      "role": "system",
+      "content": "<SYSTEM_PROMPT>",
+      "contentTokens": [
+        { "type": "simpleText", "rawString": "<SYSTEM_PROMPT>" }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "",
+      "contentTokens": []
+    }
+  ],
+  "projectId": "<AUTO_GENERATED_UUID>"
+}
+```
+
+> **`guardrails`** — array of guardrail objects that inspect agent inputs/outputs for policy violations. See [capabilities/guardrails/guardrails.md](capabilities/guardrails/guardrails.md) for the full schema, validator reference, and examples.
+
+#### Appearance (conversational only)
+
+Optional root `appearance` object: chat appearance settings for a **conversational** agent. Each chat surface reads them to decide how to render the chat experience. `uip agent init` scaffolds have none; conversational agents created in Studio Web already have it with defaults (`""`, `""`, `[]`, `"InputsAndOutputs"`). If present, edit it in place and keep every existing field. If absent, add it only when the user asks for a welcome title, welcome description, or starting prompts. Never add it to autonomous agents.
+
+```json
+"appearance": {
+  "welcomeTitle": "<WELCOME_TITLE>",
+  "welcomeDescription": "<WELCOME_DESCRIPTION>",
+  "startingPrompts": [
+    {
+      "id": "<NEW_UUID>",
+      "displayPrompt": "<SHORT_LABEL_SHOWN_ON_THE_BUTTON>",
+      "actualPrompt": "<FULL_MESSAGE_SENT_WHEN_CLICKED>"
+    }
+  ],
+  "displayMode": "InputsAndOutputs"
+}
+```
+
+| Field | Required | Notes |
+|---|---|---|
+| `welcomeTitle` | Yes | Heading on the chat welcome screen. String; `""` when the user gives none |
+| `welcomeDescription` | Yes | Text under the welcome heading. String; `""` when the user gives none |
+| `startingPrompts` | Yes | Clickable suggestions on the welcome screen. Array of **objects**, never plain strings; `[]` for none |
+| `startingPrompts[].id` | Yes | Prompt identifier. New UUID, unique within the array |
+| `startingPrompts[].displayPrompt` | Yes | Label on the starting-prompt button. Non-empty; the runtime drops prompts with an empty label |
+| `startingPrompts[].actualPrompt` | Yes | Message sent when the button is clicked. Non-empty; same as `displayPrompt` if no difference |
+| `displayMode` | No | How much of each tool call the chat shows. `"ToolNameOnly"` \| `"InputsAndOutputs"` \| `"FullTrace"`; use `"InputsAndOutputs"` unless the user specifies otherwise |
+| `personalWorkspaceConnectionsOnly` | No | Limits the agent's connection settings menu to personal workspace connections. Boolean; keep the initialized value (omit if none) unless the user specifies |
+
+No other keys. Never plain-string prompts: [critical-rules/conversational-critical-rules.md](critical-rules/conversational-critical-rules.md) anti-pattern 6. `uip agent validate` reports shape errors as `agent.json → appearance.startingPrompts[<N>]: <MESSAGE>`.
+
+### Settings
+
+| Field | Description |
+|-------|-------------|
+| `model` | LLM identifier. Discover valid values with `uip agent model list` and select per [model-selection-guide.md](model-selection-guide.md) — **override the scaffold default** (illustrative GA: `"anthropic.claude-sonnet-4-6"`, `"gpt-5.4"` — verify against the tenant). |
+| `maxTokens` | Max output tokens. Must not exceed the chosen model's `MaxTokens` cap (from `uip agent model list`). |
+| `temperature` | 0 = deterministic, higher = creative |
+| `engine` | Keep `"basic-v2"` for autonomous, `"conversational-v1"` for conversational |
+| `maxIterations` | Max autonomous agent loop iterations. Default 25. Default 8 for conversational. |
+| `mode` | Use `"standard"` |
+
+> Prompt **quality** (system/user prompt structure, tool-call criteria, output contract) lives in [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md). This file owns the **mechanics** (schema, `contentTokens` sync).
+
+### Schema Types
+
+| Type | Use For |
+|------|---------|
+| `"string"` | Text, JSON strings, formatted data |
+| `"number"` | Numeric values with decimals |
+| `"integer"` | Whole numbers |
+| `"boolean"` | True/false flags |
+| `"object"` | Nested structures |
+| `"array"` | Lists |
+| `$ref: "#/definitions/job-attachment"` | File attachments (input or output). See § File Attachments. |
+
+### File Attachments (`job-attachment`)
+
+To accept or return a file, declare the field as `$ref: "#/definitions/job-attachment"` and add the canonical `job-attachment` block to `inputSchema.definitions` (or `outputSchema.definitions`). Schema is fixed — copy verbatim. `x-uipath-resource-kind: "JobAttachment"` is required.
+
+```jsonc
+{
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "fileIn": { "$ref": "#/definitions/job-attachment" }
+    },
+    "definitions": {
+      "job-attachment": {
+        "type": "object",
+        "properties": {
+          "ID":       { "type": "string", "description": "Orchestrator attachment key" },
+          "FullName": { "type": "string", "description": "File name" },
+          "MimeType": { "type": "string", "description": "MIME type, e.g. \"application/pdf\", \"image/png\"" },
+          "Metadata": {
+            "type": "object",
+            "description": "Dictionary<string, string> of metadata",
+            "additionalProperties": { "type": "string" }
+          }
+        },
+        "required": ["ID"],
+        "x-uipath-resource-kind": "JobAttachment"
+      }
+    }
+  }
+}
+```
+
+| Field | Required | Notes |
+|---|---|---|
+| `ID` | Yes | Orchestrator attachment key. Runtime injects this. |
+| `FullName` | No | File name with extension. |
+| `MimeType` | No | Drives multimodal handling in built-in tools. |
+| `Metadata` | No | `Dictionary<string, string>`. |
+
+`{{input.<file-field>}}` in a message template renders **metadata only** (ID, FullName, MimeType, Metadata). The agent does not see file contents from this token. To read contents, configure a file-handling built-in tool (e.g. `analyze-attachments`) — see [capabilities/built-in-tools/built-in-tools.md](capabilities/built-in-tools/built-in-tools.md).
+
+Output side: declare an output field the same way; the agent emits a `job-attachment` describing a file it produced (the Create File built-in tool writes it — see [capabilities/built-in-tools/create-file.md](capabilities/built-in-tools/create-file.md)).
+
+Guardrails inspect these files independently of the prompt: a built-in validator with `detectionScope: "Files"` or `"Both"` evaluates attached input files (Agent · Pre) and produced output files (Agent · Post). See [capabilities/guardrails/files-guide.md](capabilities/guardrails/files-guide.md).
+
+### Top-level fields (do not modify)
+
+| Field | Value |
+|-------|-------|
+| `version` | `"1.2.0"` — always scaffolded at this version |
+| `type` | `"lowCode"` |
+| `projectId` | Auto-generated UUID — do not edit |
+
+### Metadata (do not modify)
+
+| Field | Value |
+|-------|-------|
+| `storageVersion` | Managed by `uip agent refresh` — do not edit |
+| `isConversational` | `false` for autonomous agents, `true` for conversational agents. Do not edit. |
+| `showProjectCreationExperience` | `false` |
+| `targetRuntime` | `"pythonAgent"` for standalone agents, autonomous and conversational alike. **Absent for `--inline-in-flow` scaffolds** of either flavor — see [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md). |
+
+### Input Schema
+
+For **autonomous agents**, the `inputSchema` defines the input properties of the agent which can be templated into the system-prompt and user-prompt.
+
+For **conversational agents**, each agent run handles one conversational exchange - a single run corresponds to a single turn of messages/tool-calls taken in response to a user-initiated message. The runtime supplies the following inputs per run:
+- **`messages`** (reserved, implicit) — current conversation history, including user's latest message. Always present; never declare it (or other fields representing conversation-history or user's input message) in `inputSchema`, per [critical-rules/conversational-critical-rules.md](critical-rules/conversational-critical-rules.md) anti-pattern 4.
+- **Custom `inputSchema` fields** — additional per-exchange context variables which can be templated into the system-prompt. Leave `inputSchema` blank unless the use case genuinely needs per-exchange context variables from the chat-surface beyond the conversation history and user's input messages, which are already captured in `messages`.
+
+
+### Output Schema
+
+For **autonomous agents**, the `outputSchema` defines the output properties of the agent.
+
+For **conversational agents**, the `outputSchema` should not be modified, and thus always left empty. The exception is a conversational agent scaffolded inline in a Maestro Flow, which does support structured outputs and is authored under the `uipath-maestro-flow` skill. See [critical-rules/conversational-critical-rules.md](critical-rules/conversational-critical-rules.md) anti-pattern 1.
+
+
+## Messages
+
+This section covers message **structure** and `contentTokens` mechanics. For prompt **quality** — system-prompt skeleton, tool-call criteria, output contract, worked examples — see [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md).
+
+### System Message
+
+Sets the agent's role and behavior. 
+
+For autonomous, typically plain text with no variables:
+
+```json
+{
+  "role": "system",
+  "content": "You are a classifier. Categorize the input and explain your reasoning.",
+  "contentTokens": [
+    { "type": "simpleText", "rawString": "You are a classifier. Categorize the input and explain your reasoning." }
+  ]
+}
+```
+
+For conversational, typically general behavior and steps to respond to users. Should also generally have no variables unless the conversational inputs feature is used, see § Input Schema.
+
+```json
+{
+  "role": "system",
+  "content": "You are a helpful assistant that runs tools and responds to users based on their queries.",
+  "contentTokens": [
+    { "type": "simpleText", "rawString": "You are a helpful assistant that runs tools and responds to users based on their queries." }
+  ]
+}
+```
+
+### User Message
+
+For autonomous agents, templates input fields into the prompt using `{{input.fieldName}}`, and agent resources/outputs using `@{ }` expressions (see § contentTokens Construction). For `job-attachment` fields the token renders metadata only (see § File Attachments).
+
+```json
+{
+  "role": "user",
+  "content": "Document: {{input.documentText}} Category options: {{input.categories}}",
+  "contentTokens": [
+    { "type": "simpleText", "rawString": "Document: " },
+    { "type": "variable", "rawString": "input.documentText" },
+    { "type": "simpleText", "rawString": " Category options: " },
+    { "type": "variable", "rawString": "input.categories" }
+  ]
+}
+```
+
+For conversational agents, the user-message should be ignored after initialization and left blank. The user message from the `agent.json` is ignored since each user message is received during the actual conversation.
+
+## contentTokens Construction
+
+Every message needs both `content` (string) and `contentTokens` (array). Keep them in sync.
+
+Three token types: `simpleText`, `variable`, `expression`.
+
+**Rules:**
+1. Text outside `{{ }}` and `@{ }` → `{ "type": "simpleText", "rawString": "<text>" }`
+2. Text inside `{{ }}` → `{ "type": "variable", "rawString": "input.fieldName" }` (strip delimiters; input-field reference)
+3. Text inside `@{ }` → `{ "type": "expression", "rawString": "<expr>" }` (strip delimiters; Studio expression referencing an agent resource or output — see families below)
+4. Every segment including whitespace gets its own entry
+
+`@{ }` (`expression`) references an agent resource or output by family + name — `@{tools.<Name>}`, `@{contexts.<Name>}`, `@{escalations.<Name>}`, or `@{output.<path>}` — with the inner text verbatim as `rawString` (e.g. `@{contexts.Knowledge}` → `rawString: "contexts.Knowledge"`). `{{ }}` (`variable`) is for `inputSchema` fields only; `@{ }` targets are runtime-resolved and must never be declared under `inputSchema.properties`.
+
+**Example — adjacent variables:**
+
+Content: `"{{input.field1}} {{input.field2}}"`
+
+```json
+"contentTokens": [
+  { "type": "variable", "rawString": "input.field1" },
+  { "type": "simpleText", "rawString": " " },
+  { "type": "variable", "rawString": "input.field2" }
+]
+```
+
+**Example — resource reference (`@{ }` expression):**
+
+Reference an agent resource by family + name, e.g. a context (`resources/<Name>/resource.json`) with `@{contexts.<Name>}`.
+
+Content: `"Extract information from the @{contexts.Test} context"`
+
+```json
+"contentTokens": [
+  { "type": "simpleText", "rawString": "Extract information from the " },
+  { "type": "expression", "rawString": "contexts.Test" },
+  { "type": "simpleText", "rawString": " context" }
+]
+```
+
+**Common mistakes:**
+- Forgetting to update contentTokens after editing content
+- Including `{{`/`}}` or `@{`/`}` in the rawString
+- Missing whitespace tokens between adjacent variables
+
+## entry-points.json
+
+Defines how the agent is invoked. Schemas must exactly mirror agent.json.
+
+```json
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "/content/agent.json",
+      "uniqueId": "<AUTO_GENERATED_UUID>",
+      "type": "agent",
+      "input": {
+        "type": "object",
+        "properties": { },
+        "required": []
+      },
+      "output": {
+        "type": "object",
+        "properties": { }
+      }
+    }
+  ]
+}
+```
+
+### Sync Rule
+
+| agent.json | entry-points.json |
+|-----------|-------------------|
+| `inputSchema.properties.<field>` | `entryPoints[0].input.properties.<field>` |
+| `inputSchema.required` | `entryPoints[0].input.required` |
+| `outputSchema.properties.<field>` | `entryPoints[0].output.properties.<field>` |
+
+Do not modify `filePath`, `uniqueId`, or `type`.
+
+## project.uiproj
+
+```json
+{
+  "ProjectType": "Agent",
+  "Name": "<AGENT_NAME>",
+  "Description": null,
+  "MainFile": null
+}
+```
+
+Only `Name` and `Description` are editable. `ProjectType` and `MainFile` are fixed.
+
+## Features Convention (v1.1.0)
+
+Features are defined as individual files in the agent project's `features/` directory. Today this is used for memory spaces. Do not hand-author memory feature files for routine changes; use `uip agent memory`.
+
+```
+Agent/
+├── agent.json                              # No manually-authored memory features here
+├── features/
+│   └── {FeatureName}/
+│       └── feature.json                    # Written by uip agent memory
+```
+
+The `memory` command updates `features/{FeatureName}/feature.json`. Run `uip agent refresh --output json`, then `uip agent validate --output json` after memory changes so generated bindings stay current.
+
+For the full memory workflow and generated shape, see [capabilities/memory/memory.md](capabilities/memory/memory.md).
+
+## Resources Convention (v1.1.0)
+
+Resources are defined as individual files in the agent project's `resources/` directory — **not** inline in the root `agent.json`. Each resource gets its own subdirectory:
+
+```
+Agent/
+├── agent.json                              # No resources field here
+├── resources/
+│   └── {ResourceName}/
+│       └── resource.json                   # One file per resource
+```
+
+The `validate` command reads these files and resolves `referenceKey` for solution tools. The root `agent.json` should not contain a `resources` field.
+
+### `folderPath` semantics
+
+`folderPath` (or `channel.properties.folderName` for escalations / `action.app.folderName` for guardrail escalations) carries the literal `Folder` field returned by `uip solution resources list` — the same rule for both local (`Source: "Local"`) and external (`Source: "Remote"`) resources:
+
+| `location` | `folderPath` value | Source |
+|---|---|---|
+| `"solution"` | Typically `"solution_folder"` (the in-solution declared folder) | `Folder` field from `uip solution resources list` |
+| `"external"` | Literal Orchestrator folder, slash-separated (e.g., `"Shared/Sales"`) | `Folder` field from `uip solution resources list` |
+
+The author writes the value verbatim into `resource.json` (or into the guardrail action under `agent.json`); `uip agent refresh` propagates it into `bindings_v2.json` as `folderPath` (App resources translate `folderName` → binding `folderPath`). Connection (Integration Service) resources are exempt — bound by `connection.id`, no `folderPath`. See [critical-rules/critical-rules.md](critical-rules/critical-rules.md) Rule 11 and [solution-resources.md](solution-resources.md) § Bindings.
+
+For each resource type's full schema, see the relevant capability file:
+
+- Tool resources (`$resourceType: "tool"`) — [capabilities/process/process.md](capabilities/process/process.md), [capabilities/integration-service/integration-service.md](capabilities/integration-service/integration-service.md)
+- Context resources (`$resourceType: "context"`) — [capabilities/context/context.md](capabilities/context/context.md)
+- Escalation resources (`$resourceType: "escalation"`) — [capabilities/escalation/escalation.md](capabilities/escalation/escalation.md)
+- MCP server resources (`$resourceType: "mcp"`) — [capabilities/mcp/mcp.md](capabilities/mcp/mcp.md)
+
+## Common Edits
+
+### Change System Prompt
+
+1. Edit `agent.json` → `messages[0].content`
+2. Rebuild `messages[0].contentTokens` — single `simpleText` entry for prompts with no variables
+3. Refresh: `uip agent refresh --output json`
+4. Validate: `uip agent validate --output json`
+
+### Change User Message Template
+
+1. Edit `agent.json` → `messages[1].content`
+2. Rebuild `messages[1].contentTokens` — tokenize `{{input.fieldName}}` as `variable`, surrounding text as `simpleText`
+3. Refresh, then validate
+
+### Add an Input Field
+
+1. Add to `agent.json` → `inputSchema.properties` (and `.required` if mandatory)
+2. Mirror in `entry-points.json` → `entryPoints[0].input.properties` (and `.required`)
+3. Update `messages[1].content` and `contentTokens` if the field should appear in the user message
+4. Refresh, then validate
+
+### Add a File Input Field (`job-attachment`)
+
+1. Add the field as `{ "$ref": "#/definitions/job-attachment" }` in `agent.json` → `inputSchema.properties`
+2. Add the canonical `job-attachment` block to `inputSchema.definitions` (copy from § File Attachments — do not edit)
+3. Mirror both in `entry-points.json` → `entryPoints[0].input.properties` and `.definitions`
+4. Reference in the user message with `{{input.<fieldName>}}` if the agent should see file metadata
+5. To let the agent **read contents**, add a file-handling built-in tool — see [capabilities/built-in-tools/built-in-tools.md](capabilities/built-in-tools/built-in-tools.md)
+6. Refresh, then validate
+
+### Add an Output Field
+
+1. Add to `agent.json` → `outputSchema.properties`
+2. Mirror in `entry-points.json` → `entryPoints[0].output.properties`
+3. Refresh, then validate
+
+### Add a File Output Field (`job-attachment`)
+
+1. Add the field as `{ "$ref": "#/definitions/job-attachment" }` in `agent.json` → `outputSchema.properties`
+2. Add the canonical `job-attachment` block to `outputSchema.definitions`
+3. Mirror both in `entry-points.json` → `entryPoints[0].output.properties` and `.definitions`
+4. Refresh, then validate
+
+### Change Model Settings
+
+1. Edit `agent.json` → `settings.model`, `.temperature`, `.maxTokens`, or `.maxIterations`
+2. Discover valid model identifiers with `uip agent model list` and select per [model-selection-guide.md](model-selection-guide.md) — the tenant is the source of truth (availability and GA/preview status vary per tenant). Keep `maxTokens` ≤ the model's `MaxTokens` cap.
+3. Refresh, then validate
+
+### Capability-Adding Edits
+
+For edits that add a new tool, context, or escalation, see the capability registry in [lowcode.md](lowcode.md).
+
+## Auto-Generated Files (do not edit)
+
+| File | Managed By |
+|------|------------|
+| `flow-layout.json` | Studio Web |
+| `entry-points.json`, `bindings_v2.json` | Regenerated by `uip agent refresh` and Studio Web — do not edit by hand |

@@ -1,0 +1,218 @@
+# REFramework Guide
+
+Patterns for building and customizing Robotic Enterprise Framework projects on Windows, Portable, or Legacy targets. State-machine internals are in [legacy/activity-docs/_REFRAMEWORK.md](legacy/activity-docs/_REFRAMEWORK.md) — that guide's architecture sections are mode-agnostic.
+
+## Template Configuration File
+
+The configuration file depends on the template the project was created from. Check which file `Data/` holds before following any configuration step below.
+
+| Template | File | Holds |
+|---|---|---|
+| Windows and Portable, template 26.10 | `Data/Config.json` | Objects `Settings` and `Constants`; values keep their JSON type (number, `true`/`false`, text) |
+| Windows - Legacy, and earlier templates (template 25.10 ships it for Windows too) | `Data/Config.xlsx` | Sheets `Settings`, `Constants` (`Name`/`Value` rows) and `Assets` |
+
+Where each file keeps what the rest of this guide refers to:
+
+| Item | `Config.json` | `Config.xlsx` |
+|---|---|---|
+| The queue | Selected on *Get Transaction Item* in `Framework\GetTransactionData.xaml`; an empty folder means the process's folder. The activity ships empty, and validation fails with `Value for a required activity argument 'Queue name' was not supplied` until a queue is selected. Studio records the queue as a resource of the project | `OrchestratorQueueName` in `Settings` (case-sensitive, must match the queue in Orchestrator) and optionally `OrchestratorQueueFolder`. The template ships the sample value `ProcessABCQueue`, which passes a non-empty check (`Not String.IsNullOrEmpty(in_Config("OrchestratorQueueName").ToString())`): blank or remove the row in a project without a queue |
+| Removing the queue (tabular, single-shot) | Nothing to change in the file; the item fetch that replaces *Get Transaction Item* drops it | Blank or remove `OrchestratorQueueName` |
+| Assets | No assets section: read each asset with *Get Asset* or *Get Credential* in the workflow that uses it (credentials typically in `InitAllApplications.xaml`) | Listed on the `Assets` sheet; `InitAllSettings.xaml` loads each into `Config` at start. Names must match Orchestrator exactly (case-sensitive) |
+| Value types in `Config` | `Int64`, `Boolean` or `String`, as written in the file: a C# unboxing cast such as `(int)in_Config["MaxRetryNumber"]` throws `InvalidCastException` | `String` |
+
+## When to Use REFramework
+
+Use:
+- Multi-item transactional processing (invoices, queue items, data rows).
+- Production-grade retry, logging, and exception handling.
+- Multi-robot horizontal scaling on a shared Orchestrator queue.
+
+Don't use:
+- Simple linear processes (read → do one thing → exit). Plain `Sequence` is enough.
+- Attended automations with continuous user interaction.
+- Single-call jobs under ~30 seconds total. The four-state ceremony costs more than it saves.
+
+## The Four States
+
+| State | Role |
+|-------|------|
+| `Init` | `InitAllSettings.xaml` reads the configuration file → `Config` dictionary; `KillAllProcesses.xaml`; `InitAllApplications.xaml` opens/authenticates apps. |
+| `Get Transaction Data` | `GetTransactionData.xaml` returns the next item or `Nothing`. `Nothing` → End Process. |
+| `Process Transaction` | `Process.xaml` (your business logic) → `SetTransactionStatus.xaml` (Success / BusinessRuleException / System Exception). |
+| `End Process` | `CloseAllApplications.xaml` runs on every exit (success or abort). |
+
+Full state machine, transitions, and per-state counter semantics: [legacy/activity-docs/_REFRAMEWORK.md § State Machine Architecture](legacy/activity-docs/_REFRAMEWORK.md).
+
+## Execution Mode: Queue-Driven (Canonical)
+
+The default and most common mode. Dispatcher project populates an Orchestrator queue; this Performer project consumes one item per transaction. Multi-robot parallelism comes for free via queue locking.
+
+**Wiring — keep the template as-is.** The shipped REFramework is built for this mode end-to-end.
+
+1. Set the queue where the template takes it ([§ Template Configuration File](#template-configuration-file)).
+2. `Framework\GetTransactionData.xaml`: uses the `Get Transaction Item` activity. Returns a `QueueItem` or `Nothing` (queue empty → End Process).
+3. `Framework\Process.xaml`: implement business logic. Access fields via:
+   ```vb
+   in_TransactionItem.SpecificContent("FieldName").ToString()
+   in_TransactionItem.Reference
+   in_TransactionItem.Priority
+   in_TransactionItem.DueDate
+   ```
+4. `Framework\SetTransactionStatus.xaml`: keep the three Set Transaction Status calls — they update item status in Orchestrator.
+
+**Dispatcher pattern (separate project).** Read input data, then for each row emit `Add Queue Item` with a unique `Reference`, optional `Priority` / `DueDate`, and the fields as `SpecificContent`. Dispatcher does not need REFramework — a simple `Sequence` is sufficient.
+
+**Concurrency.** Orchestrator locks each item to one robot for the duration of processing. Design `Process.xaml` **stateless** so any robot can pick up any item. To scale throughput, add robots — do not add intra-robot parallelism.
+
+## Execution Mode: Tabular Data
+
+Single robot, no Orchestrator queue. Source data is an Excel/CSV/DataTable. The Academy course "REFramework with Tabular Data" (v2024.10) is the reference pattern.
+
+**Wiring — customize these surfaces.**
+
+1. Configuration: add `DataSourcePath` and `DataSourceSheet` to `Settings`; remove the queue ([§ Template Configuration File](#template-configuration-file)).
+2. `Framework\InitAllSettings.xaml` (or a custom init step): Read Range → `io_dt_TransactionData`. **Read the source once**, not per transaction — repeated reads cause file locks and waste cycles.
+3. `Framework\GetTransactionData.xaml`:
+   ```vb
+   If in_TransactionNumber > io_dt_TransactionData.Rows.Count Then
+     out_TransactionItem = Nothing                  ' signals "no more data"
+   Else
+     out_TransactionItem = io_dt_TransactionData.Rows(in_TransactionNumber - 1)
+   End If
+   ```
+   Assumes `TransactionNumber` is 1-indexed (`Main.xaml` starts it at 1; `SetTransactionStatus.xaml` increments it). If your template starts at 0, use `>=` and drop the `- 1`.
+4. `Framework\Process.xaml`: access fields via `in_TransactionItem("ColumnName").ToString()`.
+5. `Framework\SetTransactionStatus.xaml`: **delete the three Set Transaction Status activities.** They target Orchestrator queues and have no purpose here. Replace with a status-column write-back to the source DataTable, an output Excel/CSV, or `Log Message` calls keyed by row index.
+
+**Type migration.** Changing `TransactionItem`'s type from `QueueItem` to `DataRow` cascades across every `TransactionItem` argument in the Framework workflows and every matching `InvokeWorkflowFile` binding in `Main.xaml`. Update them together or `InvokeWorkflowFile` reports argument-mismatch errors at design time. See [Gotchas § type migration](#gotchas) for the file/argument list.
+
+## Execution Mode: Single-Shot
+
+One execution, no transaction loop. Useful for scheduled jobs that just need REFramework's init/cleanup discipline (open apps, do one thing, close apps).
+
+**Wiring.**
+
+1. Remove the queue ([§ Template Configuration File](#template-configuration-file)).
+2. `Framework\GetTransactionData.xaml`: return a sentinel on call 1, `Nothing` on call 2:
+   ```vb
+   If in_TransactionNumber = 1 Then
+     out_TransactionItem = New Object()             ' placeholder, NOT New QueueItem()
+   Else
+     out_TransactionItem = Nothing
+   End If
+   ```
+3. `Framework\Process.xaml`: implement the single unit of work. `in_TransactionItem` is a sentinel — ignore it.
+4. `Framework\SetTransactionStatus.xaml`: **delete the three Set Transaction Status activities** (same reason as tabular). Log-only is fine.
+
+**Type migration.** Type `TransactionItem` as `System.Object` across every Framework workflow and every `InvokeWorkflowFile` binding. See [Gotchas § type migration](#gotchas).
+
+## Exception Handling Strategy
+
+REFramework owns the per-transaction retry/counter flow below. For error-handling patterns **outside** REFramework — Try/Catch discipline, Retry Scope, ContinueOnError, Throw/Rethrow, screenshot-on-error, and the Global Exception Handler — see [error-handling-guide.md](error-handling-guide.md). Do **not** add a Global Exception Handler to a REFramework project (it conflicts with the framework's per-state Try/Catch).
+
+| Exception | Class | Retry? | Counter behavior |
+|-----------|-------|--------|------------------|
+| Business Rule Exception | `UiPath.Core.BusinessRuleException` | No — data won't fix itself | `ConsecutiveSystemExceptions` resets to 0 |
+| System Exception | `System.Exception` (any other) | Yes — retry per transaction up to `MaxRetryNumber`; re-initialize apps between retries | `ConsecutiveSystemExceptions` increments; hitting `MaxConsecutiveSystemExceptions` aborts to End Process |
+
+Throw business exceptions explicitly in `Process.xaml`:
+
+```vb
+Throw New BusinessRuleException("Invoice amount cannot be negative")
+```
+
+Do NOT wrap `Process.xaml` in a catch-all `TryCatch` — the framework's outer handler is what classifies and routes the exception. Catch only exceptions you intend to translate to a `BusinessRuleException`.
+
+Counter semantics — `MaxRetryNumber` (per transaction, resets per item) vs `MaxConsecutiveSystemExceptions` (global, resets on any success or BusinessRuleException): see [legacy/activity-docs/_REFRAMEWORK.md § MaxRetryNumber vs MaxConsecutiveSystemExceptions](legacy/activity-docs/_REFRAMEWORK.md).
+
+## Configuration Management
+
+- Store all configurable values in the configuration file ([§ Template Configuration File](#template-configuration-file)): `Settings` for values edited per environment, `Constants` for values that rarely change.
+- Sensitive values (credentials, API keys, tokens) → **Orchestrator Assets**, never values in the configuration file: it ships in the package in clear text.
+- Read assets where the template takes them ([§ Template Configuration File](#template-configuration-file)).
+- Convert every value explicitly, as the template does: `Convert.ToInt32(in_Config("MaxRetryNumber"))`, `Convert.ToBoolean(in_Config("ShouldMarkJobAsFaulted"))`, `CDate(in_Config("Deadline"))`. The type a value arrives as depends on the template ([§ Template Configuration File](#template-configuration-file)).
+- Guard missing keys: check `in_Config.ContainsKey(<name>)` or set defaults before first read.
+- Never hardcode paths, URLs, credentials, or environment-specific settings in workflows. Always indirect through `in_Config(<name>)`.
+
+## Idempotency and Concurrency
+
+### Init and Close Run More Than Once (All Modes)
+
+System Exception in `Process.xaml` → `SetTransactionStatus.xaml` runs `CloseAllApplications.xaml`, then Init reruns `InitAllApplications.xaml`. Fault inside `InitAllApplications.xaml` → End Process → `CloseAllApplications.xaml` on a half-initialized state.
+
+1. `InitAllApplications.xaml` must be safe to rerun: open only what is not open, never a second instance.
+2. `CloseAllApplications.xaml` must be safe on unopened resources: null-check each, close each in its own Try/Catch, null the handle after closing.
+3. Hold non-UI resources (database connections, API/mail/storage clients) in a context object `Main.xaml` creates (`Variable.Default`) and passes **In**; Init sets its fields. Never return them as `out_*` of Init — they leak when Init faults ([xaml/common-pitfalls.md § Out and InOut Arguments When the Callee Faults](xaml/common-pitfalls.md#out-and-inout-arguments-when-the-callee-faults)). `KillAllProcesses.xaml` does not release in-process handles.
+
+### Retried Transactions (Queue-Driven)
+
+Performer workflows must be safe to retry. The framework re-executes `Process.xaml` after a System Exception with the same `TransactionItem`.
+
+- Avoid double-posting (check-then-act, or use idempotency tokens from the source system).
+- Avoid relying on in-memory state from a prior transaction — design stateless.
+- Orchestrator handles queue-item locking; do not add custom locking logic.
+- Multiple robots on the same queue: each locks one item while processing. To scale throughput, add robots — not intra-robot parallelism.
+- Validate `SpecificContent` fields at the start of `Process.xaml` — don't trust the Dispatcher.
+
+## Gotchas
+
+### Don't return `New QueueItem()` as a sentinel in non-queue modes
+
+`Framework\SetTransactionStatus.xaml` gates its Orchestrator calls on `in_TransactionItem.GetType is GetType(UiPath.Core.QueueItem)`. `New QueueItem()` satisfies this check — so a synthetic empty `QueueItem` returned from a tabular or single-shot `GetTransactionData.xaml` cascades into 6 retries × 3 branches of `OrchestratorHttpException: 404 (Not Found)`.
+
+**Right fix:** delete the Set Transaction Status activities from `SetTransactionStatus.xaml` for non-queue modes (see the per-mode wiring above) and return `Nothing` / non-`QueueItem` sentinels from `GetTransactionData.xaml`.
+
+### Type migration cascade
+
+If you migrate `TransactionItem`'s type away from `QueueItem` (tabular → `DataRow` or `Object`; single-shot → `Object`), update every site, not just `Main.xaml`'s variable:
+
+| File | Argument |
+|------|----------|
+| `Main.xaml` | `TransactionItem` variable |
+| `Framework\GetTransactionData.xaml` | `out_TransactionItem` |
+| `Framework\Process.xaml` | `in_TransactionItem` |
+| `Framework\SetTransactionStatus.xaml` | `in_TransactionItem` |
+| `Framework\RetryCurrentTransaction.xaml` | `in_TransactionItem` (if present) |
+| `Main.xaml` `InvokeWorkflowFile` bindings | every `in_/out_/io_TransactionItem` binding |
+| `Tests\GetTransactionDataTestCase.xaml`, `Tests\ProcessTestCase.xaml` | the `out_TransactionItem` / `in_TransactionItem` bindings of their invokes |
+
+Updating one file but not the others surfaces as `InvokeWorkflowFile` argument-mismatch errors at design time.
+
+### Template test cases fall behind the framework files
+
+The template ships test cases under `Tests\`, registered as test cases in `project.json`, that invoke the framework workflows and `Main.xaml` with the template's own arguments. An argument added to a framework workflow leaves their invokes without it: build reports only a missing-argument warning, and the test case runs the workflow with that argument unset. Bind every added argument in each test case, or delete the test cases and their registration when the project does not keep framework tests. `MainTestCase.xaml` runs the whole process, so running it is a real job against the applications and data the configuration names.
+
+### Waits inside Get Transaction Data ignore the stop signal
+
+`Main.xaml` checks Should Stop once per Get Transaction Data call, before invoking `GetTransactionData.xaml`. A `GetTransactionData.xaml` that loops — polling a mailbox or folder, waiting between passes until an end time — holds the job past an Orchestrator Stop for as long as it loops. Check Should Stop before each wait inside the loop and return `Nothing` when a stop is requested.
+
+### A failure inside End Process does not fault the job
+
+End Process wraps `CloseAllApplications.xaml` in a Try Catch whose catch logs the failure and runs `KillAllProcesses.xaml`; its Finally ends the job faulted only when `SystemException` is set. Close-surface work that must fail the job when it fails — a final report or mail, a clean-up the run depends on — contains each of its steps, so a failed step still lets the others run and the workflow returns, and carries the failure out of `CloseAllApplications.xaml` as an out argument that `Main.xaml` assigns to `SystemException`.
+
+### Advanced: one `SetTransactionStatus.xaml` for all modes
+
+If you want a single `SetTransactionStatus.xaml` that handles all three modes (rare — usually it's cleaner to delete the Orchestrator calls in non-queue modes), type `in_TransactionItem` as `System.Object` and replace the three FlowDecision conditions with a type-safe guard:
+
+```vb
+TypeOf in_TransactionItem Is UiPath.Core.QueueItem AndAlso DirectCast(in_TransactionItem, UiPath.Core.QueueItem).QueueDefinitionId > 0
+```
+
+`TypeOf ... Is` short-circuits on non-`QueueItem` references; `QueueDefinitionId > 0` filters out empty `New QueueItem()` instances. Requires the full `Object`-typed migration above.
+
+## Customization Checklist
+
+Before first run:
+
+- [ ] **Pick execution mode** — queue-driven / tabular / single-shot.
+- [ ] **Queue per mode.** Queue-driven: set the queue; tabular and single-shot: remove it, sample value included ([§ Template Configuration File](#template-configuration-file)).
+- [ ] **Configure `GetTransactionData.xaml`** for the chosen mode. Never return `New QueueItem()` as a sentinel in non-queue modes — return `Nothing` (terminating) or a non-`QueueItem` value.
+- [ ] **For tabular / single-shot:** delete the three Set Transaction Status activities from `SetTransactionStatus.xaml`. Replace with status-column write-back or log-only.
+- [ ] **For tabular / single-shot:** migrate every `TransactionItem` argument type (see [Gotchas § type migration](#type-migration-cascade)).
+- [ ] **`InitAllApplications.xaml`** — implement app-open/login for every application the process touches; rerun-safe ([§ Init and Close Run More Than Once](#init-and-close-run-more-than-once-all-modes)).
+- [ ] **`CloseAllApplications.xaml`** + **`KillAllProcesses.xaml`** — graceful close + force-kill fallback for every app process name; Close safe on unopened resources ([§ Init and Close Run More Than Once](#init-and-close-run-more-than-once-all-modes)).
+- [ ] **Template test cases** under `Tests\` bind every argument the framework workflows gained, or are deleted with their registration (see [Gotchas § template test cases](#template-test-cases-fall-behind-the-framework-files)).
+- [ ] **Classify exceptions in `Process.xaml`** — throw `BusinessRuleException` for data issues; let everything else propagate.
+- [ ] **Move secrets to Orchestrator Assets** — credentials, API keys, environment-specific URLs.
+- [ ] **Set `MaxRetryNumber = 0` during development** to surface failures fast; restore the production value before deployment.
+- [ ] **Verify**: run a synthetic transaction through every exit branch (Success, BusinessRuleException, System Exception → retry, System Exception → abort).

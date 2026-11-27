@@ -1,0 +1,58 @@
+{
+  "id": "base-chat",
+  "description": "The basic chat probe every product runs on a chat flavor, unless the product has its own.",
+  "source": "BaseChatCompatibilityProbe",
+  "apiFlavor": "GeminiGenerateContent",
+  "order": 90,
+  "path": "/models/{{model}}:generateContent",
+  "body": {
+    "contents": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "text": "Give me the first capital letter of the english alphabet and this letter only"
+          }
+        ]
+      }
+    ],
+    "generation_config": {
+      "max_output_tokens": 2048
+    },
+    "safety_settings": [
+      {
+        "category": 1,
+        "threshold": 3
+      },
+      {
+        "category": 2,
+        "threshold": 3
+      },
+      {
+        "category": 3,
+        "threshold": 3
+      },
+      {
+        "category": 4,
+        "threshold": 3
+      }
+    ]
+  },
+  "checks": [
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "candidates is an array of objects whose content.parts is an array",
+      "jq": "((.candidates // []) | type) == \"array\" and all((.candidates // [])[]; (.content.parts // []) | type == \"array\")"
+    },
+    {
+      "reason": "MULTIPLE_RESPONSES",
+      "says": "exactly one choice, index 0",
+      "jq": "((.candidates // []) | length) as $n | ($n == 1 and (.candidates[0].index // 0) == 0) or ($n == 0 and .promptFeedback.blockReason != null)"
+    },
+    {
+      "reason": "INCORRECT_RESPONSE",
+      "says": "the assistant answers with text",
+      "jq": "((.candidates[0].content.role // \"model\") | IN(\"model\", \"assistant\")) and (([.candidates[0].content.parts[]? | select(.thought != true) | .text | select(. != null)] | last // \"\") | test(\"\\\\S\"))"
+    }
+  ]
+}

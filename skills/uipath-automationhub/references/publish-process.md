@@ -1,0 +1,231 @@
+# Publish a Process to Automation Hub
+
+Creates one process in Automation Hub from a schema-driven payload and attaches its documents (PDD/SDD). Authenticates with the **user's cloud token** — the user does **not** need an admin-generated OpenAPI token.
+
+> Auth, base/gateway URL, headers (and the header to **never** send), and every endpoint below are defined in [`api-endpoints.md`](api-endpoints.md). Resolve `$ACCESS_TOKEN` / `$BASE_URL` / `$ORG` / `$TENANT` via the shared **Authentication** section in [`../SKILL.md`](../SKILL.md) before starting.
+
+## Step 1: Verify connectivity (and fetch the idea flows)
+
+Verify the resolved token with a cheap call — this also fetches the idea flows you need next:
+
+```bash
+curl -s -w "\n%{http_code} %{redirect_url}" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  "$BASE_URL/$ORG/$TENANT/automationhub_/api/v1/openapi/idea-flows"
+```
+
+The last line is `<status> <redirect target>` — the target is empty unless the response was a 3xx. Read both: a 3xx alone is ambiguous, a 3xx **to `portal_/unregistered`** is the tenant-not-enabled signal below. Never add `-L`.
+
+- **200** → save the `data` array (reused in Step 2) and tell the user "Connected to Automation Hub."
+- **401** → token missing/expired: with a `uip login` session, re-run the request (its `uip login refresh` renews the token); if it still fails, ask the user to run `uip login` again. **Never** add `x-ah-openapi-auth` to "fix" a 401 — that routes to the admin-token path and guarantees failure.
+- **403** → the user is authenticated but lacks AH access on this tenant.
+- **404 / 3xx to `portal_/unregistered` / 422 tenant lookup** → AH is not available on this tenant. Confirm the org/tenant first; if they're right, report the message for the matching case, verbatim, from [`api-endpoints.md`](api-endpoints.md) → **Automation Hub not available on this tenant** — then **stop**.
+
+Do not proceed until you have a 200.
+
+## Step 2: Pick the idea flow
+
+From the saved `/idea-flows` `data` array:
+1. Default to the entry whose `Idea flow type` is `business-process` and take its `Idea flow ID` — never match on the tenant-editable name or a remembered id. Only if no entry carries `Idea flow type` (older server), fall back to the entry whose `Idea flow name` contains "Business Process" (case-insensitive).
+2. If the caller specified a different flow, use that. If neither is found, list the available names + IDs and ask the user which to use. If none exist, tell the user Business Process flows may not be enabled and stop.
+
+Store `idea_flow_id`.
+
+## Step 3: Fetch the schema
+
+```bash
+curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
+  "$BASE_URL/$ORG/$TENANT/automationhub_/api/v1/openapi/idea-schema?idea_flow_id=$IDEA_FLOW_ID"
+```
+
+Parse `data.properties.schema.properties` for the field catalog (Assessment Type > Section > Question; note types, required flags, enum `answer_option` codes/labels) and keep `data.user_inputs` as the payload template. The process-name question (key contains `OVERVIEW_NAME`) is **required**.
+
+> ⚠️ **Do NOT POST `data.user_inputs` verbatim.** The template ships **example/placeholder values that the API rejects** — e.g. `OVERVIEW_CATEGORY: 1` (→ `Invalid Category Id`), an example `PROCESS_DOCUMENTS` answer that has nothing to do with the real documents, and `First.last@example.com` owner/submitter emails. Treat the template as **shape only** and replace every value with a real one (below).
+
+## Step 4: Collect the inputs, then assemble the payload
+
+**Collect every required input BEFORE the first POST** — do not discover gaps one 400 at a time.
+
+First, **enumerate the tenant's actual required set from the live schema** (Step 3): walk `data.properties.schema.properties` and collect every question whose `required` flag is set — tenant admins can mark **additional** questions required (commonly "Applications used" and "Thin applications used"), so the baseline table below is the *minimum*, never the whole list. Add the two questions the backend enforces without flagging (owner + submitter). Then resolve a value for **each** required question: from the caller's supplied data (e.g. a Process Scribe hand-off object), from the discovery recipes below, or via `AskUserQuestion` — never by inventing one.
+
+The six baseline inputs:
+
+| Input | How to resolve when not supplied |
+|---|---|
+| Process **name** | Ask the user. Non-empty; a duplicate name 409s. |
+| **Description** | Ask the user, or derive from the supplied material and confirm. |
+| **Category id** | `GET /hierarchy` → pick from `data.categories[]` (`category_id`, `category_name`, nested `subcategories`) — **only nodes with `category_is_active: 1`** (0 = archived). Pick the most specific node that fits the material, and **"Other" only when nothing fits**. "Other" is any node with `category_is_other: 1`, and each branch can carry its own (e.g. *Finance & Accounting › Other*), so skip those too. One clear fit → propose it; several plausible → `AskUserQuestion` with the names. **Never send the template's `1`.** (Works on an empty tenant — do not depend on an existing process.) |
+| **Documentation** answer code | The `PROCESS_DOCUMENTS` question's own `enum` in the schema — match by **label** (e.g. "Standard Operating Procedure") and send that `answer_option` code. Never reuse the template's placeholder code. |
+| **Owner email** | The **signed-in identity is the default owner** — take it from the auth/identity call, not from a list. `GET /users` is optional; if you use it, do a targeted lookup with `?s=<email>&invite=all` (both parameters — the default filter hides users who can still own a process) and treat a miss as no signal. **Never block the publish on it** — submit and let the API decide. |
+| **Submitter email** | Same recipe as owner; usually the same person. |
+
+**Application questions** ("Applications used", "Thin applications used"): **answer from the material, one PDD at a time** — record exactly the systems it names. **UiPath itself is never one of them.** The automation is what the process becomes, not a system it uses, so leave out "UiPath" and its own components (Orchestrator, Action Center, robots, Maestro, Case Management, Document Understanding, Integration Service…) even when the PDD or SDD lists them as systems or future-state steps. The inventory is `GET /appinventory` (paged; entries carry the app id, name, version, language).
+- **Named and in the inventory** → their ids go in the question's `value` array. Take each id from its `/appinventory` entry, matched by name, **never by counting positions** in the schema's `enum`/`enumNames` arrays: the inventory runs past 100 entries, and an off-by-one there attaches a neighbouring application.
+- **Named but not in the inventory** → add them in the same answer via `new_applications` (below). A missing system is never a reason to stop, to ask, or to pick a look-alike.
+- **Nothing named** → if the schema does **not** flag the question `required`, **omit it** — a process with no applications is valid; never pad it with inventory entries. Only when it is flagged `required` and the material names no system, `AskUserQuestion` (inventory entries plus free text).
+- **"Thin applications used" is never padded, even when the schema flags it `required`.** It only marks which answered applications are thin clients: answer it with the systems the material explicitly calls thin, Citrix or virtual-desktop clients, and nothing else. When there are none, send `{ "value": [] }` if it is flagged `required` (an empty answer is accepted) and omit it otherwise. Never copy the "Applications used" ids into it.
+
+**Adding systems that are not in the inventory.** If the "Applications used" question (`<ASSESSMENT>-COUNT_APPS`) in the live schema has a **`new_applications`** property next to `value`, the submission itself creates them — no admin permission, no extra call, no `categoryIds`:
+
+```json
+"OVR-COUNT_APPS": {
+  "value": [12],
+  "new_applications": [
+    { "application_name": "Kinaxis RapidResponse", "application_version": "2026.2", "application_language": "English" }
+  ]
+}
+```
+
+`application_name` required (1–50 chars); `application_version` (≤20), `application_language` (≤50), `application_comments` (≤512), `application_is_citrix_client` (boolean) optional; at most 20 per submission. Entries are matched on **name + version, case- and space-insensitive** — a match reuses the existing application, so it never duplicates. New ones land in the tenant inventory and are selectable by id afterwards. "Thin applications used" (`…-COUNT_THIN_APPS`) takes inventory ids only and just flags apps already answered in "Applications used". To flag a new app as thin, set `application_is_citrix_client: true` on its entry, so the create needs no follow-up update. Updates replace the whole list; read [`api-endpoints.md`](api-endpoints.md) (`new_applications`) before touching applications on an existing process. The field contract and its `400` messages are in [`api-endpoints.md`](api-endpoints.md) → `POST /idea-from-schema`.
+
+**Fallback — no `new_applications` in the schema** (an Automation Hub build that predates it, or the admin disabled adding applications for that section, which also returns `400 "…Adding new applications is disabled for this assessment…"`): create through the inventory API. `PUT /appinventory` upserts, and an element whose `application_id` is `null` inserts:
+
+```json
+[{ "application_id": null, "application_name": "SUNAT Portal",
+   "application_version": "1.0", "application_language": "English",
+   "categoryIds": [1] }]
+```
+
+All five fields are required and `categoryIds` needs ≥1 real id. This needs the **`MANAGE_APP_INVENTORY`** permission; ordinary roles do not have it and get a `403 "This user is not permitted to perform this action based on their role."` **If creating fails for any reason — that 403, a validation error, a bad category id, anything — fall through; never retry it and never stop.** Answer with the systems that *are* in the inventory; only if that leaves a **required** "Applications used" empty, pick the closest entries to satisfy it (an optional one stays empty; "Thin applications used" is never filled this way). Either way, name the real systems in the description. **Never abandon a publish because an application is missing or uncreatable, and never pass off a substituted application as the real one without saying so.**
+
+Then build `user_inputs` using the template's **structure** but the **collected values**:
+- Place each value in its `AssessmentType > section > question` slot.
+- Follow the template's wrapping per field: **every** answer is `{ "value": <v> }` except **user questions**: owner, submitter, and any user picker the tenant adds (the schema marks them `format: email`). Those take the email as a **direct string**; the server also accepts `{ "value": <email> }` for them. Never send a bare string for any other question: it reads as an empty answer, and on `OVR-OVERVIEW_NAME` the API rejects it with `Automation name cannot be empty.`
+- Convert enum labels to their `answer_option` codes taken from that field's own `enum` in the schema — **never** reuse the template's placeholder code. Send integers as numbers.
+
+**Required fields for `idea_flow_id` = Business Process** (verified live — the backend enforces owner + submitter even though the schema's `required` flags do **not** list them):
+
+| Question (key) | Section | Shape | Value |
+|---|---|---|---|
+| `OVR-OVERVIEW_NAME` | `ah-section-ovr-0-0` | `{"value": "<name>"}` | process name, non-empty |
+| `OVR-OVERVIEW_DESCRIPTION` | `ah-section-ovr-0-0` | `{"value": "<desc>"}` | description |
+| `OVR-OVERVIEW_CATEGORY` | `ah-section-ovr-0-0` | `{"value": <int>}` | **valid** category id |
+| `OVR-PROCESS_DOCUMENTS` | `ah-section-ovr-0-0` | `{"value": ["<answer_option code>"]}` | code from the field's `enum` |
+| `OVR-PROCESS_OWNER` | `ah-section-ovr-0-0` | `"<email>"` (direct string) | real AH user |
+| `OVR-OVERVIEW_PROCESS_SUBMITTER` | `ah-section-ovr-0-1` | `"<email>"` (direct string) | real AH user |
+
+Include only sections that have at least one populated field. Show the user a concise preview (name + key fields, and "show raw JSON" on request) and get a confirm before writing.
+
+**Preflight before creating:** validate the payload against the schema you fetched — every `required`-flagged question plus owner/submitter answered; every answer except user questions wrapped as `{ "value": … }` (a bare string reads as empty); every enum answer a code copied **verbatim** from that question's own `enum` (a code with a dropped segment is never selected: newer builds reject it with a `400` naming the question; older builds fail a `required` question with `Please fill in all the required information` and silently drop an optional one); no template placeholders left; applications exactly the systems the material names (ids in `value`, the rest in `new_applications` when the schema offers it, the question omitted when none are named and it isn't `required`), checked by mapping every id back to its inventory name rather than by count; "Thin applications used" only the systems the material calls thin clients, or `[]`. Requiredness comes from *this tenant's* schema, never a fixed list — the same flow requires `COUNT_APPS` on one tenant and rejects it on another.
+
+## Step 5: Create the process
+
+```bash
+curl -s -w "\n%{http_code}" -X POST \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "$PAYLOAD" \
+  "$BASE_URL/$ORG/$TENANT/automationhub_/api/v1/openapi/idea-from-schema"
+```
+where `$PAYLOAD` is `{ "idea_flow_id": <id>, "user_inputs": { … } }`.
+
+- **201** → the envelope is `{ "message": "Resource Created", "statusCode": 201, "data": { … } }` — read **`data.process_id`** (it is nested, NOT top-level). Keep it for Step 6. A 201 means the process WAS created: if a field read comes back undefined, re-read the response — **never re-POST** (that creates a duplicate and 409s). If the response was lost (timeout, dropped connection), look the record up by its reference code or a few distinctive words, not the full title. Punctuation can make a full-title search miss, and a fresh record can lag the listing, so an empty result is not proof it failed. When it still doesn't show, report the outcome as unknown instead of POSTing again.
+- **400** → fix and retry. The message shapes seen live:
+  - `errorDetails: { "<question>": ["An answer selection is required…"] }` → that required field is missing or empty, or (older builds) its enum code isn't copied verbatim from that field's `enum`. Fix it.
+  - `Question "<key>" has no answer option matching "<value>". Allowed values: …` (newer builds; the same text is in `errorDetails["<key>"]`) → that choice answer is a label, a slug, or a retyped code. Replace exactly that value with the matching code from the field's own `enum` in the schema — the message lists at most 25 codes, the schema has them all — keep every other answer, and retry once. `Question "<key>" expects an array of answer option values` → a multiple-choice answer was sent as a bare string: send `{"value": ["<code>"]}`.
+  - `errorDetails: {}` with `"Please fill in all the required information"` → a required field the API **won't name** is missing. Check in order: (1) owner (`OVR-PROCESS_OWNER`) / submitter (`OVR-OVERVIEW_PROCESS_SUBMITTER`) — enforced but never flagged; (2) **diff your payload against every `required`-flagged question in the live schema** — tenant admins add required questions (e.g. "Applications used" / "Thin applications used"), and a payload missing any of them gets this same generic 400. Fill the gaps (Step 4 recipes), then retry once.
+  - `"Cannot identify owner by email"` (`localizationKey: error_invalid_process_owner`) → **not a typo'd address; do not retry with a different email.** The account is authenticated but has never been activated on this tenant: AH creates a user row just-in-time on first authenticated call, and only an interactive web sign-in promotes it to the state owner/submitter assignment requires. Confirm the identity is real with the auth/identity call (`IsActive: 1` plus a role list), then tell them to open Automation Hub in a browser once and sign in, and retry unchanged:
+
+    ```
+    https://cloud.uipath.com/<org>/<tenant>/automationhub_
+    ```
+
+    Build that URL from the org/tenant you are already authenticated against — never from the error response. Nothing was created, so the retry is safe. Newer Automation Hub versions accept these users with no sign-in at all, so on an up-to-date tenant this error should not appear.
+  - `"Invalid Category Id."` → `OVERVIEW_CATEGORY` isn't a real category on this tenant (see Step 4).
+  - `"Automation name cannot be empty."` → `OVR-OVERVIEW_NAME` is missing from the payload, empty, or a bare string. Send it under its section as `{"value": "<name>"}`, then retry once.
+  - `Cannot set properties of undefined (setting 'co_question_answer_option_value')`, or `Question "<key>" can't be answered on this tenant: it has no answer slot to hold a value…` → **a server-side defect: this tenant has nowhere to store one of your free-text answers** (an answer whose schema `value` is a plain `string` or `number` with no `enum`). Your values aren't wrong, so don't rewrite them. Newer builds return `Question "<key>" can't be answered on this tenant: it has no answer slot to hold a value…` instead, naming the question: drop exactly that key. The older message names nothing: drop every **optional** free-text answer. In both cases keep every `required` answer and owner/submitter, retry **once**, and tell the user which answers were left out. If it still fails, or the named question is `required`, stop and report it with the tenant and `idea_flow_id`.
+- **500** on create, with no `user_inputs` key at the top of the body → the answers weren't wrapped. Send `{ "idea_flow_id": <id>, "user_inputs": { … } }` and retry once.
+- **401** → re-authenticate. **409** → duplicate name; ask the user for a new name or stop.
+
+## Step 6: Attach documents (PDD/SDD)
+
+Attach each document the caller supplies — **default to all of them**; never silently skip a supplied file. The one exception: if two supplied files appear to be the *same document in different formats*, ask which to attach — as part of the single up-front clarifying round (Step 4), not a separate round. **Upload the bytes** — the endpoint takes a base64 `file` object directly, so nothing needs hosting first. Fall back to `embed_link` only when the caller has a URL instead of bytes.
+
+```bash
+curl -s -w "\n%{http_code}" -X POST \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "$DOC_PAYLOAD" \
+  "$BASE_URL/$ORG/$TENANT/automationhub_/api/v1/openapi/automations/$PROCESS_ID/documents"
+```
+
+Build `$DOC_PAYLOAD` per `ProcessDocumentValidator`:
+
+```json
+{
+  "document_title": "PDD - <name>",
+  "document_description": "<desc>",
+  "document_type_id": <int>,
+  "file": {
+    "file_name": "<name>.docx",
+    "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "file_content": "<base64 of the file bytes>",
+    "file_encoding": "base64"
+  }
+}
+```
+
+- `document_title`, `document_description`, `document_type_id` are all required (the field is `document_title`, **not** `document_name`).
+- **`document_type_id` comes from the fixed platform table in [`api-endpoints.md`](api-endpoints.md)** — PDD → `1`, SDD → `2`, a `.bpmn` process map → `6` (under any other type AH shows it download-only, with no editor), otherwise `9` (MISC). Never guess other ids. A case plan (`caseplan.json`) is download-only whatever its type — see the same table.
+- **409 `Duplicate document with title found`** → a document with the same type **and file name** is already attached (the title is not checked; see [`api-endpoints.md`](api-endpoints.md)). Report it with that document, then continue with the remaining documents. Never rename or retitle and retry on your own.
+- **Fixing a `.bpmn` already attached as `9`:** uploading it again as `6` succeeds (different type, no 409) and leaves both copies. The Open API cannot delete documents, so tell the caller the old download-only copy is still there and should be deleted in the AH web UI.
+- Supply **exactly one** of `file` or `embed_link` — an XOR enforced in the handler, not the JSON schema. Both, or neither, 400s with `"One and only one of embed_link or file need to be specified."`
+- **`file` (default).** Base64-encode the file and send `file_name`, `mimetype`, `file_content`, `file_encoding`. `file_encoding` must be the literal `base64` — any other value fails with `"Invalid file."`, as does an empty `file_name`, `mimetype`, or `file_content`. Body limit is 300mb.
+- Common mimetypes: `.docx` → `application/vnd.openxmlformats-officedocument.wordprocessingml.document`, `.md` → `text/markdown`, `.pdf` → `application/pdf`.
+- Generate the base64 without loading the file into the conversation:
+
+```bash
+base64 -i "<FILE_PATH>" | tr -d '\n'   # macOS/Linux; use `base64 -w0 "<FILE_PATH>"` on GNU coreutils
+```
+
+- **`embed_link` (alternative).** Use only when the caller has a URL and no bytes: replace the `file` object with `"embed_link": "https://…"`. Never invent a URL.
+
+Record each returned id — it is nested: read **`data.document_id`** from the response envelope. On 400, surface the validation message and continue with the remaining documents.
+
+## Step 6b (optional): Link a Studio Web solution
+
+When the caller wants the process linked to a Studio Web solution (or supplies one), set the `OVR-OVERVIEW_STUDIO_WEB_LINK` question — at create time inside `user_inputs` (Step 4), or afterwards:
+
+```bash
+curl -s -w "\n%{http_code}" -X PATCH \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"user_inputs": { ...only this question, in its Step-4 shape... }}' \
+  "$BASE_URL/$ORG/$TENANT/automationhub_/api/v1/openapi/automations/$PROCESS_ID"
+```
+
+The answer's exact value format (JSON-string `value` with a required `url`, `hasProcessMap` semantics, empty string to unlink) is a domain fact — read it in [`api-endpoints.md`](api-endpoints.md) (**Studio Web link**). Resolve the solution from the caller — ask for the designer URL (no discovery API exists on this path either); **never invent, guess, or search for a solution id or URL**, and omit `hasProcessMap` if the caller doesn't know whether the solution has a `.bpmn`.
+
+## Step 7: Verify, then report
+
+**Verify before claiming success** — read the process back and confirm the documents landed:
+
+```bash
+curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
+  "$BASE_URL/$ORG/$TENANT/automationhub_/api/v1/openapi/automations/$PROCESS_ID/documents"
+```
+
+Check every attached `document_id` appears (file-backed entries also carry a `file_id`). If one is missing, report it as failed — never report a document as attached without seeing it in this list.
+
+If an answer differs from what the user saw or approved (an application substituted after a failed create, a required question answered just to pass validation), list it in the report so they can correct it in AH.
+
+Then summarize. The report **MUST end with both View deep links** — they are not optional; a publish report without them is incomplete. The URL segment is `process_slug`: take it from the 201's `data.process_slug`, and **if you no longer have it, fetch it** — `GET /automations/{process_id}` returns the record with `process_slug`. URL-encode it. Emit the links only after the verification read-back above succeeded:
+
+```
+Published to Automation Hub:
+  Process: <name>  (process_id: <id>)
+  Documents: PDD ✓ (doc 12, file 42), SDD ✓ (doc 13, file 43)
+  Changed after a failed create: <only when something was: what, and why>
+  View process:   {baseUrl}/{org}/{tenant}/automationhub_/automation-profile/{process_slug}
+  View documents: {baseUrl}/{org}/{tenant}/automationhub_/automation-profile/{process_slug}/documentation
+```
+
+Always build the links from the **same org/tenant** the process was created on — never another tenant's segments.
+
+## Notes
+
+- **Cloud token only** — never send `x-ah-openapi-auth` / `x-ah-openapi-app-key`. Authorization is the user's real AH permissions.
+- **Always** `POST /idea-from-schema` (not `/automations`) and **always** include `idea_flow_id`.
+- The schema is fetched live, so the flow adapts automatically if fields change on the tenant.
+- Idempotency: AH is the system of record for the *approved* process — publish once after approval. A duplicate name returns 409; decide up front whether to update-in-place (out of scope here) or treat as an error.
+- To read a process back, use the [`get-process.md`](get-process.md) flow.

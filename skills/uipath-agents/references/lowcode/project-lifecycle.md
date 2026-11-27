@@ -1,0 +1,464 @@
+# Project Lifecycle and CLI Reference
+
+All `uip` commands for low-code agent and solution lifecycle. Use `--output json` on all commands when parsing output.
+
+## Authentication
+
+```bash
+uip login --output json          # Interactive OAuth login
+uip login status --output json   # Check current auth state
+```
+
+See [../authentication.md](../authentication.md) for the full guide.
+
+## Agent Commands
+
+### `uip agent init`
+
+Scaffold a new agent project at the given path.
+
+```bash
+uip agent init "<AGENT_NAME>" --output json
+```
+
+The `<path>` argument is relative or absolute; the command can run from any directory. Creates agent.json, entry-points.json, project.uiproj, and default eval directories inside the target path. Run `uip agent refresh` after editing to regenerate `entry-points.json` and `bindings_v2.json`.
+
+**Solution placement** (standalone mode): inside a solution directory the project auto-registers with the parent `.uipx`; **outside any solution it auto-scaffolds one** — creates `<Name>Solution/<Name>Solution.uipx` and nests the project at `<Name>Solution/<Name>/` (response adds `Data.AutoCreatedSolution`). Pass `--skip-solution-registration` to opt out of both — the project then lands at the bare path with `SolutionRegistration.Status: OptedOut`. See [§ Register Project with Solution](#register-project-with-solution).
+
+**Options:**
+- `--conversational` - Pass to initialize a conversational agent. When not passed, an autonomous agent is initialized.
+- `--model <model>` — LLM model to use (default: `gpt-5.4` for autonomous, `anthropic.claude-sonnet-4-5-20250929-v1:0` for conversational). This default is stale; override it post-init — discover current tenant models with `uip agent model list` and select per [model-selection-guide.md](model-selection-guide.md). Pass `--model` at init or edit `settings.model` after.
+- `--system-prompt <prompt>` — Initial system prompt for the agent
+- `--force` — Overwrite existing directory if non-empty
+- `--inline-in-flow` — Scaffold an inline agent inside a flow project (see below).
+
+#### Inline mode: `--inline-in-flow`
+
+When `--inline-in-flow` is passed, the `<path>` argument is treated as the flow project directory. The command creates a UUID-named subdirectory containing `agent.json`, `flow-layout.json` (`{}`), and empty `evals/eval-sets/`, `features/`, `resources/` directories. No `entry-points.json`, `project.uiproj`, or evaluator files are created.
+
+```bash
+uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json
+```
+
+**Success output:**
+```json
+{ "Result": "Success", "Code": "LowCodeAgentInitInline", "Data": { "Status": "Inline agent created inside flow project", "Path": "/path/to/FlowProject/<uuid>", "ProjectId": "<uuid>", "Model": "gpt-4o-2024-11-20" } }
+```
+
+After scaffolding an autonomous agent, add a `uipath.agent.autonomous` node to the flow with `inputs.source = <ProjectId>` and no node instance `model` block. See [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md) for the full structure. Inline conversational agents are added with a `uipath.agent.conversational` node and are authored under the `uipath-maestro-flow` skill.
+
+### `uip agent guardrails list`
+
+List available guardrail validator definitions with their allowed scopes, stages, and parameters.
+
+```bash
+uip agent guardrails list --output json
+```
+
+Returns an array of validator definitions. Each entry contains:
+- `Status` — `"Available"` (licensed, ready to use) or `"Unauthorised"` (user not entitled to use guardrails)
+- `Validator` — the `validatorType` string to use in `builtInValidator` guardrails
+- `AllowedScopes` — valid values for `selector.scopes`
+- `GuardrailStages` — object mapping each scope to its valid execution stages
+- `Parameters` — array of parameter definitions (`Type`, `Id`, `Required`)
+
+**Mandatory first step** before adding any built-in validator guardrail. Only use validators with `Status: "Available"`. If a validator is missing from the list, it does not exist on this tenant. If `Status: "Unauthorised"`, user is not entitled to use guardrails — do not add the guardrail, inform user accordingly.
+
+### `uip agent validate`
+
+**Read-only** check of agent project structure and schema. Does not write any files. Run after every bulk of agent edits to catch errors early.
+
+```bash
+uip agent validate [path] --output json
+```
+
+`path` is optional — defaults to the current directory.
+
+**Options:**
+- `--inline-in-flow` — Validate an inline agent inside a flow project. Skips `entry-points.json` and `project.uiproj` checks.
+
+**What it does (standalone mode):**
+1. Checks `agent.json` structure: `version === "1.1.0"`, type, UUID, settings (including `mode`), messages, contentTokens consistency.
+2. Verifies schema sync between `agent.json` and `entry-points.json` (properties + required[]).
+3. Validates `project.uiproj` (`ProjectType === "Agent"`).
+4. Storage-version gate — fails with `AgentValidationOutdated` if `storageVersion` is not at the latest. Run `uip agent refresh` to migrate.
+5. Validates `agent.json` against the latest Zod schema, eval-sets, evaluators (category/type constraints), and counts resources.
+6. Dry-run derived-files generation — compares generated `entry-points.json` and `bindings_v2.json` against on-disk files. Fails with `AgentValidationDrift` if they are out of sync. Run `uip agent refresh` to regenerate.
+
+**Does NOT write files.** Strict read-only. Run `uip agent refresh` before validate to apply migrations and regenerate derived files.
+
+**With `--inline-in-flow`:** Steps 2, 3, and entry-points drift check are skipped.
+
+**Success output:**
+```json
+{ "Result": "Success", "Code": "AgentValidation", "Data": { "Status": "Valid", "Model": "...", "StorageVersion": "50.0.0", "Validated": { "agent": true, "resources": 2, "evalSets": 1, "evaluators": 2 } } }
+```
+
+**Failure output:**
+```json
+{ "Result": "Failure", "Code": "AgentValidationFailed", "Message": "Validation failed with N error(s)", "Data": { "Errors": ["agent.json → settings.mode: missing — must be \"standard\" or \"advanced\""] } }
+```
+
+### `uip agent refresh`
+
+Applies pending schema migrations and regenerates derived files (`entry-points.json`, `bindings_v2.json`). Runs static validation before writing anything — files are only written if all checks pass.
+
+```bash
+uip agent refresh [path] --output json
+```
+
+**What it does:**
+1. Runs all static validation checks.
+2. Writes migrated `agent.json` (and related files) to disk if migration is needed.
+3. Regenerates `entry-points.json` from `agent.json` inputSchema/outputSchema (preserving the existing `uniqueId`).
+4. Regenerates `bindings_v2.json` from `resources/{ResourceName}/resource.json` files, features, and guardrail escalations.
+
+**With `--inline-in-flow`:** Skips `entry-points.json`/`project.uiproj` checks. Agent capability bindings are merged into the parent flow project's `bindings_v2.json`.
+
+**Workflow:** run `uip agent refresh` to apply writes and regenerate derived files, then `uip agent validate` to verify the project is clean. For routine edits with no schema migration pending, refresh is still needed to keep `entry-points.json` and `bindings_v2.json` in sync.
+
+### Common refresh / validate errors
+
+`refresh` and `validate` share the same static checks. Two errors are easy to misread — resolve at the source, do not spelunk the CLI schema:
+
+| Error (in `Data.Errors[]`) | Cause | Fix |
+|---|---|---|
+| `resources/<Folder>/resource.json: folder must be named after the resource name "<Name>" (found "<Folder>")` | Resource folder name must exactly equal the resource's `name` field — case- and whitespace-sensitive (`Count Sources`, not `CountSources`). | Rename the folder to match `name` verbatim, spaces included. |
+| `resources/<Name>/resource.json: Invalid input` (no field path) | A required field on that tool resource is missing or malformed. The path-less message does not name it. Most common cause: the required `guardrail` object is absent (every tool resource requires it, schema V21+). | Add `"guardrail": { "policies": [] }` to the resource. If already present, diff the resource against a CLI-generated one (`uip agent tool add`) for the missing/mistyped field. |
+
+### `uip agent memory`
+
+Manage low-code agent memory space features and seed items. These commands write `features/{FeatureName}/feature.json`; run refresh and validate afterwards to regenerate bindings.
+
+```bash
+uip agent memory add SupportRecall \
+  --memory-space "<MEMORY_SPACE_NAME>" \
+  --folder-path "<FOLDER_PATH>" \
+  --path "<AGENT_PROJECT_DIR>" \
+  --output json
+
+uip agent memory list --path "<AGENT_PROJECT_DIR>" --output json
+uip agent memory remove SupportRecall --path "<AGENT_PROJECT_DIR>" --output json
+
+uip agent memory item add SupportRecall customer-tier gold \
+  --memory-type episodic \
+  --feedback-id "<FEEDBACK_ID>" \
+  --path "<AGENT_PROJECT_DIR>" \
+  --output json
+
+uip agent memory item list SupportRecall --path "<AGENT_PROJECT_DIR>" --output json
+uip agent memory item remove SupportRecall customer-tier --path "<AGENT_PROJECT_DIR>" --output json
+```
+
+For discovery, retrieval settings, memory item types, and troubleshooting, see [capabilities/memory/memory.md](capabilities/memory/memory.md).
+
+### `uip agent debug`
+
+Run the autonomous agent end-to-end on Studio Web and stream the result. **Uploads the enclosing solution** to Studio Web, then runs it — one step, no separate `uip solution upload`, so the debugged copy always matches local. **Executes the agent for real** — confirm with the user first (per [critical-rules/critical-rules.md](critical-rules/critical-rules.md) Rule 8: consent before upload/publish/deploy).
+
+```bash
+uip agent debug <AGENT_PROJECT_DIR> --inputs '{"input":"..."}' [--attachment <FIELD>=<FILE_PATH>] --output json
+```
+
+Returns `Code: "AgentDebug"` with `Data.State`, `Data.Output`, `Data.TraceId`, and — when `--attachment` was used — `Data.Attachments`. A `Faulted` run returns `Result: "Failure"` (exit 1); inspect it with `uip traces spans get <TraceId> --output json`. `--attachment <FIELD>=<FILE_PATH>` (repeatable) uploads a local file into a `job-attachment` input field. Full options, attachment rules, and reporting in [debug.md](debug.md).
+
+> The debug command is currently not supported for conversational agents, so only attempt to debug autonomous agents.
+
+## Solution Commands
+
+### Create Solution
+
+```bash
+uip solution init "<SOLUTION_NAME>" --output json
+```
+
+### Register Project with Solution
+
+`uip agent init` always lands the project inside a solution — no manual `solution init` needed:
+
+- **Inside a solution directory** — auto-registers the project with the parent `.uipx`.
+- **Outside any solution** — auto-scaffolds a parent solution: creates `<Name>Solution/<Name>Solution.uipx` and nests the project at `<Name>Solution/<Name>/`. The response adds `Data.AutoCreatedSolution` (`{ Name, Path, SolutionFile }`) and reports `SolutionRegistration.Status: Registered`. Idempotent — re-running reuses the existing `.uipx` (`AlreadyRegistered`). If a **non-empty** directory already exists at the path you typed, init warns and leaves it untouched — the project still lands in `<Name>Solution/<Name>/`, not the existing directory.
+- **`--skip-solution-registration`** — opts out of **both** auto-scaffold and registration. No discovery, no sibling solution dir; the project lands at the bare path with `Status: OptedOut`.
+
+Verify via `Data.SolutionRegistration.Status` in the `agent init` response. The full set of statuses:
+
+- `Registered` / `AlreadyRegistered` — registered (added now / already present). **You are done.**
+- `OptedOut` — `--skip-solution-registration` was passed; auto-scaffold and registration were intentionally skipped. No action needed (register later with the fallback if you change your mind).
+- `Skipped` — a candidate solution was found but registration wasn't safe (e.g. multiple `.uipx`, or project outside the solution dir). Resolve, then use the fallback.
+- `Failed` — registration was attempted but errored (`.uipx` read/parse/write). Use the fallback.
+- `NotInSolution` — no parent `.uipx` and auto-scaffold did not run (rare outside `--skip-solution-registration`). Use the fallback if you want it in a solution.
+
+```bash
+# Fallback — when Status is Skipped / Failed / NotInSolution (not needed for OptedOut or Registered).
+uip solution projects add "<AGENT_PROJECT_DIR>" [solutionFile] --output json
+```
+
+Run from the solution directory. The first argument is the path to the agent project folder (positional, not `--project-path`). The optional second argument is the path to the `.uipx` solution file — if omitted, the CLI searches up from the project path to find the nearest `.uipx` automatically.
+
+### Upload to Studio Web
+
+Upload sends the solution to Studio Web. Accepts a solution directory (containing `.uipx`), a `.uipx` file, or a `.uis` file.
+
+```bash
+uip solution upload . --output json
+```
+
+### Pack Solution for Orchestrator
+
+```bash
+uip solution pack "<SOLUTION_PATH>" "<OUTPUT_DIR>" -v "<VERSION>" --output json
+```
+
+Produces a `.zip` package. Run from any directory.
+
+### Publish Package to Orchestrator
+
+```bash
+uip solution publish "<PACKAGE_PATH>" --output json
+```
+
+Publishes the `.zip` to Orchestrator. Requires login.
+
+### Deploy Solution
+
+```bash
+uip solution deploy run \
+  --name "<DEPLOYMENT_NAME>" \
+  --package-name "<SOLUTION_NAME>" \
+  --package-version "<VERSION>" \
+  --folder-name "<FOLDER_NAME>" \
+  --parent-folder-path "<ORCHESTRATOR_FOLDER>" \
+  --output json
+```
+
+Creates the folder, provisions resources, and activates the deployment in one call. A successful run returns `Status: DeploymentSucceeded` and `ActivationStatus: SuccessfulActivate`. Pass `--skip-activate` to opt out of auto-activation (legacy behaviour — leaves the deployment in `Inactive (Ready to activate)`).
+
+### Activate Existing Deployment
+
+Run only when `--skip-activate` was passed during deploy, or to retry a failed auto-activation after fixing the underlying cause (e.g. missing config).
+
+```bash
+uip solution deploy activate "<DEPLOYMENT_NAME>" --output json
+```
+
+### Uninstall Deployment
+
+```bash
+uip solution deploy uninstall "<DEPLOYMENT_NAME>" --output json
+```
+
+Uninstall removes the resources and the folder; the deployment itself stays in `deploy list`. Remove it with a second command:
+
+```bash
+uip solution deploy delete "<DEPLOYMENT_NAME>" --yes --output json
+```
+
+## Resource Discovery
+
+`uip solution resources list` queries the Resource Catalog Service for all resources visible to the tenant and returns a compact JSON list. Use it as the first step of any tool-authoring flow — it replaces `uip or folders list` and `uip or processes list`, and covers Action Center apps and Context Grounding indexes too.
+
+Two supported invocations:
+
+```bash
+# Local (in-solution): --kind and --search not allowed.
+uip solution resources list --solution-folder <SOLUTION_DIR> --source local --output json
+
+# Remote (Orchestrator / RCS): --kind and --search supported.
+uip solution resources list --solution-folder <SOLUTION_DIR> --source remote [--kind <kind>] [--search <term>] --output json
+```
+
+**Flags:**
+- `--source <all|local|remote>` — default `all`. `local` lists resources already in the solution; `remote` queries Orchestrator / RCS.
+- `--kind <kind>` — filter by resource kind. Supported: `Queue`, `Asset`, `Bucket`, `Process`, `Connection`, `App`, `Index`. **Only valid with `--source remote`.**
+- `--search <term>` — substring match on the resource name (case-insensitive). **Only valid with `--source remote`.**
+
+> **`--kind` and `--search` only work with `--source remote`.** With `--source local` or `--source all` (default), both flags must be omitted — list everything and filter `.Data[]` client-side by `Kind` and `Name`.
+
+> **Always pass `--solution-folder <SOLUTION_DIR>` with `--source local`.** `<SOLUTION_DIR>` is the folder containing the `.uipx` (absolute, or relative such as `..` from an agent project). Run from any other folder without it — the workspace root or the agent project — and the CLI returns `Success` with empty `Data`, not an error. A `--solution-folder` that exists but is not the solution folder also returns empty `Data`. So empty `Data` for a resource the user says is in the solution means the wrong folder: confirm the path contains the `.uipx` and re-run. Never fall back to `--source remote` to find an in-solution resource — a same-named remote copy has a different `Key` and folder.
+
+**Output row:**
+
+```jsonc
+{
+  "Source": "Remote",              // "Local" (already in this solution) or "Remote"
+  "Key": "<guid>",                 // kind-specific: release Key (Process), index GUID (Index), app id (App), connection id (Connection), ...
+  "Name": "<display name>",
+  "Kind": "Process",               // matches --kind
+  "Type": "agent",                 // subtype: process/agent/api/processOrchestration/webApp for Process; Workflow Action/Coded/CodedAction for App; connector key for Connection; orchestratorBucket for Bucket
+  "Folder": "Shared/MyFolder",     // fully-qualified folder path
+  "FolderKey": "<folder-guid>"     // folder GUID — refresh writes it into debug_overwrites.json
+}
+```
+
+**Kind-specific Type values:**
+
+| Kind | `Type` values | What it means |
+|------|---------------|---------------|
+| `Process` | `process` | RPA (XAML workflow) |
+| `Process` | `agent` | Low-code / coded agent |
+| `Process` | `api` | API workflow |
+| `Process` | `processOrchestration` | Agentic process |
+| `Process` | `webApp` | Deployed Apps — ignore when looking for runnable tools; use `--kind App` for escalations |
+| `App` | `Workflow Action` | Action Center app (backs escalations) |
+| `App` | `Coded` / `CodedAction` | Coded Apps — not supported as escalations today |
+| `Connection` | `uipath-<connector-key>` | Integration Service connection — the `Type` IS the connector key |
+| `Bucket` | `orchestratorBucket` | Orchestrator storage bucket |
+
+**What `resources list` does not return:** argument schemas, action schemas, data source types, authentication details, package versions, or feed ids. For `Process` and `Index` resources, follow up with `uip solution resources get <KEY> --output json` and read `Data.spec` for the full configuration. For other kinds (`App`, `Connection`, `Bucket`), see the kind-specific capability files. `resources list` is the identification step — it tells you *that* a resource exists and *where*.
+
+## End-to-End Example — New Standalone Agent
+
+The canonical happy-path walkthrough for creating, configuring, validating, and deploying a new standalone agent.
+
+### Step 0 — Resolve `uip` binary
+
+```bash
+which uip || npm root -g 2>/dev/null | xargs -I{} echo {}/uip/bin/uip
+```
+
+If not found, use the official installer. It installs Node.js >= 20, `@uipath/cli`, UiPath skills for installed AI coding agents, .NET SDK 8.0, and Python 3.11-3.14.
+
+macOS/Linux:
+```bash
+curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash
+```
+
+Windows PowerShell:
+```powershell
+irm https://download.uipath.com/uipath-cli/install.ps1 | iex
+```
+
+### Step 1 — Check login status
+
+```bash
+uip login status --output json
+```
+
+If not logged in, prompt the user to run `uip login`.
+
+### Step 2 — Create solution and scaffold agent
+
+All commands run from the same working directory — no `cd` needed. Pass paths explicitly.
+
+```bash
+uip solution init "<SOLUTION_NAME>" --output json
+# `agent init` auto-registers the project in the parent `.uipx` because
+# the agent path lives inside the solution directory. Confirm via
+# `Data.SolutionRegistration.Status` in the response (`Registered` or
+# `AlreadyRegistered`).
+uip agent init "<SOLUTION_NAME>/<AGENT_NAME>" --output json
+# (fallback only — run if Data.SolutionRegistration.Status is `NotInSolution` / `Skipped` / `Failed`;
+#  `OptedOut` means `--skip-solution-registration` was passed and registration was skipped on purpose)
+# uip solution projects add "<SOLUTION_NAME>/<AGENT_NAME>" --output json
+```
+
+The explicit `uip solution init` is optional: running `uip agent init "<AGENT_NAME>"` alone outside any solution auto-scaffolds `<AGENT_NAME>Solution/<AGENT_NAME>/` and registers the project (response carries `Data.AutoCreatedSolution`). Keep the explicit `solution init` when you want a solution name distinct from the agent name.
+
+When the fallback is needed, `uip solution projects add` automatically finds the nearest `.uipx` by searching up from the agent path.
+
+### Step 3 — Configure agent.json
+
+Read [agent-definition.md](agent-definition.md) for the full schema, which differs between autonomous and conversational agents.
+
+1. Set `settings.model` — discover with `uip agent model list`, select per [model-selection-guide.md](model-selection-guide.md) (override the scaffold default `gpt-5.4` for autonomous, `anthropic.claude-sonnet-4-5-20250929-v1:0` for conversational)
+2. Set `settings.temperature` (0 for deterministic)
+3. Write system prompt in `messages[0].content` + rebuild `contentTokens` — structure it per [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md) (skeleton, tool-call criteria, output contract), not a placeholder
+4. For autonomous agents, write user message template in `messages[1].content` using `{{input.fieldName}}` + rebuild `contentTokens`. Conversational agents should always have the user message template left blank since each user message is received during the actual conversation.
+
+### Step 4 — Define input/output schemas
+
+1. Add fields to `agent.json` → `inputSchema` and `outputSchema`. Note that modifying `outputSchema` only applies for autonomous agents.
+2. Mirror in `entry-points.json`
+3. Refresh (writes migrated files + regenerates `entry-points.json` and `bindings_v2.json`): `uip agent refresh "<SOLUTION_NAME>/<AGENT_NAME>" --output json`
+4. Validate: `uip agent validate "<SOLUTION_NAME>/<AGENT_NAME>" --output json`
+
+### Step 5 — Publish to Studio Web or deploy to Orchestrator
+
+Ask the user before proceeding. There are two separate paths:
+
+**Studio Web** (default — for visual editing and sharing):
+```bash
+uip solution upload . --output json
+```
+
+**Orchestrator** (for production deployment — only when explicitly requested):
+```bash
+uip solution pack . ./dist -v "1.0.0" --output json
+uip solution publish ./dist/<SOLUTION_NAME>_1.0.0.zip --output json   # pack names the zip <name>_<version>.zip
+uip solution deploy run --name "<NAME>" --package-name "<SOLUTION_NAME>" --package-version "1.0.0" --output json
+```
+
+## Versioning
+
+Solutions use semantic versioning: `MAJOR.MINOR.PATCH`
+
+```bash
+# Pack with specific version
+uip solution pack ./MySolution ./output -v "1.2.0" --output json
+
+# Publish the versioned package to Orchestrator
+uip solution publish ./output/MySolution_1.2.0.zip --output json
+
+# Check published packages
+uip solution packages list --output json
+```
+
+Version strategy:
+- `PATCH`: bug fixes, prompt tweaks
+- `MINOR`: new tools, new agents added
+- `MAJOR`: breaking changes to I/O schema
+
+## Environment Promotion
+
+To promote from dev to production:
+
+```bash
+# 1. Pack solution
+uip solution pack ./MySolution ./output -v "2.0.0" --output json
+
+# 2. Publish to Orchestrator
+uip solution publish ./output/MySolution_2.0.0.zip --output json
+
+# 3. Deploy to production folder
+uip solution deploy run \
+  --name "MySolution-Prod" \
+  --package-name "MySolution" \
+  --package-version "2.0.0" \
+  --folder-name "MySolution" \
+  --parent-folder-path "Production" \
+  --output json
+```
+
+## Quick Reference
+
+All solution lifecycle operations go through `uip solution` CLI. Never call Automation.Solutions REST endpoints directly.
+
+| Task | Command | Run From | Terminal states |
+|------|---------|----------|-----------------|
+| Login check | `uip login status --output json` | Any directory | — |
+| Create solution | `uip solution init "<NAME>" --output json` | Any directory | — |
+| Scaffold agent | `uip agent init "<NAME>" --output json` | Any directory (auto-scaffolds `<NAME>Solution/` if outside a solution) | — |
+| Scaffold inline agent | `uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json` | Any directory | — |
+| Verify project registration | Check `Data.SolutionRegistration.Status` from `agent init` response (`Registered` / `AlreadyRegistered` = done; `OptedOut` = `--skip-solution-registration` passed) | Solution directory | — |
+| Register project (fallback) | `uip solution projects add "<PATH>" --output json` — when `agent init` returned `Skipped` / `Failed` / `NotInSolution` | Solution directory | — |
+| Refresh + regenerate derived files | `uip agent refresh [path] --output json` | Agent dir or any with path | — |
+| Validate (strict read-only) | `uip agent validate [path] --output json` | Agent dir or any with path | — |
+| Debug / run end-to-end on Studio Web | `uip agent debug <AgentDir> --inputs '{...}' [--attachment <FIELD>=<FILE_PATH>] --output json` | Agent dir | `Successful`, `Faulted`, `Stopped`; `--attachment` binds a local file to a `job-attachment` input |
+| Add memory space feature | `uip agent memory add <FeatureName> --memory-space <Name> --folder-path <Folder> --path <AgentDir> --output json` | Any directory | Writes `features/<FeatureName>/feature.json`; run refresh/validate after |
+| Seed memory item | `uip agent memory item add <FeatureName> <key> <value> --memory-type episodic --feedback-id <FEEDBACK_ID> --path <AgentDir> --output json` | Any directory | Updates existing item with same key |
+| List guardrail validators | `uip agent guardrails list --output json` | Any directory | — |
+| Discover resources | `uip solution resources list --kind <Kind> --source remote [--search <term>] --output json` | Solution directory | — |
+| Refresh resources | `uip solution resources refresh --output json` | Solution directory | — |
+| Add one resource (local stub or remote import) | `uip solution resources add --source local\|remote --kind <Kind> --name <NAME> [--folder-path <FOLDER>] --output json` | Solution directory | Idempotent on `(kind, name, folder)` for local, on key for remote |
+| Remove one resource by key | `uip solution resources remove <KEY> --output json` | Solution directory | Offline; doesn't touch `bindings_v2.json` |
+| Edit one resource's spec | `uip solution resources edit <KEY> --patch '{...}' --output json` | Solution directory | Only command that mutates an existing resource; `refresh` never overwrites. Unknown/reference/read-only props silently ignored. JSON is the only input — types preserved verbatim |
+| Pull a changed cloud definition | `uip solution resources edit <KEY> --source remote --force --output json` | Solution directory | For a resource changed in Orchestrator / Data Fabric after import, which `refresh` reports under `Skipped`. Without `--force` it lists what would change and writes nothing (exit 1) |
+| Upload to Studio Web | `uip solution upload . --output json` | Solution directory | — |
+| Pack | `uip solution pack . ./dist -v "1.0.0" --output json` | Solution directory | — |
+| Publish | `uip solution publish ./dist/<PKG>.zip --output json` | Any directory | — |
+| Deploy | `uip solution deploy run --name ... --output json` | Any directory | `DeploymentSucceeded`, `DeploymentFailed`, `ValidationFailed` |
+| Activate | `uip solution deploy activate "<NAME>" --output json` | Any directory | `SuccessfulActivate`, `FailedActivate` |
+| Uninstall | `uip solution deploy uninstall "<NAME>" --output json` | Any directory | `SuccessfulUninstall`, `FailedUninstall` |
+| Delete deployment record | `uip solution deploy delete "<NAME>" --yes --output json` | Any directory | `Deleted` |
+| Deploy status | `uip solution deploy status <pipeline-deployment-id> --output json` | Any directory | — |
+| List deployments | `uip solution deploy list --output json` | Any directory | — |

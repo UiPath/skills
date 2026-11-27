@@ -1,0 +1,267 @@
+---
+name: uipath-coded-apps
+description: "UiPath Coded Apps — scaffold, build, run, and deploy Coded Web Apps and Coded Action Apps: React/TypeScript apps that call UiPath Cloud APIs via the `@uipath/uipath-typescript` SDK and ship to Automation Cloud (push/pull to Studio Web, pack, publish, deploy, OAuth-PKCE). Also generates live analytics & governance dashboards from a plain-language request, wired to tenant data via the Insights real-time API, with edit and deploy flows. For RPA→uipath-rpa, Python agents→uipath-agents, Maestro flows→uipath-maestro-flow, solution packaging→uipath-solution, JS/TS function backends (`defineFunction`, `uip function serve`)→uipath-functions."
+when_to_use: "User wants to scaffold, build, push/pull, pack, publish, or deploy a Coded Web App or Coded Action App, or use the `@uipath/uipath-typescript` SDK inside one. Also dashboard requests: 'build me a dashboard', 'show agent health / error rate / KPIs / governance violations', 'generate an analytics or observability dashboard', edit an existing one (add/remove/change a widget, change time range, deploy), or fix/diagnose a dashboard that won't build (a metric that fails to compile, a bad SDK call, a broken widget). For RPA→uipath-rpa; Python agents→uipath-agents; Maestro flows→uipath-maestro-flow."
+allowed-tools: Read, Glob, Grep
+---
+
+# UiPath Coded Apps
+
+Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps using the `uip codedapp` CLI and `@uipath/uipath-typescript` SDK.
+
+## When to Use This Skill
+
+- User wants to **build, debug, or deploy** a UiPath Coded Web App or Coded Action App
+- User asks about `uip codedapp` commands, `.uipath/` directory, `app.config.json`, or `action-schema.json`
+- User wants to **scaffold** a new React/Vue frontend for UiPath Cloud or an Action Center form
+- User asks for app UI that a **prebuilt UiPath widget** covers: review/correct Document Understanding extraction results (Validation Station), chat with a conversational agent, browse/edit a Data Fabric entity in a grid, upload files to a storage bucket, display a PDF, or sign in with an external IdP (Google/SAML)
+- User wants to **push/pull source** between local and Studio Web
+- User wants to use the `@uipath/uipath-typescript` SDK from a coded app
+- User wants to run the **full pipeline** (build → pack → publish → deploy)
+- User wants to **generate an agent-monitoring / analytics dashboard** from a natural-language description — e.g. "show agent health, error rates, invocation volume, latency, active agents, KPIs, governance metrics, or consumption trends"
+- User says "build/create/generate a dashboard", describes metrics to visualize, or asks for an agent observability, operations, or cost view
+
+For the app's **JS/TS function backend** — authoring the `defineFunction` endpoint the app calls, tokens, CORS, the local two-server dev loop → `uipath-functions`.
+
+## App Types
+
+| Type | Description | Key Difference |
+|------|-------------|----------------|
+| **Coded Web App** | React/Vue/other frontend hosted on UiPath CDN | User-facing app accessed via a URL |
+| **Coded Action App** | React form wired to UiPath Action Center | Rendered inside human task reviews in Maestro/Agent workflows |
+| **Public Coded Web App** (preview) | Coded Web App that anyone with the link uses **without signing in** | In-solution only; runs as a confidential external app — see [public-coded-app.md](references/public-coded-app.md) |
+
+> **Two lifecycles, two scaffolding entry points.**
+>
+> - **Standalone coded app**: scaffold with `create-vite`, copying the exact command from [create-web-app.md](references/create-web-app.md) / [create-action-app.md](references/create-action-app.md) (Critical Rule 20). No `project.uiproj` / `webAppManifest.json` — those are solution-membership artefacts and standalone apps don't need them. Deploy via `uip codedapp pack` → `uip codedapp publish` (`-t Action` for action apps) → `uip codedapp deploy`. This is the classic single-app lifecycle covered by the rest of this skill.
+> - **In-solution coded app**: run `uip codedapp init` from **inside a `.uipx` solution**. Init writes `project.uiproj` (`ProjectType: "AppV2"`) + `webAppManifest.json`, nests runtime + build artefacts under `source/dist/`, auto-registers the project as `Type: "AppV2"` in the `.uipx`, and emits `resources/solution_folder/app/{Coded,CodedAction}/`. From then on the app is part of the solution — `uip solution pack` bundles its `.nupkg` and `uip solution deploy run` provisions it in the deployment folder. **Do not** run `uip codedapp pack` / `publish` / `deploy` on a coded app that's already registered in `.uipx` — that bypasses the solution's deploy config (external client ID, routing name, action schema) and double-registers the package. `uip solution projects add` / `uip solution projects import` register existing AppV2 folders too, reading `webAppManifest.config.isActionApp` to pick the `Coded` / `CodedAction` subType. For the solution-side lifecycle see [/uipath:uipath-solution](/uipath:uipath-solution).
+>
+> **`uip codedapp init` does not scaffold a React project.** It writes a static `dist/index.html` plus three metadata files and no source project at all, so it is not the scaffolding entry point for a standalone coded app — use the `create-vite` command in [create-web-app.md](references/create-web-app.md) (Critical Rule 20) for that.
+
+## Critical Rules
+
+1. **Identify the app type before doing anything else.** Ask as a structured choice (Rule 18): **Coded Web App** — custom frontend deployed to UiPath Cloud · **Coded Action App** — form for Action Center human task reviews. The two paths diverge on scaffolding, redirect URI, and publish flag — do not guess.
+2. **Always check login status first.** Run `uip login status --output json` before any cloud command. If not logged in, run `uip login`.
+3. **Never skip the build step.** Run `npm run build` after scaffolding (to verify the scaffold compiles) and again before `pack` or `push` (to produce the deployable `dist/`). Verify `dist/` exists each time.
+4. **Pack → Publish → Deploy order is required.** Each step depends on the previous one producing its output.
+5. **Bump the version for re-publish.** If the same version already exists in Orchestrator, publish will fail.
+6. **Action apps require `-t Action` on publish.** Run `uip codedapp publish -t Action` (not the default `Web` type).
+7. **Never handle access tokens manually.** Do not pass, print, parse, source, or set cached access tokens. Use `uip login` and supported `uip codedapp` commands; the CLI manages authentication.
+8. **Base URL must use the API subdomain.** `https://api.uipath.com` not `https://cloud.uipath.com`. See the table below.
+9. **`vite.config.ts` must always set `base: './'`.** The platform handles URL routing — apps must use relative asset paths. Do not use a routing name or a sub-path here. **Import static assets through the bundler** (`import logo from './assets/logo.png'`) so Vite fingerprints and base-rewrites them. Do NOT place them in `public/` or reference them by a hardcoded `/`-rooted path — those bypass base rewriting and 404 after deploy under the non-root mount.
+10. **Use `getAppBase()` from `@uipath/uipath-typescript` for any absolute URL constructed at runtime** — router basename, image `src`, `fetch` paths. Deployed apps mount at a non-root prefix; `/`-rooted paths work locally but 404 after deploy. Vite's `base: './'` only fixes import-time references.
+11. **`uip codedapp deploy` must run non-interactively.** Pass the folder key as `--folder-key <GUID>` (or as `UIPATH_FOLDER_KEY=<GUID>` env-var prefix — either works). The interactive folder picker fails in non-TTY contexts (CI, agent shells). If `deploy` rejects the key with `not found among folders accessible to your account` while `uip or folders list --all --name "<name>"` returns it, re-run **once** as `UIPATH_FOLDER_KEY=<GUID> uip codedapp deploy …` without `--folder-key`: the flag's pre-check works from an incomplete copy of the account's folder list on accounts with very many folders, so the key is fine and waiting or retrying the same call never helps. See [pack-publish-deploy.md](references/pack-publish-deploy.md#deploy-rejects-a-valid-folder-key-as-not-found-among-folders-accessible). If the user provides a folder **name**, resolve it with the server-side filter `uip or folders list --all --name "<name>" --output json` and pick the row whose `Name` **exactly** equals the target, then read its `Key` (the plain list is paginated 50/page and `--name` is a *contains* match requiring `--all`, so never just take the first row). A **personal workspace** is not in `--all` — resolve it from the default `uip or folders list --output json` where `Type == "Personal"`. To deploy into a **new** folder, create it first with `uip or folders create "<NAME>" --output json` and read `Data.Key`. The `uip or ...` commands require the Orchestrator tool — install once via `uip tools install @uipath/orchestrator-tool` (check first with `uip tools list`).
+12. **Guard against text overflow in every UI.** See [patterns.md](references/patterns.md) "Preventing Text Overflow".
+13. **Inspect the DF schema before writing analytics, filters, or seeds.** Run `uip df entities get <ENTITY_ID> --output json` to inspect fields and types. At runtime, use `entities.getById(<id>)` from the app's authenticated session. DF doesn't behave like a typical RDBMS; see [sdk/data-fabric.md](references/sdk/data-fabric.md) "Anti-shapes & gotchas".
+14. **Every list call returns ONE page — even with no options. There is no "give me everything" path.** Applies to `getAll`, `getAllRecords`, `queryRecordsById`, `getFileMetaData`, etc. `getAll()` with no options does NOT return all rows; the SDK sends no `pageSize` and the **server** applies its own cap, wrapped in a misleadingly-named `NonPaginatedResponse`. To list every row from a source that may exceed the cap, you MUST loop the cursor: `while (page.hasNextPage) { page = await getAll({ cursor: page.nextCursor }) }` and accumulate `items`. Reading `result.items.length` after a single call is almost always a bug. See [sdk/pagination.md](references/sdk/pagination.md).
+15. **Tables of dynamic data must paginate, not dump all rows in one scroll.** Page size 25–50 with next/prev/page-number controls and a "Showing X–Y of Z" summary. Top-N + "see all" is acceptable for explicitly summary panels (e.g., "Top 10 oldest"). Infinite-scroll-of-N-rows is unusable for operational dashboards. Applies to any table backed by any service (DF entities, Tasks, Jobs, Conversations, Process Instances, etc.). See [patterns.md](references/patterns.md) "Tabular Data".
+16. **When adding any new SDK method call, verify the configured OAuth scope already includes the required scope** — both dashboards and web apps read the `scope` key from `uipath.json`. Write operations, action methods (`Jobs.stop`, `Tasks.complete`, `ProcessInstances.cancel`, etc.), or first use of a new service typically need broader scopes than read-only flows. Mismatched scopes fail silently with `401` / `403` on the first call. See [oauth-scopes.md](references/oauth-scopes.md) for scope bundles and the per-method lookup protocol (the per-method table ships inside the SDK package at `node_modules/@uipath/uipath-typescript/docs/oauth-scopes.md`).
+17. **Never call `sdk.initialize()` in an action app.** That is web-app-only — it starts an *interactive* PKCE redirect that cannot complete in an iframe. Action apps authenticate silently from config Action Center injects: construct `new UiPath()` (no args) and use it directly. See [create-action-app.md](references/create-action-app.md) `src/uipath.ts`.
+18. **Never make the user type magic phrases.** Whenever you ask the user to pick between known options (app type, build/edit/deploy intent, OAuth setup, deploy pinning), present a **structured choice** via the host coding agent's native question tool (selectable options) when one exists. Mechanics: one option per choice with a short bold label + one-line description of what picking it does; put the recommended option **first** and suffix its label "(Recommended)"; keep to **at most 4 options** (reserve one slot for an escape option like *Make changes* / *Cancel* when applicable). If there are 5+ candidates, or the host agent has no question tool, render a plain numbered list instead and accept the number or the option label as the answer. A free-text reply must always remain valid (e.g. a plan-change request) and takes precedence over the options. **Exception — never put a question in the same response as a long output:** plan-approval gates are free-text by design (the plan ends with "confirm or tell me what to change"); structured questions fire only on later, short turns. See `references/dashboards/plugins/build/impl.md`.
+19. **Never guess SDK method signatures — read the installed types.** The authoritative reference for method names, parameters, return types, and usage examples is `node_modules/@uipath/uipath-typescript/dist/<subpath>/index.d.ts` (full JSDoc; matches the installed SDK version exactly). Before calling a service you have not used in this session, Read its `.d.ts`. If `node_modules` is absent, run the install step first — the app cannot build without it. The `references/sdk/*.md` files deliberately do NOT list signatures; they cover only scopes, calling conventions, and traps the types cannot express. See [references/sdk/imports.md](references/sdk/imports.md) for the missing-capability protocol. **Boundary: read the `.d.ts`, never the compiled bundle.** `dist/*.mjs` / `*.js` is minified implementation, not API — reading it dead-ends. A grep with no output **confirms absence**; treat a genuine gap as unsupported (use the documented alternative) rather than escalating the search into the bundle.
+20. **A scaffold is not React until `src/main.tsx` exists — assert it before installing anything.** Scaffold both app types by copying the single `create-vite` command from [create-web-app.md](references/create-web-app.md) Step 3.2 or [create-action-app.md](references/create-action-app.md): it passes `--no-interactive` — without which `create-vite` stops on a linter prompt, and exits `0` having created nothing when no one can answer it — and ends in a `node` check that prints `SCAFFOLD_OK`. Never use an `npm create vite` form — `npm create` needs a bare `--` separator to forward flags, and a lost or corrupted separator makes npm swallow `--template` so `create-vite` silently scaffolds its **vanilla TypeScript** template. Never judge a scaffold by its exit code or output: `create-vite` exits `0` on a misparsed template, on a linter prompt it could not show, and on `Operation cancelled` over a non-empty target directory. Nothing in this skill installs `react` explicitly, so a wrong template surfaces minutes later as an unrelated-looking build failure. On failure re-scaffold with `--overwrite`; never convert a vanilla scaffold into a React one by hand.
+21. **Call third-party systems through an Integration Service connector, or build one with `uip is connectors builder`; a direct `fetch` with a key needs a stated reason.** Any key the app holds (source, env var, `uipath.json`) ships in `dist/`. UiPath SDK calls are fine: they use the app's own session.
+22. **Run the action-schema validator after every write or edit of `action-schema.json`.** Run `node <skill-dir>/scripts/validate-action-schema.js <path-to-action-schema.json>` and fix until exit `0` before reporting done — even when told to write the schema directly with no questions. A schema that looks right is not validated. Details: [create-action-app.md](references/create-action-app.md#validate-the-schema-required-before-proposing-it).
+23. **Public (no sign-in) apps follow [public-coded-app.md](references/public-coded-app.md) end to end.** When the user wants an app for people without a UiPath account ("public", "anonymous", "customers/guests", "no login"), first confirm it fits the public limits in that file, then build it as an in-solution coded app with a confidential external app, no sign-in code, only the supported public calls, and every resource listed in a hand-written `bindings_v2.json`.
+
+## Disambiguation — Apps vs Dashboards
+
+**Route directly to Apps workflow** (sections below) when you see:
+`web app`, `action app`, `public app`, `no sign-in`, `codedapp`, `app.config.json`, `action-schema.json`,
+`scaffold app`, `deploy app`, `pack`, `publish`, `push`, `pull`, `debug app`
+
+**Route directly to [references/dashboards/CAPABILITY.md](references/dashboards/CAPABILITY.md) when you see:**
+`dashboard`, `analytics`, `KPI`, `metrics`, `Insights`, `observability`,
+`admin console`, `report`, `chart`, `trend`, `governance report`, `agent metrics`
+
+**When intent is ambiguous** — ask "Which fits your goal?" as a structured choice (Rule 18):
+
+| Option | Description |
+|--------|-------------|
+| **Build or modify a Web App / Action App** | Scaffold a UI, form, or app that deploys to Automation Cloud |
+| **Generate a dashboard** | Analytics or admin view from a natural-language description |
+
+## Task Navigation
+
+| I want to... | Read this |
+|---|---|
+| **Create a new Coded Web App** | [references/create-web-app.md](references/create-web-app.md) |
+| **Create a new Coded Action App** | [references/create-action-app.md](references/create-action-app.md) |
+| **Create a public (no sign-in) coded app** (preview) | [references/public-coded-app.md](references/public-coded-app.md) |
+| **Debug auth or config issues** | [references/debug.md](references/debug.md) |
+| **Push/pull code to Studio Web** | [references/file-sync.md](references/file-sync.md) |
+| **Package and deploy** | [references/pack-publish-deploy.md](references/pack-publish-deploy.md) |
+| **Full CLI command reference** | [references/commands-reference.md](references/commands-reference.md) |
+| **Embed the DU Validation Station widget** | [references/widgets/validation-station.md](references/widgets/validation-station.md) |
+| **Embed the Conversational Agent chat widget** | [references/widgets/conversational-agent-chat.md](references/widgets/conversational-agent-chat.md) |
+| **Embed the Data Fabric DataTable widget** | [references/widgets/datatable.md](references/widgets/datatable.md) |
+| **Embed the multi-file bucket upload widget** | [references/widgets/multi-file-upload.md](references/widgets/multi-file-upload.md) |
+| **Embed the PDF viewer widget** | [references/widgets/pdf-viewer.md](references/widgets/pdf-viewer.md) |
+| **Add external IdP sign-in buttons (Google/SAML)** | [references/widgets/external-auth.md](references/widgets/external-auth.md) |
+| **OAuth scopes for SDK services** | [references/oauth-scopes.md](references/oauth-scopes.md) |
+| **SDK: Import paths & subpath exports** | [references/sdk/imports.md](references/sdk/imports.md) |
+| **SDK: Assets, Queues, Buckets, Processes, Jobs, Attachments** | [references/sdk/orchestrator.md](references/sdk/orchestrator.md) |
+| **SDK: Data Fabric (Entities, ChoiceSets)** | [references/sdk/data-fabric.md](references/sdk/data-fabric.md) |
+| **SDK: Maestro (Processes, Cases)** | [references/sdk/maestro.md](references/sdk/maestro.md) |
+| **SDK: Action Center (Tasks)** | [references/sdk/action-center.md](references/sdk/action-center.md) |
+| **SDK: Conversational Agent** | [references/sdk/conversational-agent.md](references/sdk/conversational-agent.md) |
+| **SDK: Agent Feedback** | [references/sdk/feedback.md](references/sdk/feedback.md) |
+| **SDK: Pagination** | [references/sdk/pagination.md](references/sdk/pagination.md) |
+| **SDK: Agents & Agent Memory (Insights RTM)** | [references/sdk/agents.md](references/sdk/agents.md) |
+| **SDK: Agent Traces (Insights RTM)** | [references/sdk/traces.md](references/sdk/traces.md) |
+| **SDK: Governance — policy evaluations (Insights API)** | [references/sdk/governance.md](references/sdk/governance.md) |
+| **SDK: Agent Governance Decisions — runtime compliance (Insights RTM)** | [references/sdk/governance-traces.md](references/sdk/governance-traces.md) |
+| **UI Patterns (polling, BPMN, HITL, text overflow, table pagination)** | [references/patterns.md](references/patterns.md) |
+| **Generate an admin dashboard from NLP** | [references/dashboards/CAPABILITY.md](references/dashboards/CAPABILITY.md) |
+
+## CLI Setup
+
+```bash
+# Fresh macOS/Linux machine: installs Node.js >= 20, uip, agent skills, .NET SDK 8.0, and Python 3.11-3.14
+curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash
+
+# Resolve the CLI binary before using it
+UIP=$(command -v uip 2>/dev/null || true)
+if [ -z "$UIP" ] && command -v npm >/dev/null 2>&1; then
+  UIP="$(npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip"
+fi
+if [ -z "$UIP" ] || [ ! -x "$UIP" ]; then
+  echo "UiPath CLI not found after bootstrap. Update PATH for this host, then rerun this step." >&2
+  exit 2
+fi
+$UIP --version
+
+# Install the coded apps tool
+$UIP tools install @uipath/codedapp-tool
+
+# Install the Orchestrator tool (needed to resolve folder name → key for deploy)
+$UIP tools install @uipath/orchestrator-tool
+
+# Verify both are installed
+$UIP tools list
+```
+
+Windows PowerShell fresh-machine setup:
+
+```powershell
+irm https://download.uipath.com/uipath-cli/install.ps1 | iex
+```
+
+Authenticate before any cloud command:
+
+```bash
+uip login status --output json         # check if logged in
+uip login                              # interactive OAuth (opens browser)
+uip login --authority "<AUTHORITY_URL>"   # non-default host (Automation Suite, dedicated)
+
+# Client-credentials (headless/CI) — scope MUST name one Orchestrator scope AND
+# the two Apps-service scopes. Neither set covers the other:
+#   OR.Default            → Orchestrator
+#   Apps.Read Apps.Write  → Apps-service registration in `uip codedapp publish`
+# Do NOT substitute granular Orchestrator scopes (OR.Folders/OR.Execution/
+# OR.Administration) for OR.Default.
+# Credentials come from env vars via the CLI's env.<NAME> syntax — never inline.
+uip login \
+  --client-id env.UIPATH_CLIENT_ID \
+  --client-secret env.UIPATH_CLIENT_SECRET \
+  --organization <org> \
+  --tenant <tenant> \
+  --scope "OR.Default Apps.Read Apps.Write" \
+  --authority "<AUTHORITY_URL>"   # omit --authority for cloud.uipath.com
+```
+
+> **Never handle the client secret in the conversation.** Do not ask the user to paste it into chat, do not write it into a command line or file, and do not echo it. If `UIPATH_CLIENT_ID` / `UIPATH_CLIENT_SECRET` are not set, ask the user to export them in their own shell, then run the command above.
+
+> **The `uip login` session scope is separate from the app's runtime OAuth scopes.** The scopes in `uipath.json` are what the *deployed app* requests at runtime (see [oauth-scopes.md](references/oauth-scopes.md)). The `--scope` on `uip login` above is what the *CLI session* needs to call the Apps registration API during `uip codedapp publish`. `uip codedapp publish` does two things: uploads the package (needs `OR.Default`) **and** registers the coded app (needs `Apps.Read Apps.Write`). For what each failure looks like, see [debug.md](references/debug.md#publish--deploy-fails-under-a-client-credentials-login).
+
+## SDK Config (web app)
+
+The web app initializes the SDK with `new UiPath()` (no config). At runtime the SDK reads `clientId`, `scope`, `orgName`, `tenantName`, `baseUrl`, and `redirectUri` from `<meta name="uipath:*">` tags. During local dev `@uipath/coded-apps-dev` injects those tags from `uipath.json` (committed) — the single config source, holding `clientId`, `scope`, `orgName`, `tenantName`, `baseUrl`, and `redirectUri` (the Vite dev URL for local). In production the UiPath platform injects the same tags directly.
+
+To change any of these values, edit `uipath.json`.
+
+## CLI Environment Variables
+
+| Variable | Used By | Description |
+|----------|---------|-------------|
+| `UIPATH_PROJECT_ID` | `uip codedapp push` / `uip codedapp pull` | Studio Web project ID |
+
+**Base URL by environment** — derive from the portal host the user signed in to (`uip login status --output json` → `Data.BaseUrl`):
+
+| Portal host | Correct Base URL |
+|---|---|
+| `https://cloud.uipath.com` (default) | `https://api.uipath.com` |
+| `https://<PREFIX>.uipath.com` (any other UiPath-hosted portal) | `https://<PREFIX>.api.uipath.com` |
+| Any other host (Automation Suite, custom) | The API URL the user supplies — use it verbatim |
+
+## Quick Deploy (Full Pipeline)
+
+**Do NOT pause between steps to ask "should I continue?" — execute the full pipeline. Only stop if you need auth credentials or an app name.**
+
+1. **Auth** — `uip login status --output json`. If not logged in, ask the user for their environment and run `uip login`. With **client credentials** (headless/CI), use `--scope "OR.Default Apps.Read Apps.Write"` — all three names are required: `OR.Default` for Orchestrator, `Apps.Read` and `Apps.Write` for the Apps-service registration in `uip codedapp publish`. The External Application itself needs only `Apps.Read` and `Apps.Write`; `OR.Default` is auto-granted and not portal-selectable, so name it in `--scope`. If publish or deploy then fails, see [debug.md](references/debug.md#publish--deploy-fails-under-a-client-credentials-login).
+2. **Build** — `npm run build`. Verify `ls dist/`.
+3. **Pack** — `uip codedapp pack dist -n <name> --version <version>`. Produces `.uipath/<name>.<version>.nupkg`. Bump version if previously published.
+4. **Publish** — `uip codedapp publish` (add `-t Action` for action apps). Verify `cat .uipath/app.config.json`.
+5. **Deploy** — `uip codedapp deploy -n <name> --folder-key <GUID>`. Resolve the GUID from the chosen folder: a personal workspace (`Type == "Personal"`), a named existing folder, or a freshly `uip or folders create`d one — via `uip or folders list --output json`. Dashboards additionally choose a **deploy mode** (standalone / governance-pinned / governance) that sets `--tags`; see [dashboards deploy impl](references/dashboards/plugins/deploy/impl.md). Never let the command go interactive. If deploy answers `not found among folders accessible to your account` for a key that `uip or folders list --all --name` returns, re-run once with the `UIPATH_FOLDER_KEY=<GUID>` prefix instead of `--folder-key` — do not wait or loop (Rule 11). Share the app URL with the user. **Deploy is done when the CLI reports success — do not poll or `curl` the app URL to confirm it.** Activation lags the deploy by minutes, so a fresh URL returning 404/503 is expected and proves nothing; waiting on it only burns time.
+
+## SDK Module Imports
+
+See [references/sdk/imports.md](references/sdk/imports.md) for the lookup protocol (subpaths and classes are discovered from the installed package — `ls node_modules/@uipath/uipath-typescript/dist/`), type import conventions, and anti-pattern examples. Core rules are listed under **Anti-patterns** below.
+
+## Key Concepts
+
+### App Config (`.uipath/app.config.json`)
+
+Created by `publish`, consumed by `deploy`. Contains `appName`, `systemName`, `appType`, `deploymentId`, `appUrl`. Do not delete `.uipath/` between publish and deploy.
+
+### Action Schema (`action-schema.json`)
+
+Action apps define a data contract between the form and the Maestro/Agent workflow. It has four sections: `inputs` (read-only data from automation), `outputs` (user-filled fields), `inOuts` (pre-populated but editable), and `outcomes` (submission buttons like Approve/Reject). A root field name can appear in only one section — first publish of a schema that reuses one fails with HTTP 400. Validate with `scripts/validate-action-schema.js`; rules in [references/create-action-app.md](references/create-action-app.md).
+
+## Troubleshooting
+
+See [references/debug.md](references/debug.md) for detailed diagnosis steps.
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `Not authenticated` | No valid session | Run `uip login` |
+| `dist/ not found` | App not built | Run `npm run build` |
+| `Published app with package name '<name>' and version '<version>' already exists` | Same name+version already published (registration rejects duplicates) | Bump `--version` and re-publish |
+| `Folder key required` / deploy hangs on prompt | Missing folder for CLI deploy | Resolve folder name → key via `uip or folders list --output json` (match on `Name`, read `Key`), then run `uip codedapp deploy --folder-key <GUID> ...`. See [pack-publish-deploy.md](references/pack-publish-deploy.md#folder-key). |
+| `Folder key '<GUID>' was not found among folders accessible to your account` (folder exists) | `--folder-key` pre-check works from an incomplete copy of the account's folder list | Re-run once as `UIPATH_FOLDER_KEY=<GUID> uip codedapp deploy ...` without `--folder-key`; never sleep-and-retry (Rule 11). See [pack-publish-deploy.md](references/pack-publish-deploy.md#deploy-rejects-a-valid-folder-key-as-not-found-among-folders-accessible). |
+| `The action schema uses the same property name more than once: '<name>' in <sections>` (publish 400) | Root field name reused across `inputs` / `outputs` / `inOuts` / `outcomes` on a new app or first publish | Rename the duplicate (pre-filled editable field → one `inOuts` field), re-run `scripts/validate-action-schema.js`, republish. Existing published app → keep names, validate with `--upgrade`. See [create-action-app.md](references/create-action-app.md#validate-the-schema-required-before-proposing-it). |
+| `No packages found` | No `.nupkg` in `.uipath/` | Run `pack` first |
+| Login fails / redirect error | OAuth misconfiguration | See [debug.md](references/debug.md) |
+| API calls fail with 401/CORS | Wrong base URL | Use `https://api.uipath.com` not `cloud.uipath.com` |
+
+> **Folder identifier names differ across CLI and SDK.** The CLI uses `UIPATH_FOLDER_KEY` / `--folder-key` (string) and applies only to `uip codedapp deploy`. SDK methods use different parameters: Maestro services (`MaestroProcesses`, `ProcessInstances`, `Cases`) take `folderKey` (string GUID), Orchestrator services (`Assets`, `Queues`, `Buckets`, `Processes`) take `folderId` (number). Do not pass the CLI env var into SDK calls. To bridge from a Maestro `folderKey` to an Orchestrator `folderId`, see [sdk/maestro.md](references/sdk/maestro.md) — and **never** `parseInt(folderKey)`, the GUID is not numeric.
+
+## Completion Output
+
+When you finish a task, report only what's applicable to the work actually done:
+
+1. **What was done** — files created, edited, or deleted (list paths); CLI commands run
+2. **Stage reached** — one of: scaffolded / built / packed / published / deployed
+3. **Artifacts produced** (report only the ones that actually exist):
+   - `dist/` — if `npm run build` was run
+   - `.uipath/<name>.<version>.nupkg` — if `pack` was run
+   - `.uipath/app.config.json` with `deploymentId` — if `publish` was run
+   - Live deployment URL (`appUrl` from `app.config.json`) — if `deploy` was run
+   - External Application client ID — if one was created this session
+4. **Next steps**, depending on where the task stopped:
+   - **Scaffolded only:** `cd <app-name> && npm run dev` to run locally
+   - **Built but not packed:** ready to `uip codedapp pack` when the user wants to deploy
+   - **Published but not deployed:** run `uip codedapp deploy` to go live
+   - **Deployed (Web):** open/share the deployment URL; verify sign-in flow
+   - **Deployed (Action):** the app will render in Action Center human tasks triggered by Maestro/Agent workflows matching the routing name
+5. **Open issues** — any auth failures, scope mismatches, missing folder key, skipped steps, or errors left unresolved
+
+If a later stage was requested but skipped (e.g., user asked to deploy but only `publish` succeeded), call it out explicitly in the next-steps section.
+
+## Anti-patterns
+
+These pitfalls are not already covered by the Critical Rules. For rules stated as positive requirements, see the **Critical Rules** section at the top.
+
+- **Don't import service classes from the package root** — use the subpath (e.g., `@uipath/uipath-typescript/assets`).
+- **Don't use the deprecated dot-chain `sdk.entities.getAll()`** — use constructor DI: `new Entities(sdk)`.
+- **Don't delete `.uipath/` between `publish` and `deploy`** — `deploy` reads `app.config.json` written by `publish`.
