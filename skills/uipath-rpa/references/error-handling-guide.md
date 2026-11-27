@@ -87,8 +87,8 @@ Properties (`NumberOfRetries`, `RetryInterval`, `ContinueOnError`, `LogRetriedEx
   </ui:RetryScope.ActivityBody>
   <ui:RetryScope.Condition>
     <ActivityFunc x:TypeArguments="x:Boolean">
-      <!-- a Boolean-returning check (Element Exists, or Check True on a stored State).
-           Omit this whole block for exception-only retry. -->
+      <ui:CheckTrue DisplayName="Total is shown" Expression="[totalShown]" ErrorMessage="Invoice total not shown" />
+      <!-- or another Boolean-returning activity (Element Exists); omit this whole block for exception-only retry -->
     </ActivityFunc>
   </ui:RetryScope.Condition>
 </ui:RetryScope>
@@ -99,7 +99,7 @@ Properties (`NumberOfRetries`, `RetryInterval`, `ContinueOnError`, `LogRetriedEx
 **Total executions equal `NumberOfRetries`, not 1 + retries:** `0` = 0 (Action never runs; use `1` for one guaranteed run), `1` = 1, `3` (default) = 3 (one initial + two retries). `=3` runs exactly three times then throws the last error; `=0` is a no-op.
 
 1. `RetryInterval` is a `TimeSpan`, not seconds. `3` means **3 days**; use `00:00:05` for five seconds (default `00:00:05`).
-2. Condition semantics are inverse of a while loop: `True` exits; `False` retries. Without Condition, retry is exception-driven and succeeds on the first error-free run.
+2. Condition semantics are inverse of a while loop: `True` exits; `False` retries. Without Condition, retry is exception-driven and succeeds on the first error-free run. The test that decides whether an attempt worked goes in Condition as `Check True` on the tested expression, not as `If` + `Throw` ending Action: a failed check repeats the attempt, and after the last one the scope fails with the check's `ErrorMessage` (`CheckpointException`). A Condition that only returns `False` ends in `Action failed to execute as expected.`
 3. Action reruns fully, so keep it idempotent. `Add Queue Item`, `Append Range`, `Write Range`, `Insert Rows`, and payment/order POSTs can duplicate. Retry Scope has no deduplication; use an existence check or idempotency key.
 4. Nest Retry Scope **inside Try/Catch**; after exhaustion it rethrows the last error to the outer Catch.
 5. Modern UI Automation `Click` / `Type Into` have built-in **Verify execution** retry; prefer it for one UI step and Retry Scope for multi-step blocks. In modern design, `Check App State` cannot be directly in Condition; store its `State` to a Boolean and reference it.
