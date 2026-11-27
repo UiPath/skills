@@ -472,5 +472,6 @@ Low-code agents use `contextType: "datafabricentityset"` in `resource.json` — 
 
 - [sdk-services.md](sdk-services.md) — Full SDK services reference
 - [context-grounding.md](context-grounding.md) — Context Grounding (RAG over documents, separate from Data Fabric)
+- [ontology.md](ontology.md) — Query a deployed ontology from a coded agent
 - [../../lowcode/capabilities/context/datafabric.md](../../lowcode/capabilities/context/datafabric.md) — Low-code DataFabric context
 - Sample: `uipath-langchain-python/samples/datafabric-coded-agent/` — Working coded agent example
