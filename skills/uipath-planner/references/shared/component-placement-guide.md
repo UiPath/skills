@@ -42,7 +42,7 @@ These are capabilities added to the primary product, not standalone products. Wh
 - "Validate before writing back..."
 - "Fills in missing data..."
 
-**How to flag:** Add a "HITL Touchpoints" line in the host template's relevant section (node table, agent description). For Flow hosts the planner adds an "Add HITL node per §X" task routed to `uipath-human-in-the-loop`; for coded-Agent hosts the escalation is part of the `uipath-agents` build task; for BPMN / Case / RPA hosts the touchpoint stays with the host's own specialist — no HITL-skill task.
+**How to flag:** Add a "HITL Touchpoints" line in the host template's relevant section (node table, agent description). For Flow hosts the planner adds an "Add HITL node per §X" task routed to `uipath-human-in-the-loop`; for coded-Agent hosts the escalation is part of the `uipath-agents` build task; for BPMN and Case hosts the implementation task also routes to `uipath-human-in-the-loop`, which hands the authoring to the host's skill; for RPA hosts the touchpoint stays in the RPA template.
 
 ### Integration Service
 

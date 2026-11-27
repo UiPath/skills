@@ -270,11 +270,11 @@ flowchart LR
 
 ### HITL Touchpoints
 
-<!-- One row per HITL node. -->
+<!-- One row per HITL node. Capture: for a step with a decision capture spec from the PDD, a link to its `#### Decision Capture: <NODE_KEY>` subsection (same shape as the BPMN SDD template's), written after this table; otherwise —. Its Surface sets HITL Type (design-guide.md, HITL routing). -->
 
-| Node Key | HITL Type | Purpose | Approval Criteria |
-|---|---|---|---|
-| `<NODE_KEY>` | <QUICKFORM / APPTASK> | <PURPOSE> | <WHO_APPROVES_AND_WHAT_CRITERIA> |
+| Node Key | HITL Type | Purpose | Approval Criteria | Capture |
+|---|---|---|---|---|
+| `<NODE_KEY>` | <QUICKFORM / APPTASK> | <PURPOSE> | <WHO_APPROVES_AND_WHAT_CRITERIA> | <DECISION_CAPTURE or —> |
 
 ### Coded Apps Referenced
 

@@ -162,6 +162,30 @@ Watch for:
 - PDDs often have a "catch-all" row: "for any other exception, send email to X". Preserve this as the default handler.
 - Some exceptions are actually business rules in disguise (e.g., "amount over threshold" is both an exception and a rule). Cross-reference with extracted business rules.
 
+### HITL Decision Capture
+
+A HITL form whose PDD carries a **How the decision is captured** part (Cartographer PDDs: under the form in §9.3) is a human decision step. The part is its decision capture spec. Extract every field verbatim, per step:
+
+| Field | Description |
+|---|---|
+| Level | Reasoning capture, Light capture or Task only |
+| Surface | Coded Action App, QuickForm or Document Validation Station |
+| Reviewer · Proposed by | Persona that decides · agent or automation that pre-fills the proposal, or none |
+| Context | What the reviewer sees first |
+| Parts | Part, its proposal, evidence shown beside it, the document or system it comes from |
+| Outcomes | Outcome, when it is recommended, reason required (always / on departure from the recommendation / never) |
+| Reasons | Short list per outcome, each ending in Other |
+| What would change it · Add a factor | Case-specific counterfactual questions · allowed or not |
+| Controls | Additional reason, why a reason is not relevant, reason weights, rule for next time: applied, or off and why |
+| Signals | Derived interaction signals the screen records |
+| Stakes triggers · Second review | Conditions asking for more · who and when |
+| Stored · Never stored · Usage statement | Lists · what the record feeds and never feeds |
+
+Watch for:
+- Outcomes stay in the PDD's terms. Never collapse them to approve/reject.
+- Never summarise the spec; the build reads it field by field.
+- No part → step stays a plain HITL touchpoint; never invent outcomes or reasons.
+
 ### System Errors
 
 Extract into a table with the same structure as business exceptions, plus:
