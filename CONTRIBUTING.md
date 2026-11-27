@@ -22,9 +22,9 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 ├── .claude-plugin/            # Plugin manifest and marketplace config
 │   ├── plugin.json            # Plugin name, version, skills directory pointer
 │   └── marketplace.json       # Claude Code marketplace registration
-├── .gemini/                   # Google Gemini CLI project-level configuration
+├── .gemini/                   # Gemini CLI project-level configuration for contributors
 │   ├── settings.json          # context.fileName → [GEMINI.md, AGENTS.md, CLAUDE.md]
-│   └── commands/              # Gemini custom slash commands (*.toml)
+│   └── commands/              # Project-only Gemini CLI slash commands (*.toml)
 ├── .cursor/                   # Cursor IDE project-level configuration
 │   └── rules/                 # Cursor MDC rule files (one per concern, scoped by globs)
 ├── .agents/                   # Codex CLI skill-discovery root
@@ -68,14 +68,14 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 
 ### Multi-Tool Compatibility
 
-Skills work with **Claude Code**, **Google Gemini CLI**, **OpenAI Codex CLI**, **Cursor IDE**, and **GitHub Copilot coding agent**. Keep every `SKILL.md` file tool-agnostic markdown — no references to Claude-specific tool names, Anthropic-only plugin features, or vendor-specific slash commands inside skill bodies.
+`uip skills install` installs the skills for every coding agent in the README's [Multi-Tool Support](README.md#multi-tool-support) table. The skills follow the open [Agent Skills](https://agentskills.io) standard, so other agents that read `.agents/skills` (Gemini CLI among them) pick them up too. Keep every `SKILL.md` file tool-agnostic markdown — no references to Claude-specific tool names, Anthropic-only plugin features, or vendor-specific slash commands inside skill bodies.
 
 Tool wiring lives outside `skills/`:
 
 | Tool | Integration file | Mechanism |
 |------|------------------|-----------|
 | Claude Code | `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` | Plugin marketplace discovers `skills/` via plugin manifest |
-| Google Gemini CLI | `.gemini/settings.json` (`context.fileName`), `.gemini/commands/*.toml` | Gemini loads `GEMINI.md` / `AGENTS.md` / `CLAUDE.md` as project context; discovers `SKILL.md` files on-demand via `.agents/skills/` |
+| Gemini CLI | `.gemini/settings.json` (`context.fileName`), `.gemini/commands/*.toml`; `gemini-extension.json` | `.gemini/` is contributor config: in this repo, Gemini loads `GEMINI.md` / `AGENTS.md` / `CLAUDE.md` as project context and discovers `SKILL.md` files on-demand via `.agents/skills/`. `gemini-extension.json` is the Gemini CLI extension manifest ([docs/RELEASE.md](docs/RELEASE.md)). Gemini CLI has no `uip skills install --agent` value; users get the skills through `.agents/skills` ([README](README.md#other-agents-that-read-agentsskills)) |
 | OpenAI Codex CLI | `AGENTS.md` (symlink → `CLAUDE.md`), `.agents/skills/` (symlink → `skills/`) | Codex scans `.agents/skills/` for `SKILL.md` files, reads `AGENTS.md` as project instructions |
 | Cursor IDE | `.cursor/rules/*.mdc` | Scoped MDC rules: `token-optimization` (always-apply), `skill-structure` + `content-quality` (glob-scoped), `skill-review` + `pr-review` (agent-requested) |
 | GitHub Copilot coding agent | `AGENTS.md` (symlink → `CLAUDE.md`) | Copilot reads `AGENTS.md` natively (since Aug 2025) |

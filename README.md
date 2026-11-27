@@ -149,6 +149,16 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | Antigravity CLI | `antigravity` |
 | Devin | `devin` |
 
+`--agent copilot` covers GitHub Copilot in VS Code, the Copilot CLI and Visual Studio, which all read `.github/skills` in a project and `~/.copilot/skills` for the user.
+
+### Other agents that read `.agents/skills`
+
+The skills follow the open [Agent Skills](https://agentskills.io) standard. These agents read its standard directories, `.agents/skills` in a project and `~/.agents/skills` for the user:
+
+Gemini CLI, JetBrains Junie, Zed, Warp, Amp, Goose, Kilo Code, Qwen Code, Augment, Factory Droid, Crush, Mistral Vibe, Pi, OpenHands.
+
+To install for them, run `uip skills install --agent codex`, which writes to `~/.agents/skills`; add `--local` to write to the project's `.agents/skills` instead.
+
 ### Claude Code
 
 This repository works as a **Claude Code plugin**. Install skills via `uip skills install` (the recommended method above) — this keeps skills updated automatically.
