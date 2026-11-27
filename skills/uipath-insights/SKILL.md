@@ -111,10 +111,15 @@ Use `uip insights` for job, queue, and machine monitoring, monitoring-scope disc
    envelope as every other command, with an `Instructions` string naming the caveats on its
    numbers: quote those in the explanation.
 
-   If `investigate` reports `unknown command`, the installed CLI predates it. Tell the user to update
-   (`npm i -g @uipath/cli`) and fall back to the numbered chains in
+<!--skill-flavor:unknown-investigate-command:start-->
+   If `investigate` reports `unknown command`, the installed insights tool (`@uipath/insights-tool`)
+   predates it. Run `uip update`, then retry. When the retry's `Instructions` start with
+   `Run 'uip update'`, run `uip update` once, then retry; if anything fails again, or `uip update`
+   itself fails, show the user the error and use the numbered chains in
    [`references/investigation-playbook-guide.md`](references/investigation-playbook-guide.md) for
-   this run.
+   this run. Don't reinstall the CLI or change its pins (no `npm install`, `uip update --force`,
+   `uip tools install --force`, `uip config freeze` or `uip config unfreeze`).
+<!--skill-flavor:unknown-investigate-command:end-->
 4. Otherwise run the subcommand and parse `Data` for the result. On list subcommands also read
    `Pagination` for list completeness.
 
