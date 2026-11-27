@@ -3,10 +3,9 @@ description: >
   Stop condition, against a mocked `uip`. The agent reads the contract of
   PayrollBands in the Finance folder, and every read answers 403: the account
   lacks the BusinessRules.View permission there. A permission failure never
-  resolves by retrying. Grades that the agent read the rule (`describe`,
-  `get` or `versions`; Studio Web has no `describe`), retried neither
-  `describe` nor `get`, and that the agent did not change the login or
-  tenant. The bodies are what UiPath/cli main prints for a 403 from the
+  resolves by retrying. Grades that the agent read the contract with
+  `describe`, retried neither `describe` nor `get`, and that the agent did
+  not change the login or tenant. The bodies are what UiPath/cli main prints for a 403 from the
   Business Rules service (`permission_denied`, `RetryWillNotFix`).
 tags: [uipath-rules, integration, "mode:operate", "lifecycle:discover"]
 
@@ -15,6 +14,8 @@ sandbox:
   record_cli:
     - tool: uip
       exit_code: 1
+      # Not the repo's usual "not connected to a tenant" fallback: in these tasks that
+      # text is itself a stop condition, and an agent stops on it before the graded step.
       stderr: "uip (mock): no recorded answer for this command.\n"
       responses:
         - when:
@@ -83,9 +84,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: cli_called
-    description: "Agent read PayrollBands (describe, get or versions)"
+    description: "Agent read the PayrollBands contract with rules describe"
     tool: uip
-    verb_any_of: ["rules describe", "rules get", "rules versions"]
+    verb: "rules describe"
     positional: ["PayrollBands"]
     value_flags: [output, folder-path, folder-key, inputs, limit, offset, output-filter, log-level, log-file, profile]
     min_count: 1

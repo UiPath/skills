@@ -19,6 +19,8 @@ sandbox:
   record_cli:
     - tool: uip
       exit_code: 1
+      # Not the repo's usual "not connected to a tenant" fallback: in these tasks that
+      # text is itself a stop condition, and an agent stops on it before the graded step.
       stderr: "uip (mock): no recorded answer for this command.\n"
       responses:
         - when:

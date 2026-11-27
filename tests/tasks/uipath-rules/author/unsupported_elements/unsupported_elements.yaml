@@ -7,8 +7,8 @@ description: >
   holding none of the three, the approval on the policy cases, and `uip rules
   validate` and `uip rules format` run by the grader. Knowledge models and
   literal expressions are in the profile and are covered by their own tasks.
-  A knowledge source is not a row: the designer supports it and the skill will
-  too.
+  A knowledge source and a group are not rows and are not graded: the
+  designer draws and keeps both.
 tags: [uipath-rules, integration, "mode:build", "lifecycle:generate"]
 
 sandbox:
