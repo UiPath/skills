@@ -38,7 +38,7 @@ uip solution init "<Solution>"
 # edit <Solution>/<Name>/.flow-sdk/<Name>.flow.ts, then run the Lifecycle loop below
 ```
 
-Do not hand-write the skeleton. `--sdk-source` decompiles the trigger-only artifact into `.flow-sdk/<Name>.flow.ts`, creates the folder, and preserves the product-assigned flow id/name; a hand-written `flow('<name>')` invents an id. The first `compile -o` overwrites the stub. `init` answering "already exists and is not empty. Use --force to overwrite" means it exists: never pass `--force`; edit it. An Extract document node is `dynamicExtract()` ([`references/document-pipeline.md`](references/document-pipeline.md)); it needs SDK 6.118.0 or later, else use the CLI.
+Do not hand-write the skeleton. `--sdk-source` decompiles the trigger-only artifact into `.flow-sdk/<Name>.flow.ts`, creates the folder, and preserves the product-assigned flow id/name; a hand-written `flow('<name>')` invents an id. The first `compile -o` overwrites the stub. `init` answering "already exists and is not empty. Use --force to overwrite" means it exists: never pass `--force`; edit it. An Extract document node is `dynamicExtract()` ([`references/document-pipeline.md`](references/document-pipeline.md)); it needs SDK 6.119.0 or later.
 
 When the request names **Maestro Automate** as the product, run `( cd "<Solution>" && uip maestro flow init <Name> --automate --sdk-source )`; bare "automate invoice intake" means a plain Flow. Nothing after `init` changes: it writes `runtimeOptions.profile` to `operate.json` and a `.maestro_automate` marker; `compile -o` rewrites only `.flow`, so both survive.
 

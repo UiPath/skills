@@ -1,12 +1,13 @@
 task_id: skill-flow-extract-document-unsaved-draft
 description: >
   Integration (negative): the Extract document node carries an unsaved Schema
-  Editor draft someone left in Studio Web, so `nodes schema set` refuses the
-  edit and `flow validate` fails on the draft. Tests that the agent leaves the
-  draft and the saved taxonomy as they are: no `--discard-draft` without the
-  user's say-so, no hand edit of either, and no second node to hold the field.
+  Editor draft someone left in Studio Web, so `uip maestro flow merge` refuses
+  an edit to its schema (builder-sdk#2256) and `flow validate` fails on the
+  draft. Tests that the agent leaves the draft and the saved taxonomy as they
+  are: no deleting the draft key from the source without the user's say-so,
+  no hand edit of either, and no second node to hold the field.
 
-  No `flow debug`: a CLI-authored Extract document node extracts nothing
+  No `flow debug`: a locally authored Extract document node extracts nothing
   until the flow is saved once in Studio Web.
 
 tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, node:extract-document]
@@ -53,9 +54,9 @@ success_criteria:
 
   # Positive control: a run that never touched the taxonomy also leaves the draft alone.
   - type: command_executed
-    description: "Agent read or tried to write the node's taxonomy"
+    description: "Agent read the node's taxonomy through the SDK loop (decompile, or a merge attempt)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+flow\s+nodes\s+schema\s+(get|set)\b'
+    command_pattern: 'uip\s+maestro\s+flow\s+(decompile|merge)\b'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

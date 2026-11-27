@@ -1,8 +1,8 @@
 task_id: skill-flow-extract-document-taxonomy-from-request
 description: >
   Smoke: the user names the Extract document node, the fields, and one rule
-  about one field. Tests that the agent writes the taxonomy, by either route
-  (`nodes schema set`, or `dynamicExtract()` source and `flow compile`): the
+  about one field. Tests that the agent writes the taxonomy in
+  `dynamicExtract()` source and compiles it with `flow compile`: the
   fields with fitting types, instructions throughout, and the user's
   rule in the field's instructions, and `flow validate` passing on the
   result. Only the taxonomy is graded: the node and its wiring are graded by
@@ -32,9 +32,9 @@ initial_prompt: |
   the task take precedence over this paragraph.
 success_criteria:
   - type: command_executed
-    description: "Agent wrote the taxonomy with nodes schema set, or compiled it from dynamicExtract() source"
+    description: "Agent compiled the taxonomy from dynamicExtract() source"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+flow\s+(nodes\s+schema\s+set|compile)\b'
+    command_pattern: 'uip\s+maestro\s+flow\s+compile\b'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -75,7 +75,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The taxonomy on disk is well formed: uip maestro flow validate passes on InvoiceFields.flow with no warnings (a rejected last set or a hand edit fails here)"
+    description: "The taxonomy on disk is well formed: uip maestro flow validate passes on InvoiceFields.flow with no warnings (a taxonomy check rejects, or a hand edit, fails here)"
     command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings
     timeout: 180
     expected_exit_code: 0

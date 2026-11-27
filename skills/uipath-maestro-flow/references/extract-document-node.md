@@ -1,22 +1,33 @@
 # Extract document node
 
-*Commands: `uip maestro flow extraction check`, `uip maestro flow nodes create`, `uip maestro flow edges create`, `uip maestro flow validate`.*
+*Commands: `uip maestro flow extraction check`, then the SDK loop (`decompile`, `check`, `compile` or `merge`) and `uip maestro flow validate`. Exact factory signature: `dynamicExtract()` ([document-pipeline.md](document-pipeline.md)).*
 
 Add this node to a new flow only when the user names it ([Which extraction node the user wants](#which-extraction-node-the-user-wants)). "We don't have a trained model yet" does not name it; that request goes to [ixp.md](ixp.md).
 
-An Extract document node (`uipath.ixp.extract-document-builder`) extracts named fields using taxonomy embedded in the `.flow`; it has no trained model or IXP project. Add, wire, and validate it; design taxonomy in [extract-document-taxonomy.md](extract-document-taxonomy.md).
+An Extract document node (`uipath.ixp.extract-document-builder`) extracts named fields using taxonomy embedded in the `.flow`; it has no trained model or IXP project. In source it is one `dynamicExtract()` step. Add, wire, and validate it; design taxonomy in [extract-document-taxonomy.md](extract-document-taxonomy.md).
 
 ```bash
 uip maestro flow extraction check --output json
-uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label '<name>' --input '{"fileRef":"=js:$vars.<upstream>.output.<field>"}' --position <x>,<y> --output json
+# new flow: scaffold, then author the step in .flow-sdk/<Name>.flow.ts and compile (SKILL.md, Lifecycle)
+# existing flow: decompile, edit the source, check, merge (SKILL.md, Editing an existing flow)
 uip maestro flow validate <file> --output json
 ```
 
-**Support for this node is new.** If the CLI refuses the type, or an older CLI answers `error: unknown command` for `nodes`, say `uip` is outdated and ask the user to update.
+```ts
+.input({ invoice: { type: types.file, description: 'The invoice document to extract' } })
+.step('extractInvoice', dynamicExtract({ fileRef: input('invoice'), schema: invoiceTaxonomy }),
+  { label: 'Extract invoice' })
+```
+
+Authoring, checking and compiling this node needs `@uipath/maestro-builder-sdk` 6.119.0 or later; a merge into an existing flow that holds this node, to edit or repair it, needs 6.124.17 or later. 6.124.17 is the first release whose merge refuses, and writes nothing, when the round trip would drop a node or edge of the original (UiPath/builder-sdk#2264). On 6.124.16 such a merge only warns, exits 0 and writes a flow missing that part, for instance a human task's outcome branch ([Making it actually extract](#making-it-actually-extract)).
+
+<!--skill-flavor:extract-sdk-version:start-->
+Read the installed version before blaming the SDK (`npm ls -g @uipath/maestro-builder-sdk`, or the project's `node_modules`); below the floor, upgrade it ([document-pipeline.md](document-pipeline.md#authoring-it-the-processor-and-the-sdk-it-needs)).
+<!--skill-flavor:extract-sdk-version:end-->
 
 ## Which extraction node the user wants
 
-In a new flow, document extraction is a published IXP model, covered in [ixp.md](ixp.md): the IXP project is built and deployed first, and the flow then runs against it. That holds when no model exists yet ([ixp.md](ixp.md#resource-identity)). Add the Extract document node to a new flow only when the user asks for it by name, or offer it when `uipath-ixp` reports IXP not enabled. In an existing flow, keep the extraction node it has (`uip maestro flow nodes list <file> --output json` shows its type); a builder node or its inline taxonomy stays on this guide. A published-model taxonomy belongs to `uipath-ixp`.
+In a new flow, document extraction is a published IXP model, covered in [ixp.md](ixp.md): the IXP project is built and deployed first, and the flow then runs against it. That holds when no model exists yet ([ixp.md](ixp.md#resource-identity)). Add the Extract document node to a new flow only when the user asks for it by name, or offer it when `uipath-ixp` reports IXP not enabled. In an existing flow, keep the extraction node it has (each node's `type` in the `.flow`; decompile writes this one as `dynamicExtract()`); a builder node or its inline taxonomy stays on this guide. A published-model taxonomy belongs to `uipath-ixp`.
 
 | Node | Node type | Where covered |
 | --- | --- | --- |
@@ -24,25 +35,27 @@ In a new flow, document extraction is a published IXP model, covered in [ixp.md]
 | Published IXP model — default | `uipath.ixp.<project>.<version>-<folder>` | [ixp.md](ixp.md) |
 | IDP processor resource | `uipath.ixp.processor.<resource-key>` | not covered; add it in Studio Web |
 
-The three `uipath.ixp.` families are not interchangeable. The processor variant looks the same and uses the same definition, but points to a solution processor resource and is a different type. The conveniences below apply only to `uipath.ixp.extract-document-builder`; a CLI-created processor node is incomplete and must be left to Studio Web.
+The three `uipath.ixp.` families are not interchangeable. The processor variant looks the same and uses the same definition, but points to a solution processor resource and is a different type. The conveniences below apply only to `uipath.ixp.extract-document-builder`; a processor node is added and edited in Studio Web.
 
 ## At a glance
 
-Add a descriptive node, wire its file, write taxonomy, bind the result, and validate. `fileRef` is the only author-supplied input and is required for validation. The processor arrives with the node; packing keeps it synchronized ([Making it actually extract](#making-it-actually-extract)).
+Add a descriptive `dynamicExtract()` step, wire its file, write taxonomy, return the result, and validate. `fileRef` is the only author-supplied input and is required for validation. Compile or merge gives the node its processor; packing keeps it synchronized ([Making it actually extract](#making-it-actually-extract)).
 
 ## The loop
 
 <!--skill-flavor:extract-find-flow:start-->
-0. **Find the flow.** Edit a `.flow` on disk. If the user describes a flow they are already building and none exists locally, it may live in Studio Web and need pulling down first; ask for its URL or solution id; nothing lists them ([Starting from a flow in Studio Web](extract-document-taxonomy.md#starting-from-a-flow-in-studio-web)).
+0. **Find the flow.** Work on a `.flow` on disk. If the user describes a flow they are already building and none exists locally, it may live in Studio Web and need pulling down first; ask for its URL or solution id; nothing lists them ([Starting from a flow in Studio Web](extract-document-taxonomy.md#starting-from-a-flow-in-studio-web)).
 <!--skill-flavor:extract-find-flow:end-->
 1. **Check the tenant:** run `uip maestro flow extraction check --output json`. Any settled answer other than `Available` stops the loop; an unsettled check is a question for the user ([Check the tenant can run it](#check-the-tenant-can-run-it)).
-2. **Declare the input if absent:** run `uip maestro flow variables create <file> invoice -d in -t file --description '<what the document is>'`. Its `TriggerNodeId` is `<trigger>` in `$vars.<trigger>.output.invoice`.
-3. **Add the node** with `--label` naming what it extracts, `--input` carrying `fileRef`, and `--position` on the canvas grid ([operate.md](operate.md#lay-out-from-source-instead-layout-at-dim), rule 1). Same model as an existing Extract document node: `--input` also carries that node's `processorKey` and `"processorReadOnly":true`, and step 5 is skipped ([Making it actually extract](#making-it-actually-extract)).
-4. **Connect it** with `edges create` ([Wiring the file it reads](#wiring-the-file-it-reads)).
-5. **Write the taxonomy:** [extract-document-taxonomy.md](extract-document-taxonomy.md).
-6. **Bind the result** to a flow output ([Returning the result](#returning-the-result)).
-7. **Validate:** run `uip maestro flow validate <file> --output json`; it must return `Valid`.
-8. **Report** what was added, where it reads its file from, which fields it extracts, and `nodes create`'s processor result: in a solution the resource is under `resources/` and travels with the `.flow`; otherwise it remains to be created ([Making it actually extract](#making-it-actually-extract)). Taking the flow live is the user's step.
+2. **Get the source.** A new flow: scaffold it ([SKILL.md, Project layout](../SKILL.md#project-layout)). An existing flow: decompile it ([SKILL.md, Editing an existing flow](../SKILL.md#editing-an-existing-flow)); a supplied `.flow-sdk/<Name>.flow.ts` is edited where it is ([brownfield.md](brownfield.md#a-supplied-source)).
+3. **Declare the input if absent:** `.input({ invoice: { type: types.file, description: '<what the document is>' } })`. The trigger then carries it as `$vars.<trigger>.output.invoice`.
+4. **Add the step** where the flow reads the document, with a `label` naming what it extracts ([Adding the node](#adding-the-node)). Chaining it after its predecessor is its incoming edge ([Wiring the file it reads](#wiring-the-file-it-reads)). Same model as an existing Extract document node: the step takes that node's `processorKey` and `processorReadOnly: true`, and step 5 is skipped ([Making it actually extract](#making-it-actually-extract)).
+5. **Write the taxonomy** in the step's `schema`: [extract-document-taxonomy.md](extract-document-taxonomy.md).
+6. **Return the result** as a flow output ([Returning the result](#returning-the-result)).
+7. **Check and write:** run `check`, then `compile` (new flow) or `merge` (existing flow), as the SKILL.md loop says. Then run `uip maestro flow validate <file> --output json`; it must return `Valid`.
+<!--skill-flavor:extract-report:start-->
+8. **Report** what was added, where it reads its file from, which fields it extracts, and the processor: compile and merge print `wrote resources/solution_folder/idpProcessor/extraction/<Label>.json (IDP processor)` inside a solution, and keep that file with the `.flow`; outside one, they print that the file is created when the project is packed ([Making it actually extract](#making-it-actually-extract)). Taking the flow live is the user's step.
+<!--skill-flavor:extract-report:end-->
 
 ## Check the tenant can run it
 
@@ -64,7 +77,7 @@ The check answers, for the signed-in tenant, whether extraction is on and whethe
 
 Continue on `Available`; use [When Extract document is not available](#when-extract-document-is-not-available) for the other three settled failures. `Unknown`, non-zero exit, expired login, and old CLI do not establish unavailability: report the command result and ask whether to try adding the node; if nobody can answer, add it and report that the check settled nothing.
 
-This gates only adding a new node. Local `.flow` and taxonomy edits, `nodes provision`, and validation go ahead whatever the status says; report the status alongside them.
+This gates only adding a new node. Edits to an existing node, its taxonomy, the repair of a missing processor, and validation go ahead whatever the status says; report the status alongside them.
 
 `Available` proves only its two gates. Deploy or run may still refuse the configured model, a cluster-wide switch, model-based attribution, full layout parsing, OCR language packs, or target-folder permissions. Take the fallback in [When Extract document is not available](#when-extract-document-is-not-available) when one arrives. Do not call the node working after such a refusal and do not try folders in turn. If the refusal names the model, say which one the node carries and direct the user to [Switching from one model to another](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/configuring-the-model#switching-from-one-model-to-another); changing it is the user's step. If the user requested that model by name, say instead that this tenant cannot run it.
 
@@ -73,47 +86,32 @@ No other CLI command answers this question. `registry search` reports `Available
 ## Adding the node
 
 <!--skill-flavor:extract-sdk-mixing:start-->
-**These commands edit the `.flow` file, so they do not mix with a project built from TypeScript source.** A project initialized with `--sdk-source` compiles `.flow.ts` over CLI edits. Check for `.flow-sdk/`; if present, author the node in the source with `dynamicExtract()`: compile gives it its processor as `nodes create` does ([document-pipeline.md](document-pipeline.md#two-ways-to-author-it)). On an SDK older than 6.118.0 (compile fails reading `modelName` with no `model`, or writes no `processorKey`), build this flow in a separate project without source and use only the CLI. Do not alternate between the two and re-apply CLI edits after each compile.
+**Author the node in the source, never in the `.flow`.** In a project with `.flow-sdk/<Name>.flow.ts`, add the step there; otherwise decompile first ([SKILL.md, Editing an existing flow](../SKILL.md#editing-an-existing-flow)). A hand edit of the `.flow` is overwritten by the next compile and skips everything compile does for the node.
 <!--skill-flavor:extract-sdk-mixing:end-->
 
-`--label` sets the canvas name and seeds the node id; name the document and fields, not "Extract", since flows often have two extraction nodes. Run `uip maestro flow nodes list <file> --output json` to obtain the minted id; later commands use it. `nodes create` supplies `inputs.schemaDocument` (empty taxonomy with six built-in field types), `inputs.modelConfig` (working model defaults), `inputs.source` (minted extraction identifier), `inputs.processorKey` and `inputs.processorName` (processor; in a solution its resource file is written, otherwise output says `ResourcePending` and pack creates it later ([Making it actually extract](#making-it-actually-extract))), and `outputs.output` and `outputs.error` (named instance ports for downstream `$vars`). It has no top-level `model` block: the slim manifest model belongs in `definitions[]`; validation rejects an instance copy.
+```ts
+.step('extractInvoice', dynamicExtract({ fileRef: input('invoice'), schema: invoiceTaxonomy }),
+  { label: 'Extract invoice' })
+```
 
-Keep `modelName`, `folderKey`, and other deployment fields under `inputs` as empty strings. They identify a trained IXP deployment and belong to [ixp.md](ixp.md); this node requires only `fileRef`.
+The step name is the node id; the `label` sets the canvas name and the processor's name. Name the document and fields, not "Extract", since flows often have two extraction nodes. Pass no `model`: compile gives the node its working model defaults (`inputs.modelConfig`), an empty taxonomy with the six built-in field types when `schema` is omitted, a minted extraction identifier (`inputs.source`), the processor (`inputs.processorKey` and `inputs.processorName`; where its resource is created: [Making it actually extract](#making-it-actually-extract)), and the named `output` and `error` ports for downstream reads.
+
+Keep `modelName`, `folderKey`, and other deployment fields out of the step. They identify a trained IXP deployment and belong to [ixp.md](ixp.md); this node requires only `fileRef`.
 
 ## Wiring the file it reads
 
-`fileRef` is a runtime reference to an upstream output or flow variable, not a value:
+`fileRef` is a runtime reference to an upstream output or flow variable, not a value. For direct document input, declare the input and read it:
 
-```json
-"fileRef": "=js:$vars.<trigger>.output.invoice"
+```ts
+.input({ invoice: { type: types.file, description: 'The invoice document to extract' } })
+.step('extractInvoice', dynamicExtract({ fileRef: input('invoice') }), { label: 'Extract invoice' })
 ```
 
-Set it at creation when the upstream node already exists:
+Compile writes it as `"fileRef": "=js:$vars.<trigger>.output.invoice"`. Declaration and wiring are separate: `input('invoice')` with no `invoice` input still validates, with an `EXPRESSION_DIAGNOSTIC` warning naming the missing input; treat that `fileRef` warning as an error. A literal filename or hand-built attachment object remains literal and does not resolve upstream.
 
-```bash
-uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label 'Extract Invoice' --input '{"fileRef":"=js:$vars.<trigger>.output.invoice"}' --position <x>,<y> --output json
-```
+Use the trigger's declared file field; for a SharePoint-backed event declaring `ReferenceID`, read `$vars.<trigger>.output.ReferenceID`. Read the trigger contract; do not guess or insert a download step.
 
-Use the plain `=js:$vars.…` string. The structured form `{"type":"jsExpression","expression":"$vars.…","fieldType":"object"}` validates only when `fieldType` is present. A literal filename or hand-built attachment object remains literal and does not resolve upstream.
-
-Use the trigger's declared file field; for a SharePoint-backed event declaring `ReferenceID`, wire `$vars.<trigger>.output.ReferenceID`. Read the trigger contract; do not guess or insert a download step.
-
-For direct document input, run:
-
-```bash
-uip maestro flow variables create <file> invoice -d in -t file --description 'The invoice document to extract' --output json
-```
-
-This makes `$vars.<trigger>.output.invoice` resolvable; declaration and wiring are separate. A `fileRef` to an undeclared input still validates, with an `EXPRESSION_DIAGNOSTIC` warning naming the missing input; treat that `fileRef` warning as an error.
-
-Connect the graph:
-
-```bash
-uip maestro flow edges create <file> <upstream-id> <extract-id> --output json
-uip maestro flow edges create <file> <extract-id> <downstream-id> --output json
-```
-
-`edges create` uses the default source port, so an outgoing edge without a flag leaves on `success`. Graph ports (`success`, `error`) differ from variable outputs (`output`, `error`). Repeating an edge is safe and reports the existing edge.
+Chaining the step is its incoming edge: `.step('extractInvoice', …)` after the step that precedes it, and the next `.step(…)` is its outgoing edge on `success`. To insert it into an existing path, move the old edge through it rather than adding a second path ([SKILL.md, Editing an existing flow](../SKILL.md#editing-an-existing-flow)). Graph ports (`success`, `error`) differ from variable outputs (`output`, `error`).
 
 ## Reading what it extracts
 
@@ -123,39 +121,19 @@ The embedded definition is authoritative: read `definitions[]` for this node typ
 
 **`ExtractionResult` is the published-model node's output, not this one.** Its `ExtractionResult.ResultsDocument.Fields[]` belongs to [ixp.md](ixp.md), and the shapes are not interchangeable.
 
-The `error` port carries failures. Wire it with `edges create --source-port error` only when an unreadable document should follow a recovery path; leaving it unwired makes the flow fail loudly, often the right behaviour.
+The `error` port carries failures. Wire it with `.onError(…)` only when an unreadable document should follow a recovery path ([error-handling.md](error-handling.md)); leaving it unwired makes the flow fail loudly, often the right behaviour.
 
 ## Returning the result
 
-Declare an output, add an End node, connect the extract node, then bind the output directly in the End node:
+Declare an output and return the extracted values from the step:
 
-```bash
-uip maestro flow variables create <file> extractedData -d out -t object --description 'The structured data extracted from the document' --output json
-uip maestro flow nodes create <file> core.control.end --label 'End' --position <x>,<y> --output json
-uip maestro flow edges create <file> <extract-id> <end-id> --output json
+```ts
+.output({ extractedData: { type: types.object, description: 'The structured data extracted from the document' } })
+// … the steps, ending with the extract step …
+.return({ extractedData: out('extractInvoice', 'result.output') })
 ```
 
-Write this into the End node's `outputs` block; there is no CLI command for the binding:
-
-```json
-{
-  "id": "end1",
-  "type": "core.control.end",
-  "typeVersion": "1.0",
-  "display": { "label": "End" },
-  "inputs": {},
-  "outputs": {
-    "extractedData": {
-      "type": "object",
-      "description": "",
-      "source": "=js:$vars.<extract-id>.output.result.output",
-      "var": "extractedData"
-    }
-  }
-}
-```
-
-`var` names the global and `source` fills it. For a subset or reshaped result, put a script between the extract node and End and bind that script's output. **There is no `variableUpdates` block on an End node;** validation rejects that shape.
+Compile writes the End node's `outputs.extractedData`, whose `source` reads `$vars.extractInvoice.output.result.output`. There is no `variableUpdates` block on an End node; validation rejects that shape. For a subset or reshaped result, put a `script()` between the extract step and the return and return that script's output ([return.md](return.md)).
 
 ## Validating
 
@@ -165,29 +143,31 @@ Run:
 uip maestro flow validate <file> --output json
 ```
 
-Validation requires `fileRef` to be a `$vars` reference, both output ports to be named on the instance, and no top-level `model` block. A newly created node fails only on unwired `fileRef`; that is expected.
+Validation requires `fileRef` to be a `$vars` reference, both output ports to be named on the instance, a processor (`inputs.processorKey`), and no top-level `model` block. Compile and merge write all of them; a failure names what the source still lacks.
 
 ## Making it actually extract
 
 <!--skill-flavor:extract-processor-sync:start-->
-At runtime, the service resolves `inputs.processorKey` to a solution resource containing its taxonomy. The CLI provisions it while you author: `nodes create` mints the key and writes the resource; `nodes schema set` writes it for a node without a processor or updates it in place; `uip solution pack` regenerates it from the node so the deployed processor matches the latest taxonomy. Keep the `.flow` and `resources/` file together when storing, uploading, or versioning the solution.
+At runtime, the service resolves `inputs.processorKey` to a solution resource containing its taxonomy. Compile and merge provision it while you author: compile mints the key, one per step and the same on every recompile; inside a solution, compile and merge write the resource (`resources/solution_folder/idpProcessor/extraction/<Label>.json`) for each node they write, keep it in step with the node's taxonomy, and declare it in `bindings_v2.json`; `uip solution pack` regenerates it from the node so the deployed processor matches the latest taxonomy. Keep the `.flow` and `resources/` file together when storing, uploading, or versioning the solution.
 <!--skill-flavor:extract-processor-sync:end-->
 
-A node from before CLI provisioning, written by hand, or compiled by an SDK older than 6.118.0 (no `inputs.processorKey` after compile) arrives without a processor; `validate` reports an error. Repair the whole file by running:
-
-```bash
-uip maestro flow nodes provision <file> --output json
-```
+<!--skill-flavor:extract-keyless-repair:start-->
+A node from before processors were provisioned, or written by hand, arrives without a processor; `validate` reports an error at `inputs.processorKey`. Repair it with the brownfield loop and no edit: decompile, then `merge`. Merge gives every Extract document node that authors a processor but names none the key compile minted for it, and writes its resource file, printing `named no IDP processor … gave it <key>` and `wrote …/<Label>.json (IDP processor)`. Run it on SDK 6.124.17 or later, the merge floor above. A merged node that stays keyless means an SDK older than 6.124.15, which has no repair: upgrade the SDK. If `validate`'s message suggests another command, do not run it: the round trip is the repair.
+<!--skill-flavor:extract-keyless-repair:end-->
 
 Never hand-write `processorKey` or give a node another node's key as its own. Each processor holds one node's definition; duplicate authorship makes pack or publish refuse. Deliberate sharing requires the reader to take the author's `processorKey` and set `inputs.processorReadOnly: true`; neither half works alone and validation rejects a read-only node without a key.
 
-A node's model is its processor: its taxonomy and model settings together. A second node that uses the same model as an existing one reads that node's processor rather than getting a copy of its own; never a new processor synced to the same taxonomy and model. Supply both inputs at creation, since nothing adds them later:
+A node's model is its processor: its taxonomy and model settings together. A second node that uses the same model as an existing one reads that node's processor rather than getting a copy of its own; never a new processor synced to the same taxonomy and model. Give the step both inputs, since nothing adds them later. The author's key is in the decompiled source (`processorKey: "…"` on its step) and in its `.flow` node:
 
-```bash
-uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label 'Extract credit note' --input '{"fileRef":"=js:$vars.start.output.creditNote","processorKey":"<the authoring node key>","processorReadOnly":true}' --position <x>,<y> --output json
+```ts
+.step('extractCreditNote', dynamicExtract({
+  fileRef: input('creditNote'),
+  processorKey: '<the authoring node key>',
+  processorReadOnly: true,
+}), { label: 'Extract credit note' })
 ```
 
-A read-only node has no resource or taxonomy; it runs the author's processor. `nodes schema set` changes nothing that deploys when run on it.
+A read-only node has no resource or taxonomy of its own: compile mints it no key and writes no file; it runs the author's processor. A `schema` on it changes nothing that deploys.
 
 A package without a processor faults at runtime:
 
@@ -196,10 +176,10 @@ errorCode 461008 — Invalid IDP.Extraction node input
 'processorKey' is required and must be a GUID, unless a processor name and folder are provided to resolve one
 ```
 
-It may first complete in a fraction of a second and publish an empty object. Treat that as a missing processor, not a taxonomy that matched nothing: provision, then pack or publish again.
+It may first complete in a fraction of a second and publish an empty object. Treat that as a missing processor, not a taxonomy that matched nothing: repair it as above, then pack or publish again.
 
 <!--skill-flavor:extract-after-save:start-->
-After a pulled-down flow has been through Studio Web, pull the solution again before further CLI edits so the designer's saved changes are not overwritten; it saves continuously. The node retains its type, `processorKey`, and resource file. A Studio Web processor variant (`uipath.ixp.processor.<key>`) is a different type: `nodes schema set` refuses it and its taxonomy must be edited in Studio Web.
+After a pulled-down flow has been through Studio Web, pull the solution again and decompile again before further edits, so the designer's saved changes are not overwritten; it saves continuously. The node retains its type, `processorKey`, and resource file. A Studio Web processor variant (`uipath.ixp.processor.<key>`) is a different type, not `dynamicExtract()`: its taxonomy must be edited in Studio Web.
 <!--skill-flavor:extract-after-save:end-->
 
 ## When Extract document is not available
@@ -238,4 +218,4 @@ These requests are outside the skill. Recognize them, give the standard response
 
 ## Evidence boundary
 
-This is offline file authoring except the tenant registry lookup. `validate` proves wiring and shape: resolvable upstream `fileRef`, named ports, valid taxonomy, and a processor. It does not prove extraction: that takes a deploy and a run against real documents, which usually sends the taxonomy back for tightening.
+This is offline file authoring except the tenant extraction check. `validate` proves wiring and shape: resolvable upstream `fileRef`, named ports, valid taxonomy, and a processor. It does not prove extraction: that takes a deploy and a run against real documents, which usually sends the taxonomy back for tightening.

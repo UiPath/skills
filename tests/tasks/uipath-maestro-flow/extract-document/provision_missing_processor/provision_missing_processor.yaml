@@ -1,11 +1,13 @@
 task_id: skill-flow-extract-document-provision-missing-processor
 description: >
-  Smoke: an Extract document node authored before the CLI provisioned
-  processors has no `processorKey`, so `flow validate` reports it and a deployed
-  run extracts nothing. The user describes one of those symptoms. Tests that
-  the agent gives the node its processor, the key on the node and the
-  idpProcessor resource with that key in the solution, and changes nothing
-  else: the taxonomy, the file input and the extraction source stay as
+  Smoke: an Extract document node authored before processors were
+  provisioned has no `processorKey`, so `flow validate` reports it and a
+  deployed run extracts nothing. The user describes one of those symptoms.
+  Tests that the agent gives the node its processor with a no-edit
+  decompile -> merge round trip (builder-sdk#2255: merge gives the node the
+  key compile minted and writes its resource file): the key on the node and
+  the idpProcessor resource with that key in the solution, and nothing else
+  changed: the taxonomy, the file input and the extraction source stay as
   seeded.
 
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:single-node, node:extract-document]
@@ -91,11 +93,18 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Advisory: agent repaired the node with nodes provision"
+  - type: run_command
+    description: "The .flow was written by uip maestro flow merge (the skill's decompile -> merge loop), not edited by hand"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --aspect merged --original $REFERENCE_DIR/extract-document/_fixtures/InvoiceReader/InvoiceReader --project InvoiceReader/InvoiceReader"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Advisory: agent did not fall back to the retired CLI graph commands (nodes, edges, variables)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+flow\s+nodes\s+provision\b'
-    min_count: 1
+    command_pattern: 'uip\s+maestro\s+flow\s+(nodes|edges|variables)\s+'
     weight: 1.0
     pass_threshold: 0.0
 
