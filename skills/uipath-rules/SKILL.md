@@ -29,6 +29,8 @@ A Business Rules project holds one `.dmn` rule of one or more decisions. DMN and
 8. **Stop on a tenant without Business Rules, and publish through `uip solution`.** When `rules debug` fails with `Business Rules is not available on tenant '<TENANT>'` or `Business Rules is a preview feature and is not enabled for your organization.`, stop and relay the CLI's instruction. Pack, publish, and deploy belong to the uipath-solution skill.
 9. **Name every rule.** Declare one `<annotation name="Annotation" />` after each table's last `<output>`, then give each `<rule>` one `<annotationEntry>` with a short name for the case it covers; the review table's Annotation column is what goes there. Never write an `<annotationEntry>` without that column. A decision whose logic is a literal expression has no rules, so it has neither.
 10. **Never place diagram shapes by hand; `format` draws them.** Leave DMNDI out of a new `.dmn`, and run `uip rules format <PROJECT_DIR>` after adding or removing any element the canvas draws — an input, a decision, a knowledge model or a text annotation. It adds a shape for each new element, leaves placed shapes where the user left them, and drops the shapes of deleted ones. `validate` never looks at the diagram, so a shape you place yourself is reported by nothing; it just lands on top of another card in the designer. When you edit a `.dmn` that already has one, **keep its `dmndi:DMNDI` element as it is**: rewriting the file without it throws away the layout the user arranged, and `format` then lays the whole graph out afresh.
+11. **Never overwrite an existing rule to satisfy a create request.** Before `init`, list the solution's projects. When a project of the requested name already exists, leave every file in it unchanged: a create request is not an edit. Ask the user whether to edit that rule or create the new one under another name; when told not to pause, create it under another name and say so.
+12. **Retry a deployed-rule read at most once.** A rule that is not in the resource catalog yet, or that the service cannot export (404), is normal right after a deploy: wait a minute and run the same command once more. If it fails again, show the user the error and stop. A loop of retries does not make the catalog catch up.
 
 ## Quick Start
 
@@ -43,6 +45,17 @@ Run `init` from the solution folder when one exists; outside a solution it creat
 <!--skill-flavor:scaffold:end-->
 
 ### 2. Design and review
+
+Decide the rule's shape first, with the [When to split](references/drd-guide.md#when-to-split) table, even when the request names no shape: a value that two answers read is its own decision, and one calculation run on different arguments is a knowledge model.
+
+Then pick each table's hit policy from how its rows relate. Never default to `FIRST`:
+
+| The rows | Hit policy |
+|---|---|
+| Every input matches exactly one row | `UNIQUE` |
+| Rows overlap and order decides, e.g. a catch-all last row | `FIRST`, most specific row first |
+| Every matching row counts, and the caller reads a list | `COLLECT`, no aggregation |
+| The matching rows' outputs are totalled into one number | `COLLECT` with `aggregation` `SUM`, `COUNT`, `MIN` or `MAX` |
 
 Show the table as Markdown before authoring and after each change — one table per decision when the rule is a graph, upstream first, each naming the decision it belongs to. Ask only what the request leaves open, in one question; ask nothing when told not to pause.
 
@@ -113,7 +126,7 @@ Binding a rule into a process, workflow, or case belongs to that artifact's skil
 
 | Reference | When to read |
 |---|---|
-| [Decision Graphs Guide](references/drd-guide.md) | The rule holds, or needs, more than one decision |
+| [Decision Graphs Guide](references/drd-guide.md) | Before authoring any rule, to decide its shape; and whenever the rule holds more than one decision |
 | [Failure Modes Guide](references/failure-modes-guide.md) | A `uip rules` command reports an error |
 
 ## Anti-patterns
