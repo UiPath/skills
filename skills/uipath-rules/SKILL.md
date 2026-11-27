@@ -46,7 +46,7 @@ Run `init` from the solution folder when one exists; outside a solution it creat
 
 ### 2. Design and review
 
-Decide the rule's shape first, with the [When to split](references/drd-guide.md#when-to-split) table, even when the request names no shape: two answers the business decides separately are one decision each, a value that two answers read is its own decision, and one calculation run on different arguments is a knowledge model.
+Decide the rule's shape first, with the [When to split](references/drd-guide.md#when-to-split) table, even when the request names no shape: two answers the business decides separately are one decision each (a graph still returns every decision's outputs in one evaluation, so splitting costs the caller nothing), a value that two answers read is its own decision, and one calculation run on different arguments is a knowledge model.
 
 Then pick each table's hit policy from how its rows relate. Check every pair of rows: can one input match both?
 
