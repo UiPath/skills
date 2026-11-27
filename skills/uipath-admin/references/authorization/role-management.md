@@ -4,12 +4,28 @@ Use this skill for multi-step workflows managing custom roles with `uip admin au
 
 ## Services and role ownership
 
-Listing works for all services; authoring does not for service-managed or platform-level roles.
+Listing accepts all services, but it does not return roles for all services. Authoring does not work for service-managed or platform-level roles.
 
-- **Service-managed:** `orchestrator`, `dataservice`, `insights`, `taskmining`, `testmanager`, `automationops`, `casemanagement`, `processmining`. Run `roles list --service <svc>` and `roles assignments list --service <svc>`; mutate with the service CLI, such as `uip or roles create` for Orchestrator.
+- **Service-managed:** `orchestrator`, `dataservice`, `insights`, `taskmining`, `testmanager`, `automationops`, `casemanagement`, `processmining`. `roles create`, `roles update`, and `roles delete` refuse them. Use the tools of the service from the table below.
 - **Platform-level:** `authz`, `oms`, `platform`, `identity`, `licensing`. Listing works; authoring is rejected.
 
 For effective principal access, use PDP via [check-access.md](check-access.md); it includes server-side rules not visible in the catalog.
+
+The Authorization Service leaves the roles and role assignments of four services out of its read APIs: `orchestrator`, `dataservice`, `testmanager`, and `taskmining`. These services manage their own roles. For them:
+
+- `roles list --service <svc>` succeeds with an empty list.
+- `roles assignments list --service <svc>` fails with 403. Read the error `Message`:
+  - If it says that `<svc>` manages its own role assignments, the 403 is not about the permissions of the caller. Do not check or change the roles of the caller because of it.
+  - Any other 403 can be a missing permission or token scope. Run `uip login status --detailed`, then `check-access`, as for any 403. An older CLI shows this generic 403 text for both causes. If these checks show no problem, the cause is most likely that the service manages its own role assignments.
+- `roles assignments list --scope-path "/tenant/<TENANT_ID>/<svc>"` without `--service` leaves out the assignments of the roles of the service. It can still show assignments of other roles at that path, such as `centralizedaccess` roles.
+- An empty list does not mean that no roles or assignments exist.
+
+| Service | `uip admin authorization` lists | Effective roles of one principal | List roles and who holds them | Assign or remove roles | Create or change role definitions |
+|---|---|---|---|---|---|
+| Orchestrator (`orchestrator`) | No roles; assignments 403 | `check-access "<PRINCIPAL>" --service orchestrator` | `uip or roles list`; `uip or roles users list <ROLE_KEY>` (who holds a role); `uip or roles user-roles list "<PRINCIPAL_NAME>" --type <TYPE>` (the roles of one principal) | `uip or users assign-roles <USER_KEY> --role-keys <ROLE_KEYS>` (tenant roles); `uip or roles assign --user-key <USER_KEY> --role-keys <ROLE_KEYS> --folder-path "<FOLDER_PATH>"` (folder roles). Both replace the role list of the user at that scope, so include the roles to keep. | `uip or roles create`, `update`, `delete` |
+| Data Fabric (`dataservice`) | No roles; assignments 403 | `check-access "<PRINCIPAL>" --service dataservice` | `uip df roles list`; `uip df directory list` | `uip df directory assign-roles`; `uip df directory revoke-roles`. See [Data Fabric role assignments](role-assignment-management.md#data-fabric-role-assignments). | Data Fabric UI |
+| Test Manager (`testmanager`), Task Mining (`taskmining`) | No roles; assignments 403 | `check-access "<PRINCIPAL>" --service <svc>` | The UI of the service | The UI of the service | The UI of the service |
+| Insights (`insights`), Automation Ops (`automationops`), Case Management (`casemanagement`), Process Mining (`processmining`) | Roles and assignments | `check-access "<PRINCIPAL>" --service <svc>` | `roles list --service <svc>`; `roles assignments list --service <svc>` | See [Service-Managed and Platform Services](role-assignment-management.md#service-managed-and-platform-services) | The UI or API of the service |
 
 ## Role shape and service resolution
 

@@ -10,6 +10,7 @@ Determine which area the symptom belongs to based on user description:
 |---------|--------|-----------|
 | "Can't log in", auth error, login rejected | Identity — login | Step 2 (resolve user) |
 | "403", "permission denied", "access denied", "the role I was assigned isn't working", "my <service> role doesn't work in <other service>" | Authorization — access | Step 3, then [failure-modes → Access denied](failure-modes.md#access-denied-http-403) |
+| "403" from Data Fabric, such as a write to an entity or a record | Authorization — Data Fabric | Step 2, then [failure-modes → Data Fabric 403](failure-modes.md#data-fabric-403) |
 | "Token not working", "PAT rejected" | Identity — PAT | Step 2 (resolve user), then [failure-modes → PAT rejected](failure-modes.md#pat-rejected) |
 | "OAuth failing", "client_credentials error" | Identity — external app | [failure-modes → OAuth2 failing](failure-modes.md#external-app-oauth2-flow-failing) |
 | "Robot not authenticating" | Identity — robot account | [failure-modes → Robot account](failure-modes.md#robot-account-not-authenticating) |
