@@ -43,6 +43,8 @@ Every model-input change—labellings, instructions, document upload/delete, or 
 
 A failed read consumes a check and does not restart the budget.
 
+**No confirmed labellings yet** (a new project, before its first labelling): `get-metrics` stays `{ Metrics: null }` even after training finishes, so it cannot show completion. Run the same checks with `uip ixp projects list-models <project-name> --output json` instead: training is done once `Models[]` has a model whose `TrainedTime` is later than your change. A model trained before it never counts, even when it is the only one listed — e.g. `Version` 0, trained at `projects create` before any taxonomy.
+
 ## Step 1 — Setup (once, before the loop)
 
 ### 1a. Get baseline metrics
