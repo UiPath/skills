@@ -907,6 +907,10 @@ SHOWN_ON_STUDIO_WEB = [
     "uip maestro bpmn compile s.bpmn.ts --output-file /solution/ShippingQuote/Process.bpmn",
     "uip maestro bpmn compile x.bpmn.ts -o ./Process.bpmn",
     "uip maestro bpmn compile x.bpmn.ts --output-file=Process.bpmn",
+    # Run 2026-11-25_09-23-49: from `/solution`, the target named by its project folder.
+    "uip maestro bpmn merge /tmp/bpmn-draft/ShippingQuote/edited/Process.bpmn --original "
+    "ShippingQuote/.flow-sdk/original/Process.bpmn --baseline /tmp/bpmn-draft/ShippingQuote/baseline/Process.bpmn "
+    "-o ShippingQuote/Process.bpmn",
 ]
 
 NOT_SHOWN = [
@@ -918,6 +922,15 @@ NOT_SHOWN = [
     "uip maestro bpmn compile s.bpmn.ts -o Process.bpmn.bak",
     "uip maestro bpmn validate Process.bpmn --output json",
     "uip maestro bpmn merge e.bpmn --original Process.bpmn --baseline b.bpmn -o /tmp/merged.bpmn",
+    # The undo copy and a relative scratch copy are not the target either.
+    "uip maestro bpmn compile .flow-sdk/Process.bpmn.ts -o .flow-sdk/original/Process.bpmn",
+    "uip maestro bpmn compile s.bpmn.ts -o ShippingQuote/edited/Process.bpmn",
+    # The same copies written from inside the draft or `.flow-sdk/`, the solution root, a variable path.
+    "uip maestro bpmn compile s.bpmn.ts -o edited/Process.bpmn",
+    "uip maestro bpmn compile s.bpmn.ts -o ./baseline/Process.bpmn",
+    "uip maestro bpmn compile Process.bpmn.ts -o original/Process.bpmn",
+    "uip maestro bpmn compile s.bpmn.ts -o /solution/Process.bpmn",
+    "uip maestro bpmn compile s.bpmn.ts -o $TMPDIR/Process.bpmn",
 ]
 
 
