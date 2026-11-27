@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "deny": [
+      "Write(**/*.xaml)",
+      "Write(**/*.cs)",
+      "Write(**/project.json)",
+      "Edit(**/*.xaml)",
+      "Edit(**/*.cs)",
+      "Edit(**/project.json)",
+      "Bash(uip rpa init:*)",
+      "Bash(uip rpa new:*)",
+      "Bash(uip solution init:*)",
+      "Bash(uip solution new:*)"
+    ]
+  }
+}

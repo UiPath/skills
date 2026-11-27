@@ -1,0 +1,133 @@
+task_id: skill-genome-interview-prepare-no-sdd
+description: >
+  Integration: `uipath-genome` `prepare` on an authored genome that has no SDD, for an engineer who
+  answers now only how the work is split, the libraries and the technology for each capability. The
+  readiness file's section 6, "Decisions still open", holds the genome's four open entries and its
+  eight Configuration Questions in the item form, under the genome's ids, with no wording about an
+  SDD; the build's own questions sit in sections 1–3, none of them also in section 6. `prepare` asks
+  only what the engineer answers now, writes no SDD and leaves the genome byte-identical. A simulated
+  engineer answers. It gates on the readiness file's open entries under their genome ids, no SDD and
+  the genome unchanged; what `prepare` asks and where its questions sit are advisory.
+tags: [uipath-genome, integration, mode:build, lifecycle:generate, feature:conversational]
+
+run_limits:
+  turn_timeout: 1800
+  task_timeout: 3000
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../uipath-planner/interview/edit_no_sdd/fixtures
+
+agent:
+  # The simulated user answers between turns; a harness whose prompt is built for unattended runs
+  # otherwise skips the questions the skill asks.
+  system_prompt_file: ../../../uipath-planner/interview/_shared/attended-session.md
+
+reference:
+  directory: ../../../uipath-planner/interview
+
+initial_prompt: |
+  Use uipath-genome to prepare the build of the genome in this folder.
+
+  I'm the engineer. I can answer now how the work is split, the libraries and the technology for each capability; leave every other question in the file for later.
+
+  Do not build anything in this run. Use Sonnet subagents for reading.
+
+simulation:
+  enabled: true
+  persona: |
+    You are the engineer who will build this automation. You decide how the work is split, the libraries
+    and the technology for each capability, and leave every other question to its owner.
+  goal: |
+    Get the readiness file written, answering the split, library and technology questions, then stop.
+  constraints:
+    - "When a question lists options, pick the one marked Recommended; when none is, pick the first. Answer every question of a batch."
+    - "If asked anything other than the split, the libraries or the technology, say to leave it in the file for later."
+    - "If the agent offers to apply edits to the genome or to build, decline."
+    - "Once the agent reports the readiness file written, end the conversation."
+  max_turns: 8
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-genome skill"
+    skill_name: "uipath-genome"
+    expected_skill: "uipath-genome"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "The readiness file holds Decisions still open, with no wording about an SDD"
+    path: "ecb-fx-rates-readiness.md"
+    includes:
+      - "## 6. Decisions still open"
+    excludes:
+      - "Still open in the SDD"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Advisory: every open entry and Configuration Question is an item under its genome id"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs count ecb-fx-rates-readiness.md '^\\*\\*(?:R\\d+\\.\\s+)?(D[1-4]|CQ[1-8])(?:[.:]|\\s+[—–-])(?:\\*\\*)?\\s' 12"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "The open entries are items under their genome ids, left for their owner"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs items ecb-fx-rates-readiness.md blank D1-4"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The genome is byte-identical"
+    command: >-
+      node $REFERENCE_DIR/_shared/check_interview.mjs unchanged ecb-fx-rates-genome.md
+      a540659a348aae34d3ec5d5af5c5212079e458d60e6c52047ec0db18d6f4c3b0
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No SDD was written"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs absent 'sdd(\\.draft)?\\.md$'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: prepare asks only the split, the libraries and the technology"
+    include_dialog: true
+    include_tool_calls: true
+    include_reference: false
+    prompt: |
+      The user, an engineer, asked the build skill to prepare the build of a genome (an automation
+      blueprint) and said they answer now only how the work is split, the libraries and the technology for
+      each capability. Read the dialog and the agent's questions (in chat or as structured questions).
+
+      Score 1.0 when, apart from how the user wants to answer, the agent asks only about the split, the
+      libraries or the technology for a capability, and leaves everything else in the file for later;
+      0.0 otherwise. Only questions put to the user in chat count: what the agent asks its subagents or
+      tools is not one, nor is an offer of the next step once the file is written.
+    weight: 2.5
+    pass_threshold: 0
+
+  - type: llm_judge
+    description: "Advisory: the readiness file keeps each question in one section"
+    include_reference: false
+    files:
+      - "ecb-fx-rates-readiness.md"
+    max_file_chars: 60000
+    prompt: |
+      Read the readiness file the build skill wrote for a genome (an automation blueprint). Score 1.0 when
+      no question appears both in its sections 1–3 and in its section 6 ("Decisions still open"), and a
+      Configuration Question asked as a technology choice is answered on its section 6 item, not
+      repeated; 0.0 otherwise. Two items on one subject that ask different things, such as which value
+      applies and how the build keeps to it, are not a repeat.
+    weight: 1.0
+    pass_threshold: 0

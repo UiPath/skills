@@ -1,0 +1,124 @@
+task_id: skill-planner-interview-extract-documentation
+description: >
+  Integration: `extract` of a three-workflow XAML project "to document it", a documentation request,
+  which writes the SDD beside the genome without being asked, with Action Required ahead of the SDD's
+  body. After the strict check the interview is offered on the open items; the request names no role,
+  so the roles question is asked. The answers are written into the SDD's items and applied to the
+  genome, the SDD is written again, and the genome passes the strict check with the SDD's `Genome` row
+  current. Nothing is built. A simulated team lead answers as the process owner. It gates on the files
+  and the strict check; the interview and the SDD's history row are advisory.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
+
+run_limits:
+  turn_timeout: 1800
+  task_timeout: 3000
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../extract_component/fixtures
+
+agent:
+  # The simulated user answers between turns; a harness whose prompt is built for unattended runs
+  # otherwise skips the questions the skill asks.
+  system_prompt_file: ../_shared/attended-session.md
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  `InvoiceIntake/` is a UiPath project. Extract its genome into this folder, to document it. It does not run in Orchestrator, and there are no other resources for it.
+
+  Do not build anything in this run.
+
+simulation:
+  enabled: true
+  persona: |
+    You lead the accounts payable team that inherited this project, and you own its business outcomes.
+    You do not know the systems' hosts, accounts or mailboxes.
+  goal: |
+    Get the project documented, answering the open questions that are yours, then stop.
+  constraints:
+    - "Do not say which role you hold until the agent asks; when asked which roles you answer for, answer: the process owner."
+    - "When asked how you want to answer the open items, choose to go through every item, a batch at a time."
+    - "When a question lists options, pick the one marked Recommended; when none is, pick the first. Answer every question of a batch."
+    - "When asked for a preferences file, answer that you have none."
+    - "Do not ask for the interview yourself; answer it when the agent offers it."
+    - "You answer only as the process owner: if offered other roles' questions, decline them."
+    - "When asked whether you want to adjust anything, or offered a build, say no."
+    - "Once the agent reports the answers applied and what is still open, end the conversation."
+  max_turns: 14
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "A genome was written"
+    path: "*-genome.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "An SDD was written"
+    path: "*-sdd.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Advisory: the SDD's Action Required comes ahead of its body"
+    path: "*-sdd.md"
+    pattern: '(?s)^## Action Required.*^## 1\.? '
+    flags: 8
+    weight: 0.5
+    pass_threshold: 0
+
+  - type: file_matches_regex
+    description: "Advisory: the SDD's Document History records the interview"
+    path: "*-sdd.md"
+    pattern: '(?im)^\|\s*\d{4}-\d{2}-\d{2}\s*\|.*\b(interview|answer)'
+    weight: 1.5
+    pass_threshold: 0
+
+  - type: run_command
+    description: "The genome passes the strict check, the SDD's Genome row current after the answers"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs strict"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Extraction does not scaffold, build or run the project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+rpa\s+(init|new|run|build|debug)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: the interview is offered after writing, and asks which roles the user answers for"
+    include_dialog: true
+    include_tool_calls: true
+    include_reference: false
+    prompt: |
+      The user asked for a small UiPath project to be documented, without saying what role they hold.
+      The planner writes a genome (an automation blueprint) and an SDD (solution design document) from it.
+      Read the dialog and the agent's questions, whether asked in chat or as structured questions.
+
+      Check three things:
+      1. Apart from a preferences-file question, where the automation runs and the refactor questions
+         every extraction asks (which UiPath product a rebuild uses, whether to fold one component into
+         another, whether to rebuild or retire an entry point), nothing about the open items is asked
+         before the genome and the SDD are written.
+      2. Once they are written, one question asks how the user wants to answer the open items, and one
+         of its options leaves them all open for now.
+      3. A question asks which roles the user answers for, and the items then asked are that role's,
+         each by its id.
+
+      Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
+    weight: 2.5
+    pass_threshold: 0

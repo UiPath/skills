@@ -1,0 +1,86 @@
+task_id: skill-planner-interview-edit-no-sdd
+description: >
+  Integration: a plain `edit` of an authored genome that has no SDD: the rates e-mail also goes to a
+  second address, in copy. The genome is edited in place where the recipients are stated and passes
+  the strict check; its four open entries stay open. With no SDD in play no SDD is written, and the
+  run does not read the guide for writing one. The closing counts the genome's open entries. It gates
+  on the edit, the strict check, the open entries and no SDD; the rest is advisory.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  In the genome in this folder, the rates e-mail should also go to treasury@contoso.com, in copy.
+
+  Do not build anything in this run.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "The genome names the copy recipient"
+    path: "ecb-fx-rates-genome.md"
+    includes:
+      - "treasury@contoso.com"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The genome passes the strict check"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs strict"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The genome's open entries stay open"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs entries ecb-fx-rates-genome.md open 1-4"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No SDD was written"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs absent 'sdd(\\.draft)?\\.md$'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: the guide for writing an SDD from a genome is not read (vacuous on agents without the Read tool)"
+    tool_name: "Read"
+    command_pattern: 'sdd-from-genome-guide'
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: llm_judge
+    description: "Advisory: the closing counts the genome's open entries"
+    include_agent_output: true
+    include_dialog: true
+    include_reference: false
+    prompt: |
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      The user asked for one change to a genome (an automation blueprint): a second recipient, in copy.
+      Read the agent's closing message. Score 1.0 when it says the change was made and counts the genome's
+      questions still open (open decisions, configuration values, or the ones needed before a build).
+      Score 0.5 when it reports the change and counts nothing. Score 0.0 when it does not report the change.
+    weight: 1.5
+    pass_threshold: 0

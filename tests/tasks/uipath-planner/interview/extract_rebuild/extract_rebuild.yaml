@@ -1,0 +1,142 @@
+task_id: skill-planner-interview-extract-rebuild
+description: >
+  Integration: `extract` of a three-workflow XAML project "to rebuild later", by a user who says they
+  are the process owner. No SDD is written: the request is not a documentation request and does not
+  ask for one. After the strict check, the interview is offered on the genome's open items, asked by
+  genome id, and its answers are applied with the strict check passing again. The closing names the
+  open items by role and offers to write the SDD for items whose answerer is not in the session.
+  Nothing is built. A simulated process owner answers. It gates on the files and the strict check; the
+  interview and the closing are advisory.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
+
+run_limits:
+  turn_timeout: 1800
+  task_timeout: 3000
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../extract_component/fixtures
+
+agent:
+  # The simulated user answers between turns; a harness whose prompt is built for unattended runs
+  # otherwise skips the questions the skill asks.
+  system_prompt_file: ../_shared/attended-session.md
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  `InvoiceIntake/` is a UiPath project. Extract its genome into this folder: we will rebuild it later. It does not run in Orchestrator, and there are no other resources for it.
+
+  I'm the process owner. Do not build anything in this run.
+
+simulation:
+  enabled: true
+  persona: |
+    You are the process owner of the invoice intake this project automates. You decide business outcomes
+    and rules. You do not know the systems' hosts, accounts or mailboxes.
+  goal: |
+    Get the genome extracted and answer the open questions that are yours, then stop.
+  constraints:
+    - "When asked how you want to answer the open items, choose to go through every item, a batch at a time."
+    - "When a question lists options, pick the one marked Recommended; when none is, pick the first. Answer every question of a batch."
+    - "When asked for a preferences file, answer that you have none."
+    - "When a question asks for something you do not know (a host, an account, a mailbox), say it is for the environment's owners."
+    - "Do not ask for the interview yourself; answer it when the agent offers it."
+    - "You answer only as the process owner: if offered other roles' questions, decline them."
+    - "When asked whether you want to adjust anything, or offered a build, say no."
+    - "Once the agent reports the answers applied and what is still open, end the conversation."
+  max_turns: 14
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "A genome was written"
+    path: "*-genome.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No SDD was written"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs absent 'sdd(\\.draft)?\\.md$'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The genome passes the strict check after the answers are applied"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs strict"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Extraction does not scaffold, build or run the project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+rpa\s+(init|new|run|build|debug)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: the interview is offered after the genome is written, and asks open items by id"
+    include_dialog: true
+    include_tool_calls: true
+    include_reference: false
+    prompt: |
+      The user, the process owner, asked for the genome (an automation blueprint) of a small UiPath
+      project, to rebuild it later. Read the dialog and the agent's questions, whether asked in chat or as
+      structured questions.
+
+      Check three things:
+      1. Nothing about the genome's open items is asked before the genome is written and checked. The
+         extraction's own setup questions (a preferences file, where the rebuild runs, its target
+         product) are not open items.
+      2. Once it is written, one question asks how the user wants to answer its open items, and one of
+         its options leaves them all open for now.
+      3. The items then asked each carry the genome's id for the entry (D1, D2 …), and are items the
+         process owner answers.
+
+      Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
+    weight: 2.5
+    pass_threshold: 0
+
+  - type: llm_judge
+    description: "Advisory: the closing names open items by role"
+    include_agent_output: true
+    include_dialog: true
+    include_reference: false
+    prompt: |
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      Read the agent's closing message after it applied the user's answers to the genome (an automation
+      blueprint). Score 1.0 when it says which decisions are still open and who answers each (counted by
+      role, or each named with its role; configuration values may be counted without a role), or that
+      none is; 0.0 otherwise.
+    weight: 2.0
+    pass_threshold: 0
+
+  - type: llm_judge
+    description: "Advisory: the closing offers the SDD for absent answerers"
+    include_agent_output: true
+    include_dialog: true
+    include_reference: false
+    prompt: |
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      Read the agent's closing message after it applied the user's answers to the genome (an automation
+      blueprint). Score 1.0 when it offers to write an SDD (solution design document) for the items whose
+      answerer is not in the session, or no decision is left open for another role (configuration values
+      the build asks need no SDD offer); 0.0 otherwise.
+    weight: 1.0
+    pass_threshold: 0
