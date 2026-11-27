@@ -1,20 +1,20 @@
 # CSV Activities
 
-The CSV file activities — **Read CSV** (`ReadCsvFile`), **Write CSV** (`WriteCsvFile`), and **Append To CSV** (`AppendToCsvFile`), all under the `UiPath.Core.Activities` namespace and shipped in the **`UiPath.System.Activities`** package — read and write delimited text files to/from a `DataTable`. They run in-process against a **local file path** (no COM, no Office); the underlying (de)serialization is done by the bundled **`CsvHelper`** library.
+The CSV file activities — **Read CSV** (`ReadCsvFile`), **Write CSV** (`AppendWriteCsvFile`), and **Append To CSV** (`AppendCsvFile`), all under the `UiPath.CSV.Activities` namespace and shipped in the **`UiPath.Excel.Activities`** package — read and write delimited text files to/from a `DataTable`. They run in-process against a **local file path** (no COM, no Office); the underlying (de)serialization is done by the bundled **`CsvHelper`** library.
 
 ## How CSV Activities Execute
 
 1. Resolve the file `Path` (a local filesystem path) and open it for read / write / append.
-2. Use `CsvHelper` to map between CSV rows and a `DataTable`: `Read CSV` returns a `DataTable`; `Write CSV` overwrites the file from a `DataTable`; `Append To CSV` adds the `DataTable`'s rows to the end of an existing file.
+2. Use `CsvHelper` to map between CSV rows and a `DataTable`: `Read CSV` returns a `DataTable`; `Write CSV` writes (replaces) or appends to the file from a `DataTable` per its `CsvAction`; `Append To CSV` adds the `DataTable`'s rows to the end of an existing file.
 3. Honor options: `Delimiter`, `IncludeColumnNames` / `AddHeaders`, `Encoding`.
 
 Failures originate at distinct layers — **package/dependency load** (the bundled `CsvHelper` version, before any row is written), **file access** (path resolution, locks, cloud paths), or **data shape** (the `DataTable` passed in vs the file's columns). Knowing which layer produced the error narrows the investigation.
 
 ## Key Activities
 
-- **Read CSV** (`UiPath.Core.Activities.ReadCsvFile`, "Read CSV") — read a delimited file into a `DataTable` (`Path` in, `DataTable` out).
-- **Write CSV** (`UiPath.Core.Activities.WriteCsvFile`, "Write CSV") — overwrite a file from a `DataTable` (`Path`, `DataTable`).
-- **Append To CSV** (`UiPath.Core.Activities.AppendToCsvFile`, "Append To CSV") — append a `DataTable`'s rows to an existing file (`Path`, `DataTable`). **Local files only.**
+- **Read CSV** (`UiPath.CSV.Activities.ReadCsvFile`, "Read CSV") — read a delimited file into a `DataTable` (`FilePath` in, `DataTable` out).
+- **Write CSV** (`UiPath.CSV.Activities.AppendWriteCsvFile` and `UiPath.CSV.Activities.WriteCsvFile`, both "Write CSV") — write a `DataTable` to a file (`FilePath`, `DataTable`); `AppendWriteCsvFile` writes or appends per its `CsvAction`.
+- **Append To CSV** (`UiPath.CSV.Activities.AppendCsvFile`, "Append To CSV") — append a `DataTable`'s rows to an existing file (`FilePath`, `DataTable`). **Local files only.**
 
 ## Common Failure Patterns
 
@@ -31,8 +31,8 @@ Failures originate at distinct layers — **package/dependency load** (the bundl
 
 ## Package
 
-NuGet: `UiPath.System.Activities` (CSV file activities; underlying library: `CsvHelper`)
+NuGet: `UiPath.Excel.Activities` (CSV file activities; underlying library: `CsvHelper`)
 
-Namespaces: `UiPath.Core.Activities`
+Namespaces: `UiPath.CSV.Activities`
 
-> The `CsvHelper` dependency is shared with `UiPath.Excel.Activities` — keep the two packages on aligned versions. Version-specific behavior is documented in the relevant playbooks.
+> The `CsvHelper` dependency is shared with `UiPath.System.Activities` — keep the two packages on aligned versions. Version-specific behavior is documented in the relevant playbooks.
