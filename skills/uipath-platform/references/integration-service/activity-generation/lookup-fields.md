@@ -51,7 +51,8 @@ The procedure, per lookup field:
    connection is configured with?" rather than "which of the things the vendor
    has?" — and note the redaction rule: a secret key returns an opaque
    reference, not its value, so derive from a non-secret key (a scope list, a
-   base URL), never from a token value.
+   base URL), never from a token value. There is no `intsvc.http` result to
+   return, so build the answer and set `ok: true`.
 2. **Else generate it** as `List<Entities>.js` (see [example-list-action.js.txt](example-list-action.js.txt)) —
    same naming style as a main action, since its base name is its `scriptRef`:
    a normal list action whose inputs pass through the resource's query params,

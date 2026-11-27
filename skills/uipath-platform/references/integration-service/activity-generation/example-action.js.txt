@@ -35,7 +35,8 @@ async function execute(context) {
 
   // 3. Write back the full list. Returning the `intsvc.http` result UNTOUCHED
   //    relays the vendor's bytes verbatim — status, ordered
-  //    headers, body. Building a new object instead re-encodes it.
+  //    headers, body. Building a new object instead re-encodes it, and
+  //    must set `ok` itself (true for a 2xx).
   return await intsvc.http({
     method: 'POST',
     url: '/usergroups.users.update',

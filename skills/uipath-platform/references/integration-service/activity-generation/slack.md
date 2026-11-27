@@ -97,7 +97,7 @@ async function execute(context) {
   const current = listed.body.users ?? [];
   const merged = Array.from(new Set([...current, ...toAdd]));
 
-  return await intsvc.http({                           // UNTOUCHED ⇒ relayed verbatim
+  return await intsvc.http({                           // UNTOUCHED ⇒ relayed verbatim, `ok` included
     method: 'POST',
     url: '/usergroups.users.update',
     body: { usergroup, users: merged, include_count, team_id },

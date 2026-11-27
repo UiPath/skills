@@ -30,7 +30,7 @@ async function execute(context) {
   if (listed.status !== 200 || !listed.body?.ok) throw new Error(`conversations.list failed: ${listed.status} ${listed.body?.error ?? ""}`);
 
   // A fresh result, so no vendor header is stored with the cached answer.
-  return { status: 200, body: (listed.body.channels ?? []).map((c) => ({ id: c.id, name: c.name, is_private: c.is_private })) };
+  return { ok: true, status: 200, body: (listed.body.channels ?? []).map((c) => ({ id: c.id, name: c.name, is_private: c.is_private })) };
 }
 ```
 
@@ -53,8 +53,7 @@ script at all.
 Both can coexist in one script. A Layer B entry expires with the earliest of the Layer A
 entries it was built from.
 
-`ttl` is a positive number of seconds. The runtime stores for at most 48 h (`172800`) by
-default; the host can change that cap (`IPE_SCRIPT_CACHE_MAX_TTL_MS`). Pick it from how
+`ttl` is a positive number of seconds. Default cap 48 h (`172800`). Pick it from how
 stale the data may be, not from how expensive the call is:
 
 | data | TTL |
@@ -67,11 +66,13 @@ long v3 kept the same lists, so a migrated action behaves as before.
 
 `cache` is allowed on a GET, HEAD or OPTIONS, and on a POST marked `read: true` (a
 query API with no side effect). On any other call it is `script_invalid`. `cache:
-cond ? { ttl } : undefined` leaves the call uncached.
+cond ? { ttl } : undefined` is accepted by the runtime and by CACHE-001; the call is
+uncached when `cond` is false.
 
 ## What is never cached
 
-- An answer that is not a 200, 203 or 204. A 202, 206 or other 2xx is not stored either.
+- An answer that is not a 200, 203 or 204.
+- An answer whose `ok` is not `true` (see *The answer carries `ok`*).
 - A write. A run that made any call that is not a read is write-tainted: its answer is
   not stored, and a Layer A read after the write goes live.
 - A run that threw, or ended in a `script_*` error. Nothing from it is stored.
@@ -79,14 +80,32 @@ cond ? { ttl } : undefined` leaves the call uncached.
   even if the script caught it and returned a 200.
 - A whole answer from a run that saved a connection setting (`intsvc.connectionConfig.set`),
   or whose answer the runtime had to scrub of a withheld config value.
-- A streamed, download or oversized body (over 8 MiB by default,
-  `IPE_SCRIPT_CACHE_MAX_ENTRY_BYTES`), and a request that uploads files.
+- A streamed, download or oversized body (default cap 8 MiB), and a request that uploads
+  files.
 - A vendor answer with `Cache-Control: no-store` or `private`, or a `Vary` of `*`; `ttl`
   cannot override it. The runtime never infers caching from the vendor's headers.
 
-**A returned `ok: false` body is cached**, because the run completed and the answer was
-200. Throw on every vendor-reported failure, as Slack's `ok: false` above, so it is not
-stored. Catching the throw and carrying on does not help: the run is still not stored.
+Throw on every vendor-reported failure, as Slack's `ok: false` above. Catching the throw
+and returning anyway still keeps the answer out of the cache, so a partial answer is
+never served from it.
+
+## The answer carries `ok`
+
+Every script's `execute()` answer carries a boolean `ok`, cached or not; CACHE-009
+fails a script that provably lacks it. Nothing from a run is stored, in either layer,
+unless the answer's `ok` is `true`: `false`, missing or not a boolean is handled as if
+the script threw. The caller still gets the answer unchanged, and `ok` never reaches its
+envelope.
+
+| the script returns | `ok` |
+|---|---|
+| an `intsvc.http` result untouched (`return res`), or with its body swapped (`{ ...res, body }`, `res.body = …; return res`) | already set: true for a 2xx status |
+| an answer it builds | set it: `{ ok: true, status: 200, body }` |
+| a vendor that reports an error in the body of a 200 (Slack's `{ "ok": false }`) | throw, or set it from the body: `ok: res.body?.ok === true` |
+| a failure it answers on purpose | `ok: false`; assigning `res.ok = false` on a result is honoured |
+
+This is the answer's `ok`, not the vendor body's: Jira has no body `ok`, and its answers
+still carry one.
 
 ## What the key holds
 
@@ -104,9 +123,8 @@ entries are never read again; there is nothing to version. The key does **not** 
 with `export const cache` gets no `context.request.headers`: do not write one that varies
 on them.
 
-Nothing about the credential is in either key, so the connection's cache is dropped when
-Udon invalidates it on re-auth, edit or delete. Correctness after a re-auth depends on
-that call being deployed; until it is, an entry can outlive a re-auth for its TTL.
+Nothing about the credential is in either key, so Udon drops the connection's cache on
+re-auth, edit or delete. When a change must take effect at once, run with `--refresh`.
 
 ## What the caller controls
 
@@ -122,7 +140,7 @@ malformed declaration; both change once the script is published.
 
 ## Checked before you publish
 
-Cache declarations are checked before a connector ships. The runtime cannot tell whether a vendor read is shared across scripts, so the connector rule engine's `script-cache` rules (CACHE-001 to CACHE-008) run on the scripts themselves.
+Cache declarations are checked before a connector ships. The runtime cannot tell whether a vendor read is shared across scripts, so the connector rule engine's `script-cache` rules (CACHE-001 to CACHE-010) run on the scripts themselves. CACHE-009 and CACHE-010 check every v4 script, cached or not.
 
 **Errors** fail the check:
 
@@ -132,6 +150,7 @@ Cache declarations are checked before a connector ships. The runtime cannot tell
 | CACHE-002 (`cache-on-write`) | `cache` is on a call that changes data (anything but GET, HEAD, OPTIONS, or POST with `read: true`), or on a call whose options have a spread | Remove `cache`, or mark a query-only POST `read: true` |
 | CACHE-003 (`cache-not-shared`) | a vendor call has `cache` but no other script makes the same call with `cache` | Cache the script's whole answer with `export const cache = { ttl }` instead |
 | CACHE-004 (`script-parse`) | a script is not valid JavaScript, so it cannot be checked | Fix the syntax error |
+| CACHE-009 (`answer-ok-missing`) | a return of `execute()` provably lacks `ok`: an object literal with no `ok` and no spread of an `intsvc.http` result, a bare `return;`, a primitive or an array; or `execute()` can end without returning | Return the `intsvc.http` result (`return await intsvc.http(…)` is accepted), or set `ok` |
 
 Two calls count as the same when the method and URL match, ignoring the query string and treating every `${…}` in the URL as a placeholder. A URL built at runtime (`byId ? "/a" : "/b"`) cannot be compared and fails CACHE-003. Only the scripts present in the repo count, so a read cached in one script fails until a second script that makes it is in the repo too.
 
@@ -145,6 +164,7 @@ Where the checker cannot see a value it assumes the worst. A call whose `method`
 | CACHE-006 (`answer-cache-reads-headers`) | the script reads `context.request.headers`, which a cached script does not get |
 | CACHE-007 (`cache-ttl-capped`) | the ttl is above 48 h, the runtime's default cap |
 | CACHE-008 (`script-skipped`, info) | a `.ts` script is not parsed, so its cache declarations are not checked |
+| CACHE-010 (`answer-ok-unknown`) | a return the checker cannot classify, such as a helper's call result; make sure it carries `ok`, or return the object inline |
 
 **How it is enforced**
 
@@ -156,7 +176,8 @@ Where the checker cannot see a value it assumes the worst. A call whose `method`
 Slack's v4 connector caches its three lookup lists the way v3 did: **ListUsers**,
 **ListChannels** and **ListPublicChannels** each declare `export const cache = { ttl: 172800 }`
 (48 h, v3's lifetime). Each list is made by one script only, so none of their `intsvc.http` calls carries
-`cache`, and each page is its own entry.
+`cache`, and each page is its own entry. Each builds its answer with `ok: true`, after
+throwing on Slack's `ok: false`.
 
 **Send a message to a user by email** is a write, so it has no `export const cache`. Its
 `users.lookupByEmail` read is also made by Get User by Email, but neither script can cache it
@@ -184,14 +205,12 @@ make, and `export const cache` on a list that only one script makes.
 
 ## Testing
 
-- **While editing a script**, run it with `--inline-script`. Nothing is cached for an
-  inline script, so every run is live and `--refresh` is not needed. An inline run also
-  keeps `context.request.headers` and does not refuse a bad `export const cache`, so
-  re-check a script that reads headers once it is published.
-- **Once the script is published, test the caching** with `--script-ref`: run the same call twice (the second is a hit), then once with
-  `--refresh`. Confirm a hit from the vendor's own request count, not from the
-  response, which looks the same.
-- **A Layer A hit still counts as one of the 4 calls** in the run budget, with its response
-  bytes; it only saves the vendor call. A Layer B hit does not run the script, so it
-  costs no budget.
+- **While editing a script**, run it with `--inline-script` (never cached, see *What the
+  caller controls*); re-check a script that reads headers once it is published.
+- **Once the script is published, test the caching** with `--script-ref`: run the same
+  call twice, then once with `--refresh`. The CLI shows no hit or miss and the answer
+  looks the same, so compare run times: a hit is much faster than the miss, and a
+  `--refresh` run takes miss time. A change made at the vendor between runs shows up
+  only after `--refresh`. If those do not separate hit from miss, report the cache as
+  untested.
 - **Say in the report** which reads or answers are cached, with the layer and `ttl`.
