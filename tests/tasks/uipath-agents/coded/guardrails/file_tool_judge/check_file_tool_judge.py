@@ -15,6 +15,9 @@ Validates on that guardrail:
 - the stage includes PRE (PRE or PRE_AND_POST; POST alone runs after the tool read the file)
 - guardrail_text states the 12-month non-compete rule and a real model id is passed to the judge
 - the fixture's Attachment input is still rendered into the user message
+
+Arguments are read by keyword or SDK position, names resolve in the scope where the
+guardrail is built, and an enum may be a member, an alias of the enum or its value.
 """
 
 import ast
@@ -24,32 +27,29 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 from _shared.guardrails.coded_file_guardrail_assertions import (
+    Bindings,
+    call_arg,
+    enum_value,
+    enum_values,
     imported_from,
-    module_constants,
+    lists_tool,
     require_attachment_input,
     require_detection_scope,
     require_rendered_attachments,
     wired_middleware_calls,
 )
-from _shared.guardrails.guardrail_middleware import call_kwarg, call_name
+from _shared.guardrails.guardrail_middleware import call_name
 
 GRAPH = Path("graph.py")
 TOOL = "review_contract"
 LANGCHAIN_GUARDRAILS = "uipath_langchain.guardrails"
 BLOCK_MESSAGE = "Non-compete exceeds 12 months"
+STAGES_WITH_PRE = ("pre", "pre&post")
 
 
 def check(condition: object, msg: str) -> None:
     if not condition:
         sys.exit(f"FAIL: {msg}")
-
-
-def resolve(node: ast.expr | None, consts: dict[str, ast.expr]) -> ast.expr | None:
-    seen = 0
-    while isinstance(node, ast.Name) and node.id in consts and seen < 5:
-        node = consts[node.id]
-        seen += 1
-    return node
 
 
 def names_tool(node: ast.expr | None) -> bool:
@@ -71,13 +71,13 @@ def decorator_guardrails(tree: ast.AST) -> list[ast.Call]:
     return found
 
 
-def middleware_guardrails(tree: ast.AST) -> list[ast.Call]:
+def middleware_guardrails(bindings: Bindings) -> list[ast.Call]:
     return [
         c
-        for c in wired_middleware_calls(tree)
+        for c in wired_middleware_calls(bindings)
         if call_name(c) == "UiPathLLMAsJudgeMiddleware"
-        and "GuardrailScope.TOOL" in ast.unparse(call_kwarg(c, "scopes") or ast.Constant(None))
-        and names_tool(call_kwarg(c, "tools"))
+        and "Tool" in enum_values(call_arg(c, "scopes"), "GuardrailScope", bindings)
+        and lists_tool(call_arg(c, "tools"), TOOL, bindings)
     ]
 
 
@@ -89,15 +89,15 @@ def main() -> None:
         tree = ast.parse(src)
     except SyntaxError as exc:
         sys.exit(f"FAIL: graph.py no longer parses as Python: {exc}")
-    consts = module_constants(tree)
+    bindings = Bindings(tree)
 
     decorators = [
         d
         for d in decorator_guardrails(tree)
-        if call_name(resolve(call_kwarg(d, "validator"), consts) or ast.Call(func=ast.Name("x"), args=[], keywords=[]))
-        == "LLMAsJudgeValidator"
+        if isinstance(validator := bindings.resolve(call_arg(d, "validator")), ast.Call)
+        and call_name(validator) == "LLMAsJudgeValidator"
     ]
-    middleware = middleware_guardrails(tree)
+    middleware = middleware_guardrails(bindings)
     check(
         decorators or middleware,
         f"no LLM-as-judge guardrail targets {TOOL}: expected @guardrail(validator=LLMAsJudgeValidator(...)) on it, "
@@ -115,22 +115,23 @@ def main() -> None:
     )
     print(f"OK: {symbol} imported from {LANGCHAIN_GUARDRAILS}")
 
-    require_detection_scope(guard, "Files", consts, "the judge must read the file contents, not the tool's text arguments")
+    require_detection_scope(guard, "Files", bindings, "the judge must read the file contents, not the tool's text arguments")
 
-    action = resolve(call_kwarg(guard, "action"), consts)
+    action = bindings.resolve(call_arg(guard, "action"))
     check(isinstance(action, ast.Call) and call_name(action) == "BlockAction", f"action must be BlockAction(...), got {ast.unparse(action) if action else None}")
-    detail = resolve(call_kwarg(action, "detail") or (action.args[0] if action.args else None), consts)
+    detail = bindings.resolve(call_arg(action, "detail"))
     detail_text = ast.unparse(detail) if detail is not None else ""
     check(BLOCK_MESSAGE.lower() in detail_text.lower(), f'BlockAction(detail=...) must carry "{BLOCK_MESSAGE}.", got {detail_text or None}')
     print("OK: action is BlockAction with the requested message")
 
-    stage = call_kwarg(guard, "stage")
-    stage_text = ast.unparse(resolve(stage, consts)) if stage is not None else "PRE_AND_POST (default)"
-    check("PRE" in stage_text, f"the guardrail must run before the tool reads the file (stage PRE), got {stage_text}")
+    stage = call_arg(guard, "stage")
+    stage_value = "pre&post" if stage is None else enum_value(stage, "GuardrailExecutionStage", bindings)
+    stage_text = "PRE_AND_POST (default)" if stage is None else ast.unparse(bindings.resolve(stage) or stage)
+    check(stage_value in STAGES_WITH_PRE, f"the guardrail must run before the tool reads the file (stage PRE), got {stage_text}")
     print(f"OK: stage includes PRE ({stage_text})")
 
-    judge = resolve(call_kwarg(guard, "validator"), consts) if decorators else guard
-    rule = resolve(call_kwarg(judge, "guardrail_text"), consts)
+    judge = bindings.resolve(call_arg(guard, "validator")) if decorators else guard
+    rule = bindings.resolve(call_arg(judge, "guardrail_text"))
     if isinstance(rule, ast.Constant) and isinstance(rule.value, str):
         rule_text = rule.value
     else:
@@ -139,7 +140,7 @@ def main() -> None:
         "compete" in rule_text.lower() and "12" in rule_text,
         f"guardrail_text must state the non-compete rule and its 12-month limit for the judge, got {rule_text!r}",
     )
-    model = resolve(call_kwarg(judge, "model"), consts)
+    model = bindings.resolve(call_arg(judge, "model"))
     check(model is not None, "model= is missing on the judge")
     check(
         not (isinstance(model, ast.Constant) and (not model.value or "<" in str(model.value))),
