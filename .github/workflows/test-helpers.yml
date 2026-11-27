@@ -510,4 +510,4 @@ jobs:
       # by hand. Nothing else in the repo reads that table, so this is the only
       # place the drift is visible.
       - name: Run required-check contract tests
-        run: pytest tests/scripts/test_required_checks_contract.py -v
+        run: pytest tests/scripts/test_required_checks_contract.py tests/scripts/test_redact_smoke_artifacts.py -v
