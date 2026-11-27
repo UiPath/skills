@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test, { after } from "node:test";
@@ -30,17 +30,31 @@ for (const name of ['existsSync', 'mkdirSync', 'readFileSync', 'renameSync', 'rm
   fs[name] = (...a) => {
     const n = name === 'renameSync' ? 2 : 1;
     for (let i = 0; i < n; i++) a[i] = norm(a[i]);
+    // FAKE_FAIL_RENAME_FROM fails the rename whose source ends with it, as a folder a program still runs from would.
+    if (name === 'renameSync' && process.env.FAKE_FAIL_RENAME_FROM && a[0].endsWith(process.env.FAKE_FAIL_RENAME_FROM)) {
+      throw Object.assign(new Error('EPERM: operation not permitted'), { code: 'EPERM' });
+    }
+    // FAKE_FAIL_RM fails the removal of a path ending with it, as a file another process holds would.
+    if (name === 'rmSync' && process.env.FAKE_FAIL_RM && a[0].endsWith(process.env.FAKE_FAIL_RM)) {
+      throw Object.assign(new Error('EBUSY: resource busy or locked'), { code: 'EBUSY' });
+    }
     return orig.apply(fs, a);
   };
 }
 const scn = JSON.parse(process.env.FAKE_SCENARIO || '{}');
 const calls = [];
 const result = (o) => ({ status: 0, stdout: '', stderr: '', ...o });
+// What an extractor leaves behind: the exe, Extensions/ and, when the scenario names the .NET the new build targets,
+// its runtimeconfig.
 const writeLayout = (dir, layout) => {
   dir = norm(dir);
   fs.mkdirSync(dir, { recursive: true });
   if (layout !== 'no-exe') fs.writeFileSync(path.join(dir, 'UiPath.Upgrade.exe'), 'exe');
   if (layout !== 'no-extensions') fs.mkdirSync(path.join(dir, 'Extensions'), { recursive: true });
+  if (scn.stagedRuntime) {
+    const frameworks = ['Microsoft.NETCore.App', 'Microsoft.WindowsDesktop.App'].map((name) => ({ name, version: scn.stagedRuntime }));
+    fs.writeFileSync(path.join(dir, 'UiPath.Upgrade.runtimeconfig.json'), JSON.stringify({ runtimeOptions: { frameworks } }));
+  }
 };
 const arg = (command, re) => (re.exec(command) || [])[1];
 cp.spawnSync = (cmd, argv, opts) => {
@@ -52,13 +66,17 @@ cp.spawnSync = (cmd, argv, opts) => {
     if (scn.uip) return result(scn.uip);
     return result({ status: 1, stderr: "'uip' is not recognized as an internal or external command" });
   }
-  calls.push(command.replace(/^.*[\\/]/, '') + ' ' + text.slice(0, 60));
+  // Network and archive calls are recorded by what they do; every other call by its arguments.
+  const kind = command === 'curl' ? (argv.includes('-o') ? 'download' : 'latest')
+    : command === 'powershell.exe' ? ['latest.json', 'DownloadFile', 'Expand-Archive'].find((k) => argv[3].includes(k))
+    : '';
+  calls.push(command.replace(/^.*[\\/]/, '') + ' ' + (kind || text.slice(0, 60)));
   if (command === 'curl') {
-    if (argv.includes('-sSIL')) return result(scn.head || { status: 1 });
+    // Without -o the request reads latest.json, the version the server holds.
+    if (!argv.includes('-o')) return result(scn.latest || { status: 22 });
     const zip = argv[argv.indexOf('-o') + 1];
     if (scn.curl && scn.curl.ok) {
       fs.writeFileSync(norm(zip), 'zip');
-      fs.writeFileSync(norm(argv[argv.indexOf('-D') + 1]), scn.curl.headers || '');
       return result({});
     }
     if (scn.curl && scn.curl.missing) return { status: null, error: Object.assign(new Error('spawn curl ENOENT'), { code: 'ENOENT' }) };
@@ -66,11 +84,11 @@ cp.spawnSync = (cmd, argv, opts) => {
   }
   if (command === 'powershell.exe') {
     const c = argv[3];
-    if (c.includes("Method = 'HEAD'")) return result(scn.psHead || { status: 1 });
+    if (c.includes('latest.json')) return result(scn.psLatest || { status: 1 });
     if (c.includes('DownloadFile')) {
       if (scn.psDownload && scn.psDownload.ok) {
         fs.writeFileSync(norm(arg(c, /DownloadFile\('[^']*', '([^']*)'\)/)), 'zip');
-        return result({ stdout: scn.psDownload.stdout || '' });
+        return result({});
       }
       if (scn.psDownload && scn.psDownload.missing) return { status: null, error: Object.assign(new Error('ENOENT'), { code: 'ENOENT' }) };
       return result({ status: 1, stderr: 'proxy said (407)' });
@@ -94,7 +112,9 @@ cp.spawnSync = (cmd, argv, opts) => {
   if (/UiPath\.Upgrade\.exe$/.test(command)) {
     const envT = opts && opts.env ? opts.env.UIPATH_TELEMETRY_DISABLED : process.env.UIPATH_TELEMETRY_DISABLED;
     if (scn.strictTelemetry && envT !== undefined && !/^(true|false)$/i.test(envT)) return result({ status: 1, stderr: 'FormatException' });
-    return result(scn.version || { stdout: 'banner\n25.10.4\n' });
+    // A build started from the staging folder is the downloaded one, not yet installed.
+    const staged = /\.extract-tmp[\\/]/.test(command);
+    return result((staged && scn.stagedVersion) || scn.version || { stdout: 'banner\n25.10.4\n' });
   }
   return result({ status: 1, stderr: 'unexpected command ' + command });
 };
@@ -210,6 +230,21 @@ const NO_DOTNET = {
   ].join("\r\n"),
 };
 const toolStarts = (r) => r.calls.filter((c) => c.startsWith("UiPath.Upgrade.exe")).length;
+const downloads = (r) => r.calls.filter((c) => c === "curl download" || c === "powershell.exe DownloadFile").length;
+const lookups = (r) => r.calls.filter((c) => c === "curl latest" || c === "powershell.exe latest.json").length;
+// latest.json as UiPath's pipeline writes it: a byte-order mark, then the object.
+const serves = (version) => ({ stdout: `﻿{\r\n    "version":  ${JSON.stringify(version)},\r\n    "buildId":  "14276370"\r\n}\r\n` });
+// The cached build answers 25.10.4 (the preload's default); the downloaded one answers 26.10.0.
+const NEWER = { latest: serves("26.10.0") };
+const DOWNLOAD = { curl: { ok: true }, expand: "ok", stagedVersion: { stdout: "26.10.0\n" } };
+// The default cache root, used when UIPATH_ACTIVITY_MIGRATOR_DIR is not set, with a build the script installed.
+function defaultRoot(ctx) {
+  const local = join(ctx.dir, "local");
+  const cacheRoot = join(local, "UiPath", "ActivityMigrator");
+  mkdirSync(join(cacheRoot, "current"), { recursive: true });
+  writeFileSync(join(cacheRoot, "current", "UiPath.Upgrade.exe"), "exe");
+  return { cacheRoot, opts: { useEnvDir: false, env: { LOCALAPPDATA: local } } };
+}
 // A message is checked for the facts it must carry, never for the sentence around them.
 function carries(r, ...facts) {
   for (const fact of facts) assert.ok(r.json.message.includes(fact), `"${fact}" is missing from: ${r.json.message}`);
@@ -302,45 +337,39 @@ test("without an install dir the cache lives under LOCALAPPDATA and counts as ca
   const cacheRoot = join(local, "UiPath", "ActivityMigrator");
   mkdirSync(cacheRoot, { recursive: true });
   writeFileSync(join(cacheRoot, "UiPath.Upgrade.exe"), "exe");
-  const r = run(ctx, { head: { status: 1 }, psHead: { status: 1 } }, { useEnvDir: false, env: { LOCALAPPDATA: local } });
+  const r = run(ctx, {}, { useEnvDir: false, env: { LOCALAPPDATA: local } });
   assert.equal(r.json.status, "ok");
   assert.equal(r.json.source, "cached");
 });
 
-test("--install downloads with curl, extracts with Expand-Archive, stamps Last-Modified and reports downloaded", () => {
+test("--install downloads with curl, extracts with Expand-Archive and reports downloaded", () => {
   const ctx = setup();
-  const r = run(
-    ctx,
-    {
-      curl: { ok: true, headers: "HTTP/1.1 301\r\nLast-Modified: old\r\n\r\nHTTP/1.1 200\r\nLast-Modified: Tue, 01 Oct 2025 10:00:00 GMT\r\n" },
-      expand: "ok",
-    },
-    { args: ["--install"] },
-  );
+  const r = run(ctx, DOWNLOAD, { args: ["--install"] });
   assert.equal(r.status, 0);
   assert.equal(r.json.source, "downloaded");
+  assert.equal(r.json.version, "26.10.0");
   assert.match(fwd(r.json.exe), /\/root\/current\/UiPath\.Upgrade\.exe$/);
-  assert.equal(readFileSync(join(ctx.root, ".last-modified"), "utf8"), "Tue, 01 Oct 2025 10:00:00 GMT");
+  assert.deepEqual(readdirSync(ctx.root), ["current"], "no archive, staging folder or state file left behind");
   assert.ok(existsSync(join(ctx.root, "current", "Extensions")));
-  assert.ok(!existsSync(join(ctx.root, "UiPath.Upgrade.Cli.download.zip")), "temporary archive removed");
-  assert.ok(!existsSync(join(ctx.root, ".extract-tmp")), "staging folder renamed away");
 });
 
 test("--force re-downloads even when the tool is cached and replaces current/", () => {
-  const ctx = setup({ cached: "current" });
+  const ctx = setup({ cached: "current", stamp: "a stamp an earlier version of the script wrote" });
   writeFileSync(join(ctx.root, "current", "stale.txt"), "old");
-  const r = run(ctx, { curl: { ok: true }, expand: "ok" }, { args: ["--force"] });
+  const r = run(ctx, DOWNLOAD, { args: ["--force"] });
   assert.equal(r.json.source, "downloaded");
+  assert.equal(r.json.version, "26.10.0", "the version reported is the new build's");
+  assert.equal(lookups(r), 0, "a forced run does not ask the server");
+  assert.equal(toolStarts(r), 1, "only the downloaded build is started");
+  assert.deepEqual(readdirSync(ctx.root), ["current"], "one build on disk, and the old stamp gone");
   assert.ok(!existsSync(join(ctx.root, "current", "stale.txt")));
-  assert.equal(existsSync(join(ctx.root, ".last-modified")), false, "no stamp without a Last-Modified header");
 });
 
-test("falls back to PowerShell WebClient when curl fails and records its Last-Modified", () => {
+test("falls back to PowerShell WebClient when curl fails", () => {
   const ctx = setup();
-  const r = run(ctx, { curl: {}, psDownload: { ok: true, stdout: " Wed, 02 Oct 2025 GMT " }, expand: "ok" }, { args: ["--install"] });
+  const r = run(ctx, { ...DOWNLOAD, curl: {}, psDownload: { ok: true } }, { args: ["--install"] });
   assert.equal(r.json.status, "ok");
   assert.equal(r.json.source, "downloaded");
-  assert.equal(readFileSync(join(ctx.root, ".last-modified"), "utf8"), "Wed, 02 Oct 2025 GMT");
 });
 
 test("download failure names both attempts and tells the user how to place the tool manually", () => {
@@ -394,58 +423,230 @@ test("an archive missing the exe or Extensions folder is rejected as an unexpect
     const r = run(ctx, { curl: { ok: true }, expand: layout }, { args: ["--install"] });
     assert.equal(r.json.code, "extract-failed", layout);
     assert.match(r.json.message, /Archive layout unexpected/);
-    assert.ok(!existsSync(join(ctx.root, "current")));
+    assert.deepEqual(readdirSync(ctx.root), [], "nothing installed, and the useless archive is not left behind");
   }
 });
 
-const CHANGED_REMOTE = { head: { stdout: "HTTP/1.1 200\r\nLast-Modified: new stamp\r\n" }, curl: { ok: true, headers: "Last-Modified: new stamp\r\n" }, expand: "ok" };
+// --- The update check: the cached tool's version against the one latest.json names ---
 
-function cachedUnderLocalAppData(ctx, stamp) {
+test("a plain run reports a newer served version as update: true and keeps the cached tool", () => {
+  const ctx = setup();
+  const { cacheRoot, opts } = defaultRoot(ctx);
+  const r = run(ctx, { ...NEWER, ...DOWNLOAD }, opts);
+  assert.equal(r.json.status, "ok");
+  assert.equal(r.json.source, "cached");
+  assert.equal(r.json.version, "25.10.4");
+  assert.equal(r.json.update, true);
+  assert.equal(downloads(r), 0);
+  assert.deepEqual(readdirSync(cacheRoot), ["current"], "nothing written");
+});
+
+test("--install replaces a cached non-env install when the server holds a newer version, and only then", () => {
+  const newer = setup();
+  const replaced = run(newer, { ...NEWER, ...DOWNLOAD }, { ...defaultRoot(newer).opts, args: ["--install"] });
+  assert.equal(replaced.json.status, "ok");
+  assert.equal(replaced.json.source, "updated");
+  assert.equal(replaced.json.version, "26.10.0");
+  assert.equal(replaced.json.update, undefined);
+
+  const same = setup();
+  const kept = run(same, { latest: serves("25.10.4"), ...DOWNLOAD }, { ...defaultRoot(same).opts, args: ["--install"] });
+  assert.equal(kept.json.source, "cached");
+  assert.equal(downloads(kept), 0);
+});
+
+test("no update is reported when the server holds the cached version, an older one, or nothing readable", () => {
+  const answers = [serves("25.10.4"), serves("25.9.9"), serves("next"), { stdout: '{ "version": 26 }' }, { stdout: "<html>not found</html>" }, { status: 22 }];
+  for (const latest of answers) {
+    const ctx = setup();
+    const r = run(ctx, { latest }, defaultRoot(ctx).opts);
+    assert.equal(r.json.status, "ok", JSON.stringify(latest));
+    assert.equal(r.json.update, undefined, JSON.stringify(latest));
+  }
+});
+
+test("versions compare as versions: by number, a release above its pre-releases, pre-releases in order", () => {
+  const cases = [
+    ["25.10.4", "25.10.10", true],
+    ["26.2.0", "25.12.9", false],
+    ["26.10.0-alpha.26345", "26.10.0", true],
+    ["26.10.0", "26.10.0-alpha.26347", false],
+    ["26.10.0-alpha.26345", "26.10.0-alpha.26347", true],
+    ["26.10.0-alpha.26347", "26.10.0-alpha.26345", false],
+    ["26.10.0-alpha", "26.10.0-alpha.1", true],
+    ["26.10.0-alpha.9", "26.10.0-beta", true],
+    ["26.10.0-7", "26.10.0-alpha", true],
+  ];
+  for (const [cached, served, outdated] of cases) {
+    const ctx = setup();
+    const r = run(ctx, { version: { stdout: cached + "\n" }, latest: serves(served) }, defaultRoot(ctx).opts);
+    assert.equal(r.json.update === true, outdated, `${cached} against ${served}`);
+  }
+});
+
+test("latest.json is read next to the archive, and through PowerShell when curl cannot reach it", () => {
+  const ctx = setup();
+  // Whatever precedes the object, such as a byte-order mark decoded as stray characters, is cut away.
+  const r = run(ctx, { psLatest: { stdout: '\u00EF\u00BB\u00BF{ "version": "26.10.0" }' } }, defaultRoot(ctx).opts);
+  assert.equal(r.json.update, true);
+  assert.deepEqual(r.calls, ["UiPath.Upgrade.exe version", "curl latest", "powershell.exe latest.json"]);
+});
+
+test("a build placed by hand at the top of the default root is used as is: no update check, and --install downloads nothing", () => {
+  // An update installs into current/, which the root build keeps hiding: checked, every install run would download again.
+  const ctx = setup();
   const local = join(ctx.dir, "local");
   const cacheRoot = join(local, "UiPath", "ActivityMigrator");
   mkdirSync(cacheRoot, { recursive: true });
   writeFileSync(join(cacheRoot, "UiPath.Upgrade.exe"), "exe");
-  if (stamp !== undefined) writeFileSync(join(cacheRoot, ".last-modified"), stamp);
-  return { local, cacheRoot };
-}
+  const opts = { useEnvDir: false, env: { LOCALAPPDATA: local } };
+  for (const args of [[], ["--install"]]) {
+    const r = run(ctx, { ...NEWER, ...DOWNLOAD }, { ...opts, args });
+    assert.equal(r.json.source, "cached", args.join());
+    assert.equal(r.json.exe, join(cacheRoot, "UiPath.Upgrade.exe"), args.join());
+    assert.equal(r.json.update, undefined, args.join());
+    assert.equal(lookups(r) + downloads(r), 0, args.join());
+    assert.deepEqual(readdirSync(cacheRoot), ["UiPath.Upgrade.exe"], args.join());
+  }
+});
 
-test("a plain run reports a changed remote Last-Modified as update: true and keeps the cached tool", () => {
+test("an override dir and offline mode never ask the server", () => {
+  const override = setup({ cached: "current" });
+  const viaDir = run(override, NEWER);
+  assert.equal(viaDir.json.source, "env");
+  assert.equal(viaDir.json.update, undefined);
+  assert.equal(lookups(viaDir), 0);
+
   const ctx = setup();
-  const { local, cacheRoot } = cachedUnderLocalAppData(ctx, "\uFEFFold stamp\r\n");
-  const r = run(ctx, CHANGED_REMOTE, { useEnvDir: false, env: { LOCALAPPDATA: local } });
+  const { opts } = defaultRoot(ctx);
+  const offline = run(ctx, NEWER, { ...opts, env: { ...opts.env, UIPATH_ACTIVITY_MIGRATOR_OFFLINE: "1" } });
+  assert.equal(offline.json.update, undefined);
+  assert.equal(lookups(offline), 0);
+});
+
+// --- Replacing a build: the installed one is never lost ---
+
+test("an installed build still in use is not replaced: it stays, and nothing of the download is left behind", () => {
+  // Windows refuses to rename a folder a program runs from: the first rename of the swap.
+  const ctx = setup({ cached: "current" });
+  writeFileSync(join(ctx.root, "current", "keep.txt"), "old");
+  const r = run(ctx, DOWNLOAD, { args: ["--force"], env: { FAKE_FAIL_RENAME_FROM: "current" } });
+  assert.equal(r.status, 1);
+  assert.equal(r.json.code, "extract-failed");
+  carries(r, join(ctx.root, "current"), "EPERM", "UiPath.Upgrade.exe");
+  assert.doesNotMatch(r.json.message, /manually/, "nothing to extract by hand: the installed build works");
+  assert.equal(readFileSync(join(ctx.root, "current", "keep.txt"), "utf8"), "old");
+  assert.deepEqual(readdirSync(ctx.root), ["current"], "no archive, staging folder or current.old left");
+});
+
+test("a swap that fails halfway puts the previous build back", () => {
+  const ctx = setup({ cached: "current" });
+  writeFileSync(join(ctx.root, "current", "keep.txt"), "old");
+  const r = run(ctx, DOWNLOAD, { args: ["--force"], env: { FAKE_FAIL_RENAME_FROM: ".extract-tmp" } });
+  assert.equal(r.status, 1);
+  assert.equal(r.json.code, "extract-failed");
+  assert.equal(readFileSync(join(ctx.root, "current", "keep.txt"), "utf8"), "old", "previous build restored");
+  assert.deepEqual(readdirSync(ctx.root), ["current"]);
+});
+
+test("a first install that cannot be moved into place keeps the archive for manual extraction", () => {
+  const ctx = setup();
+  const r = run(ctx, DOWNLOAD, { args: ["--install"], env: { FAKE_FAIL_RENAME_FROM: ".extract-tmp" } });
+  assert.equal(r.json.code, "extract-failed");
+  carries(r, join(ctx.root, "UiPath.Upgrade.Cli.download.zip"), join(ctx.root, "current"));
+  assert.deepEqual(readdirSync(ctx.root), ["UiPath.Upgrade.Cli.download.zip"]);
+});
+
+test("a staging folder that will not clear stops the run before extraction, with the installed build and the zip intact", () => {
+  const ctx = setup({ cached: "current" });
+  mkdirSync(join(ctx.root, ".extract-tmp"), { recursive: true });
+  writeFileSync(join(ctx.root, ".extract-tmp", "Old.dll"), "stale");
+  const r = run(ctx, DOWNLOAD, { args: ["--force"], env: { FAKE_FAIL_RM: ".extract-tmp" } });
+  assert.equal(r.status, 1);
+  assert.equal(r.json.code, "extract-failed");
+  carries(r, join(ctx.root, ".extract-tmp"));
+  assert.ok(!r.calls.includes("powershell.exe Expand-Archive"), "nothing extracted into the dirty folder");
+  assert.ok(existsSync(join(ctx.root, "current", "UiPath.Upgrade.exe")), "installed build untouched");
+  assert.ok(existsSync(join(ctx.root, "UiPath.Upgrade.Cli.download.zip")), "zip kept for manual extraction");
+});
+
+test("a leftover current.old from an interrupted swap is restored when current/ is gone", () => {
+  const ctx = setup();
+  mkdirSync(join(ctx.root, "current.old"), { recursive: true });
+  writeFileSync(join(ctx.root, "current.old", "UiPath.Upgrade.exe"), "exe");
+  const r = run(ctx, {});
   assert.equal(r.json.status, "ok");
-  assert.equal(r.json.source, "cached");
-  assert.equal(r.json.update, true);
-  assert.equal(readFileSync(join(cacheRoot, ".last-modified"), "utf8"), "\uFEFFold stamp\r\n", "stamp untouched so the next install run still sees the change");
-  assert.ok(!r.calls.some((c) => c.startsWith("curl") && c.includes("-o")), "no download");
-  assert.ok(!existsSync(join(cacheRoot, "current")));
+  assert.equal(r.json.exe, join(ctx.root, "current", "UiPath.Upgrade.exe"));
+  assert.ok(!existsSync(join(ctx.root, "current.old")));
 });
 
-test("--install replaces a cached non-env install when the remote Last-Modified differs from the stamp", () => {
+test("a leftover current.old that cannot be put back is kept as the only build, then restored by the next run", () => {
   const ctx = setup();
-  const { local, cacheRoot } = cachedUnderLocalAppData(ctx, "\uFEFFold stamp\r\n");
-  const r = run(ctx, CHANGED_REMOTE, { args: ["--install"], useEnvDir: false, env: { LOCALAPPDATA: local } });
-  assert.equal(r.json.status, "ok");
-  assert.equal(r.json.source, "updated");
-  assert.equal(r.json.update, undefined);
-  assert.equal(readFileSync(join(cacheRoot, ".last-modified"), "utf8"), "new stamp");
+  mkdirSync(join(ctx.root, "current.old"), { recursive: true });
+  writeFileSync(join(ctx.root, "current.old", "UiPath.Upgrade.exe"), "exe");
+  const r = run(ctx, {}, { env: { FAKE_FAIL_RENAME_FROM: "current.old" } });
+  assert.equal(r.status, 3);
+  assert.equal(r.json.status, "missing");
+  assert.ok(existsSync(join(ctx.root, "current.old", "UiPath.Upgrade.exe")), "the only build is never deleted");
+  const next = run(ctx, {});
+  assert.equal(next.json.status, "ok");
+  assert.equal(next.json.exe, join(ctx.root, "current", "UiPath.Upgrade.exe"));
 });
 
-test("an unchanged remote Last-Modified (BOM in the stamp ignored) keeps the cached tool without an update flag", () => {
-  const ctx = setup();
-  const { local } = cachedUnderLocalAppData(ctx, "\uFEFFsame\r\n");
-  const r = run(ctx, { head: { stdout: "Last-Modified: same\n" } }, { useEnvDir: false, env: { LOCALAPPDATA: local } });
-  assert.equal(r.json.source, "cached");
-  assert.equal(r.json.update, undefined);
-  assert.ok(!r.calls.some((c) => c.startsWith("curl") && c.includes("-o")));
+test("a previous build Windows refuses to delete is left for a later run, never a crash", () => {
+  const ctx = setup({ cached: "current" });
+  const r = run(ctx, DOWNLOAD, { args: ["--force"], env: { FAKE_FAIL_RM: "current.old" } });
+  assert.equal(r.json.status, "ok", "the run reports its JSON line although the cleanup failed");
+  assert.ok(existsSync(join(ctx.root, "current.old")), "leftover kept");
+  const locked = run(ctx, {}, { env: { FAKE_FAIL_RM: "current.old" } });
+  assert.equal(locked.json.status, "ok", "still locked at startup: the run goes on");
+  const freed = run(ctx, {});
+  assert.equal(freed.json.status, "ok");
+  assert.ok(!existsSync(join(ctx.root, "current.old")), "removed once the lock is gone");
 });
 
-test("the HEAD request falls back to PowerShell and a missing stamp is written from it", () => {
+// --- The downloaded build is started before it replaces anything ---
+
+test("an update whose build needs a .NET this machine lacks is not installed: the installed build stays and runs", () => {
+  const ctx = setup({ cached: "current" });
+  writeFileSync(join(ctx.root, "current", "keep.txt"), "old");
+  const r = run(ctx, { ...DOWNLOAD, stagedRuntime: "10.0.0", stagedVersion: frameworkMissing("10.0.0", ["8.0.33"]) }, { args: ["--force"] });
+  assert.equal(r.status, 1);
+  assert.equal(r.json.code, "runtime-missing");
+  carries(r, ".NET Desktop Runtime 10 (x64)", "https://dotnet.microsoft.com/download/dotnet/10.0", "8.0.33", join(ctx.root, "current", "UiPath.Upgrade.exe"));
+  assert.deepEqual(readdirSync(ctx.root), ["current"], "no staging folder and no archive left");
+  assert.equal(readFileSync(join(ctx.root, "current", "keep.txt"), "utf8"), "old", "installed build untouched");
+  const next = run(ctx, {});
+  assert.equal(next.json.status, "ok");
+  assert.equal(next.json.version, "25.10.4");
+});
+
+test("an update whose build prints no version is not installed either, and the message sends nobody to --force", () => {
+  const ctx = setup({ cached: "current" });
+  const r = run(ctx, { ...DOWNLOAD, stagedVersion: { status: 134, stderr: "Unhandled exception." } }, { args: ["--force"] });
+  assert.equal(r.json.code, "verify-failed");
+  carries(r, "Unhandled exception.", join(ctx.root, "current", "UiPath.Upgrade.exe"));
+  assert.doesNotMatch(r.json.message, /--force/, "a second forced run would download the same build again");
+  assert.deepEqual(readdirSync(ctx.root), ["current"]);
+  assert.equal(run(ctx, {}).json.version, "25.10.4");
+});
+
+test("a first install is put in place even when it does not start, and is reported under the path it ends up at", () => {
   const ctx = setup();
-  const { local, cacheRoot } = cachedUnderLocalAppData(ctx);
-  const r = run(ctx, { head: { status: 1 }, psHead: { stdout: " ps stamp " } }, { useEnvDir: false, env: { LOCALAPPDATA: local } });
-  assert.equal(r.json.source, "cached");
-  assert.equal(readFileSync(join(cacheRoot, ".last-modified"), "utf8"), "ps stamp");
+  const r = run(ctx, { ...DOWNLOAD, stagedRuntime: "10.0.0", stagedVersion: frameworkMissing("10.0.0") }, { args: ["--install"] });
+  assert.equal(r.json.code, "runtime-missing");
+  carries(r, join(ctx.root, "current", "UiPath.Upgrade.exe"), ".NET Desktop Runtime 10 (x64)");
+  assert.ok(existsSync(join(ctx.root, "current", "UiPath.Upgrade.exe")), "installing the runtime is all that is left to do");
+  assert.equal(toolStarts(r), 1);
+});
+
+test("an update that starts only under the strict telemetry spelling is installed, and the assignment is reported", () => {
+  const ctx = setup({ cached: "current" });
+  writeFileSync(join(ctx.root, "current", "stale.txt"), "old");
+  const r = run(ctx, { ...DOWNLOAD, strictTelemetry: true }, { args: ["--force"], env: { UIPATH_TELEMETRY_DISABLED: "1" } });
+  assert.equal(r.json.code, "telemetry-flag");
+  assert.equal(r.json.env, "UIPATH_TELEMETRY_DISABLED=true");
+  assert.ok(!existsSync(join(ctx.root, "current", "stale.txt")), "the new build is in place");
 });
 
 test("a build whose runtime is missing is told which Desktop Runtime to install, whatever .NET it targets", () => {

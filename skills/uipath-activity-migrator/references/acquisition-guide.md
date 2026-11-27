@@ -13,7 +13,7 @@ How the skill finds and verifies the Activity Migrator: Helm's, through `uip`, e
 | Archive | Zip with `UiPath.Upgrade.exe` at the archive root and extensions under `Extensions/<Name>/` |
 | Runtime | Through `uip`: Helm runs on the dotnet of the Robot or Studio install, else on the `dotnet` on `PATH` with `DOTNET_ROLL_FORWARD=LatestMajor`. `uip` resolves it; the script checks nothing. The archive: Windows and the .NET Desktop Runtime of the major version the build targets, recorded in `UiPath.Upgrade.runtimeconfig.json` next to the exe |
 | Version | `uip rpa project migrate version` prints Helm's version as its last stdout line, e.g. `27.0.207-dev` or `26.10.x`; the SARIF `tool.driver.version` carries the same. `UiPath.Upgrade.exe version` prints the archive's own |
-| Freshness signal | Through `uip`: the CLI version. The archive URL is unversioned; the server's `Last-Modified` header is the only change signal. The script stores it, reports `update: true` when it changes, and re-downloads on an install run |
+| Freshness signal | Through `uip`: the CLI version. The archive URL is unversioned; `latest.json`, published next to the archive (`https://download.uipath.com/upgrade/latest.json`), names the `version` the archive holds. The script compares it with the cached tool's, reports `update: true` when the server's is newer, and re-downloads on an install run |
 
 Both forms take the same arguments and write the same SARIF and reports: exit code 0 whatever the outcome, extension options bind only as `--name=value`, reports go to `<PROJECT_DIR>/.upgrade` ([tool-behavior-guide.md](tool-behavior-guide.md)).
 
@@ -59,8 +59,8 @@ Default root: `%LOCALAPPDATA%\UiPath\ActivityMigrator` (`$LOCALAPPDATA/UiPath/Ac
 ```text
 ActivityMigrator/
   current/                 extracted tool; UiPath.Upgrade.exe lives here
-  .last-modified           Last-Modified header of the archive that produced current/
-  UiPath.Upgrade.Cli.download.zip   transient during download; removed on success, kept on an extraction failure so it can be extracted by hand
+  current.old/             previous build during a replacement; removed once the new one is in place
+  UiPath.Upgrade.Cli.download.zip   transient during download; kept only when it cannot be extracted or moved into an empty folder, so it can be extracted by hand
 ```
 
 Resolution order inside the archive fallback:
@@ -77,10 +77,10 @@ Resolution order inside the archive fallback:
 | `UIPATH_ACTIVITY_MIGRATOR_URL` | Alternate archive URL, for internal mirrors. Skips `uip` |
 | `UIPATH_ACTIVITY_MIGRATOR_OFFLINE=1` | The archive never touches the network: a cached tool is used as is, a missing one is `offline-missing`. Wins over `--install` and `--force`. `uip` is still asked; `migrate version` downloads nothing |
 | `HELM_LOCAL_DIR` | Read by `uip`, not by the script: a Helm folder to use instead of the npm package, such as the Studio install's |
-| `--install` | Archive only: download and extract when nothing is cached; replace the cache when the archive changed. The skill passes it only after the user chose the download. When `uip` supplies the migrator it changes nothing |
+| `--install` | Archive only: download and extract when nothing is cached; replace the cache when the server holds a newer version. The skill passes it only after the user chose the download. When `uip` supplies the migrator it changes nothing |
 | `--force` | Archive only: re-download and re-extract even when cached. Implies `--install` |
 
-Download: the script tries `curl` first, which honors `HTTPS_PROXY` / `HTTP_PROXY`, then PowerShell's WebClient, which uses the system proxy and the signed-in user's credentials. Both run as commands, never as script files. The update check's `HEAD` request falls back the same way, so a machine that reaches the internet only through the system proxy still sees updates. A curl connection that stalls below 1 KB/s for a minute fails instead of hanging. Corporate TLS inspection that breaks both surfaces as `download-failed`, with each downloader's error in the message.
+Download: the script tries `curl` first, which honors `HTTPS_PROXY` / `HTTP_PROXY`, then PowerShell's WebClient, which uses the system proxy and the signed-in user's credentials. Both run as commands, never as script files. The update check's read of `latest.json` falls back the same way, so a machine that reaches the internet only through the system proxy still sees updates. A curl connection that stalls below 1 KB/s for a minute fails instead of hanging. Corporate TLS inspection that breaks both surfaces as `download-failed`, with each downloader's error in the message.
 
 Extraction: `Expand-Archive`, then Windows `tar.exe`, then `unzip`. An install root whose extracted paths would pass the 260-character Windows limit makes `Expand-Archive` fail; `tar.exe` still extracts it.
 
@@ -91,7 +91,7 @@ The skill never downloads without the user's choice. A `uip` installed with its 
 | Situation | Set | Effect |
 |---|---|---|
 | Binary distributed by desktop engineering or placed on a tool share | `UIPATH_ACTIVITY_MIGRATOR_DIR=<FOLDER>` and `UIPATH_ACTIVITY_MIGRATOR_OFFLINE=1` | The preinstalled tool is used (`source: env`) and the network is never touched. A missing tool is `offline-missing`: the skill gives the manual steps instead of offering a download |
-| Archive mirrored on an internal server | `UIPATH_ACTIVITY_MIGRATOR_URL=<MIRROR_URL>` | Download and update check go to the mirror. The user's choice is still required; the install question names the mirror |
+| Archive mirrored on an internal server | `UIPATH_ACTIVITY_MIGRATOR_URL=<MIRROR_URL>` | Download and update check go to the mirror; the update check needs `latest.json` next to the mirrored archive. The user's choice is still required; the install question names the mirror |
 | No downloads, nothing preinstalled yet | `UIPATH_ACTIVITY_MIGRATOR_OFFLINE=1` | Without a `uip` that supplies the migrator, every run is `offline-missing` until the tool is placed by hand |
 
 The tool is a zip: placing it needs no installer and no elevation. The `Extensions/` folder must stay next to the exe.
@@ -121,7 +121,7 @@ The last stdout line is one JSON object.
 | `source` | `uip` (Helm, through `uip`); for the archive `env` (override dir), `cached`, `downloaded` (first install), `updated` (newer archive replaced the cache) |
 | `command` (`ok`) | What runs the migrator: `uip rpa project migrate` for `uip`, the exe path for the archive. The skill's `<MIGRATOR>` is built from it |
 | `exe` (`ok`, archive only) | The exe path |
-| `update` (`ok`, archive only) | `true` when the server's `Last-Modified` differs from the stamp on a plain run: a newer build exists and the cached tool was kept. Absent otherwise |
+| `update` (`ok`, archive only) | `true` when a plain run found the server's version newer than the cached tool's: a newer build exists and the cached tool was kept. Absent otherwise |
 | `dir`, `url` (`missing` only) | The folder an install run would fill and the archive it would fetch: the facts the skill puts in its install question |
 | `uipMessage` (archive only) | Why `uip` could not supply the migrator, when it was asked: `helm-missing`, an unknown command, Helm's error, or `uip` not found |
 | `code` (errors) | `not-windows` (from `uip` or the script); for the archive `download-failed`, `extract-failed`, `verify-failed`, `offline-missing`, `runtime-missing`, `telemetry-flag` |
@@ -178,7 +178,9 @@ Never unset the variable instead: that turns telemetry on for a user who disable
 
 Through `uip`: update the CLI (`uip update`). It brings the matching Helm, and with it the migrator; the script sends no request of its own.
 
-Archive fallback: every plain run sends a `HEAD` request and compares `Last-Modified` with `.last-modified`. When they differ it keeps the cached tool and reports `update: true`; nothing is replaced without an install run. To update, rerun with `--install`: `current/` is replaced only when the archive changed (`source: updated`). `--force` refreshes even an unchanged cache. An override dir is never updated unless its exe is missing; replace its contents by hand. Under `UIPATH_ACTIVITY_MIGRATOR_OFFLINE=1` no `HEAD` is sent and no update is reported.
+Archive fallback: every plain run reads `latest.json` and compares its `version` with the cached tool's. When the server's is newer it keeps the cached tool and reports `update: true`; nothing is replaced without an install run. To update, rerun with `--install`: `current/` is replaced only when the server's version is newer (`source: updated`). `--force` refreshes even an unchanged cache. An override dir is never updated unless its exe is missing, and neither is a build placed by hand at the top of the default root: only the build under `current/` is checked and updated; replace the others by hand. No update is reported under `UIPATH_ACTIVITY_MIGRATOR_OFFLINE=1`, when `latest.json` cannot be read, or when a mirror serves none next to its archive; a server that never answers delays a plain run by about 15 seconds.
+
+A replacement runs in this order: download, extract, start the new build, swap it into `current/`, remove the previous build. A new build that does not start is not installed, and neither is one that cannot be swapped in because a program still runs from `current/`: the script reports the cause as an error and the cached tool stays, so a rerun without a flag continues with it. A removal Windows refuses never fails the run: the leftover stays until a later run removes it.
 
 ## Verifying by hand
 
