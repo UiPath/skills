@@ -37,17 +37,13 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  # Advisory, as in Flow's init_maestro_automate_studio_web: Studio Web creates the
-  # project through one create path, reached by the intercepted `uip rules init` or by
-  # its CreateProjects host tool, so the files are the same either way. The checks
-  # below grade those files.
   - type: command_executed
-    description: "Advisory: agent scaffolded the project with rules init"
+    description: "Agent scaffolded the project with rules init"
     tool_name: "Bash"
     command_pattern: 'uip\s+rules\s+init'
     min_count: 1
     weight: 1.5
-    pass_threshold: 0.0
+    pass_threshold: 1.0
 
   - type: run_command
     description: "uip rules validate passes on the project"
