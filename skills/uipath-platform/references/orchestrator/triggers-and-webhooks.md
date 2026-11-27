@@ -115,6 +115,35 @@ uip or triggers create --type api \
 
 CallingMode values: `AsyncRequestReply`, `AsyncCallback`, `LongPolling`, `FireAndForget`
 
+#### Which account an API trigger's jobs run as
+
+On deploy, Orchestrator creates an HTTP trigger for each HTTP route of the package and sets it to **Run as HTTP Caller**: each job runs with the rights of whoever calls the endpoint. When the API is meant to run as a robot account, so that callers need no rights on Data Fabric or the other resources the job uses, switch each such trigger after the deploy. A redeploy keeps the account you set. A route added later gets a new trigger that runs as the caller, so check the triggers after every deploy that adds a route.
+
+The account is one choice, as in the **Account** field of the trigger in Orchestrator. Pass at most one of these per `create` or `update`:
+
+| Account | Option |
+|---------|--------|
+| The identity that calls the endpoint | `--run-as-caller` |
+| The trigger's creator (Run As Myself) | `--run-as-me` |
+| One account, e.g. a robot account | `--target user=<user-key>` (`uip or users list` for the key) |
+| Any account the folder allocates | `--run-as-any` |
+
+```bash
+# Run a deployed trigger as one robot account
+uip or triggers update <trigger-key> --type api --folder-path "Finance" \
+  --target user=<user-key> --output json
+
+# Check it: RunAsCaller, RunAsMe and Targets
+uip or triggers get <trigger-key> --type api --folder-path "Finance" --output json
+```
+
+- The option you pass replaces the trigger's current account. Two or more account options in one command fail with exit 3 (`Cannot combine ...`) and nothing changes.
+- A `--target` with only `machine=` (and `session=`) sets where the job runs and keeps the account: on a trigger set to one account, that account goes on each new target. When the trigger's targets name two or more accounts, the update fails with exit 3 (`Cannot tell which account to keep on the new targets`); add `user=<key>` to each `--target`, or pass `--run-as-any`. `--run-as-caller` and `--run-as-any` remove the user from the existing targets and keep their machines.
+- An `update` with no account option keeps the account. `update` and `create` report the resulting `RunAsCaller` and `RunAsMe`; a trigger made with `create` and no account option runs on any account the folder allocates.
+- `--run-as-caller` and `--run-as-any` exist only for API triggers. On a time or queue trigger they fail with exit 3, and so does a command that leaves out `--type api`, because `--type` defaults to `time`.
+- Whatever the account, the caller still needs permission to create jobs in the trigger's folder: Orchestrator checks it before it starts the job.
+- These options need a `uip` build that includes UiPath/cli#6550. Older builds have no `--run-as-caller` or `--run-as-any`, and they drop `--target` and `--run-as-me` on API triggers while still answering `TriggerUpdated`. If `uip or triggers update --help` does not list `--run-as-any`, set the account in Orchestrator instead.
+
 ---
 
 ## Step 3: List, Inspect, Update
