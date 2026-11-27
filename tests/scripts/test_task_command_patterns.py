@@ -399,3 +399,74 @@ def test_declaring_the_resource_counts_refresh_or_add(pattern, call):
 )
 def test_declaring_the_resource_needs_add_of_the_same_kind(pattern, call):
     assert _hits(pattern, call) == {False}
+
+
+# --- uipath-agents: a published agent recorded via registry prepare ------------
+
+PUBLISHED_REFRESH = _pattern(
+    "uipath-agents/coded/coded_in_flow_published/coded_in_flow_published.yaml",
+    "Agent refreshed the flow registry or looked up the published agent (registry get, or registry prepare --kind Process)",
+)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "cd triage-flowSolution/triage-flow; uip maestro registry prepare --kind Process --name triage-agent 2>&1 | tail -20",
+        "uip maestro registry prepare --name triage-agent --kind=Process --output json",
+        "npx flow-sdk registry prepare --kind Process --name triage-agent",
+        "uip maestro flow registry pull --force",
+        "uip maestro flow registry search triage-agent",
+        'uip maestro flow registry get "uipath.core.agent.4f1c2b7e-9d3a-4e5b-8c6d-1a2b3c4d5e6f" --output json',
+    ],
+)
+def test_published_refresh_accepts_prepare_or_registry_refresh(command):
+    assert _hits(PUBLISHED_REFRESH, command) == {True}
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "uip maestro registry prepare --kind ProcessX --name triage-agent",
+        "uip maestro registry prepare --kind Connector --name triage-agent",
+        # The kind belongs to a later command, not to this prepare.
+        "uip maestro registry prepare --entity X; echo --kind Process",
+        "uip maestro registry prepare --entity X && uip solution resources list --kind Process",
+        "uip maestro flow registry get triage-agent",
+        'uip maestro flow registry get "uipath.core.rpa.4f1c2b7e" --output json',
+    ],
+)
+def test_published_refresh_needs_prepare_of_kind_process(command):
+    assert _hits(PUBLISHED_REFRESH, command) == {False}
+
+
+PUBLISHED_DEPLOY = _pattern(
+    "uipath-agents/coded/coded_in_flow_published/coded_in_flow_published.yaml",
+    "Agent deployed to the personal workspace (deploy or publish, --my-workspace)",
+)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "source .venv/bin/activate && uip codedagent deploy --my-workspace --output json",
+        "uip codedagent deploy --my-workspace 2>&1 | tee publish.log",
+        "uip codedagent publish --my-workspace",
+    ],
+)
+def test_published_deploy_counts_the_personal_workspace_flag(command):
+    assert _hits(PUBLISHED_DEPLOY, command) == {True}
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        # The flag belongs to a later command, not to this deploy.
+        "uip codedagent deploy; echo --my-workspace",
+        "uip codedagent deploy && uip solution deploy --my-workspace",
+        "uip codedagent deploy\necho --my-workspace",
+        "uip codedagent deployx --my-workspace",
+    ],
+)
+def test_published_deploy_needs_the_flag_on_the_deploy_itself(command):
+    assert _hits(PUBLISHED_DEPLOY, command) == {False}
