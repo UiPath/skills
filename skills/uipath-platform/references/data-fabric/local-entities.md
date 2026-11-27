@@ -190,42 +190,16 @@ It removes whichever half is on disk without reading it, and reports
 A `core.datafabric.*` node needs more than the entity name: the entity's
 resource key, and the placeholder folder `99999999-9999-9999-9999-999999999999`
 that deploy and debug replace. Without them the node is tenant-scoped and fails
-at runtime (below). Which way you supply them depends on how the flow is
-authored.
+at runtime (below). The builder SDK supplies both from the entity name.
 
 <!--skill-flavor:flow-sdk-local-entity-keys:start-->
-**Builder SDK (`.flow.ts`, the Flow skill's default).** Name the entity, not its keys: `entity: { name: '<Name>' }` in the `dataFabric*` factory.
+**Builder SDK (`.flow.ts`).** Name the entity, not its keys: `entity: { name: '<Name>' }` in the `dataFabric*` factory.
 `check` prints `uip maestro registry prepare --entity <Name>`; run it in the Flow project folder, where `check` and `compile` run and read `./.flow-sdk/resources.json`.
 It reads the solution as well as the tenant, records the entity's resource key and the placeholder folder key, and names the folder to pin with `folder:`.
 Do not look the entity up on the tenant yourself: it is not there until deploy.
 The `uipath-maestro-flow` skill covers this (Data Fabric, an entity the solution authors itself).
 
 <!--skill-flavor:flow-sdk-local-entity-keys:end-->
-<!--skill-flavor:flow-sdk-json-entity-node:start-->
-**Hand-written `.flow` JSON:**
-
-1. Author the node with `entityConfig.entityName` set to the entity.
-2. Run `uip maestro flow node configure <Project>.flow <node-id> --detail '{"entityName":"<Name>"}'`.
-
-`node configure` fills in `_resourceKey`, `_folderKey` and the two `bindings[]`
-rows — the same thing the Studio Web / VS Code entity picker writes — reports
-them as `BindingsCreated`, and regenerates `bindings_v2.json`. It is idempotent,
-so a second run reports `BindingsCreated: 0` and changes nothing.
-
-Two zero counts that are **not** failures: a second node naming the same entity
-adds no rows because `bindings[]` is flow-wide, and re-running the command on an
-already-wired node is a no-op. A genuine miss is never silent — naming an entity
-this solution does not author succeeds with `BindingsCreated: 0` **and** a
-`Warnings` entry saying so.
-
-Adding the node with the CLI instead needs no follow-up — `node add` resolves
-the keys on the spot:
-
-```bash
-uip maestro flow node add <Project>.flow core.datafabric.read \
-  --input '{"entityConfig":{"entityName":"Product","resultMode":"multiple"}}'
-```
-<!--skill-flavor:flow-sdk-json-entity-node:end-->
 
 **Why this matters, and why a missing binding is hard to diagnose:** a node
 carrying only `entityName` serializes to a bare tenant-scoped
@@ -240,7 +214,7 @@ nothing and the run fails with:
 
 That error names the entity, so it reads as "the entity wasn't created" when the
 entity exists and the binding is missing. You should never reach it: `flow
-validate` reports the node as an error (`INLINE_ENTITY_UNBOUND`) naming the exact `node configure` to run — in a builder-SDK project, fix the `.flow.ts` instead, or the next `compile` reverts it —
+validate` reports the node as an error (`INLINE_ENTITY_UNBOUND`); fix it in the `.flow.ts` (name the entity and run the `registry prepare --entity` that `check` prints, then recompile), not in the emitted `.flow`, or the next `compile` reverts it.
 `flow pack` and `uip solution pack` run the same rule, and `flow debug` and `flow eval` raise the
 same message before packaging. Entities this solution only references, and
 tenant entities resolved at runtime, are not reported — they have no local

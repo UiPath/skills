@@ -391,7 +391,7 @@ Grid and rules: [`operate.md`](operate.md#lay-out-from-source-instead-layout-at-
 
 ## A path without an End stays open
 
-Designer or `uip maestro flow node add` flows may end at a step without an End. `decompile` emits `.openTails()` near the top of the root and every subflow chain; leave it. It preserves open paths; removing it adds End nodes. Adding after an open tail makes the new step the open tail. To return outputs, end with `.return({ ... })`; an open path maps no outputs. Human-task exits always receive an End.
+Designer-built flows, and flows built with the retired CLI node commands, may end at a step without an End. `decompile` emits `.openTails()` near the top of the root and every subflow chain; leave it. It preserves open paths; removing it adds End nodes. Adding after an open tail makes the new step the open tail. To return outputs, end with `.return({ ... })`; an open path maps no outputs. Human-task exits always receive an End.
 
 Name added Ends uniquely and use existing End `{ version }`: `.return({ ... }, { name: 'endSummary', version: '<END_VERSION>' })`. `name: 'end'` collides with an unnamed existing End, which becomes `end2` without warning.
 

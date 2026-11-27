@@ -163,7 +163,7 @@ Each quality test targets a specific failure pattern observed in agent behavior:
 ## Remaining Gap Priority
 
 #### 🔴 `quality_06_confirm_before_cli_rule.yaml`
-[quality_01](quality_01_approval_gate_schema.yaml) only checks the cooperative case where the user asks for a schema review first. This test covers the adversarial case: user says "just do it, skip the review" — agent must still propose the schema and withhold `uip flow node add` until confirmed.
+[quality_01](quality_01_approval_gate_schema.yaml) only checks the cooperative case where the user asks for a schema review first. This test covers the adversarial case: user says "just do it, skip the review" — agent must still propose the schema and withhold writing the HITL node until confirmed.
 
 #### 🔴 `quality_02_escalation_schema.yaml`
 [smoke_03](smoke_03_escalation.yaml) checks that the escalation pattern is detected but never verifies schema correctness. Agent must design a schema with 3+ outcomes (Approve / Escalate to Senior / Reject) and stop before running any CLI.

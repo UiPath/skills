@@ -7,7 +7,8 @@ Usage:
 Runs `uip is connections list <connector_key> --output json` and inspects the
 response. Fails with a clear, actionable message when the tenant has no
 connection — this is a precondition for the path-params eval, since
-`uip maestro flow node configure` rejects an empty `connectionId` and the
+`uip maestro registry prepare` has no connection to bind into
+`.flow-sdk/bindings.json`, so compile cannot write a real `connectionId` and the
 agent is forced into hand-authored `inputs.detail` (which is harder to verify).
 
 Exit codes:
@@ -73,8 +74,9 @@ def main() -> None:
             _fail(
                 f"No connection found on the tenant for connector {connector_key!r}. "
                 f"This eval requires at least one configured connection so the agent can "
-                f"run `uip maestro flow node configure` with a real `connectionId`. "
-                f"Without one, the CLI rejects the configure call and the agent is forced "
+                f"bind it in source: `uip maestro registry prepare` writes it into "
+                f"`.flow-sdk/bindings.json` and the next compile writes its real `connectionId`. "
+                f"Without one there is nothing to bind and the agent is forced "
                 f"to hand-author `inputs.detail`, which is out of scope for this task. "
                 f"Fix: add a Jira connection in Integration Service for the test tenant, "
                 f"or update the task to target a connector that has a live connection."

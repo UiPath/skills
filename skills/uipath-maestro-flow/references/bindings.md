@@ -199,9 +199,10 @@ next compile.
 
 ## Emitted-artifact bindings
 
-`uip maestro flow binding add` edits bindings inside an already emitted `.flow`;
-it does not create or update `.flow-sdk/bindings.json`. SDK-authored Integration
-Service actions and managed HTTP nodes should instead keep symbolic names in
-source plus `bindings.json`, so recompilation deterministically restores the
-same node detail and product bindings. Use direct artifact edits only for a
-brownfield `.flow` with no source representation.
+Keep bindings in source: SDK-authored Integration Service actions and managed
+HTTP nodes use symbolic names in source plus `.flow-sdk/bindings.json`, so
+recompilation deterministically restores the same node detail and product
+bindings. A brownfield `.flow` with no source gets the same treatment: decompile
+it, edit the source, and merge back ([brownfield.md](brownfield.md)). Never
+edit the `bindings` array of an emitted `.flow` by hand; the next compile
+overwrites it.
