@@ -10,8 +10,8 @@ This script undoes ONLY what the compliance-pack tests create:
      (what the full-apply / `state enable` tasks turn on). Skipped silently if
      the pack is not active.
   2. Deletes AOps policies whose name starts with `iso-42001` (the deterministic
-     `iso-42001-2023-<clause>-<product>` namespace the partial-apply flow
-     creates — see partial-apply/impl.md). Scoped by that prefix so it never
+     `iso-42001-2023-<clause>-<product>` namespace the removed partial-apply
+     flow created; kept to clear leftovers on the tenant). Scoped by that prefix so it never
      touches human-named production policies on the tenant.
 
 It does NOT touch policies outside the ISO 42001 namespace — e.g. the AOps
@@ -41,7 +41,7 @@ logging.basicConfig(level=logging.INFO, format="cleanup_compliance_pack: %(messa
 logger = logging.getLogger(__name__)
 
 PACK_ID = "iso-42001-2023"
-POLICY_NAME_PREFIX = "iso-42001"  # compliance-pack partial-apply namespace
+POLICY_NAME_PREFIX = "iso-42001"  # namespace of the removed partial-apply flow
 
 
 def run_cli(args, timeout=30):

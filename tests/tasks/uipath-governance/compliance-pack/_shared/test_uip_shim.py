@@ -298,14 +298,6 @@ def tenant_ids(sb: Sandbox) -> list[str]:
     return [t["TenantId"] for t in sb.ok("login", "tenant", "list")]
 
 
-def partial_apply(product):
-    def run(sb: Sandbox):
-        pid = sb.ok("gov", "aops-policy", "create", "--name", f"{PACK}-x", "--product-name", product,
-                    "--input", write(sb, "d.json", {"k": 1}))["Identifier"]
-        rows = [{"productIdentifier": product, "licenseTypeIdentifier": "NoLicense", "policyIdentifier": pid}]
-        sb.ok("gov", "aops-policy", "deployment", "tenant", "configure", TENANT,
-              "--tenant-name", "DefaultTenant", "--input", write(sb, "a.json", rows))
-    return run
 
 
 def state(verb):
@@ -334,8 +326,6 @@ def cheat_org_scope(sb: Sandbox):
     sb.ok("gov", "compliance-packs", "state", "enable", "organization", ORG, PACK)
 
 
-def cheat_wrong_product(sb: Sandbox):
-    partial_apply("StudioWeb")(sb)
 
 
 def cheat_org_id_as_a_tenant(sb: Sandbox):
@@ -358,24 +348,8 @@ def at_org_scope(verb):
     return lambda sb: sb.uip("gov", "compliance-packs", "state", verb, "organization", ORG, PACK)
 
 
-def assign_on_another_tenant(product):
-    def run(sb: Sandbox):
-        pid = sb.ok("gov", "aops-policy", "create", "--name", f"{PACK}-x", "--product-name", product,
-                    "--input", write(sb, "d.json", {"k": 1}))["Identifier"]
-        rows = [{"productIdentifier": product, "licenseTypeIdentifier": "NoLicense", "policyIdentifier": pid}]
-        sb.ok("gov", "aops-policy", "deployment", "tenant", "configure", TENANT_2,
-              "--tenant-name", "Other", "--input", write(sb, "a.json", rows))
-    return run
 
 
-def assign_existing(product):
-    """Assign a policy that was already on the tenant instead of creating the pack's own."""
-    def run(sb: Sandbox):
-        existing = json.loads((FIXTURES / f"aops-list-{product}.json").read_text())["Data"]["Result"][0]["Identifier"]
-        rows = [{"productIdentifier": product, "licenseTypeIdentifier": "NoLicense", "policyIdentifier": existing}]
-        sb.ok("gov", "aops-policy", "deployment", "tenant", "configure", TENANT,
-              "--tenant-name", "DefaultTenant", "--input", write(sb, "a.json", rows))
-    return run
 
 
 # Correct call sequence per task, plus the cheats its graders must reject.
@@ -387,20 +361,14 @@ GOOD = {
     "apply_commands_smoke": state("enable"),
     "disable_smoke": state("disable"),
     "restore_smoke": state("restore"),
-    "org_scope_smoke": enable_all_tenants,
-    "partial_apply_aitl_smoke": partial_apply("AITrustLayer"),
-    "interactive_values_smoke": partial_apply("Robot"),
-    "partial_apply_smoke": partial_apply("AITrustLayer"),
+    "org_scope_smoke": state("enable"),
 }
 CHEATS = {
     "apply_commands_smoke": [on_another_tenant("enable")],
     "disable_smoke": [on_another_tenant("disable"), at_org_scope("disable")],
     "restore_smoke": [on_another_tenant("restore"), at_org_scope("restore")],
-    "org_scope_smoke": [cheat_org_scope, cheat_org_id_as_a_tenant, cheat_invented_tenants],
-    "partial_apply_aitl_smoke": [cheat_wrong_product, assign_existing("AITrustLayer"),
-                                 assign_on_another_tenant("AITrustLayer")],
-    "interactive_values_smoke": [cheat_wrong_product, assign_existing("Robot"), assign_on_another_tenant("Robot")],
-    "partial_apply_smoke": [assign_existing("AITrustLayer"), assign_on_another_tenant("AITrustLayer")],
+    "org_scope_smoke": [enable_all_tenants, on_another_tenant("enable"), cheat_org_scope,
+                        cheat_org_id_as_a_tenant, cheat_invented_tenants],
 }
 
 

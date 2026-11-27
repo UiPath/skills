@@ -2,7 +2,7 @@
 
 Compliance Standards (every standard in the catalog — ISO 42001, ISO 27001, and any future one) is a **preview feature**, available only to
 organizations enrolled in the UiPath preview program. This applies to **every** compliance-pack flow —
-catalog, coverage, full-apply, partial-apply, disable, query, state list, diagnose. This file is the
+catalog, coverage, full-apply, disable, query, state list, diagnose. This file is the
 single source of truth for both behaviors below; other plugins link here rather than restating them.
 
 ## 1. Preview disclaimer (on success)
