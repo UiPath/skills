@@ -75,6 +75,38 @@ To type an argument differently from its value (for example an object filled
 from an expression), add `inputSchema`; keep one a decompiled step carries. See
 [Orchestrator Processes](or-processes.md#argument-types-inputschema).
 
+## Which entry point runs
+
+The step starts a job of the process it names, and the job runs that
+process's entry point: the workflow set as main in Studio, unless another was
+picked for the process
+([Managing processes](https://docs.uipath.com/orchestrator/automation-cloud/latest/user-guide/managing-processes)).
+No `rpaWorkflow()` field passes another. When the flow calls an entry point
+other than main, or several entry points of one RPA project:
+
+1. **Published process:** create one Orchestrator process per entry point and
+   write each step with its own process's `name` and `folderPath`, leaving
+   `key` out as for any published process
+   ([Orchestrator Processes](or-processes.md#getting-the-inputs-and-outputs)).
+   Take `<ENTRY_POINT_PATH>` from the `Path` of each entry point the package
+   lists:
+
+   ```bash
+   uip or packages entry-points "<PACKAGE_ID>:<VERSION>" --output json
+   uip or processes create --name "<PROCESS_NAME>" --package-key "<PACKAGE_ID>" \
+     --package-version "<VERSION>" --folder-path "<FOLDER_PATH>" \
+     --entry-point "<ENTRY_POINT_PATH>" --output json
+   ```
+
+2. **In-solution sibling:** the solution holds one process per project, and its
+   entry-point fields are read-only: `uip solution resources edit` skips them
+   and still reports success. The deployed process runs the project's main
+   workflow: for one entry point, set it as main. For several, split them into
+   one project each, so each keeps the typed `returns` that `check` verifies.
+   Only when they must stay in one project, make main a dispatcher that invokes
+   the entry point a step input names; each step then passes and returns the
+   dispatcher's arguments, not the entry point's.
+
 ## Where the job runs
 
 The step starts an Orchestrator job on a robot of the process's folder, and the
