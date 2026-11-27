@@ -265,7 +265,7 @@ Then give each box one status:
 - When several fit, name the best two and ask which one.
 - When none fits, write `none yet, create it or name one`: the user creates it or names one, or picks *Change it*.
 - `Action app`, `Execute script` and `Execute HTTP request` boxes need no resource: write `no resource needed` and look nothing up for them.
-  An Action app box gets it even when the user named an Action App, overriding the first bullet: it is built as an inline form ([Human task outcomes](bpmn-runtime.md#human-task-outcomes)).
+  An Action app box gets it even when the user named an Action App, overriding the first bullet: *Build it* looks the app up and binds it ([Human task outcomes](bpmn-runtime.md#human-task-outcomes)).
 
 A row fits only when both hold: its kind is the box's kind (match `Type` as above), and its name and folder show it does the step the box describes.
 A name that merely shares a keyword does not fit: a process called `invoice-cleanup` in an unrelated project's folder is not the invoice-recording step.
@@ -297,8 +297,9 @@ Before you edit it again, download the cloud copy and compare it, as [Check the 
 <!--skill-flavor:draft-build-merge:start-->
   When this turn's source was decompiled from the current target (the user's canvas copy), or an earlier `merge` wrote the target, finish through `merge` as for any existing process. Only a skeleton that reached the target through `compile` alone is compiled and formatted again as the loop does: its source carries the `init` stub's decompile stamp, so `merge` refuses it (`MERGE_ORIGINAL_CHANGED`).
 <!--skill-flavor:draft-build-merge:end-->
-  An Action app box becomes an inline-form `.humanTask`, as [Human task outcomes](bpmn-runtime.md#human-task-outcomes) says, never `.humanTask(id, { app })`.
-  When the user named an Action App, say under `Assumed` that the task is an inline form, not their app, and that Studio Web can switch it to the app.
+  An Action app box becomes an inline-form `.humanTask`, as [Human task outcomes](bpmn-runtime.md#human-task-outcomes) says.
+  When the user named an Action App, look it up now with `uip solution resources list --kind App --search "<term>" --output json` and write `.humanTask(id, { app: '<Name>', folder: '<Folder>' })` from the row whose `Name` is the name they gave (needs `@uipath/maestro-builder-sdk` 6.120.18 or later, as [Human task outcomes](bpmn-runtime.md#human-task-outcomes) says).
+  The list holds every kind of app, so never take the first hit. When several rows have that name, use the one in the folder the user named; otherwise, or when no row has the name or the lookup cannot run (not logged in), build the inline form and list the app under `Needs:`, such as `the InvoiceApproval Action App (not found)` or `the folder of the InvoiceApproval Action App`.
   A box the gate marked `none yet` that runs a process (an RPA workflow, an agent, an API workflow, a function, or a Maestro BPMN, Case or Flow process) gets a placeholder binding pair shaped as [RULE `bpmn.orchestrator.in-solution-process`](bpmn-runtime.md#http-and-orchestrator-work) shows: `value` and `resourceKey` are a short name taken from the box's label (`PilotEmailExtractor`), `resourceSubType` is its `ProcessType` from [RULE `bpmn.orchestrator.process-type`](bpmn-runtime.md#http-and-orchestrator-work) (`Process`, `Agent`, `Api`, `Function`), and the folder binding carries no value.
   Every other `none yet` box (a connector, Data Fabric, Business rule or queue box) stays a bare `.task()`, because `refresh` refuses a connection binding that is not a connection id: a connector or Data Fabric box is named as the second bullet of [Draft with an unresolved connector](connectors.md#7-draft-with-an-unresolved-connector) says, and a Business rule or queue box keeps its gate label.
   The final report lists them under `Needs:` and reads `built, not runnable yet`.

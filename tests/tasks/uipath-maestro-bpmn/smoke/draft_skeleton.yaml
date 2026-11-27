@@ -162,8 +162,8 @@ success_criteria:
   # Both skills look up each box's resource right before the gate (v1 3c,
   # v2 draft-skeleton.md "Find the resources"). The prompt names the "Record
   # Invoice" robot, an RPA workflow box in both arms, so at least one lookup
-  # must run (v2 builds the Action app box as an inline form, with no
-  # lookup). It is read-only, so the "don't upload or run anything" request
+  # must run (v2 looks up no Action app box at the gate; the prompt names
+  # no Action App). It is read-only, so the "don't upload or run anything" request
   # does not forbid it, and a lookup that fails offline still counts: the
   # box is then `not checked`. `--help` looks nothing up, so it does not
   # count, even on a continued line. `uip` must be the command run, not an
