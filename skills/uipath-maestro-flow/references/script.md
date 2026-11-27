@@ -6,6 +6,8 @@
 
 Use the named first-class node whenever the scenario needs a connector or HTTP for external data or an API call, Transform, Delay, or another product capability, whether or not the request names it. Use script for local calculation, reshaping that needs arbitrary code, or computing a value before passing a bare reference to another node. Return an object literal for named fields (`out('parse', 'tag')`) or a scalar (`out('parse')`).
 
+A script that reads agent or LLM output must not throw on its format, style, or wording (markdown characters, length, phrasing): output varies per run, and one throw faults the whole flow and loses a correct result. Enforce format in the agent prompt and output schema; normalise the text or pass it through. Throw only when a required contract field is missing or invalid.
+
 ## At a glance
 
 Run inline JavaScript for computation that is not a first-class Flow node. Signatures are `script({ code: string })` and `script(fn, { returns })` for [a function](#writing-the-script-as-a-function); read results with `out(step, path?)`. Use a first-class action when the scenario names one; use script for computation.
