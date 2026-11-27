@@ -18,7 +18,7 @@ Inside `design`, `author` and `extract`, that verb's § Read Plan opens this gui
 | Phase | Condition | Read |
 |---|---|---|
 | start | — | this guide whole; the document named and its companion, whole (the SDD beside a genome, the genome an SDD's `Genome` row names); [open-questions-guide.md](../shared/open-questions-guide.md) whole; [edit-guide.md](../edit/edit-guide.md) whole, whose § Read Plan names the rest |
-| start | an SDD | [sdd-writing-guide.md](../design/sdd-writing-guide.md) § Gap Markers and § Keeping the Genome Current. Where an answer revises it (a designed genome's SDD, or one with no genome on disk), also its Step 4 items 4 and 8–10, and with no genome its Step 3 and Step 5 |
+| start | an SDD | [gap-markers-guide.md](../shared/gap-markers-guide.md) whole; [sdd-writing-guide.md](../design/sdd-writing-guide.md) § Keeping the Genome Current. Where an answer revises it (a designed genome's SDD, or one with no genome on disk), also its Step 4 items 4 and 8–10, and with no genome its Step 3 and Step 5 |
 | start | a readiness file beside the genome | that file, whole |
 
 ## Verb Rules

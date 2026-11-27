@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Mechanical check of a written Case Management SDD (assets/templates/case-sdd-template.md), run before the
 // Conformance Checklist walk (references/design/sdd-writing-guide.md Step 4 item 8) and after a draft finalization
-// (the case template's Validation footer, FINALIZING a draft).
+// (references/design/case-sdd-conformance-guide.md, FINALIZING a draft).
 //
 // Usage: node case-sdd-check.mjs <NAME>.md          a final SDD, or one written without a draft
 //        node case-sdd-check.mjs --draft <NAME>.draft.md   a draft: the title, Sections 1-2 and one block per stage only
@@ -101,7 +101,7 @@ stages.forEach((s, i) => {
     for (const m of TASK_MARKERS) if (!tb.includes(m)) fails.push(`task '${tn}': missing ${m}`);
     const ty = tb.match(/^\*\*Type:\*\*\s*`?([a-z-]+)/m)?.[1];
     const detail = ty && DETAIL[ty];
-    if (detail && !detail.some((m) => tb.includes(m))) fails.push(`task '${tn}': a ${ty} task needs its type detail block — '###### ${detail[0]}' (case-sdd-template.md), six hashes: a shorter heading splits the task block`);
+    if (detail && !detail.some((m) => tb.includes(m))) fails.push(`task '${tn}': a ${ty} task needs its type detail block — '###### ${detail[0]}' (case-sdd-task-details-template.md), six hashes: a shorter heading splits the task block`);
   });
 });
 

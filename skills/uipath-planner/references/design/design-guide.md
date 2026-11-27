@@ -39,7 +39,7 @@ Never put Task 1 / Task N templates or *implementation* tasks created with the t
 | Phase 1 Steps 7–10 | — | [product-selection-guide.md](../shared/product-selection-guide.md) whole; [solution-composition-guide.md](solution-composition-guide.md) § Level 2.5 — Project Decomposition; [component-placement-guide.md](../shared/component-placement-guide.md) § Per-task component placement (the to-be, per step) |
 | Phase 1 Step 7 or Phase 2 Step 4 | an external system needs its Integration Service check, or a Level 3 add-on is in play (HITL, Integration Service, API Workflow as integrated component, reusable or shared assets) | component-placement-guide.md § Level 3 — Capability Add-ons |
 | Phase 1 Step 8 | Level 1 = RPA, or a Solution includes RPA | [rpa-product-guide.md](rpa-product-guide.md) (Level 1.5, Level 2, Level 2.5 Part A, R-07 naming, REFramework) |
-| Phase 1 Step 8 | Level 1 = Case Management, or a Solution includes a case | [case-product-guide.md](case-product-guide.md) whole |
+| Phase 1 Step 8 | Level 1 = Case Management, or a Solution includes a case | [case-product-guide.md](case-product-guide.md) and [case-data-and-time-guide.md](case-data-and-time-guide.md), both whole |
 | Phase 1 Steps 8–10 | Level 1 = Solution, or the user picks "Solution (customize)" | solution-composition-guide.md § Level 1.75 — Solution Composition |
 | Phase 1 Step 9 | the primary is Agents or Coded Apps and product-specific information is missing | [scope-recommendation-guide.md](scope-recommendation-guide.md) § Gap Handling for Agent / Coded App |
 | Phase 1 Step 10 | — | scope-recommendation-guide.md § Presenting the Recommendation (its Summary block holds the Recommended Scope, Project List and Queue Architecture formats) |

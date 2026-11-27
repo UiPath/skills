@@ -7,6 +7,8 @@ Phase 3 of `design` writes the full SDD to disk incrementally, resolves the SME 
 | Phase | Condition | Read |
 |---|---|---|
 | Step 2 | filling the template's Business Rules section (RPA §4, BPMN §3, Case § Business Rules, Flow §9, API workflow §7, Coded app §9, Agent §2), and [business-rules-guide.md](business-rules-guide.md) is not yet open from Phase 2 | [business-rules-guide.md](business-rules-guide.md) |
+| Step 1 (finalizing a draft) or Step 4 item 8 | the template's Validation footer names a conformance guide (Case: [case-sdd-conformance-guide.md](case-sdd-conformance-guide.md)) | that guide whole |
+| Step 2 | — | [gap-markers-guide.md](../shared/gap-markers-guide.md) whole |
 | Step 4 item 4 | an `[SME REVIEW]` item remains | [open-questions-guide.md](../shared/open-questions-guide.md) whole |
 | Step 5, next turn | the SDD is `Status: ready`, no build skill handed the design over, and the request or a later message asks for its genome or a build (Step 5 item 3) | [author-guide.md](../author/author-guide.md) whole — the `author` verb; its § Read Plan names the rest |
 <!--skill-flavor:client-word-read-row:start-->
@@ -185,7 +187,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
    - For non-RPA scopes (e.g., Single-product Agent), rows 3-5 are replaced by the template's own product row (framework choice, app type, trigger) — never `N/A` rows. A Flow or BPMN SDD also carries the **Maestro engine** row: the row-5 structures the process needs, counted ([product-selection-guide.md § Maestro disambiguation](../shared/product-selection-guide.md#maestro-disambiguation--bpmn-vs-flow-vs-case)); two or more on a Flow template means the wrong template — rewrite it on the BPMN template.
    - The block does NOT replace the per-section detail later in the SDD — the product body still carries the full justification in its architecture, stage/task, framework, or project-structure sections. The block is the **scannable index** of those decisions.
 
-   In both modes, also write the Recommended Scope block where the template places it: copy the Phase 1 summary's `Recommendation:`, `Delivery model:`, `Blocked by platform:`, and `Need profile:` lines (see [scope-recommendation-guide.md → Summary block](scope-recommendation-guide.md#summary-block)). Autonomous mode skips the Phase 1 presentation, so this copy is the only durable record of the Constraint Gate outcome. Then run `node "<SKILL_DIR>/scripts/scope-check.mjs" "<SDD_PATH>"` on every SDD file written; a `FAIL:` line is a defect — fix the line or table it names (`Blocked by platform:`, `Need profile:`, an RPA SDD's §11 `### Project Mode Decision`) and rerun until it prints `OK`.
+   In both modes, also write the Recommended Scope block where the template places it: copy the Phase 1 summary's `Recommendation:`, `Delivery model:`, `Blocked by platform:`, and `Need profile:` lines ([scope-recommendation-guide.md → Summary block](scope-recommendation-guide.md#summary-block), its only durable record in autonomous mode). Then run `node "<SKILL_DIR>/scripts/scope-check.mjs" "<SDD_PATH>"` on every SDD file written; a `FAIL:` line is a defect — fix the line or table it names (`Blocked by platform:`, `Need profile:`, an RPA SDD's §11 `### Project Mode Decision`) and rerun until it prints `OK`.
 
 4. If any `[SME REVIEW]` items remain, add the `## Action Required — SME Review Items` section where the template places it. It is written in the item form of [open-questions-guide.md](../shared/open-questions-guide.md), one item per decision, as the template's block shows:
    - each item is numbered `D1`, `D2`, … in the order of the sections it concerns;
@@ -198,7 +200,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
 5. **Length follows content, never padding.** Every step, rule, exception, application and example the source states is kept — business rules all of them ([business-rules-guide.md](business-rules-guide.md) § 4). What is cut is restatement: a fact lives in one section and others name it; no template instruction, placeholder or empty example row survives; a table row replaces prose that says the same; a section the template makes conditional and whose condition does not hold is omitted.
 6. **Re-run handling** — Step 1 resolved it; never ask again.
-   - **A draft at another path to finalize** (`<name>.draft.md`, or a draft the user names): no question. The draft is the settled design — read it whole, write the final at its basename minus `.draft` (a path the user names wins) from Step 1 onwards, and keep the draft on disk. Never add, drop or rename a business element: every element of the draft's inventory (projects, steps, stages, tasks, variables, rules) and every expression appears in the final, verbatim. The template's draft rules, when its Validation footer holds them, are the only other change.
+   - **A draft at another path to finalize** (`<name>.draft.md`, or a draft the user names): no question. The draft is the settled design — read it whole, write the final at its basename minus `.draft` (a path the user names wins) from Step 1 onwards, and keep the draft on disk. Never add, drop or rename a business element: every element of the draft's inventory (projects, steps, stages, tasks, variables, rules) and every expression appears in the final, verbatim. The template's draft rules, when its Validation footer holds or names them, are the only other change.
 
 7. Write the output file(s) to the current working directory. If the user specified an output path for the SDD, use it instead of these defaults:
    - **Single-product scope:** one file at `<PROCESS_NAME_KEBAB>-sdd.md`.
@@ -212,7 +214,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
    **A Case Management SDD** is first run through `node "<SKILL_DIR>/scripts/case-sdd-check.mjs" "<NAME>.md"` (a `*.draft.md` takes `--draft`); each `FAIL:` line is a defect in the file: repair it in place and run it again until it prints `OK`.
 
-   **A template whose Validation footer holds a conformance checklist** is checked against it in the same pass, after the headings:
+   **A template whose Validation footer holds a conformance checklist, or names the guide that holds one,** is checked against it in the same pass, after the headings:
    1. **When:** against the written file, before the `Status: ready` flip, in every mode.
    2. **Who:** a read-only subagent when the host has one — it returns the PASS/FAIL table and the parent edits; otherwise inline, in the transcript.
    3. **How:** read the written file once. Answer every item PASS or FAIL with one verbatim quote from the file — the line that violates (FAIL) or the line that satisfies (PASS). Judge structure by the role and position of a block (which heading level, which table, which column), not by prose wording.
@@ -279,14 +281,6 @@ An SDD change is either a `design` revise (a `revise:` caller request, a design 
 1. **The SDD's `Genome` handoff row names a genome on disk** (the root's row, for a solution) → end the same run with `edit` "The SDD was revised: update the genome" ([edit-guide.md](../edit/edit-guide.md)) and its strict check ([SKILL.md](../../SKILL.md) § Check).
 2. **A caller's request with `stop-after: sdd`** → end at its result instead.
 3. **The `Genome` row is missing, or names no file on disk** → no genome to update; one is written only on demand (Step 5 item 3).
-
-## Gap Markers
-
-`[DEFAULT]` and `[SME REVIEW]` are the entire gap vocabulary of an SDD and a plan ([SKILL.md](../../SKILL.md) Critical Rule 6). A placeholder value a template names in its own cell rules — a value the build resolves, such as a registry identity the design could not match — is a cell value, not a gap marker. It is always paired with an `[SME REVIEW]` item.
-
-1. **The exact string is load-bearing.** The `Action Required — SME Review Items` block, the gap counts, the `Status: ready` flip, the genome's carry-over and every reviewer grepping the file find the items by exact match on `[SME REVIEW]` / `[DEFAULT]`.
-2. **Write the marker verbatim, with nothing else inside the brackets.** The note goes *after* the closing bracket: `| UiPath version | [SME REVIEW] not recorded in the PDD |`. Never fold the note inside (`[SME REVIEW — not recorded]`) and never substitute another word (`[PLACEHOLDER]`, `[TBD]`, `[TODO]`, `<fill in>`, an invented `<UPPER_SNAKE>` token such as `<SME_PROVIDED>`, `N/A`, prose like "to be confirmed"). A sample value nobody supplied (test data, a mailbox) is `[SME REVIEW] <what is needed>` or a plainly fictitious example value — never an angle-bracket token, which reads as an unfilled template slot. A decorated or renamed marker is invisible to every consumer above — the gap silently disappears.
-3. **Carry markers through byte-for-byte when mapping or copying content out of another document** (a source SDD into a client template, a PDD into an SDD, one SDD section into another). Re-wording a marker you did not author destroys a gap someone else recorded. Add new markers for the gaps *you* find; never edit the ones already there. The one exception is a caller's declared `open-item-marker`, which becomes `[SME REVIEW]` ([caller-request-guide.md](caller-request-guide.md)).
 
 ## Design Handed Over by a Build Skill
 

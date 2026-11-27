@@ -10,7 +10,7 @@ A genome designed from an SDD (one with a `Designed in:` line) keeps that SDD as
 
 | Phase | Condition | Read |
 |---|---|---|
-| the genome passed its strict check | — | this guide whole; [open-questions-guide.md](open-questions-guide.md) whole; [sdd-writing-guide.md](../design/sdd-writing-guide.md) § Gap Markers |
+| the genome passed its strict check | — | this guide whole; [open-questions-guide.md](open-questions-guide.md) whole; [gap-markers-guide.md](gap-markers-guide.md) |
 | the genome passed its strict check | an SDD is written whole, or one of its body sections again | the template of each SDD item 1 names, in `assets/templates/`; [sdd-writing-guide.md](../design/sdd-writing-guide.md) Step 4 items 2, 5 and 8 |
 | the genome passed its strict check | a process genome | [scope-recommendation-guide.md](../design/scope-recommendation-guide.md) § Solution scope (Level 1 = Solution or user picked Solution (customize)) and § Solution overview SDD structure |
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Compares a finalized Case Management SDD with the draft it was finalized from, before the ready flip
-// (assets/templates/case-sdd-template.md, its Validation footer: FINALIZING a draft and checklist items 16 and 19–21).
+// (references/design/case-sdd-conformance-guide.md, the case template's Validation footer: FINALIZING a draft and checklist items 16 and 19–21).
 //
 // Usage: node case-draft-parity.mjs <NAME>.draft.md <NAME>.md
 // Exit 0 and "OK" when the final keeps the draft's: first heading form; stages in order, each with its kind

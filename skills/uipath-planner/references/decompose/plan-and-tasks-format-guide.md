@@ -217,4 +217,4 @@ Plan mode and the live tasks, per approach: [decompose-guide.md](decompose-guide
 10. **Autonomous plans include a populated Stop conditions section**, or specialists default to asking. Populate it with hard blockers realistic for this plan (auth, app state, element-capture limits, missing resources); never a generic placeholder.
 11. **Authoring surfaces are never plan fields.** Studio, Studio Web, VS Code are presentation layers — no plan-header field, task condition, or routing decision references them; each specialist owns its surface. A user-stated surface preference travels as ordinary requirement prose inside the relevant task prompt.
 12. **Coverage.** Every requirement of the request appears in at least one task.
-13. **Gap markers.** A gap the request leaves open is `[DEFAULT]` or `[SME REVIEW]`, written per [sdd-writing-guide.md § Gap Markers](../design/sdd-writing-guide.md#gap-markers).
+13. **Gap markers.** A gap the request leaves open is `[DEFAULT]` or `[SME REVIEW]`, written per [gap-markers-guide.md](../shared/gap-markers-guide.md).

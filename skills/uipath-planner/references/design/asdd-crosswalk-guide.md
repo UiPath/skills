@@ -20,7 +20,7 @@ The markdown SDD this skill writes is the **agent-first** artifact: implementati
 
 4. **Compute missing pieces.** For a template section with no direct SDD source, derive it from SDD data when present; when it needs information the SDD does not hold, write the literal marker `[SME REVIEW]` followed by what is needed, and add the item to a list the user must fill. Never fabricate.
 
-   > Gap-marker rules, byte-for-byte carry-over of the source SDD's markers included: [sdd-writing-guide.md § Gap Markers](sdd-writing-guide.md#gap-markers).
+   > Gap-marker rules, byte-for-byte carry-over of the source SDD's markers included: [gap-markers-guide.md](../shared/gap-markers-guide.md).
 
 5. **Assemble** the matched + computed content into the template's section order, then convert:
 

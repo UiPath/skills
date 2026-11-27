@@ -13,7 +13,7 @@ Based on the Level 1 primary, select one template:
 | RPA Process, Library, Test Automation | `../assets/templates/rpa-sdd-template.md` |
 | Maestro Flow | `../assets/templates/flow-sdd-template.md` |
 | Maestro BPMN | `../assets/templates/bpmn-sdd-template.md` |
-| Case Management | `../assets/templates/case-sdd-template.md` |
+| Case Management | `../assets/templates/case-sdd-template.md`, with `case-sdd-task-details-template.md` beside it for the task detail blocks |
 | Agents | `../assets/templates/agent-sdd-template.md` |
 | Coded Apps | `../assets/templates/coded-app-sdd-template.md` |
 | API Workflows | `../assets/templates/api-workflow-sdd-template.md` |
