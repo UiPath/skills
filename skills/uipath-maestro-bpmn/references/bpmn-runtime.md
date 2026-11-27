@@ -647,6 +647,22 @@ binding half, which is the same for every connector-backed node.
   `CALL_ACTIVITY_NO_PAYLOAD`; to make it call a process, give it an
   `Orchestrator.Start*Process` type with a process binding.
 
+<!-- RULE:bpmn.brownfield.no-message -->
+- A message event with no message chosen (a bare `<bpmn:messageEventDefinition />`, as
+  Studio Web saves it on events that host a connector wait or call) decompiles as
+  `message: NO_MESSAGE`, imported from the SDK beside `bpmn`. Keep it: it compiles back
+  to the bare definition. Do not replace it with `message: ''`: a blank name is refused
+  with `BPMN_MESSAGE_NAME_EMPTY`, because it would declare a `bpmn:message` with no name,
+  which `validate` rejects (`EVENT_OBJECT_EMPTY_REQUIRED_FIELD`). To make the event wait
+  for or throw a named message, give it the name: `message: 'OrderPlaced'`.
+
+<!--skill-flavor:sdk-no-message:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.122.5 or later; an older SDK decompiles the event
+  as `message: ''` and compiles that to one nameless `Message_1` shared by every such
+  event, which `validate` rejects. Upgrade with
+  `npm install -g @uipath/maestro-builder-sdk@latest` and decompile again.
+<!--skill-flavor:sdk-no-message:end-->
+
 <!-- RULE:bpmn.brownfield.format -->
 - Do not lay out a merged process again. `merge` keeps every shape and edge of the
   original where the user put it (it grows a lane, pool or expanded sub-process that has

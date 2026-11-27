@@ -26,6 +26,10 @@
   Needs `@uipath/maestro-builder-sdk` 6.88.1 or later. Studio Web ships its own SDK: when `decompile` refuses one of these elements with "has no builder equivalent", tell the user that this Studio Web build cannot edit that element yet.
 <!--skill-flavor:sdk-palette-elements:end-->
 
+<!--skill-flavor:sdk-no-message:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.122.5 or later. Studio Web ships its own SDK: when a decompiled source carries `message: ''` instead of `message: NO_MESSAGE`, this Studio Web build compiles it to one nameless `Message_1` that `validate` rejects; tell the user that this Studio Web build cannot round-trip a message event with no message chosen yet. Do not invent a message name or drop `message` to get past it: either changes what the event waits for.
+<!--skill-flavor:sdk-no-message:end-->
+
 <!--skill-flavor:sdk-script-result:start-->
   Needs `@uipath/maestro-builder-sdk` 6.93.7 or later. Studio Web ships its own SDK, and an older `check` does not report it: read `=result.response` yourself.
 <!--skill-flavor:sdk-script-result:end-->
