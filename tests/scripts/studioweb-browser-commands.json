@@ -839,8 +839,7 @@
   "uipath-rules": {
     "allow": [],
     "ceiling": {
-      "login tenant set": 1,
-      "rules describe": 1
+      "login tenant set": 1
     }
   },
   "uipath-solution": {
