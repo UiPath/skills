@@ -46,14 +46,14 @@ Run `init` from the solution folder when one exists; outside a solution it creat
 
 ### 2. Design and review
 
-Decide the rule's shape first, with the [When to split](references/drd-guide.md#when-to-split) table, even when the request names no shape: a value that two answers read is its own decision, and one calculation run on different arguments is a knowledge model.
+Decide the rule's shape first, with the [When to split](references/drd-guide.md#when-to-split) table, even when the request names no shape: two answers the business decides separately are one decision each, a value that two answers read is its own decision, and one calculation run on different arguments is a knowledge model.
 
-Then pick each table's hit policy from how its rows relate. Never default to `FIRST`:
+Then pick each table's hit policy from how its rows relate. Check every pair of rows: can one input match both?
 
 | The rows | Hit policy |
 |---|---|
-| Every input matches exactly one row | `UNIQUE` |
-| Rows overlap and order decides, e.g. a catch-all last row | `FIRST`, most specific row first |
+| No two rows can match the same input | `UNIQUE` |
+| Two rows can match, and the earlier one wins — any row of only `-`, a catch-all, overlaps every other row | `FIRST`, most specific row first |
 | Every matching row counts, and the caller reads a list | `COLLECT`, no aggregation |
 | The matching rows' outputs are totalled into one number | `COLLECT` with `aggregation` `SUM`, `COUNT`, `MIN` or `MAX` |
 
