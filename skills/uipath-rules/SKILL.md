@@ -101,6 +101,8 @@ uip rules describe <RULE_NAME> --folder-path <FOLDER_PATH> --output json
 ```
 
 Each command takes `--folder-path` or `--folder-key`, never both. Exception: `list --all-folders` spans every folder you can see (mutually exclusive with the folder flags) — use it to locate a rule when its folder is unknown. `describe` returns the active version's entry points, with `InputArguments` and `OutputArguments` as JSON Schema strings. `OutputArguments` carrying `"x-uipath-decision-keyed": true` nests each output under its decision's name.
+
+A deployed rule is held by the Business Rules service, or still by Orchestrator when it was deployed before rules moved there; each row's `Source` (`BusinessRules` or `Orchestrator`) says which. `get`, `versions`, `describe` and `list --all-folders` find a rule in either. `list` on one folder shows the service's rules there, or Orchestrator's when the service holds none in that folder. When it leaves Orchestrator's rules out, it says so on stderr: read those by name with `get`, or find them with `list --all-folders`.
 <!--skill-flavor:deployed-rules:end-->
 
 Binding a rule into a process, workflow, or case belongs to that artifact's skill.
