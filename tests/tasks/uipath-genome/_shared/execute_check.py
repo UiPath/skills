@@ -34,7 +34,8 @@ import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 
-SKIP_DIRS = {".local", ".git", "node_modules", ".venv", ".upgrade", "fixtures"}
+# scratch/: the throwaway discovery and probe projects the skill puts in the working folder, never the build
+SKIP_DIRS = {".local", ".git", "node_modules", ".venv", ".upgrade", "fixtures", "scratch"}
 SECTIONS = ["## Access", "## Package and deployment", "## Assets", "## Others", "## Triggers"]
 
 
