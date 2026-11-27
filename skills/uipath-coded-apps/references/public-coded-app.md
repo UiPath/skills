@@ -83,7 +83,7 @@ List every resource the app reads, and use `session` for anything personal.
 uip solution init "Feedback"
 cd Feedback
 uip codedapp init ./feedback-app
-# scaffold the React/Vite sources into feedback-app/source (create-web-app.md, Step 3), build output in source/dist
+# init is done: continue at the result check in create-web-app.md Step 3.2, "In a solution" (React sources in feedback-app/source, build output in source/dist)
 ```
 <!--skill-flavor:project-setup:end-->
 
