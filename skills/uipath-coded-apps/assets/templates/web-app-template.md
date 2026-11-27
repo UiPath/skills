@@ -415,7 +415,7 @@ export function ThemeToggle() {
 
 ## `src/main.tsx` (Q6 = yes only)
 
-Wrap `<App>` in `<AppThemeProvider>` so the theme is available before any apollo-wind component mounts. Overwrite Vite's default `main.tsx`. (The Q6 = no path keeps Vite's generated `main.tsx` unchanged.)
+Wrap `<App>` in `<AppThemeProvider>` so the theme is available before any apollo-wind component mounts. Overwrite Vite's default `main.tsx`. (The Q6 = no path keeps the scaffold's `main.tsx`, which must import `./index.css`.)
 
 ```tsx
 import { createRoot } from 'react-dom/client'
