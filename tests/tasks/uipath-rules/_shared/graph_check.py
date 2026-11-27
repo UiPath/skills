@@ -43,7 +43,7 @@ DC_NS = "http://www.omg.org/spec/DMN/20180521/DC/"
 # library the CLI pins, because a user sees the designer: a diagram that is clear at the pinned
 # width and collides at the designer's is a collision they would see.
 DRAWN_SIZE = {"decision": (288, 96), "inputData": (240, 96),
-              "businessKnowledgeModel": (224, 96), "textAnnotation": (224, 64)}
+              "businessKnowledgeModel": (224, 96), "knowledgeSource": (224, 96), "textAnnotation": (224, 64)}
 
 LOAN_PROJECT = "LoanRules"
 LOAN_INPUTS = {"creditScore": "number", "income": "number", "loanAmount": "number"}
@@ -80,11 +80,12 @@ REQUIREMENT_HOLDER = {
     "requiredInput": "informationRequirement",
     "requiredDecision": "informationRequirement",
     "requiredKnowledge": "knowledgeRequirement",
+    "requiredAuthority": "authorityRequirement",
 }
 
 
 def required(element: ET.Element, kind: str) -> list[str]:
-    """Ids the element requires; `kind` is `requiredInput`, `requiredDecision` or `requiredKnowledge`."""
+    """Ids the element requires; `kind` is `requiredInput`, `requiredDecision`, `requiredKnowledge` or `requiredAuthority`."""
     holder = REQUIREMENT_HOLDER[kind]
     return [(e.get("href") or "").lstrip("#")
             for e in element.findall(f"dmn:{holder}/dmn:{kind}", NS)]
@@ -606,6 +607,13 @@ def engine_outputs(project: Path, inputs: dict) -> dict:
 
 def grade_engine() -> None:
     project = find_project(LOAN_PROJECT)
+    # The file, before the engine. `lifecycle/import_and_debug` grades on this mode and a
+    # `uip rules debug` command pattern and nothing else, so it was the one task that never went
+    # through `load_graph` -- and a two-decision rule marked `decision-table` passed every
+    # criterion while opening in the wrong editor. It also brings this task the profile every
+    # other task already applies: one `.dmn`, no unsupported element, and each decision's logic a
+    # table or a literal expression.
+    load_graph(project)
     for inputs, expected in ENGINE_CASES:
         actual = engine_outputs(project, inputs)
         for name, value in expected.items():

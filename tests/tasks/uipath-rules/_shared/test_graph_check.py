@@ -19,8 +19,8 @@ import graph_check as gc  # noqa: E402
 import rules_check as rc  # noqa: E402
 
 TASKS = Path(__file__).resolve().parent.parent
-FIXTURE = TASKS / "smoke" / "graph_extend_arranged" / "fixtures" / "LoanRules"
-BROKEN = TASKS / "smoke" / "graph_repair" / "fixtures" / "LoanRules"
+FIXTURE = Path(__file__).resolve().parent / "testdata" / "LoanRules"
+BROKEN = TASKS / "diagnose" / "repair_graph" / "fixtures" / "LoanRulesSolution" / "LoanRules"
 DMN = "Business rule.dmn"
 
 
@@ -163,8 +163,10 @@ class TestDiagram:
         # PO.Frontend DrdLayout.ts on main, after #8458. Ahead of the CLI on purpose: the
         # dmn-editor-utils the CLI pins still draws inputData 216 and a knowledge model 288,
         # so a file `uip rules format` wrote carries those and is right for its own layout.
+        # A knowledge source is DRD_KNOWLEDGE_WIDTH wide, like a knowledge model.
         assert gc.DRAWN_SIZE == {"decision": (288, 96), "inputData": (240, 96),
-                                 "businessKnowledgeModel": (224, 96), "textAnnotation": (224, 64)}
+                                 "businessKnowledgeModel": (224, 96), "knowledgeSource": (224, 96),
+                                 "textAnnotation": (224, 64)}
 
     def test_overlap_is_measured_at_the_drawn_size(self):
         # 200 apart clears a 180-wide box in the file but not the 288-wide card the designer draws.
@@ -685,3 +687,51 @@ class TestFeelEqualityInsideAList:
 
     def test_lists_of_different_length_do_not_match(self):
         assert not gc.same_value([1], [1, 2])
+
+
+class TestTheEngineModeReadsTheFileFirst:
+    """`graph_check.py engine` is the only outcome grader of `lifecycle/import_and_debug`.
+
+    It called `find_project` and the engine and nothing else, so that task never went through
+    `load_graph` — and therefore never through `check_authoring_surface`. A two-decision rule
+    marked `decision-table` answered every engine case correctly and passed every criterion while
+    opening in the wrong editor. That task imports a two-decision file, so it is exactly where the
+    gap bit.
+    """
+
+    @pytest.fixture
+    def answered(self, monkeypatch):
+        """The engine answering every case correctly, so only the file checks can fail."""
+        monkeypatch.setattr(gc, "engine_outputs",
+                            lambda project, inputs: dict(
+                                next(e for i, e in gc.ENGINE_CASES if i == inputs)))
+
+    def test_a_correct_project_passes(self, project, answered, capsys):
+        gc.grade_engine()
+
+        assert "the engine returns the expected" in capsys.readouterr().out
+
+    def test_a_graph_marked_as_a_table_is_refused(self, project, answered, capsys):
+        # The defect, through this entry point: the values are right and the surface is not.
+        path = project / DMN
+        path.write_text(path.read_text(encoding="utf-8").replace(
+            f'surface="{rc.GRAPH_SURFACE}"', f'surface="{rc.TABLE_SURFACE}"'), encoding="utf-8")
+
+        with pytest.raises(SystemExit):
+            gc.grade_engine()
+
+        assert "holds several decisions" in capsys.readouterr().out
+
+    def test_the_engine_is_not_called_when_the_file_is_refused(self, project, monkeypatch):
+        # Reading the file first also means a tenant round trip is not spent on a rule the
+        # grader was going to refuse anyway.
+        called = []
+        monkeypatch.setattr(gc, "engine_outputs", lambda p, i: called.append(i) or {})
+        path = project / DMN
+        path.write_text(path.read_text(encoding="utf-8").replace(
+            f'surface="{rc.GRAPH_SURFACE}"', f'surface="{rc.TABLE_SURFACE}"'), encoding="utf-8")
+
+        with pytest.raises(SystemExit):
+            gc.grade_engine()
+
+        assert called == []

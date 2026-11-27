@@ -1,0 +1,65 @@
+task_id: skill-rules-integration-graph-large-policy
+description: >
+  Agent authors a Business Rules project from a policy document with eight
+  results, four of which build on others, offline. Grades skill activation,
+  `uip rules validate` run by the grader, each dependent result coming from a
+  decision that requires the ones it builds on, no two cards overlapping at
+  the size the designer draws them, and every result's value on 216 cases.
+tags: [uipath-rules, integration, "mode:build", "lifecycle:generate"]
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Create a UiPath Business Rules project named UnderwritingRules that
+  implements `policy.md`. The process reads every result the policy names, so
+  each one is its own decision in the one rule.
+
+  There is no tenant to evaluate against, so do not run `uip rules debug`.
+  Do not ask for confirmation.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-rules skill"
+    skill_name: "uipath-rules"
+    expected_skill: "uipath-rules"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rules validate passes on the project"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py validate UnderwritingRules"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The diagram matches the model: uip rules format changes nothing"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py format UnderwritingRules"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Each dependent result comes from a decision that requires the ones it builds on, and no two cards overlap on the canvas"
+    command: "python3 $REFERENCE_DIR/author/large_policy/check_large_policy.py structure"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every result returns the policy's value on every case"
+    command: "python3 $REFERENCE_DIR/author/large_policy/check_large_policy.py behavior"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

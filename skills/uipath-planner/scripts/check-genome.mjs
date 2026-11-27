@@ -38,7 +38,9 @@
 //           row in the Source Map of a process or standalone component genome; a `Designed in:` line carrying its
 //           `sdd-sha256` fingerprint, linking an SDD that can be read (a solution root with every child SDD it
 //           lists) and still has that fingerprint, and a component genome carrying its SDD's Action Required items; an SDD written from the genome (`<slug>-sdd.md`, a process
-//           genome's `<slug>-solution-sdd.md`) whose `Genome` row carries the genome's current genome-sha256.
+//           genome's `<slug>-solution-sdd.md`) whose `Genome` row carries the genome's current genome-sha256; a component
+//           genome's SDD, designed or written from it, whose Action Required asks each open entry (a reading may be
+//           left out) and each Configuration Question under the genome's id.
 //
 // Export check (--processes and --recordsets, both required together):
 //   --processes   a list of {"id", "name", "recordset" (name or null), "calls": [{"calleeId", "recordset"}]}
@@ -457,6 +459,56 @@ function checkDesignedIn(path, text, level, r) {
   if (hasItems && !/\(SDD \[(?:SME REVIEW|DEFAULT)\]/.test(text) && !openDecisions(text).size) {
     r.strict(`${m[1]} has Action Required items and the genome carries none: write each as an Open Decisions entry and its marked line, *[Inferred: D<n>]* (SDD [SME REVIEW]: <note>); an operator setting as a Configuration Question, its entry 'withdrawn: asked as Configuration Question <n>' and its line marked *[Inferred: CQ<n>]*`);
   }
+  checkActionRequiredIds(sdd, text, r);
+}
+
+// an Action Required item asks a genome question when the two share at least half the words of the longer
+const SAME_QUESTION = 0.5;
+const STOP_WORDS = new Set(["the", "and", "for", "which", "what", "does", "how", "are", "its", "with", "that", "this",
+  "from", "when", "into", "per", "can", "any", "has", "was", "who", "why", "where", "should", "there", "their"]);
+const ITEM_HEADING = /^\*\*((?:D|CQ)\d+)(?:[.:]|\s+[—–-])(?:\*\*)?\s+(.*)$/gm;
+const ITEM_TAIL = new RegExp(`\\s+\\((?:setting|constant|${DECISION_TIERS.join("|")})\\b.*$`);
+const OPEN_QUESTION = new RegExp(`^(\\d+)\\. (.*?) \\((${DECISION_TIERS.join("|")}); answered by: `, "gm");
+const CONFIGURATION_QUESTION = /^(\d+)\. (.*?) \((?:setting|constant); default: /gm;
+
+function contentWords(text) {
+  return new Set(text.toLowerCase().replace(/[^a-z0-9]+/g, " ").split(" ")
+    .filter((w) => w.length > 2 && !STOP_WORDS.has(w)).map((w) => (w.length > 3 ? w.replace(/s$/, "") : w)));
+}
+
+function asksSame(a, b) {
+  const [x, y] = [contentWords(a), contentWords(b)];
+  const shared = [...x].filter((w) => y.has(w)).length;
+  return shared / (Math.max(x.size, y.size) || 1) >= SAME_QUESTION;
+}
+
+/** The genome's open entries and Configuration Questions that an SDD's Action Required asks under another id or
+ * not at all, as { id, question, asked: the item headings under that id }. A reading may sit in the build's
+ * application checklist instead of an item, so it is not required; an Action Required holding no `**D<n>.` or
+ * `**CQ<n>.` item (a Case Management SDD's review table) is not checked. */
+export function misplacedItems(sddText, genomeText) {
+  const items = new Map();
+  for (const [, id, heading] of sectionBody(sddText, "Action Required").matchAll(ITEM_HEADING)) {
+    items.set(id, [...(items.get(id) ?? []), heading.replace(/\*\*/g, "").replace(ITEM_TAIL, "").trim()]);
+  }
+  if (!items.size) return [];
+  const wanted = [];
+  for (const [, n, question, tier] of sectionBody(genomeText, "Open Decisions").matchAll(OPEN_QUESTION)) {
+    if (tier !== "reading") wanted.push([`D${n}`, question]);
+  }
+  for (const [, n, question] of sectionBody(genomeText, "Configuration Questions").matchAll(CONFIGURATION_QUESTION)) wanted.push([`CQ${n}`, question]);
+  return wanted.filter(([id, question]) => !(items.get(id) ?? []).some((h) => asksSame(question, h)))
+    .map(([id, question]) => ({ id, question, asked: items.get(id) ?? [] }));
+}
+
+/** strict: a component genome's SDD, designed or written from it, asks each open entry and Configuration Question
+ * under the genome's id in its Action Required, so an answer written beside an id lands on that entry. */
+function checkActionRequiredIds(sdd, text, r) {
+  let misplaced;
+  try { misplaced = misplacedItems(read(sdd), text); } catch { return; }
+  if (!misplaced.length) return;
+  const each = misplaced.map(({ id, question, asked }) => `${id} "${question}" ${asked.length ? `is asked as "${asked.join('" / "')}"` : "has no item"}`);
+  r.strict(`${baseName(sdd)}: Action Required asks ${misplaced.length} of the genome's open entries and Configuration Questions under another id or not at all; write it again from the genome, each under the genome's id: ${each.join("; ")}`);
 }
 
 const GENOME_ROW = /^\|\s*\*\*Genome\*\*\s*\|[^\n]*?\bgenome-sha256\s+([0-9a-f]{64})\b/m;
@@ -468,6 +520,7 @@ function checkWrittenSdd(path, text, level, r) {
   const slug = baseName(path).replace(/-genome\.md$/i, "");
   const sdd = join(dirname(path), `${slug}${level === "process" ? "-solution" : ""}-sdd.md`);
   if (!existsSync(sdd)) return;
+  if (level === "component") checkActionRequiredIds(sdd, text, r);
   const row = read(sdd).match(GENOME_ROW);
   if (!row) { r.strict(`${baseName(sdd)} beside the genome has no 'Genome' handoff row carrying its genome-sha256 fingerprint`); return; }
   let current;

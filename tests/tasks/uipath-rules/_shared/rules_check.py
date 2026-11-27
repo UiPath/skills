@@ -2,7 +2,8 @@
 """Shared grading for the uipath-rules tasks.
 
 `rules_check.py validate` passes when `uip rules validate` passes on the
-RiskRules project. `rules_check.py policy` grades a freshly authored RiskRules
+RiskRules project. `rules_check.py format` passes when `uip rules format`, run
+on a copy, changes no file. `rules_check.py policy` grades a freshly authored RiskRules
 rule: the authoring profile `validate` does not enforce, the entry-point
 contract `uip rules refresh` writes, and the table's risk band for each POLICY
 case. `rules_check.py names` passes when every rule carries a non-empty
@@ -14,8 +15,10 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -34,6 +37,11 @@ POLICY = [
     ({"creditScore": 820, "income": 20000}, "Low"),
 ]
 NUMBER = r"-?\d+(?:\.\d+)?"
+UIPATH_NS = "http://uipath.com/schema/1.0/dmn/authoring"
+# Which editor the designer opens the file in. `uip rules init` scaffolds `decision-table`, and
+# that is right for a rule that is one decision table: `decision-graph` opens it on the canvas
+# instead, a worse editor for the thing the user asked for. `validate` reports neither.
+TABLE_SURFACE, GRAPH_SURFACE = "decision-table", "decision-graph"
 
 
 def fail(message: str) -> None:
@@ -71,8 +79,25 @@ def run_validate(project: Path) -> None:
         fail(f"`uip rules validate {project}` failed: {(completed.stdout or completed.stderr)[-1500:]}")
 
 
+def run_format_check(project: Path) -> None:
+    """Fails when `uip rules format`, run on a copy, would change a file: the diagram lags the model."""
+    with tempfile.TemporaryDirectory() as scratch:
+        copy = Path(scratch) / project.name
+        shutil.copytree(project, copy)
+        completed = subprocess.run(["uip", "rules", "format", str(copy), "--output", "json"],
+                                   capture_output=True, text=True, timeout=120)
+    if completed.returncode != 0:
+        fail(f"`uip rules format {project}` failed: {(completed.stdout or completed.stderr)[-1500:]}")
+    try:
+        changed = [f.get("File") for f in json.loads(completed.stdout)["Data"]["Files"] if f.get("Changed")]
+    except (ValueError, KeyError, TypeError):
+        fail(f"`uip rules format` printed no Data.Files: {completed.stdout[-1500:]}")
+    if changed:
+        fail(f"`uip rules format` still changes {changed}; run it after adding or removing an element")
+
+
 def load_graph(project: Path) -> tuple[Path, ET.Element]:
-    """The project's one `.dmn`, once it holds the profile the skill authors: every decision's logic a decision table or a literal expression, knowledge models and text annotations allowed, no knowledge source or decision service."""
+    """The project's one `.dmn`, once it holds the profile the skill authors: every decision's logic a decision table or a literal expression, knowledge models, knowledge sources and text annotations allowed, no decision service."""
     dmn_files = list(project.glob("*.dmn"))
     if len(dmn_files) != 1:
         fail(f"expected exactly one .dmn in {project}/, found {len(dmn_files)}")
@@ -84,16 +109,52 @@ def load_graph(project: Path) -> tuple[Path, ET.Element]:
     root = ET.fromstring(text)
     if root.tag != f"{{{DMN_NS}}}definitions":
         fail(f"{dmn_files[0]} is not a DMN 1.5 <definitions>")
-    for unsupported in ("knowledgeSource", "decisionService"):
-        if root.findall(f"dmn:{unsupported}", NS):
-            fail(f"{dmn_files[0]} declares a {unsupported}")
+    if root.findall("dmn:decisionService", NS):
+        fail(f"{dmn_files[0]} declares a decisionService")
     decisions = root.findall("dmn:decision", NS)
     if not decisions:
         fail(f"{dmn_files[0]} holds no decision")
     for decision in decisions:
         if decision.find("dmn:decisionTable", NS) is None and decision.find("dmn:literalExpression", NS) is None:
             fail(f"{dmn_files[0]}: the logic of decision {decision.get('name')!r} is neither a decisionTable nor a literalExpression")
+    check_authoring_surface(dmn_files[0], root)
     return dmn_files[0], root
+
+
+def check_authoring_surface(dmn_file: Path, root: ET.Element) -> None:
+    """The authoring surface agrees with what the file holds.
+
+    Nothing graded this and `validate` reports neither value, so a rule authored with the wrong
+    surface passed every task in the suite. Agents reached for `decision-graph` on single-table
+    rules because the skill documented no other value.
+
+    Only the two shapes the product pins are asserted. A single decision whose logic is a literal
+    expression is left alone: `editor` is per-decision, and which surface the designer wants for
+    that file is not something this suite can evidence.
+    """
+    element = root.find("dmn:extensionElements/uipath:authoring", {**NS, "uipath": UIPATH_NS})
+    surface = element.get("surface") if element is not None else None
+    if not surface:
+        fail(f"{dmn_file} declares no <uipath:authoring surface=\"...\" /> in the definitions' "
+             f"<extensionElements>; without it the designer cannot tell which editor to open")
+    if surface not in (TABLE_SURFACE, GRAPH_SURFACE):
+        fail(f"{dmn_file} declares surface {surface!r}; the designer reads {TABLE_SURFACE!r} or "
+             f"{GRAPH_SURFACE!r}")
+    decisions = root.findall("dmn:decision", NS)
+    canvas_only = (root.findall("dmn:businessKnowledgeModel", NS)
+                   + root.findall("dmn:knowledgeSource", NS)
+                   + root.findall("dmn:textAnnotation", NS))
+    if (len(decisions) > 1 or canvas_only) and surface != GRAPH_SURFACE:
+        reason = ("holds several decisions" if len(decisions) > 1
+                  else "holds a knowledge model, knowledge source or text annotation, which only the canvas draws")
+        fail(f"{dmn_file} {reason} but declares surface {surface!r}; it opens as a bare table and "
+             f"the requirement edges are invisible. Use {GRAPH_SURFACE!r}")
+    one_table = (len(decisions) == 1 and not canvas_only
+                 and decisions[0].find("dmn:decisionTable", NS) is not None)
+    if one_table and surface != TABLE_SURFACE:
+        fail(f"{dmn_file} is one decision table and nothing else, but declares surface {surface!r}; "
+             f"that opens it on the graph canvas instead of the table editor. `uip rules init` "
+             f"scaffolds {TABLE_SURFACE!r} — leave it as it is")
 
 
 def load_rule(project: Path) -> tuple[Path, ET.Element]:
@@ -346,6 +407,9 @@ if __name__ == "__main__":
     if mode == "validate":
         run_validate(find_project(name))
         print("OK: uip rules validate passes")
+    elif mode == "format":
+        run_format_check(find_project(name))
+        print("OK: uip rules format changes nothing")
     elif mode == "policy":
         grade_policy()
     elif mode == "names":

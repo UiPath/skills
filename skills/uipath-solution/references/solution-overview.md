@@ -59,7 +59,8 @@ MySolution/
 ├── <AppV2ProjectName>/                   <- AppV2 coded app (Coded or CodedAction).
 │   ├── project.uiproj                    <- ProjectType: "AppV2".
 │   ├── webAppManifest.json               <- Coded / CodedAction discriminator + bundlePath.
-│   └── source/dist/                      <- Build output (bundlePath: "source/dist").
+│   └── source/                           <- The app's sources: package.json, src/, uipath.json.
+│       └── dist/                         <- Build output (bundlePath: "source/dist").
 ├── resources/                            <- Auto-generated on add/import. NEVER hand-edit.
 │   └── solution_folder/
 │       ├── package/<name>.json           <- Auto-created on add. NOT cleaned by `projects remove`.
@@ -72,7 +73,7 @@ MySolution/
 >
 > The `.uipx` also carries a `StudioMinVersion` field (e.g. `2025.10.0`). If users hit a version-mismatch when opening the solution, that's the constraint to check.
 
-> **AppV2 coded apps are first-class solution members when authored inside a `.uipx`.** They emit under `resources/solution_folder/app/{Coded,CodedAction}/`, pack / publish / deploy via `uip solution`, and are registered by `uip codedapp init` (run from inside the solution — auto-registers), `uip solution projects add`, or `uip solution projects import`. `uip codedapp init` is the solution-side entry point; standalone coded apps are scaffolded with `npx create-vite` instead and deploy through `uip codedapp pack` / `publish` / `deploy`. See [SKILL.md Rule 7](../SKILL.md#critical-rules) and [/uipath:uipath-coded-apps](/uipath:uipath-coded-apps).
+> **AppV2 coded apps are first-class solution members when authored inside a `.uipx`.** They emit under `resources/solution_folder/app/{Coded,CodedAction}/`, pack / publish / deploy via `uip solution`, and are registered by `uip codedapp init` (run from inside the solution — auto-registers), `uip solution projects add`, or `uip solution projects import`. `uip codedapp init` is the solution-side entry point, but it writes only a placeholder app under `source/`: the app's React sources are scaffolded into `source/` after it. Standalone coded apps skip init: they are scaffolded with `npx create-vite` and deploy through `uip codedapp pack` / `publish` / `deploy`. See [SKILL.md Rule 7](../SKILL.md#critical-rules) and [/uipath:uipath-coded-apps](/uipath:uipath-coded-apps).
 
 > **`.uis` bundles and the `pack` `.zip` are plain zip archives — unzip to inspect bundled contents.**
 

@@ -39,7 +39,7 @@ The sections:
    It ends on `Status:`. Usually answered by: each system's owner.
 5. **Build environment** — the tasks of the machine that builds that no question asks:
    - a Robot that may run the workflows on the build machine, when test runs are wanted;
-   - the UiPath CLI signed in to a tenant the build may read;
+   - the UiPath CLI signed in to a tenant the build may read, and write to where the Platform resources answer creates them;
    - the package feed, with every library the automation consumes;
    - data the build's test runs may change, or none.
 
@@ -181,7 +181,43 @@ Usually answered by: the engineer, with the tenant admin.
 
 Usually answered by: as each item names.
 
-<each open item of the SDD's Action Required, under its id and its group's heading, as the SDD writes it; with no SDD, each open entry and Configuration Question of the genome, in the item form under the same group headings, naming its id and who answers it>
+<each open item of the SDD's Action Required, under its id and its group's heading, as the SDD writes it. With no SDD, the genome's open entries and Configuration Questions, as below; a material entry goes under Material to supply>
+
+### Business decisions
+
+#### <Process, or the component>
+
+**D<n>. <The entry's question>**
+- **Context:** Answered by: <the entry's `answered by:`>.
+- **See:** <the step the entry names>
+- **Options:**
+  - a. <what the genome builds now> (built now)<; (recommended) too when the entry recommends it>
+  - b. <each other option of the entry, one per line; (recommended) on the one it recommends>
+- **Answer:**
+
+### Material to supply
+
+#### <Process, or the component>
+
+**D<n>. <What to supply>**
+- **Context:** Answered by: <the entry's `answered by:`>.
+- **See:** <the step the entry names>
+- **Until answered:** <the entry's `until answered:`>
+- **Answer:**
+
+### Configuration values
+
+#### <Process, or the component>
+
+**CQ<n>. <The Configuration Question>**
+- **Context:** Answered by: <the environment's owners for a setting, the process owner for a constant>.
+- **Default:** <the question's default>
+- **Answer:**
+
+**CQ<n>. <A Configuration Question whose default the build cannot run with: none, or not in the export>**
+- **Context:** Answered by: <the environment's owners for a setting, the process owner for a constant>.
+- **Until answered:** <what the build does: asks it, or builds an empty setting the run stops on>
+- **Answer:**
 ````
 
 ## Read Plan

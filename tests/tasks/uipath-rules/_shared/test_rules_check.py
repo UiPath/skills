@@ -6,7 +6,9 @@ decision-keyed contract, and the DMN profile checks. A regression here passes
 a wrong table or fails a right one in every task that imports it.
 """
 
+import json
 import shutil
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -19,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import rules_check as rc  # noqa: E402
 
 TASKS = Path(__file__).resolve().parent.parent
-FIXTURE = TASKS / "integration" / "diagnose_wrong_output" / "fixtures" / "RiskRules"
+FIXTURE = TASKS / "diagnose" / "wrong_output" / "fixtures" / "RiskRulesSolution" / "RiskRules"
 
 
 def table(hit_policy, rows, inputs=("creditScore",), outputs=("riskBand",)):
@@ -200,16 +202,30 @@ class TestProject:
             rc.load_rule(project)
 
     def test_accepts_a_business_knowledge_model(self, project):
-        # Supported since the profile widened; a model is graded by check_knowledge_models.
+        # Supported since the profile widened; a model is graded by check_knowledge_models. Only
+        # the canvas draws a model, so adding one to a single-table rule also moves it to the
+        # graph surface — `check_authoring_surface` refuses the pair that disagree.
         path = dmn_of(project)
-        text = path.read_text(encoding="utf-8")
-        path.write_text(text.replace("</definitions>", '<businessKnowledgeModel id="b" name="b"/></definitions>'), encoding="utf-8")
+        text = path.read_text(encoding="utf-8").replace(
+            "</definitions>", '<businessKnowledgeModel id="b" name="b"/></definitions>').replace(
+            f'surface="{rc.TABLE_SURFACE}"', f'surface="{rc.GRAPH_SURFACE}"')
+        path.write_text(text, encoding="utf-8")
         rc.load_rule(project)
 
-    def test_rejects_a_knowledge_source(self, project):
+    def test_accepts_a_knowledge_source(self, project):
+        # Supported since the profile widened; a citation is graded by its own task. Only the
+        # canvas draws a source, so the rule moves to the graph surface with it.
+        path = dmn_of(project)
+        text = path.read_text(encoding="utf-8").replace(
+            "</definitions>", '<knowledgeSource id="k" name="k"/></definitions>').replace(
+            f'surface="{rc.TABLE_SURFACE}"', f'surface="{rc.GRAPH_SURFACE}"')
+        path.write_text(text, encoding="utf-8")
+        rc.load_rule(project)
+
+    def test_rejects_a_decision_service(self, project):
         path = dmn_of(project)
         text = path.read_text(encoding="utf-8")
-        path.write_text(text.replace("</definitions>", '<knowledgeSource id="k" name="k"/></definitions>'), encoding="utf-8")
+        path.write_text(text.replace("</definitions>", '<decisionService id="s" name="s"/></definitions>'), encoding="utf-8")
         with pytest.raises(SystemExit):
             rc.load_rule(project)
 
@@ -331,3 +347,106 @@ def test_first_stops_at_its_first_match():
     </decisionTable>''')
 
     assert rc.evaluate(table, {"amount": 10}) == {"fee": 1}
+
+
+class TestFormatCheck:
+    """`run_format_check` with `uip` stubbed, so these run without the CLI."""
+
+    @staticmethod
+    def stub(monkeypatch, project, files, returncode=0):
+        def run(command, **_):
+            assert Path(command[3]) != project  # formats a copy, never the agent's files
+            body = json.dumps({"Data": {"Files": files}})
+            return subprocess.CompletedProcess(command, returncode, stdout=body, stderr="")
+        monkeypatch.setattr(rc.subprocess, "run", run)
+
+    def test_passes_when_nothing_changes(self, project, monkeypatch):
+        self.stub(monkeypatch, project, [{"File": "rule.dmn", "Changed": False}])
+        rc.run_format_check(project)
+
+    @pytest.mark.parametrize("files, returncode", [([{"File": "rule.dmn", "Changed": True}], 0), ([], 1)])
+    def test_fails_on_a_change_or_a_failed_run(self, project, monkeypatch, files, returncode):
+        self.stub(monkeypatch, project, files, returncode)
+        with pytest.raises(SystemExit):
+            rc.run_format_check(project)
+
+
+class TestAuthoringSurface:
+    """The surface decides which editor the designer opens, and `validate` reports neither value.
+
+    Nothing graded it, so a rule authored with the wrong surface passed every task in the suite
+    while opening in the wrong editor. Agents reached for `decision-graph` on single-table rules
+    because the skill documented no other value — `uip rules init` scaffolds `decision-table`, and
+    the skill never mentioned it.
+    """
+
+    @staticmethod
+    def _dmn(body: str, surface: str | None) -> ET.Element:
+        marker = (f'<extensionElements><uipath:authoring surface="{surface}" /></extensionElements>'
+                  if surface is not None else "")
+        return ET.fromstring(
+            f'<definitions xmlns="{rc.DMN_NS}" xmlns:uipath="{rc.UIPATH_NS}" id="d" name="R" '
+            f'namespace="urn:r">{marker}{body}</definitions>')
+
+    TABLE = ('<decision id="d1" name="d1"><decisionTable id="t1" hitPolicy="FIRST">'
+             '<input id="i1"><inputExpression id="ie1" typeRef="number"><text>a</text>'
+             '</inputExpression></input><output id="o1" name="out" typeRef="string"/>'
+             '<annotation name="Annotation"/><rule id="r1"><inputEntry><text>-</text></inputEntry>'
+             '<outputEntry><text>"x"</text></outputEntry><annotationEntry><text>Any</text>'
+             '</annotationEntry></rule></decisionTable></decision>')
+    SECOND = (TABLE.replace('"d1"', '"d2"').replace('"t1"', '"t2"').replace('"i1"', '"i2"')
+                   .replace('"ie1"', '"ie2"').replace('"o1"', '"o2"').replace('"r1"', '"r2"')
+                   .replace('name="out"', 'name="out2"'))
+    MODEL = ('<businessKnowledgeModel id="b1" name="b1"><variable id="vb" name="b1"/>'
+             '<encapsulatedLogic/></businessKnowledgeModel>')
+    NOTE = '<textAnnotation id="n1"><text>Owned by Finance</text></textAnnotation>'
+
+    def test_one_table_on_the_table_surface_is_accepted(self):
+        rc.check_authoring_surface(Path("r.dmn"), self._dmn(self.TABLE, rc.TABLE_SURFACE))
+
+    def test_one_table_on_the_graph_surface_is_refused(self, capsys):
+        # The reported defect: a single decision table authored as a DRD. It opens on the canvas
+        # instead of the table editor, and nothing in `validate` says so.
+        with pytest.raises(SystemExit):
+            rc.check_authoring_surface(Path("r.dmn"), self._dmn(self.TABLE, rc.GRAPH_SURFACE))
+        printed = capsys.readouterr().out
+        assert "one decision table and nothing else" in printed
+        assert "leave it as it is" in printed
+
+    def test_two_decisions_on_the_table_surface_are_refused(self, capsys):
+        # The other direction: a graph that opens as a bare table hides its requirement edges.
+        with pytest.raises(SystemExit):
+            rc.check_authoring_surface(Path("r.dmn"),
+                                       self._dmn(self.TABLE + self.SECOND, rc.TABLE_SURFACE))
+        assert "holds several decisions" in capsys.readouterr().out
+
+    @pytest.mark.parametrize("extra", ["MODEL", "NOTE"])
+    def test_an_element_only_the_canvas_draws_needs_the_graph_surface(self, extra, capsys):
+        body = self.TABLE + getattr(self, extra)
+        rc.check_authoring_surface(Path("r.dmn"), self._dmn(body, rc.GRAPH_SURFACE))
+        with pytest.raises(SystemExit):
+            rc.check_authoring_surface(Path("r.dmn"), self._dmn(body, rc.TABLE_SURFACE))
+        assert "only the canvas draws" in capsys.readouterr().out
+
+    def test_a_missing_marker_is_refused(self, capsys):
+        with pytest.raises(SystemExit):
+            rc.check_authoring_surface(Path("r.dmn"), self._dmn(self.TABLE, None))
+        assert "declares no <uipath:authoring" in capsys.readouterr().out
+
+    def test_a_single_literal_expression_decision_is_left_alone(self):
+        # `editor` is per-decision, and which surface the designer wants for a file whose one
+        # decision is a formula is not something this suite can evidence. Asserted on neither
+        # value rather than guessed at.
+        body = ('<decision id="d1" name="d1"><literalExpression id="le" typeRef="number">'
+                '<text>a * 2</text></literalExpression></decision>')
+        for surface in (rc.TABLE_SURFACE, rc.GRAPH_SURFACE):
+            rc.check_authoring_surface(Path("r.dmn"), self._dmn(body, surface))
+
+    def test_every_grader_goes_through_it(self, project):
+        # Wired into `load_graph`, so no task can opt out. Without that an agent could author the
+        # wrong surface and pass every criterion in the suite, which is what happened.
+        path = dmn_of(project)
+        path.write_text(path.read_text(encoding="utf-8").replace(
+            f'surface="{rc.TABLE_SURFACE}"', f'surface="{rc.GRAPH_SURFACE}"'), encoding="utf-8")
+        with pytest.raises(SystemExit):
+            rc.load_rule(project)

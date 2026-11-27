@@ -40,7 +40,7 @@ Exception: when the Constraint Gate blocks Solutions for standalone, Automation 
 | Phase 1 Steps 4–6 | Level 1 = Solution, or the user picks "Solution (customize)" | solution-composition-guide.md § Level 1.75 — Solution Composition |
 | Phase 1 Step 5 | the primary is Agents or Coded Apps and product-specific information is missing | [scope-recommendation-guide.md](scope-recommendation-guide.md) § Gap Handling for Agent / Coded App |
 | Phase 1 Step 6 | — | scope-recommendation-guide.md § Presenting the Recommendation (its Summary block holds the Recommended Scope, Project List and Queue Architecture formats) |
-| Phase 1 Step 6 | `Execution autonomy` is `interactive` and the request carries no `planner-design-request: v1` block | [interview-guide.md](../interview/interview-guide.md) whole |
+| Phase 1 Step 0 | `Execution autonomy` is `interactive` and the request carries no `planner-design-request: v1` block | [interview-guide.md](../interview/interview-guide.md) whole, for Step 6's offer |
 | Phase 1 Step 3.5 or Phase 2 Step 4 | an external system needs its Integration Service check, or a Level 3 add-on is in play (HITL, Integration Service, API Workflow as integrated component, reusable or shared assets) | component-placement-guide.md § Level 3 — Capability Add-ons |
 | Phase 2 Step 1 | — | scope-recommendation-guide.md § Template Mapping |
 | Phase 1 Step 4 | whenever the Constraint Gate runs — every delivery model: Cloud is not uniform, and its variants (Public Sector, Dedicated, Test Cloud) and per-tenant entitlements can block products inside the Cloud column | [platform-availability-guide.md](../shared/platform-availability-guide.md) |
@@ -213,7 +213,7 @@ Recommended Scope + Project List + Queue Architecture>
 
 **The confirmation.** Ask the guide's structured confirmation question: recommendation option 1, single-product alternatives, then "Solution (customize)". **If the user picks "Solution (customize)":** re-run Level 1.75's customize branch, re-emit the summary with the customized project list, and re-ask; maximum 3 revisions, then proceed with latest composition. **If the user picks a single-product alternative:** re-run Step 4 with that forced primary, including Level 1.5 for RPA.
 
-**Without the interview**, ask at most 5 clarifying questions in one round; if the user cannot answer some, tag those items as `[SME REVIEW]` and proceed. With it, every point left open keeps its `[SME REVIEW]` marker, and Phase 3 Step 1.5 asks the items the interview did not ([sdd-writing-guide.md](sdd-writing-guide.md)).
+**Without the interview**, ask at most 5 clarifying questions in one round; if the user cannot answer some, tag those items as `[SME REVIEW]` and proceed. With it, every point left open keeps its `[SME REVIEW]` marker, and Phase 3 Step 1.5 states which items it still asks ([sdd-writing-guide.md](sdd-writing-guide.md)).
 
 ## Phase 2 — Architecture Review
 

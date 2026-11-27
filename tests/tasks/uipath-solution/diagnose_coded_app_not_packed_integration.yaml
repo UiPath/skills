@@ -25,7 +25,7 @@ description: >
     outside any parent `.uipx`, no `project.uiproj` / `webAppManifest.json`
     at the root — deploy independently via the standalone pipeline:
     `uip codedapp pack` → `uip codedapp publish` → `uip codedapp deploy`.
-    `uip codedapp init` is the solution-side scaffolding entry point,
+    `uip codedapp init` is the solution-side registration entry point,
     not the standalone one.
 
   A coded-app folder sitting inside a solution directory that is NOT

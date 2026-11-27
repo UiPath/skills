@@ -20,7 +20,7 @@ One row per edge between components: mechanism, its cell opening with the mechan
 
 What holds wherever the automation is deployed, in these bullets, each present, each value the source or the description does not settle classed as [genome-questions-guide.md § Open Decisions](genome-questions-guide.md) classes a point:
 
-- **Packaging and route:** one solution or independent packages, with the buildable projects named; a library with the feed it is published to and before its consumers, or with its consumers and the route that delivers it to them, apart from the solution's projects, since it is never one of them; with test components, exactly one test project and one Test Manager test set per test component.
+- **Packaging and route:** one solution or independent packages, independent packages whenever the delivery model blocks Solutions ([platform-availability-guide.md](platform-availability-guide.md)), with the buildable projects named; a library with the feed it is published to and before its consumers, or with its consumers and the route that delivers it to them, apart from the solution's projects, since it is never one of them; with test components, exactly one test project and one Test Manager test set per test component.
 - **Entry points:** each process's entry point, and who or what starts it; how each starts is the Triggers table.
 - **Runtime:** Windows, cross-platform or serverless, and unattended or attended, as each component's steps need.
 - **Kept out of the logs:** the data a run must not log (a source's private activities and the name keywords that mark them), or none.
