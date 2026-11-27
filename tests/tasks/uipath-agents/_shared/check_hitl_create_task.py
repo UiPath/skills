@@ -4,8 +4,8 @@
 Asserts the primitives that together make
 `interrupt(CreateEscalation)` work end-to-end:
 
-  1. `main.py` imports `interrupt` from `langgraph.types`.
-  2. `main.py` imports `CreateEscalation` from
+  1. An agent module imports `interrupt` from `langgraph.types`.
+  2. An agent module imports `CreateEscalation` from
      `uipath.platform.common` and references it inside `interrupt(...)`.
      The prompt is an explicit escalation — the skill prescribes
      `CreateEscalation` for that path (`CreateTask` is the general
@@ -20,6 +20,10 @@ Asserts the primitives that together make
      `{name}.{folder}` form documented in bindings-reference.md.
 
 Also runs the lazy-LLM-init AST scan as a hygiene check.
+
+Agent modules are the entry module `langgraph.json` registers plus every
+project module it imports (see `project_sources.py`), so the interrupt
+may live in a helper module.
 """
 
 from __future__ import annotations
@@ -50,20 +54,7 @@ from _shared.bindings_assertions import (  # noqa: E402
     assert_metadata_field,
 )
 from _shared.ast_lazy_init_check import find_module_level_llm_clients  # noqa: E402
-
-
-def _read_text(path: Path) -> str:
-    if not path.is_file():
-        sys.exit(f"FAIL: Missing {path}")
-    return path.read_text(encoding="utf-8")
-
-
-def find_graph_module() -> Path:
-    for candidate in ("main.py", "graph.py"):
-        path = ROOT / candidate
-        if path.is_file():
-            return path
-    sys.exit(f"FAIL: neither main.py nor graph.py found under {ROOT}")
+from _shared.project_sources import agent_modules, find_entry_module, parse_modules, read_sources  # noqa: E402
 
 
 def _module_constants(tree: ast.Module) -> dict[str, object]:
@@ -85,6 +76,18 @@ def _module_constants(tree: ast.Module) -> dict[str, object]:
         ):
             # Annotated constant, e.g. ``APP_NAME: str = "ExpenseReviewApp"``.
             consts[node.target.id] = node.value.value
+    return consts
+
+
+def _merged_constants(
+    parsed: list[tuple[Path, ast.Module]], own: ast.Module
+) -> dict[str, object]:
+    """Constants from every agent module; the call's own module wins."""
+    consts: dict[str, object] = {}
+    for _, tree in parsed:
+        if tree is not own:
+            consts.update(_module_constants(tree))
+    consts.update(_module_constants(own))
     return consts
 
 
@@ -115,7 +118,7 @@ def _find_create_escalation_call(tree: ast.Module) -> ast.Call | None:
     return None
 
 
-def check_imports_and_calls(text: str, tree: ast.Module) -> None:
+def check_imports_and_calls(text: str, parsed: list[tuple[Path, ast.Module]]) -> None:
     if not re.search(r"from\s+langgraph\.types\s+import\s+(?:[^\n]*\binterrupt\b|\([^)]*\binterrupt\b)", text):
         sys.exit("FAIL: missing `from langgraph.types import interrupt`")
     print("OK: imports `interrupt` from langgraph.types")
@@ -126,11 +129,15 @@ def check_imports_and_calls(text: str, tree: ast.Module) -> None:
             "`CreateEscalation` for that path."
         )
     print("OK: imports CreateEscalation from uipath.platform.common")
-    call = _find_create_escalation_call(tree)
-    if call is None:
+    found = next(
+        ((tree, c) for _, tree in parsed if (c := _find_create_escalation_call(tree))),
+        None,
+    )
+    if found is None:
         sys.exit("FAIL: no `interrupt(CreateEscalation(...))` call site found")
+    tree, call = found
     print("OK: graph node calls interrupt(CreateEscalation(...))")
-    consts = _module_constants(tree)
+    consts = _merged_constants(parsed, tree)
     kwargs = {kw.arg: kw.value for kw in call.keywords if kw.arg is not None}
     expected = {"app_name": APP_NAME, "app_folder_path": APP_FOLDER}
     for kw, want in expected.items():
@@ -163,11 +170,9 @@ def check_app_binding() -> None:
 def main() -> None:
     if not ROOT.is_dir():
         sys.exit(f"FAIL: project directory {ROOT} does not exist")
-    module = find_graph_module()
-    text = _read_text(module)
-    tree = ast.parse(text, filename=str(module))
-    check_imports_and_calls(text, tree)
-    violations = find_module_level_llm_clients(module)
+    modules = agent_modules(ROOT, find_entry_module(ROOT))
+    check_imports_and_calls(read_sources(modules), parse_modules(modules))
+    violations = [v for m in modules for v in find_module_level_llm_clients(m)]
     if violations:
         sys.exit("FAIL: " + " | ".join(violations))
     print("OK: no module-level UiPath* construction")

@@ -2,7 +2,7 @@
 """Process-invocation coded-agent shape check.
 
 Asserts:
-  1. ``main.py`` imports ``interrupt`` from ``langgraph.types`` and
+  1. An agent module imports ``interrupt`` from ``langgraph.types`` and
      ``InvokeProcess`` from ``uipath.platform.common``.
   2. A graph node calls ``interrupt(InvokeProcess(...))`` whose
      ``name=`` and ``process_folder_path=`` resolve (through any
@@ -11,6 +11,9 @@ Asserts:
   3. ``bindings.json`` declares the ``process`` resource for
      DataScraper / Workflows with ``ActivityName=invoke_async``.
   4. No module-level UiPath* construction.
+
+Agent modules are the entry module ``langgraph.json`` registers plus
+every project module it imports (see ``project_sources.py``).
 """
 
 from __future__ import annotations
@@ -34,20 +37,7 @@ from _shared.bindings_assertions import (  # noqa: E402
     assert_metadata_field,
 )
 from _shared.ast_lazy_init_check import find_module_level_llm_clients  # noqa: E402
-
-
-def _read_text(path: Path) -> str:
-    if not path.is_file():
-        sys.exit(f"FAIL: Missing {path}")
-    return path.read_text(encoding="utf-8")
-
-
-def find_graph_module() -> Path:
-    for candidate in ("main.py", "graph.py"):
-        path = ROOT / candidate
-        if path.is_file():
-            return path
-    sys.exit(f"FAIL: neither main.py nor graph.py found under {ROOT}")
+from _shared.project_sources import agent_modules, find_entry_module, parse_modules, read_sources  # noqa: E402
 
 
 def _module_constants(tree: ast.Module) -> dict[str, object]:
@@ -57,6 +47,18 @@ def _module_constants(tree: ast.Module) -> dict[str, object]:
             for tgt in node.targets:
                 if isinstance(tgt, ast.Name):
                     consts[tgt.id] = node.value.value
+    return consts
+
+
+def _merged_constants(
+    parsed: list[tuple[Path, ast.Module]], own: ast.Module
+) -> dict[str, object]:
+    """Constants from every agent module; the call's own module wins."""
+    consts: dict[str, object] = {}
+    for _, tree in parsed:
+        if tree is not own:
+            consts.update(_module_constants(tree))
+    consts.update(_module_constants(own))
     return consts
 
 
@@ -94,7 +96,7 @@ def _find_invoke_process_call(tree: ast.Module) -> ast.Call | None:
     return None
 
 
-def check_invocation(text: str, tree: ast.Module) -> None:
+def check_invocation(text: str, parsed: list[tuple[Path, ast.Module]]) -> None:
     if not re.search(r"from\s+langgraph\.types\s+import\s+(?:[^\n]*\binterrupt\b|\([^)]*\binterrupt\b)", text):
         sys.exit("FAIL: missing `from langgraph.types import interrupt`")
     if not re.search(
@@ -103,11 +105,15 @@ def check_invocation(text: str, tree: ast.Module) -> None:
     ):
         sys.exit("FAIL: missing `from uipath.platform.common import InvokeProcess`")
 
-    call = _find_invoke_process_call(tree)
-    if call is None:
+    found = next(
+        ((tree, c) for _, tree in parsed if (c := _find_invoke_process_call(tree))),
+        None,
+    )
+    if found is None:
         sys.exit("FAIL: no `interrupt(InvokeProcess(...))` call site found")
+    tree, call = found
 
-    consts = _module_constants(tree)
+    consts = _merged_constants(parsed, tree)
     expected = {"name": "DataScraper", "process_folder_path": "Workflows"}
     for kw, want in expected.items():
         node = _kwarg(call, kw)
@@ -136,11 +142,9 @@ def check_process_binding() -> None:
 def main() -> None:
     if not ROOT.is_dir():
         sys.exit(f"FAIL: project directory {ROOT} does not exist")
-    module = find_graph_module()
-    text = _read_text(module)
-    tree = ast.parse(text, filename=str(module))
-    check_invocation(text, tree)
-    violations = find_module_level_llm_clients(module)
+    modules = agent_modules(ROOT, find_entry_module(ROOT))
+    check_invocation(read_sources(modules), parse_modules(modules))
+    violations = [v for m in modules for v in find_module_level_llm_clients(m)]
     if violations:
         sys.exit("FAIL: " + " | ".join(violations))
     print("OK: no module-level UiPath* construction")

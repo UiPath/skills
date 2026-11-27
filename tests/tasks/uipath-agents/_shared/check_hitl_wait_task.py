@@ -9,17 +9,20 @@ payload (`WaitTask` -> task `data`, `WaitEscalation` -> full `Task` incl.
 `action`). The prompt asks the agent to read the reviewer's decision,
 which either class can serve, so the choice is not graded. Asserts:
 
-  1. `main.py` imports `interrupt` from `langgraph.types`.
-  2. `main.py` imports `WaitTask` or `WaitEscalation` from
+  1. An agent module imports `interrupt` from `langgraph.types`.
+  2. An agent module imports `WaitTask` or `WaitEscalation` from
      `uipath.platform.common`.
   3. At least one `interrupt(WaitTask(...))` or
      `interrupt(WaitEscalation(...))` call exists.
-  4. `main.py` does NOT use `CreateTask` / `CreateEscalation` — the
+  4. No agent module uses `CreateTask` / `CreateEscalation` — the
      scenario is monitoring an existing task, not creating one.
   5. A top-level `graph =` variable is exported (LangGraph entrypoint).
   6. `langgraph.json` exists at the resolved project root and points at
      the exported graph.
   7. No module-level UiPath* client construction (Critical Rule C4).
+
+Agent modules are the entry module `langgraph.json` registers plus every
+project module it imports (see `project_sources.py`).
 """
 
 from __future__ import annotations
@@ -28,12 +31,12 @@ import ast
 import os
 import re
 import sys
-from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.project_root import find_project_root  # noqa: E402
 from _shared.ast_lazy_init_check import find_module_level_llm_clients  # noqa: E402
 from _shared.langgraph_assertions import assert_langgraph_config  # noqa: E402
+from _shared.project_sources import agent_modules, find_entry_module, parse_modules, read_sources  # noqa: E402
 
 ROOT = find_project_root("purchase-gate")
 
@@ -44,15 +47,6 @@ WAIT_CLASSES = ("WaitTask", "WaitEscalation")
 
 def fail(msg: str) -> None:
     sys.exit(f"FAIL: {msg}")
-
-
-def find_graph_module() -> Path:
-    for candidate in ("main.py", "graph.py"):
-        path = ROOT / candidate
-        if path.is_file():
-            return path
-    fail(f"neither main.py nor graph.py found under {ROOT}")
-    raise SystemExit(1)  # unreachable, for type checkers
 
 
 def find_interrupt_wait_class(tree: ast.Module) -> str | None:
@@ -75,12 +69,11 @@ def main() -> None:
     if not ROOT.is_dir():
         fail(f"project directory {ROOT} does not exist")
 
-    module = find_graph_module()
-    text = module.read_text(encoding="utf-8")
-    try:
-        tree = ast.parse(text, filename=str(module))
-    except SyntaxError as exc:
-        fail(f"{module} has a syntax error: {exc}")
+    module = find_entry_module(ROOT)
+    modules = agent_modules(ROOT, module)
+    parsed = parse_modules(modules)
+    text = read_sources(modules)
+    entry_text = module.read_text(encoding="utf-8")
 
     if not re.search(r"from\s+langgraph\.types\s+import\s+(?:[^\n]*\binterrupt\b|\([^)]*\binterrupt\b)", text):
         fail("missing `from langgraph.types import interrupt`")
@@ -98,7 +91,9 @@ def main() -> None:
         )
     print(f"OK: imports {imported.group(1) or imported.group(2)} from uipath.platform.common")
 
-    wait_cls = find_interrupt_wait_class(tree)
+    wait_cls = next(
+        (c for _, tree in parsed if (c := find_interrupt_wait_class(tree))), None
+    )
     if wait_cls is None:
         fail(
             "no `interrupt(WaitTask(...))` / `interrupt(WaitEscalation(...))` call site found. "
@@ -108,19 +103,19 @@ def main() -> None:
 
     if re.search(r"\bCreateTask\s*\(", text) or re.search(r"\bCreateEscalation\s*\(", text):
         fail(
-            "main.py invokes `CreateTask(...)` or `CreateEscalation(...)`. "
+            "An agent module invokes `CreateTask(...)` or `CreateEscalation(...)`. "
             "Those open a NEW Action Center task — the scenario is monitoring an "
             "ALREADY-CREATED task via `WaitTask`. Use `WaitTask` only."
         )
     print("OK: no CreateTask / CreateEscalation usage (scenario is monitor-existing-task)")
 
-    if not re.search(r"^\s*graph\s*=\s*", text, re.M):
-        fail("main.py does not export a top-level `graph =` variable")
+    if not re.search(r"^\s*graph\s*=\s*", entry_text, re.M):
+        fail(f"{module.name} does not export a top-level `graph =` variable")
     print("OK: top-level `graph` variable exported")
 
     assert_langgraph_config(ROOT, module)
 
-    violations = find_module_level_llm_clients(module)
+    violations = [v for m in modules for v in find_module_level_llm_clients(m)]
     if violations:
         fail("module-level UiPath* construction (C4): " + " | ".join(violations))
     print("OK: no module-level UiPath* construction")

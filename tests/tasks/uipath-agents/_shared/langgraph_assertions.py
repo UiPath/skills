@@ -30,13 +30,17 @@ def assert_langgraph_config(root: Path, module: Path) -> None:
     if not isinstance(graphs, dict) or not graphs:
         sys.exit("FAIL: langgraph.json must contain a non-empty `graphs` object")
 
-    expected_targets = {f"./{module.name}:graph", f"{module.name}:graph"}
+    try:
+        rel = module.resolve().relative_to(root.resolve()).as_posix()
+    except ValueError:
+        rel = module.name
+    expected_targets = {f"./{rel}:graph", f"{rel}:graph"}
     if not any(target in expected_targets for target in graphs.values()):
         sys.exit(
             "FAIL: langgraph.json must map a graph entry to the exported graph "
             f"({', '.join(sorted(expected_targets))}); got {graphs!r}"
         )
-    print(f"OK: langgraph.json registers {module.name}:graph")
+    print(f"OK: langgraph.json registers {rel}:graph")
 
 
 def _base_name(node: ast.expr) -> str | None:
@@ -46,16 +50,6 @@ def _base_name(node: ast.expr) -> str | None:
     if isinstance(node, ast.Attribute):
         return node.attr
     return None
-
-
-def _pydantic_models(tree: ast.Module) -> set[str]:
-    """Names of classes in this module that subclass `BaseModel`."""
-    return {
-        node.name
-        for node in ast.walk(tree)
-        if isinstance(node, ast.ClassDef)
-        and any(_base_name(base) == "BaseModel" for base in node.bases)
-    }
 
 
 def _defined_classes(tree: ast.Module) -> set[str]:
@@ -92,8 +86,12 @@ def _exports_compiled_graph(tree: ast.Module) -> bool:
     return False
 
 
-def assert_graph_module_shape(path: Path) -> None:
+def assert_graph_module_shape(path: Path, modules: list[Path] | None = None) -> None:
     """Assert the module has LangGraph agent shape, ignoring class names.
+
+    `modules` are the agent modules `path` imports (see
+    `project_sources.agent_modules`); schema classes defined in any of
+    them count, so models kept in a `models.py` pass.
 
     Class names are not an invariant — `references/coded/frameworks/
     agent-patterns.md` explicitly allows `Input`/`Output` or
@@ -122,8 +120,33 @@ def assert_graph_module_shape(path: Path) -> None:
     if call is None:
         sys.exit(f"FAIL: {path.name} does not construct a StateGraph")
 
-    models = _pydantic_models(tree)
-    classes = _defined_classes(tree)
+    trees = [tree]
+    for other in modules or []:
+        if other.resolve() == path.resolve():
+            continue
+        try:
+            trees.append(ast.parse(other.read_text(encoding="utf-8"), filename=str(other)))
+        except SyntaxError as exc:
+            sys.exit(f"FAIL: {other.name} is not valid Python: {exc}")
+    classes: set[str] = set()
+    bases: dict[str, set[str]] = {}
+    for t in trees:
+        classes |= _defined_classes(t)
+        for node in ast.walk(t):
+            if isinstance(node, ast.ClassDef):
+                bases.setdefault(node.name, set()).update(
+                    b for b in map(_base_name, node.bases) if b
+                )
+    # A model may subclass another project model (`class Output(Base)`).
+    models: set[str] = set()
+    while True:
+        grown = {
+            name for name, parents in bases.items()
+            if name not in models and parents & (models | {"BaseModel"})
+        }
+        if not grown:
+            break
+        models |= grown
     schemas: dict[str, str] = {}
     if call.args:
         schemas["state"] = ast.unparse(call.args[0])
@@ -135,7 +158,7 @@ def assert_graph_module_shape(path: Path) -> None:
     if state is not None and state not in classes:
         sys.exit(
             f"FAIL: {path.name} passes StateGraph state schema `{state}`, which is "
-            f"not a class defined in the module (found: {sorted(classes) or 'none'})"
+            f"not a class defined in the agent modules (found: {sorted(classes) or 'none'})"
         )
 
     io_schemas = {k: v for k, v in schemas.items() if k in _IO_KEYWORDS}
@@ -144,7 +167,7 @@ def assert_graph_module_shape(path: Path) -> None:
         sys.exit(
             f"FAIL: {path.name} passes StateGraph input/output schema(s) "
             f"{non_models} that are not Pydantic BaseModel subclasses defined in "
-            f"the module (found models: {sorted(models) or 'none'})"
+            f"the agent modules (found models: {sorted(models) or 'none'})"
         )
 
     outputs = {io_schemas[k] for k in _OUTPUT_KEYWORDS if k in io_schemas}
@@ -172,3 +195,67 @@ def assert_graph_module_shape(path: Path) -> None:
         f"OK: {path.name} declares Pydantic input/output schemas "
         f"({', '.join(f'{k}={v}' for k, v in schemas.items())}) and exports `graph`"
     )
+
+
+def _class_defs(modules: list[Path]) -> dict[str, ast.ClassDef]:
+    """Top-level classes across the agent modules, first definition wins."""
+    classes: dict[str, ast.ClassDef] = {}
+    for module in modules:
+        try:
+            tree = ast.parse(module.read_text(encoding="utf-8"), filename=str(module))
+        except SyntaxError as exc:
+            sys.exit(f"FAIL: {module.name} is not valid Python: {exc}")
+        for node in tree.body:
+            if isinstance(node, ast.ClassDef):
+                classes.setdefault(node.name, node)
+    return classes
+
+
+def _field_alias(value: ast.expr | None) -> str | None:
+    """`Field(alias="x")` -> "x" (the JSON schema uses the alias)."""
+    if isinstance(value, ast.Call) and _base_name(value.func) == "Field":
+        for kw in value.keywords:
+            if kw.arg == "alias" and isinstance(kw.value, ast.Constant):
+                return str(kw.value.value)
+    return None
+
+
+def _model_fields(name: str, classes: dict[str, ast.ClassDef], seen: frozenset = frozenset()) -> set[str]:
+    """Field names of a Pydantic model / TypedDict defined in the agent
+    modules, including fields inherited from project base classes.
+    Private (`_x`), `ClassVar` and `model_config` annotations are skipped,
+    as Pydantic does."""
+    node = classes.get(name)
+    if node is None or name in seen:
+        return set()
+    fields: set[str] = set()
+    for base in node.bases:
+        base_name = _base_name(base)
+        if base_name:
+            fields |= _model_fields(base_name, classes, seen | {name})
+    for stmt in node.body:
+        if not (isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name)):
+            continue
+        field = stmt.target.id
+        if field.startswith("_") or field == "model_config":
+            continue
+        if "ClassVar" in ast.unparse(stmt.annotation):
+            continue
+        fields.add(_field_alias(stmt.value) or field)
+    return fields
+
+
+def graph_io_fields(path: Path, modules: list[Path]) -> tuple[str, set[str], str, set[str]]:
+    """(input model, its fields, output model, its fields) of the graph's
+    `StateGraph(...)` call. Input falls back to the state schema when no
+    `input` / `input_schema` keyword is passed, as LangGraph does."""
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    call = _state_graph_call(tree)
+    if call is None:
+        sys.exit(f"FAIL: {path.name} does not construct a StateGraph")
+    kwargs = {kw.arg: ast.unparse(kw.value) for kw in call.keywords if kw.arg}
+    state = ast.unparse(call.args[0]) if call.args else kwargs.get("state_schema")
+    inp = next((kwargs[k] for k in _INPUT_KEYWORDS if k in kwargs), state)
+    out = next((kwargs[k] for k in _OUTPUT_KEYWORDS if k in kwargs), state)
+    classes = _class_defs(modules)
+    return inp, _model_fields(inp, classes), out, _model_fields(out, classes)
