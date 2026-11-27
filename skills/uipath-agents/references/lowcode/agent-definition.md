@@ -173,12 +173,52 @@ No other keys. Never plain-string prompts: [critical-rules/conversational-critic
 |-------|-------------|
 | `model` | LLM identifier. Discover valid values with `uip agent model list` and select per [model-selection-guide.md](model-selection-guide.md) — **override the scaffold default** (illustrative GA: `"anthropic.claude-sonnet-4-6"`, `"gpt-5.4"` — verify against the tenant). |
 | `maxTokens` | Max output tokens. Must not exceed the chosen model's `MaxTokens` cap (from `uip agent model list`). |
-| `temperature` | 0 = deterministic, higher = creative |
+| `temperature` | 0 = deterministic, higher = creative. Must be `1` when Claude thinking is on — see [Model-Specific Settings](#model-specific-settings). |
 | `engine` | Keep `"basic-v2"` for autonomous, `"conversational-v1"` for conversational |
 | `maxIterations` | Max autonomous agent loop iterations. Default 25. Default 8 for conversational. |
 | `mode` | Use `"standard"` |
+| `modelSettings` | Optional. Settings only some models support, such as reasoning effort — see [Model-Specific Settings](#model-specific-settings). |
 
 > Prompt **quality** (system/user prompt structure, tool-call criteria, output contract) lives in [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md). This file owns the **mechanics** (schema, `contentTokens` sync).
+
+#### Model-Specific Settings
+
+`settings.modelSettings` sets options that only some models support, such as reasoning effort or a thinking budget. It is a flat object: each key is the model's own parameter name, each value a string, number, or boolean. A dot in a key nests it in the request: `"output_config.effort": "high"` is sent as `{"output_config": {"effort": "high"}}`.
+
+```json
+"settings": {
+  "model": "anthropic.claude-sonnet-4-6",
+  "maxTokens": 64000,
+  "temperature": 1,
+  "engine": "basic-v2",
+  "maxIterations": 25,
+  "mode": "standard",
+  "modelSettings": {
+    "thinking.type": "adaptive",
+    "output_config.effort": "high"
+  }
+}
+```
+
+Keys by model family:
+
+| Model family | Keys | Example |
+|--------------|------|---------|
+| Claude 4.6 and later | `thinking.type` (`"adaptive"`), `output_config.effort` | `{"thinking.type": "adaptive", "output_config.effort": "high"}` |
+| Claude 4.5 | `thinking.type` (`"enabled"`), `thinking.budget_tokens` (number, from 1024) | `{"thinking.type": "enabled", "thinking.budget_tokens": 8000}` |
+| OpenAI GPT-5 to GPT-5.5 | `reasoning_effort` | `{"reasoning_effort": "high"}` |
+| OpenAI GPT-5.6 and later | `reasoning.effort`, `reasoning.mode` (`"standard"` or `"pro"`) | `{"reasoning.effort": "high"}` |
+| Gemini 2.5 | `thinking_budget` (number) | `{"thinking_budget": 4096}` |
+| Gemini 3 and later | `thinking_level` | `{"thinking_level": "high"}` |
+
+1. **Add `modelSettings` only when the user asks** for reasoning effort, thinking, or a thinking budget. Otherwise omit the field.
+2. **Use only the keys of the chosen model's family** from the table above. A key the model does not know fails the run with a provider error.
+3. **Use `low`, `medium`, or `high`** for effort and thinking levels — every model above accepts them. `minimal`, `xhigh`, and `max` exist only on some models; use them only when the user names one and confirms the model offers it in Studio Web.
+4. **Set `temperature` to `1` whenever `thinking.type` is set** (Claude). Any other temperature fails the run with "temperature may only be set to 1 when thinking is enabled".
+5. **When you change `settings.model`, delete `modelSettings`.** Keys belong to one model; Studio Web clears them on a model change too. Re-add only the keys the new model supports.
+6. **If the model is not in the table, or the user asks for a value not listed, ask the user** for the exact key and value from the model settings in Studio Web. `uip agent model list --all-fields` does not return them yet.
+
+The runtime applies `modelSettings` only on tenants where model-specific settings are enabled; elsewhere it ignores the field and the agent runs with the model's defaults.
 
 ### Schema Types
 
@@ -522,7 +562,8 @@ For each resource type's full schema, see the relevant capability file:
 
 1. Edit `agent.json` → `settings.model`, `.temperature`, `.maxTokens`, or `.maxIterations`
 2. Discover valid model identifiers with `uip agent model list` and select per [model-selection-guide.md](model-selection-guide.md) — the tenant is the source of truth (availability and GA/preview status vary per tenant). Keep `maxTokens` ≤ the model's `MaxTokens` cap.
-3. Refresh, then validate
+3. If you changed `settings.model`, delete `settings.modelSettings`. For reasoning effort or thinking, see [Model-Specific Settings](#model-specific-settings).
+4. Refresh, then validate
 
 ### Capability-Adding Edits
 

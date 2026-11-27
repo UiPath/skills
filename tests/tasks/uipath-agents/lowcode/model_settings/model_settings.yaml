@@ -1,0 +1,60 @@
+task_id: skill-agent-lowcode-model-settings
+description: >
+  Skill-guided evaluation: agent builds a low-code autonomous agent on a
+  Claude 4.6 model with high reasoning effort. Tests whether the skill teaches
+  `settings.modelSettings` (agent-definition.md § Model-Specific Settings):
+  the Claude 4.6 effort key `output_config.effort`, an optional
+  `thinking.type` of `"adaptive"`, `temperature` 1 whenever thinking is set,
+  and no keys from another model family. A wrong key or a temperature other
+  than 1 with thinking on fails the run with a provider error.
+tags: [uipath-agents, smoke, mode:build, lifecycle:generate, low-code]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+run_limits:
+  max_turns: 50
+  turn_timeout: 1200
+
+sandbox:
+  python: {}
+
+reference:
+  directory: .
+
+initial_prompt: |
+  Create a UiPath low-code autonomous agent "ResearchAgent" that takes a
+  topic and returns a short research summary. The solution should be named
+  "ResearchSol". Use the model anthropic.claude-sonnet-4-6 with high
+  reasoning effort.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Complete the entire task end-to-end in a
+  single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "modelSettings sets high effort with the Claude 4.6 keys, and temperature is 1 when thinking is set (§ Model-Specific Settings)"
+    command: "python3 $REFERENCE_DIR/check_model_settings.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip agent validate passes on the final project (storage-schema check)"
+    command: "uip agent validate ResearchSol/ResearchAgent --output json"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
