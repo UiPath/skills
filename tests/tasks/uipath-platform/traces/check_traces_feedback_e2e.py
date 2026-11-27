@@ -58,6 +58,9 @@ def find_agent_span(span_list: list) -> tuple[dict | None, str]:
                 return s, "agentRun attribute"
         except (json.JSONDecodeError, TypeError):
             pass
+    for s in span_list:  # several roots (e.g. a serverless wrapper): prefer the one with an agentId key
+        if s.get("ParentId") is None and '"agentId"' in str(s.get("Attributes") or s.get("attributes") or ""):
+            return s, "root span with agentId (ParentId=null)"
     if root is None:
         return None, "no agentRun span and no root span found"
     return root, "root span (ParentId=null)"
