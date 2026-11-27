@@ -82,8 +82,11 @@ uncached when `cond` is false.
   or whose answer the runtime had to scrub of a withheld config value.
 - A streamed, download or oversized body (default cap 8 MiB), and a request that uploads
   files.
-- A vendor answer with `Cache-Control: no-store` or `private`, or a `Vary` of `*`; `ttl`
-  cannot override it. The runtime never infers caching from the vendor's headers.
+- A vendor answer with a `Vary` the cache key does not cover, such as `Vary: *`. An
+  explicit cache declaration wins over the vendor's `Cache-Control: no-store` or `private`
+  (and `no-cache`, `Pragma: no-cache`, a past `Expires`): the cache is per tenant and
+  connection, so those browser and shared-cache headers do not apply. The runtime never
+  infers caching from the vendor's headers.
 
 Throw on every vendor-reported failure, as Slack's `ok: false` above. Catching the throw
 and returning anyway still keeps the answer out of the cache, so a partial answer is
