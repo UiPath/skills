@@ -116,8 +116,9 @@ The same for every view: this template, the [Observe view](./views.md#observe-vi
 | any ⟳ settings or Cannot-Be-Checked | `Reset the changed <packName> settings back to the standard` |
 | active, ⚙ settings | `Configure the manual <packName> settings` |
 | always, while DETAILS is not shown | `Show full details` (every setting in each requirement, with its recommendation and impact) |
+| always | `Done for now` (`Leave <packName> as it is; nothing changes`) |
 
-`Show full details` is always one of the options, last, in every view while DETAILS is not on screen; when more than four rows apply, drop from the rows above it, never this one. Picking it prints this template's DETAILS section (every requirement: Setting · Recommendation · Impact, with the ⚙ and ⟳ sub-lines), then asks this question again without it. Never add a do-nothing option (`Leave as is`, `Stay in Observe`): the admin can close the question or type in Other. Picking `Enforce <packName>` or `Observe <packName>` chooses the mode: go to [full-apply § Modes on](../full-apply/impl.md#modes-on) without asking it again. Without a selectable prompt, print the same options as a numbered list under `Next action:` and END YOUR REPLY.
+`Done for now` is always the last option, in every view, and `Show full details` comes right before it while DETAILS is not on screen. When more than four rows apply, drop from the rows above them, never these two. Picking `Show full details` prints this template's DETAILS section (every requirement: Setting · Recommendation · Impact, with the ⚙ and ⟳ sub-lines), then asks this question again without it. Picking `Done for now` ends the flow with one line, `Nothing changed. <packName> stays as it is on <tenantName>.`, and runs no command. Never add another do-nothing option (`Leave as is`, `Stay in Observe`). Picking `Enforce <packName>` or `Observe <packName>` chooses the mode: go to [full-apply § Modes on](../full-apply/impl.md#modes-on) without asking it again. Without a selectable prompt, print the same options as a numbered list under `Next action:` and END YOUR REPLY.
 
 ## Layout rules
 

@@ -270,7 +270,7 @@ Parse `Data.Active` (must be `true`), `Data.Mode` (modes on: the mode the admin 
 
 ## Report
 
-**Modes on, Enforce:** report with [coverage § Enforced view](../coverage/views.md#enforced-view), built from `catalog-checker.json` and the coverage read again in Verify. Open with one line, `<packName> is now enforced on <tenantName> ✓`, then the view, then the `Applied by` and `Note` lines below. The view's own offers (correct drifted settings, configure manual ones, restore an Unverifiable policy) follow it, asked as one pick list as in [coverage § Next action](../coverage/posture-view.md#next-action), with `Show full details` last. The Observe and modes-off reports end with the same pick list.
+**Modes on, Enforce:** report with [coverage § Enforced view](../coverage/views.md#enforced-view), built from `catalog-checker.json` and the coverage read again in Verify. Open with one line, `<packName> is now enforced on <tenantName> ✓`, then the view, then the `Applied by` and `Note` lines below. The view's own offers (correct drifted settings, configure manual ones, restore an Unverifiable policy) follow it, asked as one pick list as in [coverage § Next action](../coverage/posture-view.md#next-action), with `Show full details` and `Done for now` last. The Observe and modes-off reports end with the same pick list.
 
 Otherwise (Observe, or modes off):
 

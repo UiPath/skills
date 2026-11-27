@@ -61,7 +61,7 @@ Rules:
 - The title is `<PackName> policy` (e.g. `UiPath ISO 27001 policy`). The heading line is `PackLongName`, else `PackName`.
 - Status words are only **Observed** and **Enforced**, right-aligned in one column. No Impact, no ✓/✗/⟳/⚙ markers, no recommendation column: the view shows what Observe watches, not gaps.
 - The four counts must satisfy `F + P + N == T`; check before printing.
-- After the block, continue with the next actions of case 3, asked as in [Next action](./posture-view.md#next-action): the [If you enforce](./apply-and-conflicts.md#if-you-apply--if-you-enforce) block, then the pick list with `Enforce <packName>` first, any drift or manual-setting offer that applies, and `Show full details` last.
+- After the block, continue with the next actions of case 3, asked as in [Next action](./posture-view.md#next-action): the [If you enforce](./apply-and-conflicts.md#if-you-apply--if-you-enforce) block, then the pick list with `Enforce <packName>` first, any drift or manual-setting offer that applies, then `Show full details` and `Done for now` last.
 
 ## Enforced view
 
@@ -134,5 +134,5 @@ Rules:
 - Drifted settings are not setting rows: they go in the card's DRIFTED FROM THE STANDARD panel, with their conflict's `Lines[]` per the [line rules](./impl.md#line-rules). After the block, offer `'Correct the changed <packName> settings'` (case 3a′).
 - A Needs configuration row carries its `ConfigLocation` from `catalog-checker.json` on the next line. After the block, offer `'Configure the manual <packName> settings'` for them; an Unverifiable card gets the restore offer (case 3a).
 - Status words are only **Enforced**, **Needs configuration** and **Not applied** on rows. No Impact column and no ✗/⟳/⚙ markers inside the cards.
-- The offers above are asked after the block as one pick list, as in [Next action](./posture-view.md#next-action), with `Show full details` last.
+- The offers above are asked after the block as one pick list, as in [Next action](./posture-view.md#next-action), with `Show full details` and `Done for now` last.
 - Leave out ALSO RECORDED AS EVIDENCE when there are no evidence checks; write `1 check is recorded as evidence, not as a policy.` for one.
