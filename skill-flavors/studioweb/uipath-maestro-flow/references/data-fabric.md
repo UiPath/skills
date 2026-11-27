@@ -13,3 +13,8 @@ That page names the connector *UiPath Data Fabric*, gives the HTTP route
 <!--skill-flavor:data-fabric-entity-ref-sdk:start-->
 so tell the user: Studio Web owns the SDK copy and the CLI.
 <!--skill-flavor:data-fabric-entity-ref-sdk:end-->
+<!--skill-flavor:event-entity-sdk-upgrade:start-->
+Studio Web owns the SDK copy: unless the user confirms it runs <NEXT_SDK_VERSION>
+or later, tell the user that this build cannot write a folder entity's picker;
+tenant fields need no upgrade.
+<!--skill-flavor:event-entity-sdk-upgrade:end-->

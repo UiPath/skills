@@ -33,10 +33,65 @@ Data Fabric **events** (Record Created / Record Updated on an entity) are
 Integration Service connector events on `uipath-uipath-dataservice`, not this
 node family. They are curated events with the object built in, so do not pass
 `object`: the registry serves them as `record-created-preview-` and
-`record-updated-preview-`, and the entity is picked through the `where` lookups
-that `uip maestro registry prepare uipath-uipath-dataservice --action
-record-updated-preview-` prints (`entityScope`, `tenantEntityName`,
-`folderEntityName`). See
+`record-updated-preview-`. The entity is plain fields in `where`:
+`onEvent({ connector: 'uipath-uipath-dataservice', event: 'record-created-preview-', connection, folder, where: { entityScope: 'tenant', tenantEntityName: 'Invoices' } })`
+for a tenant entity, `where: { entityScope: 'folder', folderEntityName: { name: 'Movie', folder: '<folder path>' } }`
+for a folder entity; `waitForEvent` takes `where` the same way.
+`folderEntityName` is a solution-resource picker, the only field that takes a
+resource (`RESOURCE_PICKER_UNSUPPORTED` elsewhere); `entity('Movie', { folder:
+'<folder path>' })` is the same value as a token. It compiles to the picker
+Studio Web saves, so packaging declares the entity in the solution and a deploy
+re-points it to the copy it provisions in the deployment folder; decompile
+writes it back as `{ name, folderKey, resourceKey }`, which recompiles as is.
+A `_V3` connector activity (the `-preview-` operations, e.g.
+`get-entity-record-by-id-preview-`) takes its entity the same way in its inputs:
+`{ entityScope: 'folder', folderEntityName: { name: 'Movie', folder: '<folder path>' } }`
+or `{ entityScope: 'tenant', tenantEntityName: 'Invoices' }`;
+`query-multiple-entity-records-preview-` has two pickers,
+`primaryFolderEntityName` and `secondaryFolderEntityName` (tenant:
+`primaryTenantEntityName` / `secondaryTenantEntityName`), and its
+`queryExpression` is a WHERE condition (`Movie.Title IS NOT NULL`), not a query.
+An activity's record fields come from `registry prepare
+uipath-uipath-dataservice --action <op>` given ONE scope's fields: `-f
+folderEntityName=<Name>` or `-f tenantEntityName=<Name>` (the two-entity query:
+`-f primaryFolderEntityName=<A> -f secondaryFolderEntityName=<B>`). Without
+them compile refuses a record field as an unknown input. When several folders
+hold the name, `prepare` says so: add `-f folderEntityName_folderKey=<folder key
+or path>` beside it on that command, the only place the companion is written
+(needs <NEXT_SDK_VERSION>).
+A deploy provisions its own copy of a folder entity in the deployment's folder
+and re-points every picker there: test records go into that copy, not the
+source folder's entity.
+In source, never write `folderEntityName_folderKey` beside it (`RESOURCE_PICKER_COMPANION`),
+and never the other scope's field (`EVENT_PARAMETER_CLEARED`). `check` reports
+`RESOURCE_UNRESOLVED` with the `uip maestro registry prepare --entity <name>
+--folder-path <path>` that records a folder entity's keys, and warns
+`EVENT_RULES_UNPREPARED` with the `uip maestro registry prepare
+uipath-uipath-dataservice --action <event>` to re-run when the event's rules are
+missing; `RESOURCE_PICKER_KIND_UNKNOWN` prints the `prepare` to re-run for an
+operation prepared before its picker was recorded. Run each, then `check` again.
+The resource form needs `@uipath/maestro-builder-sdk` <NEXT_SDK_VERSION> or
+later. An older SDK cannot write the picker: `check` reports a type error on
+the object, or the field compiles to a plain value with no binding pair. Tenant
+fields work on both. Unlike BPMN, Flow never had an `entity` option on
+`onEvent`/`waitForEvent` (`FLOW_UNKNOWN_OPTION`; a Case subscription:
+`CASE_UNKNOWN_OPTION`), so there is no older form to fall back to.
+<!--skill-flavor:event-entity-sdk-upgrade:start-->
+Read the version from the directory you run `uip` in (the workspace root):
+`node -p "require(require.resolve('@uipath/maestro-builder-sdk/package.json',{paths:[process.cwd()]})).version"`;
+on error the copy is global (`npm ls -g @uipath/maestro-builder-sdk`). Below
+<NEXT_SDK_VERSION>, upgrade the copy `uip` resolves, local copy first, then
+global: run
+`node -e "console.log(require.resolve('@uipath/maestro-builder-sdk/package.json',{paths:[process.cwd()]}))"`.
+When it prints a path, that `node_modules` (possibly in a parent directory) owns
+the copy: run `npm install --save-dev @uipath/maestro-builder-sdk@latest` in the
+directory holding it when a `package.json` sits beside it; otherwise tell the
+user the path, and never create a `package.json`. On error, run
+`npm install -g @uipath/maestro-builder-sdk@latest`. Then run `check` again.
+When you cannot upgrade, tell the user that this SDK cannot write a folder
+entity's picker; tenant fields need no upgrade.
+<!--skill-flavor:event-entity-sdk-upgrade:end-->
+See
 [`event-trigger.md`](event-trigger.md#tenant-discovery--check-names-it-prepare-does-it).
 
 ## Long text: queries return a 10,000-character preview
@@ -136,14 +191,14 @@ uip maestro registry prepare --entity Orders --folder-path Finance/Prod
 # Recorded  ./.flow-sdk/resources.json
 ```
 
-`compile` writes the folder key, resource key, two `resource: 'Entity'` binding rows, and the entity row in `bindings_v2.json`; `uip solution resources refresh` then declares it in the solution. Do not type keys; compile refuses an unrecorded entity.
+For the native read, create, update and delete nodes, `compile` writes the folder key, resource key, two `resource: 'Entity'` binding rows, and the entity row in `bindings_v2.json`. For an event or a `_V3` connector activity, it writes one lowercase `entity` pair that every such node on the same entity shares, plus a `Property` row per event. Either way, `uip solution resources refresh` then declares it in the solution. Do not type keys; compile refuses an unrecorded entity.
 
 Run `prepare` from the directory used for `check` and `compile`, normally `<Solution>/<Name>/`; it records `./.flow-sdk/resources.json`. Within a solution (a `.uipx` in that folder or above), it searches the solution before the tenant.
 
 `prepare` lists and stops; it never picks:
 
 - **No `folder`:** it searches every folder. One match records the folder and names it to pin in source. Multiple matches list each `folder:`; write the intended one and run `prepare` again.
-- **Tenant-level match:** no `prepare`; write `entity: '<Name>'` as output says.
+- **Tenant-level match:** no `prepare`. On a native node, write `entity: '<Name>'` as output says; on an event or a `_V3` connector activity, write `{ entityScope: 'tenant', tenantEntityName: '<Name>' }`.
 - **Matching:** a name matches exactly, case included; a `folder` path ignores case and a leading or trailing slash. A folder without that entity returns `RESOURCE_NOT_IN_FOLDER` and lists folders containing it.
 - **No match:** it lists near misses and listings to check. If none is intended, ask the user; never create an entity unless the user asks. Creating one in the requested scope follows [/uipath:uipath-platform — local-entities.md](../../uipath-platform/references/data-fabric/local-entities.md), then run `prepare` again.
 - **Recorded row older than a day:** it counts as missing; `check` asks for `prepare` again.

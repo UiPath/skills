@@ -12,7 +12,7 @@ A subscription starts a Flow or pauses a running path:
 
 ## At a glance
 
-Use an Integration Service event subscription to start or pause a Flow. Every id-valued `where` parameter must be a `lookup()` token. Run `registry prepare <key> --action <event>` to resolve it, write bindings, and store the vocabulary validated by `check`. Wrong-case filter fields are errors because the platform silently drops them. Generic `record-created`/`record-updated` events require `object: '<Entity>'`, never `object` in `where`.
+Use an Integration Service event subscription to start or pause a Flow. Every id-valued `where` parameter must be a `lookup()` token, except on Data Fabric entity events: their scope fields are plain values (`entityScope` is `'tenant'` or `'folder'`, `tenantEntityName` the entity's name), and the `folderEntityName` picker takes `{ name, folder }`, even where an older `registry prepare` lists them as lookup fields; see [data-fabric.md](data-fabric.md#one-product-two-surfaces). Run `registry prepare <key> --action <event>` to resolve the others, write bindings, and store the vocabulary validated by `check`. Wrong-case filter fields are errors because the platform silently drops them. Generic `record-created`/`record-updated` events require `object: '<Entity>'`, never `object` in `where`.
 
 Follow the completion contract before debugging: an injected start payload tests downstream wiring, not subscription delivery.
 
