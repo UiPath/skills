@@ -20,7 +20,7 @@ from rules_check import NS, fail, find_project, load_graph  # noqa: E402
 
 PROJECT = "SpendRules"
 CASES = [({"onboarded": onboarded, "spend": spend}, {"approved": onboarded and spend <= 25000})
-         for onboarded in (True, False) for spend in (0, 25000, 25001, 90000)]
+         for onboarded in (True, False) for spend in (0, 25000, 25000.5, 25001, 90000)]
 
 
 def is_policy(source) -> bool:
@@ -47,6 +47,9 @@ def main() -> None:
         for kind in ("requiredInput", "requiredDecision", "requiredKnowledge"):
             if source.findall(f"dmn:authorityRequirement/dmn:{kind}", NS):
                 fail(f"knowledge source {source.get('id')} cites a decision, input or model; a source cites only another source")
+        for reference in source.findall("dmn:authorityRequirement/dmn:requiredAuthority", NS):
+            if (reference.get("href") or "").lstrip("#") not in source_ids:
+                fail(f"knowledge source {source.get('id')} cites {reference.get('href')}, which is not a knowledge source; a source cites only another source")
 
     approval = decision_for_output(root, "approved")
     if policy not in required(approval, "requiredAuthority"):

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:uipath="http://uipath.com/schema/1.0/dmn/authoring" id="definitions_SpendRules" name="SpendRules" namespace="http://uipath.com/dmn/ns_SpendRules" xmlns:kie="https://kie.org/dmn/extensions/1.0">
   <extensionElements>
-    <uipath:authoring surface="decision-table" />
+    <uipath:authoring surface="decision-graph" />
   </extensionElements>
   <decision id="decision_approval" name="approval" label="Supplier approval">
     <extensionElements>

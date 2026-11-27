@@ -31,6 +31,8 @@ def test_cited_policy_passes(tmp_path: Path) -> None:
 
 
 def no_source(text: str) -> str:
+    """No source at all: a lone table, so the file is back on the table surface."""
+    text = text.replace('surface="decision-graph"', 'surface="decision-table"')
     text = re.sub(r"\s*<knowledgeSource .*?</knowledgeSource>", "", text, flags=re.S)
     return re.sub(r"\s*<dmndi:DMNShape [^>]*dmnElementRef=\"knowledgeSource_procurementPolicy\".*?</dmndi:DMNShape>", "", CITATION.sub("", text), flags=re.S)
 
@@ -44,6 +46,11 @@ def miswired(text: str) -> str:
     return CITATION.sub('\n    <informationRequirement id="ir_policy">\n      <requiredDecision href="#knowledgeSource_procurementPolicy" />\n    </informationRequirement>', text)
 
 
+def source_cites_decision(text: str) -> str:
+    """The policy citing the decision it governs, which a source may not do."""
+    return text.replace('label="Procurement Policy 2026">', 'label="Procurement Policy 2026">\n    <authorityRequirement id="ar_policy_approval">\n      <requiredAuthority href="#decision_approval" />\n    </authorityRequirement>', 1)
+
+
 def unplaced(text: str) -> str:
     return re.sub(r"\s*<dmndi:DMNShape [^>]*dmnElementRef=\"knowledgeSource_procurementPolicy\".*?</dmndi:DMNShape>", "", text, flags=re.S)
 
@@ -52,6 +59,7 @@ def unplaced(text: str) -> str:
     (no_source, "found 0"),
     (uncited, "does not cite"),
     (miswired, "points at a knowledge source with requiredDecision"),
+    (source_cites_decision, "which is not a knowledge source"),
     (unplaced, "run 'uip rules format'"),
 ])
 def test_wrong_policy_fails(tmp_path: Path, change, message: str) -> None:
