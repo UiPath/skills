@@ -10,7 +10,9 @@ description: >
   skill's job to teach. Scoped to solution + scaffolded agent so the run
   actually reaches the first scaffold the rule guards, and so the task exercises
   the agent surface rather than reading as a bare `uip solution` smoke.
-tags: [uipath-agents, smoke, mode:build, lifecycle:generate, low-code]
+# Studio Web hosts the solution and its skill flavor replaces Hard Rule 3 with
+# "never create a solution", so there is no probe to grade on that host.
+tags: [uipath-agents, smoke, mode:build, lifecycle:generate, low-code, studio-web-unsupported, studio-web-unsupported:host-provided-solution]
 
 run_limits:
   # 20, not 10: the agent project adds a scaffold step and its solution
