@@ -33,7 +33,7 @@ async function execute(context) {
   // `{ status: 200, headers: [], body }`. The vendor's headers travel with it, so
   // `/execute` sees `content-type: application/json` and hands the caller `body`
   // as parsed JSON; a fabricated object carries no content-type and the caller
-  // gets the array as a JSON string instead.
+  // gets the array as a JSON string instead. The swapped result keeps its `ok`.
   listed.body = listed.body.usergroups ?? [];
   return listed;
 }

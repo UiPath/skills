@@ -32,30 +32,33 @@ edge, outside the sandbox.
 ```js
 context = {
   request: { body, query, headers },  // the INBOUND call — data to read
-  connectionConfiguration,            // the connection's NON-SECRET config (base.url, …)
   connectionId, connectorKey,
 }
 ```
 
 Inputs arrive on `context.request.body`, already decoded. There is no typed input
 parameter and `context.request` carries **no `method`/`url`** — the script names
-its own vendor target. Connection settings are read off
-`context.connectionConfiguration?.['key']`; secrets are stripped before the
-script sees them.
+its own vendor target. Connection settings are not on `context`: read a
+connection setting with `intsvc.connectionConfig.get('key')`. A non-secret key
+(`base.url`) returns its value; a secret key returns an opaque reference you can
+place in a call but not read.
 
 ## The `intsvc` surface
 
 | capability | kind | what it does |
 |---|---|---|
 | `intsvc.http(request)` | brokered egress | one credential-injected, egress-guarded vendor call. Costs one of the 4 per-request calls |
+| `intsvc.connectionConfig.get(key)` | read | a connection setting: a value for a non-secret key, an opaque reference for a secret one. Costs no call |
 
-`intsvc.http` is the whole surface. There are no pagination helpers: the runtime
-carries no page token in or out.
+There are no pagination helpers: the runtime carries no page token in or out.
+
+Caching is not a call of its own: it is `cache: { ttl }` on `intsvc.http` and an
+`export const cache = { ttl }` declaration on the script, both in [caching.md](caching.md).
 
 ### `intsvc.http` — request and response
 
 ```js
-intsvc.http({ method, url, query?, headers?, body? })   // → { status, headers, body }
+intsvc.http({ method, url, query?, headers?, body?, read?, cache? })   // → { ok, status, headers, body }
 ```
 
 | field | rule |
@@ -64,9 +67,12 @@ intsvc.http({ method, url, query?, headers?, body? })   // → { status, headers
 | `query` | `{ k: v }` — serialized for you; prefer it over hand-encoding |
 | `headers` | `{ name: value }` or `[{ name, value }]` (ordered, duplicates preserved) |
 | `body` | an object is sent as JSON; a string is sent as its UTF-8 bytes |
+| `read` | `true` marks a POST as a read (a query API with no side effect), so it can be cached |
+| `cache` | `{ ttl }` (seconds) caches a read that other scripts of the connector also make; see [caching.md](caching.md) |
 
 | response field | rule |
 |---|---|
+| `ok` | `true` for a 2xx status. The script's answer must carry a boolean `ok`; an untouched or body-swapped result already does ([caching.md](caching.md#the-answer-carries-ok)) |
 | `status` | the VENDOR's status, verbatim — **a 4xx/5xx is a NORMAL RETURN, not a throw** |
 | `headers` | `[{ name, value }]` — index with `.find(h => h.name.toLowerCase() === "x")` |
 | `body` | the VENDOR's own body, envelope and all — nothing is unwrapped for you |
@@ -115,10 +121,11 @@ keep the body parsed. A fabricated `{ status: 200, headers: [], body }` carries
 no content type and hands the caller a JSON string.
 
 Only when there is no `intsvc.http` result to return (a script that makes no
-vendor call) build one, and give it a JSON content type:
+vendor call) build one, and give it `ok: true` and a JSON content type:
 
 ```js
 return {
+  ok: true,
   status: 200,
   headers: [{ name: 'content-type', value: 'application/json' }],
   body: records,
@@ -176,8 +183,8 @@ naming the cause. What can go wrong, and whose fix it is:
 The generated file IS what the sandbox runs, so it obeys the sandbox's rules. It
 is not TypeScript and not a class:
 
-- **One top-level function literally named `execute`.** Nothing else is looked
-  up. A class, a nested declaration, or `export { run as execute }` is refused
+- **One top-level function literally named `execute`.** No other function is the
+  entrypoint (`export const cache` is the one other declaration the runtime reads). A class, a nested declaration, or `export { run as execute }` is refused
   by the runtime — *"script does not define an execute(context) entrypoint"*.
 - **No imports.** There is no module resolution in the sandbox.
 - **No TypeScript.** QuickJS rejects it outright: *"script failed to compile:

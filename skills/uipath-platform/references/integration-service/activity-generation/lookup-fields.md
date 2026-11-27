@@ -45,13 +45,14 @@ The procedure, per lookup field:
    **Some lookups make no vendor call.** A field whose choices come from the
    *connection* rather than the vendor needs a lookup script that makes **zero**
    `intsvc.http` calls and computes the array from
-   `context.connectionConfiguration`. Slack's token picker is the example: it
+   `intsvc.connectionConfig.get`. Slack's token picker is the example: it
    returns `[{name:'Bot',value:'bot'}, …]` by reading which tokens the connection
    holds. Recognise these by the question they answer — "which of the things this
    connection is configured with?" rather than "which of the things the vendor
-   has?" — and note the redaction rule: secrets are stripped from
-   `connectionConfiguration`, so derive from a non-secret key (a scope list, a
-   base URL), never from a token value.
+   has?" — and note the redaction rule: a secret key returns an opaque
+   reference, not its value, so derive from a non-secret key (a scope list, a
+   base URL), never from a token value. There is no `intsvc.http` result to
+   return, so build the answer and set `ok: true`.
 2. **Else generate it** as `List<Entities>.js` (see [example-list-action.js.txt](example-list-action.js.txt)) —
    same naming style as a main action, since its base name is its `scriptRef`:
    a normal list action whose inputs pass through the resource's query params,

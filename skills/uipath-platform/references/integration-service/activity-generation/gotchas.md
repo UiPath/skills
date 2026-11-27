@@ -64,3 +64,6 @@
 - **No Node globals in the sandbox**: `Buffer`, `btoa`/`atob`,
   `TextEncoder`/`TextDecoder` are absent (`JSON` and `Uint8Array` are present).
   Anything needing base64 cannot be written in a script.
+- **Cache reads, never writes, and only an answer with `ok: true` is stored.** Throw on
+  a vendor failure (a 2xx `ok: false` too), and set `ok` on an answer you build. Layers,
+  inline scripts and `--refresh` are in [caching.md](caching.md).
