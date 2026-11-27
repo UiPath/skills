@@ -123,6 +123,7 @@ Pass the PROJECT directory containing `project.uiproj`. `flow debug` executes th
 Operational constraints:
 
 <!--skill-flavor:operate-debug-wait:start-->
+- **A flow with a human task suspends at it; waiting never ends it.** Skip the foreground wait and debug it per [hitl.md](hitl.md#live-debug-of-a-flow-with-a-human-task).
 - **Foreground, with a tool timeout of 10 minutes or more.** It takes 1-5 minutes and prints JSON only at exit.
 - **Poll the same process if the tool reports it still running.** An empty output file means unfinished, not failed.
 - **Never start a second debug while one is running.** It re-uploads and re-executes.
