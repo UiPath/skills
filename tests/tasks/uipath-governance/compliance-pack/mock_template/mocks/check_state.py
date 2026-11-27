@@ -2,7 +2,8 @@
 """Shared grader over the `uip` shim's state: exit 0 when the check holds.
 
     python3 mocks/check_state.py enabled|disabled|restored   # on the login's tenant
-    python3 mocks/check_state.py enabled-everywhere          # on every tenant in the org
+    python3 mocks/check_state.py enabled-only-here           # on the login's tenant and
+                                                             # on no other tenant
     python3 mocks/check_state.py assigned [PRODUCT]          # a pack policy the agent
                                                              # created, on the login's tenant
 
@@ -30,8 +31,8 @@ def holds(check, args):
     tenant = fixture("login-status")["Data"]["TenantId"]
     if check in ("enabled", "disabled", "restored"):
         return tenant in state.get(check, [])
-    if check == "enabled-everywhere":
-        return set(state.get("enabled", [])) >= {t["TenantId"] for t in fixture("tenant-list")["Data"]}
+    if check == "enabled-only-here":
+        return set(state.get("enabled", [])) == {tenant}
     if check == "assigned":
         product = args[0] if args else None
         created = {i for i, r in state.get("policies", {}).items() if r["Name"].startswith(f"{PACK}-")}

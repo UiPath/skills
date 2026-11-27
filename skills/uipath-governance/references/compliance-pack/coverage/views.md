@@ -6,9 +6,9 @@ Part of the posture check: read [impl.md](./impl.md) first (commands, parsing, w
 
 ## Observe view
 
-Rendered for case 0 (modes on, pack active, `Mode == "audit"`). It is the admin portal's Compliance Standards page for a standard in Observe: four coverage counts, then one policy card listing what Observe watches, requirement by requirement. Observe watches the standard's runtime checker rules, so the view is built from `catalog.json` (the rules) and coverage (what existing policies already enforce).
+Rendered for case 0 (modes on, pack active, `Mode == "audit"`). It is the admin portal's Compliance Standards page for a standard in Observe: four coverage counts, then one policy card listing what Observe watches, requirement by requirement. Observe watches the standard's runtime checker rules, so the view is built from `catalog-checker.json` (the checker view of the catalog, read in [impl.md § Command](./impl.md#command): the rules and each requirement's `Source`) and coverage (what existing policies already enforce). `catalog.json` has neither.
 
-**Which requirements Observe covers** — `catalog.json` `Data.Clauses[]` with `Source` `"CHECKER"` or `"BOTH"`, in catalog order (call them the Observe requirements). `"AOPS"` requirements take effect only on Enforce.
+**Which requirements Observe covers** — `catalog-checker.json` `Data.Clauses[]` with `Source` `"CHECKER"` or `"BOTH"`, in catalog order (call them the Observe requirements). `"AOPS"` requirements take effect only on Enforce.
 
 **A requirement's settings**, in this order:
 1. Each `EditorialPolicies[].Controls[]` entry whose `ControlId` equals the `ControlId` of one of the clause's own `Rules[]` — shown by its `DisplayName`. A rule that names a `ControlId` is that setting: show it once, as the setting, never again as a rule.
@@ -18,9 +18,9 @@ Rendered for case 0 (modes on, pack active, `Mode == "audit"`). It is the admin 
 - Enforced: the coverage clause with the same `ClauseId` has a `Controls[]` entry for the same `ProductIdentifier` and setting (match on `ControlId` when both carry one, else `ControlDisplayName` = the setting's `DisplayName`) with a non-empty `EnforcedBy[]`; or any coverage `Clauses[].Conflicts[]` entry matches the same product and setting the same way.
 - A rule from step 2 is always Observed: no policy can enforce a checker rule.
 
-**Counts** — `T` = the number of `catalog.json` `Data.Clauses[]` (every requirement; Outside platform scope is not counted). `O` = the number of Observe requirements. `P` (**Partly observable**) = Observe requirements with at least one Enforced setting. `F` (**Fully observed**) = `O − P`. `N` (**Not covered**) = `max(0, T − O)`. **Requirements coverage** = `round(F / T × 100)`%, `0%` when `T == 0`. Worked example: 21 requirements, 9 of them Observe, none with an Enforced setting → `F` 9, `P` 0, `N` 12, `43%`.
+**Counts** — `T` = `catalog-checker.json` `CheckerSummary.ClauseCount` (every requirement UiPath settings or checker rules cover, the same `T` as the [Enable view](./enable-view.md#enable-view); Outside platform scope is not counted). `O` = the number of Observe requirements. `P` (**Partly observable**) = Observe requirements with at least one Enforced setting. `F` (**Fully observed**) = `O − P`. `N` (**Not covered**) = `max(0, T − O)`. **Requirements coverage** = `round(F / T × 100)`%, `0%` when `T == 0`. Worked example: 23 requirements, 9 of them Observe, none with an Enforced setting → `F` 9, `P` 0, `N` 14, `39%`.
 
-**Fallback (older catalog):** when no `Data.Clauses[]` entry carries `Source` (a server or bundle without checker data), or no requirement has a setting from the steps above, Observe has nothing to show from the catalog. Skip this view and continue with case 2 / 3.
+**Fallback (older catalog):** when `catalog-checker.json` has no `CheckerSummary` or no `Data.Clauses[]` entry carries `Source` (a server or bundle without checker data returns the default view), or no requirement has a setting from the steps above, Observe has nothing to show from the catalog. Skip this view and continue with case 2 / 3.
 
 Print it as one fenced code block, filled in:
 
@@ -65,9 +65,9 @@ Rules:
 
 ## Enforced view
 
-The admin portal's Compliance Standards page for a standard in Enforce: four coverage counts, the standard's policies grouped by state, then the checks recorded as evidence. [full-apply § Report](../full-apply/impl.md#report) prints it after an Enforce apply, from `catalog.json` and the coverage read again in Verify.
+The admin portal's Compliance Standards page for a standard in Enforce: four coverage counts, the standard's policies grouped by state, then the checks recorded as evidence. [full-apply § Report](../full-apply/impl.md#report) prints it after an Enforce apply, from `catalog-checker.json` (the checker view of the catalog, which has the evidence rules `catalog.json` lacks) and the coverage read again in Verify.
 
-**Requirements** — every `catalog.json` `Data.Clauses[]` entry (`T` of them). A requirement's settings are its `EditorialPolicies[].Controls[]`, each under its `ProductIdentifier`.
+**Requirements** — every `catalog-checker.json` `Data.Clauses[]` entry; `T` = its `CheckerSummary.ClauseCount`, else (older server, default view) the number of `Data.Clauses[]`. A requirement's settings are its `EditorialPolicies[].Controls[]`, each under its `ProductIdentifier`.
 
 **A setting's status**, first match wins:
 1. **Not applied** — its product is `unverifiable` in coverage `Data.DeploymentPolicies[]` (the standard's policy was deleted).
@@ -77,9 +77,9 @@ The admin portal's Compliance Standards page for a standard in Enforce: four cov
 
 **Counts**, one per requirement from its settings' statuses: **Drifted** (`D`) when any setting is Drifted; else **Needs manual setup** (`M`) when any is Needs configuration; else **Fully enforced** (`F`) unless one is Not applied. A requirement with no product setting (checker rules only) counts as Fully enforced. A requirement with a Not applied setting and no other state counts in none, so `F + D + M` can be less than `T`. **Requirements coverage** = `round(F / T × 100)`%, `0%` when `T == 0`.
 
-**Policies** — one card per `catalog.json` `Data.DeploymentPolicies[]` entry: title `PolicyName`, subtitle `<ProductDisplayName> policy`, plus `· <n> setting needs setup` / `· <n> settings need setup` when it has Needs configuration settings and `· <n> setting differs from the standard` / `· <n> settings differ from the standard` when it has Drifted ones. The card lists every requirement with a setting of that product, in catalog order, with `Covers` naming exactly those `ClauseId`s. Each card's group: **Unverifiable** when its product is `unverifiable`; else **Drifted** when it has a Drifted setting; else **Needs configuration** when it has one; else **Stable**. Print the groups in that order, each with its heading, and leave out an empty group.
+**Policies** — one card per `catalog-checker.json` `Data.DeploymentPolicies[]` entry: title `PolicyName`, subtitle `<ProductDisplayName> policy`, plus `· <n> setting needs setup` / `· <n> settings need setup` when it has Needs configuration settings and `· <n> setting differs from the standard` / `· <n> settings differ from the standard` when it has Drifted ones. The card lists every requirement with a setting of that product, in catalog order, with `Covers` naming exactly those `ClauseId`s. Each card's group: **Unverifiable** when its product is `unverifiable`; else **Drifted** when it has a Drifted setting; else **Needs configuration** when it has one; else **Stable**. Print the groups in that order, each with its heading, and leave out an empty group.
 
-**Evidence** — every `Rules[]` entry with no `ControlId`, across all requirements. They are recorded in Observe and Enforce alike; nothing blocks on them.
+**Evidence** — every `catalog-checker.json` `Rules[]` entry with no `ControlId`, across all requirements (none in the default view an older server returns). They are recorded in Observe and Enforce alike; nothing blocks on them.
 
 **Fallback:** a coverage response without `Conflicts[]` (older server) has no Drifted settings; read every other status as above.
 
@@ -132,7 +132,7 @@ ALSO RECORDED AS EVIDENCE
 Rules:
 - Print every card in full: the portal collapses cards, a terminal can't, so nothing is hidden or summarized. A card with one setting says `SETTING`.
 - Drifted settings are not setting rows: they go in the card's DRIFTED FROM THE STANDARD panel, with their conflict's `Lines[]` per the [line rules](./impl.md#line-rules). After the block, offer `'Correct the changed <packName> settings'` (case 3a′).
-- A Needs configuration row carries its `ConfigLocation` from `catalog.json` on the next line. After the block, offer `'Configure the manual <packName> settings'` for them; an Unverifiable card gets the restore offer (case 3a).
+- A Needs configuration row carries its `ConfigLocation` from `catalog-checker.json` on the next line. After the block, offer `'Configure the manual <packName> settings'` for them; an Unverifiable card gets the restore offer (case 3a).
 - Status words are only **Enforced**, **Needs configuration** and **Not applied** on rows. No Impact column and no ✗/⟳/⚙ markers inside the cards.
 - The offers above are asked after the block as one pick list, as in [Next action](./posture-view.md#next-action), with `Show full details` last.
 - Leave out ALSO RECORDED AS EVIDENCE when there are no evidence checks; write `1 check is recorded as evidence, not as a policy.` for one.

@@ -20,7 +20,7 @@ TENANT_ID=$(uip login status --output json | sed -n 's/.*"TenantId": *"\([^"]*\)
 uip gov compliance-packs state settings --output json > "$SESSION_TEMP/settings.json"
 uip gov compliance-packs state coverage tenant $TENANT_ID <packId> --output json > "$SESSION_TEMP/coverage.json"
 uip gov compliance-packs state get tenant $TENANT_ID <packId> --output json > "$SESSION_TEMP/state.json"
-# Modes on: the checker view the Enable view counts from (coverage § Enable view)
+# Modes on: the checker view the Enable and Enforced views count from (coverage § Enable view)
 uip gov compliance-packs catalog get <packId> --include-checker-rules --output json > "$SESSION_TEMP/catalog-checker.json"
 ```
 
@@ -270,7 +270,7 @@ Parse `Data.Active` (must be `true`), `Data.Mode` (modes on: the mode the admin 
 
 ## Report
 
-**Modes on, Enforce:** report with [coverage § Enforced view](../coverage/views.md#enforced-view), built from `catalog.json` and the coverage read again in Verify. Open with one line, `<packName> is now enforced on <tenantName> ✓`, then the view, then the `Applied by` and `Note` lines below. The view's own offers (correct drifted settings, configure manual ones, restore an Unverifiable policy) follow it, asked as one pick list as in [coverage § Next action](../coverage/posture-view.md#next-action), with `Show full details` last. The Observe and modes-off reports end with the same pick list.
+**Modes on, Enforce:** report with [coverage § Enforced view](../coverage/views.md#enforced-view), built from `catalog-checker.json` and the coverage read again in Verify. Open with one line, `<packName> is now enforced on <tenantName> ✓`, then the view, then the `Applied by` and `Note` lines below. The view's own offers (correct drifted settings, configure manual ones, restore an Unverifiable policy) follow it, asked as one pick list as in [coverage § Next action](../coverage/posture-view.md#next-action), with `Show full details` last. The Observe and modes-off reports end with the same pick list.
 
 Otherwise (Observe, or modes off):
 
@@ -296,77 +296,11 @@ Applied by: <Data.Identity from uip login status>  ·  <tenantName>  ·  <date>
 Note: compliance status is determined by your auditor, not this tool.
 ```
 
-## Org-scope deployment (all tenants)
+## All tenants (organization-wide)
 
-When the user says "apply to all tenants", "organization-wide", or "entire org", configure each tenant individually.
+A standard is applied to **one tenant at a time**, as in the admin portal: the mode, the conflicts and the admin's choice for each conflict belong to that tenant. When the admin asks for all tenants, the organization or the entire org, say so in one line, then run this flow (mode and conflicts included) on the tenant they are logged in to (`uip login status`). If they want a different tenant, switch to it first (`uip login tenant set <TENANT_NAME>`, see [auth-context.md](../../auth-context.md)) and run the flow there.
 
-> **Note:** `state enable organization` is exposed by the CLI but is not implemented on the backend — calling it has no effect. The correct approach is to iterate over all tenants in the org and call `state enable tenant` for each one.
-
-### Step 1 — Discover all tenants in the org
-
-```bash
-uip login tenant list --output json > "$SESSION_TEMP/tenants.json"
-```
-
-Parse `Data[].TenantName` and `Data[].TenantId` for the list of tenants.
-
-### Step 2 — Run posture analysis per tenant
-
-For each tenant, run coverage to understand current state:
-
-```bash
-uip gov compliance-packs state coverage tenant <tenantId> <packId> --output json
-```
-
-Aggregate results: note how many tenants have gaps vs are already fully Applied.
-
-### Step 3 — Confirmation
-
-```
-Configure <packName> settings across all tenants in <ORGANIZATION_NAME>?
-
-Tenants to configure:
-  <tenantName1> — <N> settings Not Applied
-  <tenantName2> — <N> settings Not Applied
-  <tenantName3> — already fully Applied (will skip)
-
-<totalTenantsToConfig> tenants will be configured. Your auditor determines compliance status.
-```
-
-Then ask with a selectable prompt (Critical Rule 13): question `Configure <packName> on these <totalTenantsToConfig> tenants?`, options `Yes, configure all` / `Cancel`. Without the tool: `Continue? (y/n)`. Require `Yes, configure all` (or `y`). Halt on anything else. Skip tenants where `NewCount == 0` (all settings already Applied).
-
-### Step 4 — Enable per tenant
-
-For each tenant with gaps, call enable individually:
-
-```bash
-for each tenant with NewCount > 0:
-  uip gov compliance-packs state enable tenant <tenantId> <packId> --output json
-```
-
-### Step 5 — Verify
-
-```bash
-for each configured tenant:
-  uip gov compliance-packs state get tenant <tenantId> <packId> --output json
-```
-
-### Report
-
-```
-<packName> settings configured across <N> tenants in <ORGANIZATION_NAME> ✓
-
-┌──────────────────┬──────────────────┐
-│ Tenant           │ Status           │
-├──────────────────┼──────────────────┤
-│ <tenantName1>    │ Applied ✓        │
-│ <tenantName2>    │ Applied ✓        │
-│ <tenantName3>    │ Already Applied  │
-└──────────────────┴──────────────────┘
-
-Applied by: <user>  ·  <date>
-Note: compliance status is determined by your auditor, not this tool.
-```
+Never loop over tenants, never enable on more than one tenant per request, and never call `state enable organization` (the backend does not implement it; it has no effect).
 
 ## Error handling
 

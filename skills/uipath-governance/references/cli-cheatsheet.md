@@ -200,7 +200,7 @@ uip gov compliance-packs state list   tenant $TENANT_ID          --output json
 
 # Organization scope (all tenants)
 uip gov compliance-packs state coverage organization $ORG_ID <packId> --output json
-uip gov compliance-packs state enable  organization $ORG_ID <packId> --output json
+# No organization-scope enable: a standard is applied one tenant at a time (full-apply § All tenants).
 uip gov compliance-packs state list   organization $ORG_ID          --output json
 ```
 

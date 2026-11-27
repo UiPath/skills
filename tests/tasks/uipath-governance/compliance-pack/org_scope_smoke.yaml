@@ -1,9 +1,10 @@
 task_id: skill-governance-compliance-org-scope
 description: >
-  Skill-guided: "apply ISO 42001 organization-wide" must iterate over tenants
-  using tenant scope — NOT call state enable organization (backend not implemented).
-  Agent must: (1) list tenants via uip login tenant list, (2) run state coverage
-  per tenant, (3) call state enable tenant for each tenant with gaps.
+  Skill-guided: "apply ISO 42001 organization-wide" is applied to one tenant
+  only — a standard is applied one tenant at a time, with that tenant's mode and
+  conflicts. Agent must enable it on the tenant it is logged in to, at tenant
+  scope, and on no other tenant — never loop over tenants, never use
+  state enable organization (backend not implemented).
 
 tags: [uipath-governance, smoke, mode:operate, lifecycle:setup, feature:compliance]
 
@@ -40,13 +41,6 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent listed tenants in the org to discover all targets"
-    command_pattern: 'uip\s+login\s+tenant\s+list'
-    min_count: 1
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: command_executed
     description: "Agent ran state coverage at tenant scope (advisory — codex may skip)"
     command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+coverage[\s\S]*tenant'
     min_count: 1
@@ -67,8 +61,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The pack was enabled on every tenant in the org, one tenant at a time (shim state)"
-    command: 'python3 mocks/check_state.py enabled-everywhere'
+    description: "The pack was enabled on the login's tenant and on no other tenant (shim state)"
+    command: 'python3 mocks/check_state.py enabled-only-here'
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

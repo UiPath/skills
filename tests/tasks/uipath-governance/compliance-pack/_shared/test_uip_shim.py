@@ -361,13 +361,14 @@ GOOD = {
     "apply_commands_smoke": state("enable"),
     "disable_smoke": state("disable"),
     "restore_smoke": state("restore"),
-    "org_scope_smoke": enable_all_tenants,
+    "org_scope_smoke": state("enable"),
 }
 CHEATS = {
     "apply_commands_smoke": [on_another_tenant("enable")],
     "disable_smoke": [on_another_tenant("disable"), at_org_scope("disable")],
     "restore_smoke": [on_another_tenant("restore"), at_org_scope("restore")],
-    "org_scope_smoke": [cheat_org_scope, cheat_org_id_as_a_tenant, cheat_invented_tenants],
+    "org_scope_smoke": [enable_all_tenants, on_another_tenant("enable"), cheat_org_scope,
+                        cheat_org_id_as_a_tenant, cheat_invented_tenants],
 }
 
 

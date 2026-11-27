@@ -33,6 +33,13 @@ uip gov compliance-packs state get tenant $TENANT_ID <packId> --output json \
 # and whether the admin can keep a conflicting value (see "Modes").
 # A 404 (older server) means off.
 uip gov compliance-packs state settings --output json > "$SESSION_TEMP/settings.json"
+
+# The checker view of the catalog: the default view plus the runtime checker
+# rules, each requirement's Source and CheckerSummary. The Observe, Enforced
+# and Enable views read it; the posture template reads catalog.json. An older
+# server returns the default view here (no CheckerSummary).
+uip gov compliance-packs catalog get <packId> --include-checker-rules --output json \
+  > "$SESSION_TEMP/catalog-checker.json"
 ```
 
 ```powershell
@@ -47,6 +54,10 @@ uip gov compliance-packs state get tenant $tenantId <packId> --output json |
   Set-Content "$tmpDir\state.json"
 
 uip gov compliance-packs state settings --output json | Set-Content "$tmpDir\settings.json"
+
+# The checker view of the catalog, for the Observe, Enforced and Enable views.
+uip gov compliance-packs catalog get <packId> --include-checker-rules --output json |
+  Set-Content "$tmpDir\catalog-checker.json"
 ```
 
 **Modes** — `settings.json` `Data.ModeSelectionEnabled`. `true` (**modes on**): the pack runs in Enforce or Observe; an Enforce apply takes the admin's choice per conflict (keep the current value or update to the standard's recommendation); Observe writes nothing to the tenant's policies. `false`, or a failed / 404 `state settings` (**modes off**): no mode is shown, and applying gives every conflict the standard's value. Everything mode-related below applies only with modes on.

@@ -8,14 +8,7 @@ Part of the posture check: read [impl.md](./impl.md) first (commands, parsing, w
 
 Rendered in place of the template above when the admin asked to **apply, enable or enforce** the standard, modes are on, and the pack is not Enforced (not applied, in Observe, or Mode not chosen). It follows the admin portal's enable page: the two modes with what each covers, the admin's deployed policies, what happens to their AOps policies, then the conflicts **by requirement**, and the count of requirements with none. There is no REQUIREMENTS box, impact summary or per-status requirement list here: those are posture, and they stay in the template for a posture question or "show full details". Modes off, or a catalog without `CheckerSummary` (older server): use the template above.
 
-**Read the checker view of the catalog** — it adds the requirements covered only by runtime checker rules (the portal's total), each clause's `Source` and `CheckerSummary`. Keep it in its own file: `catalog.json` stays the default view the template counts from.
-
-```bash
-uip gov compliance-packs catalog get <packId> --include-checker-rules --output json > "$SESSION_TEMP/catalog-checker.json"
-```
-```powershell
-uip gov compliance-packs catalog get <packId> --include-checker-rules --output json | Set-Content "$tmpDir\catalog-checker.json"
-```
+**Read the checker view of the catalog** — it adds the requirements covered only by runtime checker rules (the portal's total), each clause's `Source` and `CheckerSummary`. Keep it in its own file: `catalog.json` stays the default view the template counts from. It is `catalog-checker.json`, written by the commands in [impl.md § Command](./impl.md#command) (and by [full-apply](../full-apply/impl.md)'s first command block).
 
 **Counts — compute them with a command, never by reading the JSON:**
 - `T` = `CheckerSummary.ClauseCount` — every requirement UiPath settings or checker rules cover. Enforce covers all `T`.
