@@ -14,7 +14,9 @@ Validates:
   detection_scope is a valid value
 
 Arguments are read by keyword or SDK position, names resolve in the scope where the
-middleware is built, and an enum may be a member, an alias of the enum or its value.
+middleware is built, and an enum may be a member, an alias of the enum or its value. An
+entities item the checker cannot evaluate (a comprehension, a helper call) counts every
+PIIDetectionEntityType member it names.
 """
 
 import ast
@@ -33,6 +35,7 @@ from _shared.guardrails.coded_file_guardrail_assertions import (
     enum_values,
     imported_from,
     lists_tool,
+    named_enum_values,
     require_attachment_input,
     require_detection_scope,
     require_rendered_attachments,
@@ -57,13 +60,19 @@ def check(condition: object, msg: str) -> None:
 
 
 def entity_values(call: ast.Call, bindings: Bindings) -> set[str]:
-    """The entity names one PII middleware sends: the name of each PIIDetectionEntity(...) in entities=."""
-    return {
-        value
-        for item in elements(call_arg(call, "entities"), bindings)
-        if isinstance(item, ast.Call) and call_name(item) == "PIIDetectionEntity"
-        if (value := enum_value(call_arg(item, "name"), "PIIDetectionEntityType", bindings)) is not None
-    }
+    """The entity names one PII middleware sends: the name of each PIIDetectionEntity(...) in entities=.
+
+    An item that is not a PIIDetectionEntity(...) call, such as a comprehension or a helper call, counts
+    every PIIDetectionEntityType member it names.
+    """
+    values: set[str] = set()
+    for item in elements(call_arg(call, "entities"), bindings):
+        if isinstance(item, ast.Call) and call_name(item) == "PIIDetectionEntity":
+            if (value := enum_value(call_arg(item, "name"), "PIIDetectionEntityType", bindings)) is not None:
+                values.add(value)
+        else:
+            values |= named_enum_values(item, "PIIDetectionEntityType", bindings)
+    return values
 
 
 def main() -> None:

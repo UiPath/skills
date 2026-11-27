@@ -88,8 +88,10 @@ def run_checker(tmp_path: Path, source: str) -> subprocess.CompletedProcess[str]
     )
 
 
-EMAIL = "PIIDetectionEntity(PIIDetectionEntityType.EMAIL)"
-PHONE = "PIIDetectionEntity(PIIDetectionEntityType.PHONE_NUMBER)"
+EMAIL_TYPE = "PIIDetectionEntityType.EMAIL"
+PHONE_TYPE = "PIIDetectionEntityType.PHONE_NUMBER"
+EMAIL = f"PIIDetectionEntity({EMAIL_TYPE})"
+PHONE = f"PIIDetectionEntity({PHONE_TYPE})"
 
 
 @pytest.mark.parametrize(
@@ -140,6 +142,16 @@ PHONE = "PIIDetectionEntity(PIIDetectionEntityType.PHONE_NUMBER)"
         pytest.param(graph(local=f"    pii = [{EMAIL}]\n    pii = pii + [{PHONE}]", entities="pii"), id="list-reassigned-from-itself"),
         pytest.param(graph(local=f"    pii = [{EMAIL}]\n    pii += [{PHONE}]", entities="pii"), id="list-augmented"),
         pytest.param(graph(local=f"    pii = [{EMAIL}]\n    pii.append({PHONE})", entities="pii"), id="list-appended"),
+        pytest.param(graph(entities=f"[PIIDetectionEntity(x, threshold=0.5) for x in ({EMAIL_TYPE}, {PHONE_TYPE})]"), id="list-comprehension"),
+        pytest.param(
+            graph(module=f"WANTED = [{EMAIL_TYPE}, {PHONE_TYPE}]", entities="[PIIDetectionEntity(x) for x in WANTED]"),
+            id="comprehension-over-a-named-list",
+        ),
+        pytest.param(graph(entities=f"list(PIIDetectionEntity(x) for x in ({EMAIL_TYPE}, {PHONE_TYPE}))"), id="generator"),
+        pytest.param(
+            graph(module="def entity(kind):\n    return PIIDetectionEntity(kind, 0.5)", entities=f"[entity({EMAIL_TYPE}), entity({PHONE_TYPE})]"),
+            id="helper-call",
+        ),
     ],
 )
 def test_accepts_every_spelling_that_sends_email_and_phone(tmp_path: Path, source: str) -> None:
@@ -165,6 +177,11 @@ def test_accepts_every_spelling_that_sends_email_and_phone(tmp_path: Path, sourc
             graph(entities="[PIIDetectionEntity(PIIDetectionEntityType.PHONE_NUMBER)]"),
             "PIIDetectionEntityType.EMAIL is not in the middleware entities",
             id="email-missing",
+        ),
+        pytest.param(
+            graph(entities=f"[PIIDetectionEntity(x) for x in (PIIDetectionEntityType.PERSON, {PHONE_TYPE})]"),
+            "PIIDetectionEntityType.EMAIL is not in the middleware entities (found: ['Person', 'PhoneNumber'])",
+            id="comprehension-without-email",
         ),
         pytest.param(
             graph(entities='[PIIDetectionEntity("email"), PIIDetectionEntity("PhoneNumber")]'),

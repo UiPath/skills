@@ -151,6 +151,11 @@ def test_accepts_every_spelling_of_the_file_judge(tmp_path: Path, source: str, f
             "guardrail_text must state the non-compete rule",
             id="rule-without-limit",
         ),
+        pytest.param(
+            graph(module="import config", decorator=DECORATOR.replace(f"LLMAsJudgeValidator({RULE}, {MODEL})", "config.JUDGE")),
+            "no LLM-as-judge guardrail targets review_contract",
+            id="validator-not-a-call",
+        ),
     ],
 )
 def test_rejects_a_judge_that_does_not_do_what_was_asked(tmp_path: Path, source: str, message: str) -> None:
@@ -158,3 +163,4 @@ def test_rejects_a_judge_that_does_not_do_what_was_asked(tmp_path: Path, source:
 
     assert result.returncode != 0, result.stdout
     assert message in result.stderr
+    assert "Traceback" not in result.stderr

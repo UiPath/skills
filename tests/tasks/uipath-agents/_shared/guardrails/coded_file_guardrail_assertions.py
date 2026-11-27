@@ -279,6 +279,22 @@ def enum_values(node: ast.expr | None, enum: str, bindings: Bindings) -> set[str
     return {value for item in elements(node, bindings) if (value := enum_value(item, enum, bindings)) is not None}
 
 
+def named_enum_values(node: ast.expr | None, enum: str, bindings: Bindings, depth: int = 0) -> set[str]:
+    """The values of every ``Enum.MEMBER`` or ``Enum("value")`` an expression names anywhere, names followed.
+
+    For an item the checker cannot evaluate, such as a comprehension or a helper call.
+    """
+    if node is None or depth > _MAX_HOPS:
+        return set()
+    found: set[str] = set()
+    for sub in ast.walk(node):
+        if isinstance(sub, (ast.Attribute, ast.Call)) and (value := enum_value(sub, enum, bindings)) is not None:
+            found.add(value)
+        elif isinstance(sub, ast.Name) and (value := bindings.resolve(sub)) is not sub:
+            found |= named_enum_values(value, enum, bindings, depth + 1)
+    return found
+
+
 def lists_tool(node: ast.expr | None, tool: str, bindings: Bindings) -> bool:
     """True when a ``tools=`` argument lists ``tool``, as the tool object or as its name."""
     return any(

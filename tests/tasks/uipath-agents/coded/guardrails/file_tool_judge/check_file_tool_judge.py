@@ -94,8 +94,8 @@ def main() -> None:
     decorators = [
         d
         for d in decorator_guardrails(tree)
-        if call_name(bindings.resolve(call_arg(d, "validator")) or ast.Call(func=ast.Name("x"), args=[], keywords=[]))
-        == "LLMAsJudgeValidator"
+        if isinstance(validator := bindings.resolve(call_arg(d, "validator")), ast.Call)
+        and call_name(validator) == "LLMAsJudgeValidator"
     ]
     middleware = middleware_guardrails(bindings)
     check(
