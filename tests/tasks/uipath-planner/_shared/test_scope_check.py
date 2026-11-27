@@ -1,4 +1,5 @@
-"""scope-check.mjs: on Automation Suite older than 2.2510.2 the Blocked by platform line names Maestro.
+"""scope-check.mjs: on Automation Suite older than 2.2510.2 the Blocked by platform line names Maestro;
+the Recommended Scope block carries its Need profile line; an RPA SDD keeps its Project Mode Decision table.
 
 Run: pytest tests/tasks/uipath-planner/_shared/test_scope_check.py -v
 """
@@ -25,6 +26,7 @@ SDD = """# Purchase Request Approval — Solution Design Document
 **Recommendation:** Single-product RPA
 **Delivery model:** {delivery}
 **Blocked by platform:** {blocked}
+**Need profile:** Deterministic data entry
 """
 
 
@@ -62,3 +64,51 @@ def test_an_sdd_without_a_recommended_scope_passes(check, tmp_path):
     path.write_text("# SDD — Case\n\n## Section 1: Case Definition\n", encoding="utf-8")
     done = subprocess.run(["node", str(SCRIPT), str(path)], capture_output=True, text=True, encoding="utf-8", check=False)
     assert done.returncode == 0, done.stdout
+
+
+def run_text(tmp_path, text):
+    path = tmp_path / "t-sdd.md"
+    path.write_text(text, encoding="utf-8")
+    done = subprocess.run(["node", str(SCRIPT), str(path)], capture_output=True, text=True, encoding="utf-8", check=False)
+    return done.returncode, done.stdout
+
+
+def test_a_recommended_scope_without_its_need_profile_fails(tmp_path):
+    rc, out = run_text(tmp_path, SDD.format(delivery="cloud", blocked="none").replace("**Need profile:** Deterministic data entry\n", ""))
+    assert rc == 1
+    assert "no '**Need profile:**" in out
+
+
+RPA = SDD + """
+## 10. Master Project Architecture
+
+## 11. Project Structure
+
+{mode}
+
+## 13. Implementation Mode
+"""
+MODE_TABLE = """### Project Mode Decision
+
+| # | Project | Type | Compatibility | Authoring | Attendance | Initiation | Framework | Persistence (long-running) | Packaging |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | `Onboarding` | Process | Windows | XAML | Unattended | Scheduled | REFramework | NO | Standalone package |
+"""
+
+
+def test_an_rpa_sdd_with_its_project_mode_decision_passes(tmp_path):
+    rc, out = run_text(tmp_path, RPA.format(delivery="cloud", blocked="none", mode=MODE_TABLE))
+    assert rc == 0, out
+
+
+def test_an_rpa_sdd_without_a_project_mode_decision_fails(tmp_path):
+    rc, out = run_text(tmp_path, RPA.format(delivery="cloud", blocked="none", mode="### Workflow Inventory"))
+    assert rc == 1
+    assert "no '### Project Mode Decision'" in out
+
+
+def test_a_compressed_project_mode_decision_fails(tmp_path):
+    short = "### Project Mode Decision\n\n| Attendance | Initiation | Project mode | Packaging |\n|---|---|---|---|\n| Unattended | Scheduled | Master | Standalone |\n"
+    rc, out = run_text(tmp_path, RPA.format(delivery="cloud", blocked="none", mode=short))
+    assert rc == 1
+    assert "lacks the Framework column" in out
