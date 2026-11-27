@@ -102,10 +102,14 @@ success_criteria:
 
   # `flow debug` rejects any flow with a core.trigger.voice node ("Inbound voice
   # flows cannot be debugged from the CLI."), so reaching for it is a wasted turn.
+  # Counts `flow debug` at a command position (line start, after ; & | ( or
+  # bash -lc, behind wrappers like timeout/env/sudo/xargs/find -exec), not a
+  # mid-line mention in a README, grep or echo. Examples and a timing test:
+  # tests/scripts/test_task_command_patterns.py.
   - type: command_not_executed
     description: "Agent did not try to debug an inbound voice flow"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+debug'
+    command_pattern: '(?:^|[\n;&|({]|\b(?:ba|z)?sh\s+-l?c\s+[''"]?)\s*(?:(?:do|then|else|if|!|time|(?:env|exec|eval|command|nohup|nice|sudo|xargs|npx)(?:\s+-\S+(?:\s+(?!(?:do|then|else|if|time|timeout|env|exec|eval|command|nohup|nice|sudo|xargs|npx|find)\s)[^\s!-]\S*)?)*|timeout(?:\s+-\S+(?:\s+\w+)?)*\s+[\d$]\S*|(?>find\s[^\n;&|]*?\s-exec(?:dir)?)|\w+=\S*)\s+)*(?:[^\s;&|"''`]*/)?(uip|\\?\$UIP|"\$UIP"|\$\{UIP\})\s+(maestro\s+)?flow\s+debug'
     weight: 2.0
     pass_threshold: 1.0
 

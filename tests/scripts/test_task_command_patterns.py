@@ -399,3 +399,61 @@ def test_declaring_the_resource_counts_refresh_or_add(pattern, call):
 )
 def test_declaring_the_resource_needs_add_of_the_same_kind(pattern, call):
     assert _hits(pattern, call) == {False}
+
+
+# --- uipath-maestro-flow: voice tasks count a real `flow debug`, not a mention ---
+# Both voice tasks share one pattern. Codex records every Bash call as
+# `/bin/bash -lc '<cmd>'`, so the wrapper forms are pinned on the raw text.
+
+VOICE_DEBUG = [
+    _pattern("uipath-maestro-flow/voice/voice_inbound_call.yaml", "Agent did not try to debug an inbound voice flow"),
+    _pattern(
+        "uipath-maestro-flow/voice/voice_outbound_call.yaml",
+        "Agent did not run flow debug, which would place a real outbound call",
+    ),
+]
+
+
+@pytest.mark.parametrize("pattern", VOICE_DEBUG)
+@pytest.mark.parametrize(
+    "command",
+    [
+        "uip maestro flow debug .",
+        "uip flow debug VoiceFlow",
+        "cd VoiceFlow && uip maestro flow debug . 2>&1 | tail -50",
+        "timeout 60 uip maestro flow debug .",
+        "env UIP_LOG_LEVEL=debug uip maestro flow debug .",
+        "sudo -u builder uip maestro flow debug .",
+        "/usr/local/bin/uip maestro flow debug .",
+        "ls -d */ | xargs -I {} uip maestro flow debug {}",
+        "find . -name '*.flow' -exec uip maestro flow debug {} \\;",
+        "/bin/bash -lc 'timeout 60 uip maestro flow debug .'",
+    ],
+)
+def test_voice_debug_counts_a_real_call(pattern, command):
+    assert _hits(pattern, command) == {True}
+
+
+@pytest.mark.parametrize("pattern", VOICE_DEBUG)
+@pytest.mark.parametrize(
+    "command",
+    [
+        "cat > README.md <<'EOF'\n# Voice\nDo not run `uip maestro flow debug` on this flow.\nEOF",
+        "cat > README.md <<'EOF'\n1. uip maestro flow debug is not supported here.\nEOF",
+        "grep -rn 'uip maestro flow debug' skills/",
+        'echo "will not run timeout 60 uip maestro flow debug"',
+        "ps -eo args | rg 'uip maestro flow debug|flow-tool'",
+        "uip maestro flow validate VoiceFlow.flow",
+    ],
+)
+def test_voice_debug_ignores_a_mention(pattern, command):
+    assert _hits(pattern, command) == {False}
+
+
+@pytest.mark.parametrize("pattern", VOICE_DEBUG)
+@pytest.mark.parametrize("prefixes", ["sudo -E env -i nice -n " * 40, "find . -exec " * 40])
+def test_voice_debug_does_not_backtrack_on_many_prefixes(pattern, prefixes):
+    for flags in FLAGS:
+        start = time.perf_counter()
+        assert not re.search(pattern, prefixes + "true", flags)
+        assert time.perf_counter() - start < 0.05
