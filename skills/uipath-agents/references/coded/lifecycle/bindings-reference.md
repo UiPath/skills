@@ -73,7 +73,7 @@ If `uipath >= 2.10.58`, then for `retrieve_credential` / `retrieve_credential_as
 Read the current `bindings.json` and compare:
 
 1. **Missing in bindings** — Resource calls found in code but no matching entry in bindings.json
-2. **Stale in bindings** — Entries in bindings.json with no matching resource call in code
+2. **Stale in bindings** — Entries in bindings.json with no matching resource call in code. Event-trigger entries (`EventTrigger` and its `Property` and `entity` entries) come from connector discovery, not code, and are never stale.
 3. **Mismatched values** — Entries where the key, name, or folder path differs from code
 
 Non-interactive default: add/update missing bindings automatically; report no-op silently; ask only before deletion or for dynamic values.
@@ -105,6 +105,7 @@ Each resource can optionally be linked to an entrypoint from `entry-points.json`
 Update `bindings.json`:
 
 - **Add** entries for resources found in code but missing from bindings
+- **Add** the event-trigger entries when the agent starts on a connector event ([Event Trigger](#event-trigger-integration-service))
 - **Remove** entries that are stale (no longer referenced in code), after user confirmation
 - **Update** entries where values have drifted
 - **Add/update entrypoint fields** per Step 4 resolution
@@ -641,6 +642,125 @@ server = sdk.mcp.retrieve(slug="mcp_server_slug", folder_path="folder_path")
 - `folder_path` — keyword argument `folder_path=`
 
 **Note:** The resource identifier for MCP servers is `slug`, not `name`. The `value.name.defaultValue` in the binding still stores the slug value.
+
+---
+
+### Event Trigger (Integration Service)
+
+**Declared by:** agent's start on a connector event (mail received, Data Fabric record created or updated). No SDK call declares it, so the code scan never finds it, and no CLI command writes it. Write the entries by hand, every value from connector discovery (table below), never from another trigger: operation and object names are connector-specific (`EMAIL_RECEIVED`, `UPDATED_V3`), so never write a generic `CREATED` unless discovery returns it.
+
+A trigger with a wrong `Operation`, or none, packs, deploys and pushes clean; agent never starts. After deploy, raise one real event and confirm it starts a job that succeeds: `uip or jobs list --folder-key <DEPLOYMENT_FOLDER_KEY> --output json` lists it with `Source: IntegrationTrigger` and `State: Successful` (`uip or triggers list` does not show event triggers).
+
+- Only a solution deploy creates the trigger; publishing the package and creating its process creates none.
+- The deploy config gives each event trigger `runtimeType: Unattended`, which never starts a coded agent. Fetch the config with `uip solution deploy config get <SOLUTION_PACKAGE> -d <CONFIG_FILE>`, set the trigger with `uip solution deploy config set <CONFIG_FILE> "<TRIGGER_RESOURCE_NAME>" runtimeType Serverless` (the `kind: trigger` resource's `name` in the file, like `my-agent_EventTrigger-Record Created`), and pass `--config-file <CONFIG_FILE>` to `deploy run`, or to `deploy upgrade` for an existing deployment.
+- A Data Fabric entity event fires only on the entity copy the deployment installs in its folder; raise the test event there.
+
+**Event input:** event starts the agent with eight string inputs: `UiPathEventConnector`, `UiPathEvent`, `UiPathEventObjectType`, `UiPathEventObjectId` (the record's or item's id), `UiPathTime`, `UiPathCorrelationId`, `UiPathAdditionalEventData`, `UiPathTriggerActionId`. Undeclared ones are ignored; declare the ones the agent reads, as `str` defaulting to `""`, in its input model.
+
+**Binding entries:** one `EventTrigger`, plus one `Property` keyed to it when the event takes parameters. The `EventTrigger` takes an entry-point field like any resource ([Step 4](#step-4-resolve-entrypoint-bindings)), but with several entry points it is never left unbound: without the field Orchestrator binds the trigger to the first entry point in `entry-points.json`, with no warning. Each `init` run gives every entry point a new `uniqueId`; copy the new one into the field after every run, since a stale one fails the deploy (`Cannot set entry point. The entry point with path '' was not found`).
+
+```json
+[
+  {
+    "resource": "EventTrigger",
+    "key": "<TRIGGER_KEY>",
+    "value": {
+      "ConnectionId": { "defaultValue": "<CONNECTION_ID>", "isExpression": false, "displayName": "Connection" }
+    },
+    "metadata": {
+      "ActivityName": "<EVENT_DISPLAY_NAME>",
+      "BindingsVersion": "2.2",
+      "Connector": "<CONNECTOR_KEY>",
+      "ObjectName": "<OBJECT_NAME>",
+      "Operation": "<OPERATION>",
+      "FilterExpression": "<FILTER_EXPRESSION>"
+    }
+  },
+  {
+    "resource": "Property",
+    "key": "<OPERATION>_EventTrigger.<TRIGGER_KEY>",
+    "value": {
+      "<EVENT_PARAMETER>": { "defaultValue": "<PARAMETER_VALUE>", "isExpression": false, "displayName": "<EVENT_PARAMETER>" }
+    },
+    "metadata": {
+      "ActivityName": "<EVENT_DISPLAY_NAME>",
+      "BindingsVersion": "2.2",
+      "ObjectName": "<OBJECT_NAME>",
+      "ParentResourceKey": "EventTrigger.<TRIGGER_KEY>",
+      "TriggerCreateParameters": "<EVENT_PARAMETER_NAMES>",
+      "DebugQueryParameters": "<EVENT_PARAMETER_NAMES>"
+    }
+  }
+]
+```
+
+- `key`: name unique among the project's triggers. `Property` names its trigger in `metadata.ParentResourceKey` as `EventTrigger.<TRIGGER_KEY>`.
+- `TriggerCreateParameters`, `DebugQueryParameters`: the `value` keys, comma-separated.
+- `ConnectionId.defaultValue`: connection's id, as in a connection binding.
+- `displayName` on every `value` entry: push fails without it (`validation errors for Bindings … displayName Field required`).
+- `FilterExpression`: optional (**Filter expression** below).
+
+Data Fabric entity event scopes its `Property` to the entity and adds an `entity` resource that `Property` references in `FieldReferences`:
+
+```json
+[
+  {
+    "resource": "entity",
+    "key": "<ENTITY_NAME>",
+    "activityDisplayName": "Connector",
+    "value": {
+      "name": { "defaultValue": "<ENTITY_NAME>", "isExpression": false, "displayName": "Entity" },
+      "folderKey": { "defaultValue": "", "isExpression": false, "displayName": "folderKey" }
+    },
+    "metadata": {
+      "ActivityName": "<EVENT_DISPLAY_NAME>",
+      "BindingsVersion": "2.2",
+      "NameFieldPath": "queryParameters.folderEntityName",
+      "Scope": "Folder",
+      "FolderFieldPath": "queryParameters.folderEntityName_folderKey"
+    }
+  },
+  {
+    "resource": "Property",
+    "key": "<OPERATION>_EventTrigger.<TRIGGER_KEY>",
+    "id": "Property_<OPERATION>_<TRIGGER_KEY>",
+    "activityDisplayName": "Connector",
+    "value": {
+      "entityScope": { "defaultValue": "folder", "isExpression": false, "displayName": "entityScope" },
+      "folderEntityName": { "defaultValue": "<ENTITY_NAME>", "isExpression": false, "displayName": "folderEntityName" },
+      "folderEntityName_folderKey": { "defaultValue": "", "isExpression": false, "displayName": "folderEntityName_folderKey" }
+    },
+    "metadata": {
+      "ActivityName": "<EVENT_DISPLAY_NAME>",
+      "BindingsVersion": "2.2",
+      "ObjectName": "<OBJECT_NAME>",
+      "ParentResourceKey": "EventTrigger.<TRIGGER_KEY>",
+      "TriggerCreateParameters": "entityScope,folderEntityName,folderEntityName_folderKey",
+      "DebugQueryParameters": "entityScope,folderEntityName,folderEntityName_folderKey",
+      "FieldReferences": "{\"folderEntityName\": {\"resourceKey\": \"Entity.<ENTITY_NAME>\", \"field\": \"name\"}, \"folderEntityName_folderKey\": {\"resourceKey\": \"Entity.<ENTITY_NAME>\", \"field\": \"folderKey\"}}"
+    }
+  }
+]
+```
+
+**Where values come from:**
+
+| Binding value | Discovery |
+|---|---|
+| `Connector` | connector key: `uip is connectors list --filter "<CONNECTOR_NAME>" --output json` |
+| `ConnectionId.defaultValue` | `Id` from `uip is connections list <CONNECTOR_KEY> --all-folders --output json`; check it with `uip is connections ping <CONNECTION_ID> --output json` |
+| `Operation`, `ActivityName` | the event's `Name` (its `Operation` column reads `N/A`) and `DisplayName` from `uip is activities list <CONNECTOR_KEY> --triggers --output json` |
+| `ObjectName` | the event's `ObjectName`. A generic `CREATED` / `UPDATED` / `DELETED` event names none: take `Name` from `uip is triggers objects <CONNECTOR_KEY> <OPERATION> --connection-id <CONNECTION_ID> --output json` |
+| `Property` `value` keys | event parameters: `EventParameters` from `uip is triggers describe <CONNECTOR_KEY> <OPERATION> <OBJECT_NAME> --connection-id <CONNECTION_ID> --output json`, plus the object's `Parameters[].Name` from `triggers objects` |
+| Filter field names | `FilterFields` from the same `describe`. For a Data Fabric entity event it lists only `Id`: take the entity's field `Name`s from `uip df entities get <ENTITY_ID> --folder-key <FOLDER_KEY> --output json` |
+| Choice-set value in a filter | `NumberId` from `uip df choice-sets list-values <CHOICE_SET_ID> --output json` |
+
+**Filter expression:** `FilterExpression` narrows which events start the agent; omit it only when every event on the object should. JMESPath: each condition in parentheses, conditions joined by `&&`.
+
+- String: single quotes, `(<FIELD>=='<VALUE>')`. Boolean or number: backtick literal, ``(<FIELD>==`true`)``. Double quotes are JMESPath identifiers, not strings.
+- Choice-set field: ``contains(`[<NUMBER_ID>]`, <FIELD>)``, with the option's `NumberId`, not its position in a list.
+
+Example: ``(contains(`[<NUMBER_ID>]`, <CHOICE_FIELD>))&&(<FIELD>=='<VALUE>')``.
 
 ---
 
