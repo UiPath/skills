@@ -17,6 +17,7 @@ Detailed reference for the activity types supported in the API Workflow DSL — 
 | Response | `response` + `then: "end"` | Return result and end the workflow |
 | File to Base64 | `run.script` calling `$helpers.file.fileToBase64` | Encode a file reference as a base64 file. See [files-and-base64.md](files-and-base64.md) |
 | Base64 to File | `run.script` calling `$helpers.file.base64ToFile` | Decode a base64 file reference or string into a binary file. See [files-and-base64.md](files-and-base64.md) |
+| Invoke API Workflow (RunWorkflow) | `run.workflow` | Run another workflow of the same project, named by its path from the project root without `.json`. See [multi-workflow-projects-guide.md](multi-workflow-projects-guide.md#invoke-api-workflow-runworkflow) |
 | HTTP Request (Http kind) | `call: "UiPath.Http"` | Call an arbitrary REST API — use `uip api-workflow registry resolve` + `stub`. See [connector-activity-discovery.md](connector-activity-discovery.md) |
 | Connector activity (IntSvc kind) | `call: "UiPath.IntSvc"` | Call a vendor service (Slack, Outlook, Gmail, GitHub, …) — use `uip api-workflow registry resolve` + `stub` with a pinged connection. See [connector-activity-discovery.md](connector-activity-discovery.md) |
 

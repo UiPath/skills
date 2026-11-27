@@ -111,7 +111,7 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
 19a. **Init shape and registration.** Run `uip api-workflow init <name> --output json` inside the solution directory. It creates `project.uiproj`, `Workflow.json`, `entry-points.json`, and `bindings_v2.json`, and registers the project in the nearest `.uipx`. Use `--skip-solution-registration` only when explicitly requested for a standalone CLI/local project. Always create a full project, never a lone workflow file. Build throwaway probe workflows, such as one that only inspects connector data, outside the project and solution folders (for example under `/tmp`), and delete them before finishing; never leave extra projects in the solution. Do not use solution projects add/remove or change existing project IDs. For legacy `project.json`, initialize a fresh sibling and move content into its `Workflow.json`, or convert in place; see [references/troubleshooting.md](references/troubleshooting.md). Runtime success does not prove Studio Web compatibility; init-produced shape does.
 <!--skill-flavor:project-creation:end-->
 
-20. **Static validation.** Run `uip api-workflow validate <Workflow.json> --output json` as the last autonomous command in every author/edit cycle. On `Result: "Failure"`, read `Instructions`, fix the activity at its JSON path, and repeat until `Data.Status: "Valid"`. Prioritize semantic-tail errors over duplicate `oneOf` noise.
+20. **Static validation.** Run `uip api-workflow validate <Workflow.json> --output json` as the last autonomous command in every author/edit cycle, once per workflow file in a multi-workflow project (rule 25). On `Result: "Failure"`, read `Instructions`, fix the activity at its JSON path, and repeat until `Data.Status: "Valid"`. Prioritize semantic-tail errors over duplicate `oneOf` noise.
 
 <!--skill-flavor:runtime-validation-limit:start-->
     Validation catches malformed JSON, unknown types, required-field errors, bad evaluate settings, duplicate/empty variables, and empty task lists; not broken connections, wrong resource IDs, runtime expression errors, unwrapped literals, or multi-key Assign sets — those need `uip api-workflow run` once the user consents.
@@ -135,6 +135,8 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
     Shapes, worked examples, and pitfalls: [references/files-and-base64.md](references/files-and-base64.md).
 
 24. **Per-activity retry lives in `catch.retry` of a `try` task, never on the activity.** A Try/Catch carries it beside `as` and `do`; Studio Web stores an HTTP Request's own Retry section as an `<id>#Retry` wrapper — preserve it and never add `catch.do`. A retrying `try` replaces `httpRetryConfig` for every call inside it. Task-level retry re-sends POST/PUT/DELETE; confirm idempotency first. Some `validate` releases reject a string `retry.when` and the wrapper; before treating those errors as real, read [references/http-retry-config.md](references/http-retry-config.md#validation-gap), which also holds the shapes and defaults.
+
+25. **Invoke API Workflow names a path from the project root.** A `run.workflow` task (`activityType: "RunWorkflow"`) names the invoked file by its path from the project root without `.json`, `/` between folders: `Child` is the root `Child.json`, `Shared/Validate` is `Shared/Validate.json`. Never caller-relative, never `.json`, `\`, `./` or an expression; case must match exactly. Packing leaves out every non-JSON file outside `evals/`, fails when an invoke names a file the package lacks, and warns when an entry point or `main` does. Shape, input/output, layout and pack errors: [references/multi-workflow-projects-guide.md](references/multi-workflow-projects-guide.md).
 
 ## Workflow Phases
 
@@ -168,7 +170,7 @@ uip api-workflow validate ./<project>/Workflow.json --output json
 uip api-workflow run ./<project>/Workflow.json [--no-auth] --output json
 ```
 
-Validate autonomously and fix until valid; then ask before running. Name the concrete side effect in the question (an email sent, a ticket created), then wait. If skipped, provide the exact command.
+Validate autonomously and fix until valid; then ask before running. A workflow with an Invoke API Workflow task cannot run locally yet (`No code found for script task: <key>`): run each invoked workflow on its own instead (rule 25). Name the concrete side effect in the question (an email sent, a ticket created), then wait. If skipped, provide the exact command.
 <!--skill-flavor:validation-run-lifecycle:end-->
 <!--skill-flavor:runtime-troubleshooting:start-->
 Triage failures as Structure > Expression > Activity Config > Logic; see [references/troubleshooting.md](references/troubleshooting.md).
@@ -184,7 +186,7 @@ uip solution pack <solutionDir> <outputDir> --name <PACKAGE_NAME> --version 1.0.
 uip solution publish <outputDir>/<package>.zip --tenant <TENANT_NAME> --output json
 ```
 
-Publishing requires `uip login`. The packager detects `Type: "Api"`, validates/copies workflows, generates deployment metadata, and produces a `.nupkg` inside a `.zip`. After deployment, operate through Orchestrator/API triggers, jobs, connections, logs, and traces; local `uip api-workflow` verbs no longer operate the published workflow. See [references/operating-published-workflows.md](references/operating-published-workflows.md), delegating depth to `uipath-platform` or `uipath-troubleshoot` when appropriate.
+Publishing requires `uip login`. The packager detects `Type: "Api"`, copies the project's JSON files at every depth plus `evals/`, generates deployment metadata, checks every entry point and invoke against the package, and produces a `.nupkg` inside a `.zip`. Read its warnings: they list files left out and any `validate` problems, which still pack. `uip api-workflow pack <projectDir> <outDir>` checks one project; no CLI command uploads its `.nupkg`, so a standalone project publishes from Studio Web (rule 25 guide). Non-JSON files outside `evals/` (`README.md`, images) are never packaged; the warning naming them is expected. After deployment, operate through Orchestrator/API triggers, jobs, connections, logs, and traces; local `uip api-workflow` verbs no longer operate the published workflow. See [references/operating-published-workflows.md](references/operating-published-workflows.md), delegating depth to `uipath-platform` or `uipath-troubleshoot` when appropriate.
 <!--skill-flavor:deployment-lifecycle:end-->
 
 <!--skill-flavor:quick-start-create:start-->
@@ -201,6 +203,16 @@ uip api-workflow run ./<ProjectName>/Workflow.json --no-auth --output json
 uip solution pack . ./build --name <PackageName> --version 1.0.0 --output json
 uip login
 uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
+```
+
+Standalone project (no solution; publish it later from Studio Web):
+
+```bash
+uip api-workflow init <ProjectName> --skip-solution-registration --output json
+# Add input/output schemas from the template; init writes none. Add more workflow files, e.g. <ProjectName>/Rules/Child.json (rule 25).
+uip api-workflow validate ./<ProjectName>/Workflow.json --output json   # repeat for every workflow file
+uip api-workflow pack ./<ProjectName> ./out --package-id <ProjectName> --package-version 1.0.0 --output json
+unzip -l ./out/<ProjectName>.1.0.0.nupkg | grep content/
 ```
 <!--skill-flavor:quick-start-create:end-->
 
@@ -224,6 +236,7 @@ uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
 <!--skill-flavor:published-reference-navigation:end-->
 | [references/troubleshooting.md](references/troubleshooting.md) | Runtime, structure, expression, connector, response, packaging, publish failures |
 | [references/testing-and-evals.md](references/testing-and-evals.md) | Eval contract, scoring, raw outputs, test-until-green protocol |
+| [references/multi-workflow-projects-guide.md](references/multi-workflow-projects-guide.md) | Workflows in sub-folders, Invoke API Workflow (`run.workflow`) names and I/O, what a package ships, pack consistency errors |
 <!--skill-flavor:reference-navigation-extra:start-->
 <!--skill-flavor:reference-navigation-extra:end-->
 
@@ -238,6 +251,7 @@ uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
 <!--skill-flavor:template-execution-proof:start-->
 - [assets/templates/connector-call-example.json](assets/templates/connector-call-example.json) — registry-generated HTTP with `ImplicitConnection`.
 <!--skill-flavor:template-execution-proof:end-->
+- [assets/templates/invoke-workflow-caller-example.json](assets/templates/invoke-workflow-caller-example.json) and [assets/templates/invoke-workflow-child-example.json](assets/templates/invoke-workflow-child-example.json) — **Invoke API Workflow**: `Workflow.json` invokes `Rules/CheckAmount` with an input expression and returns a field of its result; the child (save it as `Rules/CheckAmount.json`) declares the input it reads and returns `{ approved }` (rule 25). Both validate; the child runs with `--no-auth`.
 - [assets/templates/retry-http-request-example.json](assets/templates/retry-http-request-example.json) — HTTP Request retried by a Try/Catch with `catch.retry` (Studio Web defaults, no status filter), recording the final status in `catch.do` (rule 24).
 - [assets/templates/vendor-curated-call-example.json](assets/templates/vendor-curated-call-example.json) — IntSvc activity; replace its connection sentinel before writing.
 - [assets/templates/genai-model-call-example.json](assets/templates/genai-model-call-example.json) — **Model call** — a `prompt` input → GenAI Content Generation → Response with the answer's `text`; replace its connection sentinel before writing.
@@ -261,6 +275,7 @@ uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
 - Do not hand-assemble legacy projects, emit a lone `Workflow.json`, or use solution projects add/remove.
 <!--skill-flavor:project-creation-antipatterns:end-->
 - Do not treat runtime, pack, or publish success as Studio Web compatibility proof.
+- Do not name an invoked workflow relative to the caller, with `.json`, or in another case than its file; do not keep workflow data in non-JSON files outside `evals/` (rule 25).
 - Do not copy expected eval outputs from PascalCased CLI display data; derive keys from `output.schema` and Response, using raw output for expectations.
 - Do not author first when `evals/` exists; apply rule 22. Do not create or offer evals when absent. Do not change logic merely to satisfy stale expectations.
 
