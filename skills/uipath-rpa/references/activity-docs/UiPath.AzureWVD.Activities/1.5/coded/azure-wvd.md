@@ -2,7 +2,7 @@
 
 Reference for the `azureWVD` service from `UiPath.AzureWindowsVirtualDesktop.Activities` package.
 
-**Required package:** `"UiPath.AzureWindowsVirtualDesktop.Activities": "[1.4.1]"`
+**Required package:** `"UiPath.AzureWindowsVirtualDesktop.Activities": "[1.5.1]"`
 
 **Auto-imported namespaces:** `UiPath.AzureWindowsVirtualDesktop.Activities.API`, `UiPath.AzureWVD.Models`, `UiPath.Core`, `UiPath.AzureWVD.Core`
 

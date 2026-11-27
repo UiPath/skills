@@ -2,7 +2,7 @@
 
 Reference for the `activeDirectoryDomainServices` service from `UiPath.ActiveDirectoryDomainServices.Activities` package.
 
-**Required package:** `"UiPath.ActiveDirectoryDomainServices.Activities": "[1.4.1]"`
+**Required package:** `"UiPath.ActiveDirectoryDomainServices.Activities": "[1.7.2]"`
 
 **Auto-imported namespaces:** `UiPath.ActiveDirectoryDomainServices.Core`, `UiPath.Core`
 

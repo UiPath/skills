@@ -205,7 +205,7 @@ uip rpa packages install --packages 'id=<PackageId>,version=<CHOSEN_VERSION>' --
 
 ### Step 2 — Find activity docs
 
-First directly Read `{PROJECT_DIR}/.local/docs/packages/{PackageId}/activities/<Activity>.md`; failed direct Read is the existence check. `Glob`/`Grep` skip gitignored `.local/` and prove nothing; use `ls` on the exact directory to list it. Never enumerate the tree. If absent, use the closest installed-version folder under `references/activity-docs/{PackageId}/`.
+First directly Read `{PROJECT_DIR}/.local/docs/packages/{PackageId}/activities/<Activity>.md`; failed direct Read is the existence check. `Glob`/`Grep` skip gitignored `.local/` and prove nothing; use `ls` on the exact directory to list it. Never enumerate the tree. If absent, use the closest installed-version folder under `references/activity-docs/{PackageId}/`. Five folders are not named by package id (package id → folder): `UiPath.WebAPI.Activities` → `UiPath.Web.Activities`, `UiPath.Form.Activities` → `UiPath.Forms.Activities`, `UiPath.ActiveDirectoryDomainServices.Activities` → `UiPath.ActiveDirectory.Activities`, `UiPath.AzureWindowsVirtualDesktop.Activities` → `UiPath.AzureWVD.Activities`, `UiPath.DocumentUnderstanding.Activities` → `UiPath.IntelligentOCR.StudioWeb.Activities`.
 
 ## UI Automation References
 

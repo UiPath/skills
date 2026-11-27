@@ -1,7 +1,7 @@
 # UiPath Forms Activities - Legacy Reference
 
 ## Overview
-HTML/FormIo-based forms for user interaction. Supports async/modal display, field binding, events, and triggers. Package: `UiPath.Forms.Activities`.
+HTML/FormIo-based forms for user interaction. Supports async/modal display, field binding, events, and triggers. Package: `UiPath.Form.Activities`. `ShowCalloutActivity` ships separately in `UiPath.Callout.Activities`.
 
 ---
 

@@ -41,7 +41,7 @@ Reference documents for writing **legacy** UiPath RPA workflows (XAML). Each fil
 | [MobileAutomation.md](MobileAutomation.md) | UiPath.MobileAutomation.Activities | iOS/Android via Appium |
 | [SAP-BAPI.md](SAP-BAPI.md) | UiPath.SAP.BAPI.Activities | SAP BAPI function calls |
 | [CommunicationsMining.md](CommunicationsMining.md) | UiPath.CommunicationsMining.Activities | CM validation with Action Center |
-| [Vision-OCR.md](Vision-OCR.md) | UiPath.Vision.Activities | Multi-engine OCR (Azure, Google, ABBYY, Tesseract) |
+| [Vision-OCR.md](Vision-OCR.md) | UiPath.Vision | Multi-engine OCR (Azure, Google, ABBYY, Tesseract) |
 | [WorkflowEvents.md](WorkflowEvents.md) | UiPath.WorkflowEvents.Activities | App-triggered workflows via SignalR |
 | [Google-Speech.md](Google-Speech.md) | UiPath.Google.Activities | Google Cloud Speech-to-Text, Text-to-Speech |
 | [ComplexScenarios.md](ComplexScenarios.md) | UiPath.ComplexScenarios.Activities | Pre-built StudioX scenario templates |
