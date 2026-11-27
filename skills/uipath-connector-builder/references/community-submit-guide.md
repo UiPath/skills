@@ -95,7 +95,7 @@ Nothing checks the level today: `submit` accepts any of the three. A wrong `patc
 
 1. Editing the key in the folder to "prepare" it for the catalog (Rule 2).
 2. Running `submit` before the connector is published and tested in a tenant.
-3. Passing `--bump` again and again to "retry" — a re-run with the same `--bump` keeps the same version while the pull request is open (Rule 5).
+3. Raising `--bump` to force a new version while the pull request is still open. Re-run the same command with the same level: the version does not change (Rule 5).
 4. Validating a fork without its node id, which checks the shared key instead (step 2).
 5. Sending `--bump patch` out of habit, or any level without comparing the folder with the catalog's copy and asking the user.
 6. Reporting done on `validate` alone. `submit` also checks the index: the version, the fork rule and a key clash.

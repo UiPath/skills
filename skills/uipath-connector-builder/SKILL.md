@@ -17,6 +17,7 @@ Author UiPath Integration Service connectors on disk with `uip is connectors bui
 - Wiring a polling or webhook trigger on an existing activity.
 - Debugging a connector, activity, hook, or trigger problem in `element.json` / a standard-resource file.
 - Validating before release, or pulling/pushing a design connector to a tenant.
+- Submitting a published connector to the community catalog with `uip extension` (init → validate → submit).
 
 ## Critical Rules
 
@@ -115,7 +116,7 @@ uip is connectors publish --wait        # blocks until SUCCESS; live in Studio W
 Publishing a NEW connector needs no `--version` (init seeded `1.0.0`). **Re-publishing** an existing connector requires a HIGHER version — bump `element-metadata.json:latestVersion` (or pass `--version 1.0.1`); the server rejects an equal version.
 
 ### Share with the community catalog
-Only after the connector is published and tested in a tenant, and only when the user asks. Follow [references/community-submit-guide.md](references/community-submit-guide.md): `uip extension init` → `validate` → `submit --dry-run` → `submit`. The folder keeps its `design-{org}-{name}` key; `submit` sets the catalog key in the copy it sends. This is not the community route above: a legacy and a `--v4` connector are submitted the same way. `uip extension` runs only in a terminal with the `gh` CLI, not in Studio Web: there, tell the user to run these steps from a terminal.
+Only after the connector is published and tested in a tenant, and only when the user asks. Follow [references/community-submit-guide.md](references/community-submit-guide.md): `uip extension init` → `validate` → `submit --dry-run` → `submit`. This is not the community route above: a legacy and a `--v4` connector are submitted the same way. In Studio Web, stop and tell the user to run these steps from a terminal.
 
 ### Add an activity to an existing connector
 ```bash
@@ -225,4 +226,4 @@ Depth lives in `references/` — each self-contained. SKILL.md owns the workflow
 12. Reporting a connector "done" with fieldless activities (Rule 12) — `activity create` writes endpoints/methods/auth but NOT the field schema; an activity with no `field create` / `--fields-file` shows only a raw JSON body in Studio and trips a `validate` WARNING. Author fields before finishing, and never treat a 0-error/has-warnings validate as a pass.
 13. Shipping a black or unfilled icon (Rule 13) — it passes `validate` and then disappears on Studio Web's dark surface, and the periodic build fails it. Add a `prefers-color-scheme: dark` rule or use `currentColor`.
 14. Starting the community route without asking, or on a CLI with no prerelease tag (Rule 14) — `init --v4` and `--method-script-ref` do not exist there.
-15. Writing a `custom-community-` or `design-community-` key into the connector — those keys belong to the community catalog and `validate`/`import`/`publish` refuse them. A connector is always built as `design-{org}-{name}`; see [references/community-submit-guide.md](references/community-submit-guide.md).
+15. Writing a `custom-community-` or `design-community-` key into the connector — see Rule 2 in [references/community-submit-guide.md](references/community-submit-guide.md).
