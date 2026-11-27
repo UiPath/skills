@@ -287,12 +287,29 @@ def named_enum_values(node: ast.expr | None, enum: str, bindings: Bindings, dept
     if node is None or depth > _MAX_HOPS:
         return set()
     found: set[str] = set()
-    for sub in ast.walk(node):
+    for sub in _flowing(node):
         if isinstance(sub, (ast.Attribute, ast.Call)) and (value := enum_value(sub, enum, bindings)) is not None:
             found.add(value)
         elif isinstance(sub, ast.Name) and (value := bindings.resolve(sub)) is not sub:
             found |= named_enum_values(value, enum, bindings, depth + 1)
     return found
+
+
+def _flowing(node: ast.AST) -> Iterator[ast.AST]:
+    """``node`` and the sub-nodes whose values can reach its result: comparisons, conditions and filters are skipped."""
+    if isinstance(node, ast.Compare):
+        return
+    yield node
+    skipped: list[ast.AST] = []
+    if isinstance(node, ast.comprehension):
+        skipped = list(node.ifs)
+    elif isinstance(node, ast.IfExp):
+        skipped = [node.test]
+    elif isinstance(node, ast.BoolOp) and isinstance(node.op, ast.And):
+        skipped = list(node.values[:-1])
+    for child in ast.iter_child_nodes(node):
+        if not any(child is skip for skip in skipped):
+            yield from _flowing(child)
 
 
 def lists_tool(node: ast.expr | None, tool: str, bindings: Bindings) -> bool:

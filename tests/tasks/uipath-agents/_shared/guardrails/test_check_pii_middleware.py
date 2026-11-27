@@ -184,6 +184,16 @@ def test_accepts_every_spelling_that_sends_email_and_phone(tmp_path: Path, sourc
             id="comprehension-without-email",
         ),
         pytest.param(
+            graph(entities=f"[PIIDetectionEntity(x) for x in (PIIDetectionEntityType.PERSON, {PHONE_TYPE}) if x != {EMAIL_TYPE}]"),
+            "PIIDetectionEntityType.EMAIL is not in the middleware entities (found: ['Person', 'PhoneNumber'])",
+            id="email-only-in-a-comprehension-filter",
+        ),
+        pytest.param(
+            graph(entities=f"[PIIDetectionEntity(x) for x in (PIIDetectionEntityType.PERSON, {PHONE_TYPE})] if {EMAIL_TYPE} else []"),
+            "PIIDetectionEntityType.EMAIL is not in the middleware entities (found: ['Person', 'PhoneNumber'])",
+            id="email-only-in-a-condition",
+        ),
+        pytest.param(
             graph(entities='[PIIDetectionEntity("email"), PIIDetectionEntity("PhoneNumber")]'),
             "PIIDetectionEntityType.EMAIL is not in the middleware entities",
             id="wrong-case-value",
