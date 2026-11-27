@@ -112,12 +112,14 @@ Then run `uip solution publish`—see the `uipath-solution` skill. `uip maestro 
 
 ## Debug — a real end-to-end run
 
+`flow debug` is the run-and-test step. It runs the flow server-side. A flow has no local run, and Local workspace runs only RPA projects.
+
 <!--skill-flavor:operate-debug:start-->
 ```bash
 UIP_LOG_LEVEL=info uip maestro flow debug <project-dir> --output json
 ```
 
-Pass the PROJECT directory containing `project.uiproj`. `flow debug` executes the flow for real; it is not validation (`validate` is). If the user can answer and did not request a run, ask once before the first run, even when the request is for a flow that works; that yes covers the fix-and-re-run loop on the flow the user asked to get working this turn. With nobody to ask, run it when the request is for a flow that works, unless a connection was guessed ([bindings.md](bindings.md#where-both-values-come-from)); otherwise report the flow as unverified rather than letting a passing `validate` stand as the result. Debug overwrites the Studio Web solution whose `SolutionId` matches local `.uipx`. A request to run or debug the flow covers that overwrite; when you ask before the first run on a solution not scaffolded this turn, the question names it. Headless, never debug a solution not scaffolded this turn.
+Pass the PROJECT directory containing `project.uiproj`. `flow debug` executes the flow for real; it is not validation (`validate` is). After *Build it*, never ask about a run: run it only when the request asked for one, otherwise the final report's `Unverified:` says the flow did not run. If the user can answer and did not request a run, ask once before the first run, even when the request is for a flow that works; that yes covers the fix-and-re-run loop on the flow the user asked to get working this turn. With nobody to ask, run it when the request is for a flow that works, unless a connection was guessed ([bindings.md](bindings.md#where-both-values-come-from)); otherwise report the flow as unverified rather than letting a passing `validate` stand as the result. Debug overwrites the Studio Web solution whose `SolutionId` matches local `.uipx`. A request to run or debug the flow covers that overwrite; when you ask before the first run on a solution not scaffolded this turn, the question names it. Headless, never debug a solution not scaffolded this turn.
 <!--skill-flavor:operate-debug:end-->
 
 Operational constraints:

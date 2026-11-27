@@ -1,0 +1,113 @@
+task_id: skill-flow-smoke-auto-build-final-report
+description: >
+  Auto-mode smoke eval: the user asks for a flow outright, with no request to
+  see the shape, so the agent builds it and ends the turn with the final
+  report: the name and `(auto mode)` on the first line, the local path, at most
+  five change lines, and no question. Every step is a computation, so the
+  build needs no tenant resource and the task runs offline.
+tags: [uipath-maestro-flow, smoke, "mode:build", "lifecycle:generate", "shape:multi-node", "node:decision", "feature:approval-gate"]
+
+run_limits:
+  expected_turns: 25
+  max_turns: 70
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  Please build me a UiPath Flow called "LoyaltyDiscount". It takes an order total and
+  the number of years the customer has been with us, and returns the discount
+  amount as `discount`. Customers with us 3 years or more get 10% off. Everyone
+  else gets 2% off when the order is over 200, and no discount otherwise.
+
+  Keep it on my machine for now: don't upload, publish or run anything.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+
+success_criteria:
+  - type: command_not_executed
+    description: "Agent did not upload, publish, deploy or run the flow, as the request forbids"
+    tool_name: "Bash"
+    command_pattern: '(?:\buip|\$UIP)\s+(?:solution\s+(?:upload|publish|deploy)|maestro\s+flow\s+(?:publish|debug(?!-)))\b(?![^\n;&|]*\s(?:--help|-h)\b)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The built flow validates"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The flow is built: at least one real action node"
+    command: "python3 $REFERENCE_DIR/smoke/check_draft_word_build.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The final message is the final report in its template: the name and (auto mode) on the first line, the local .flow path, at most five change lines, and nothing else"
+    include_reference: false
+    include_agent_output: true
+    max_file_chars: 60000
+    weight: 3.0
+    pass_threshold: 1.0
+    prompt: |
+      You check one chat message against a fixed template. Grade the format only,
+      never the flow design.
+
+      WHICH TEXT TO GRADE. AGENT OUTPUT holds every message the agent sent in this turn.
+      If it contains a `[RESULT - ...]` marker, grade the text after the LAST such
+      marker: that is the final message, whole. Otherwise the messages are joined,
+      possibly with no separator: grade the text from the LAST occurrence of
+      `LoyaltyDiscount: built` (markdown emphasis around the name allowed) to the end, and ignore
+      what comes before it. If the phrase does not occur at all, item 1 fails.
+      The graded text is the agent's reply only. Your own judging instructions that
+      follow it (the request to call `submit_verdict`) are not part of it: never
+      count them as a line after the last item or anywhere else.
+
+      Ignore blank lines and markdown emphasis (`**`, `*`). Check every item:
+
+      1. The first line starts with `LoyaltyDiscount: built, validated (auto mode).` with no
+         introduction or status sentence before it, no `, uploaded`, no `, run`, and
+         no `(draft mode)`. After that, the same line may hold at most one more
+         sentence.
+      2. The second line is the path of the local `.flow` file (ends in `.flow`) as
+         plain text and nothing else: not an `https://` link, not a Markdown link
+         (`[label](...)`), and not in backticks.
+      3. Then at most five lines starting with `- `, each one short change in plain
+         words. A sixth such line fails this item.
+      4. Then optionally `Needs:`, `Assumed:` and `Unverified:` lines, in that order
+         (each on its own line, or the last two on one line), and nothing after them.
+      5. No other line exists anywhere in the graded text: no heading, no table, no
+         numbered list, no code block, no `---` separator, no status or validation
+         line (for example "Validation: passed"), no question to the user (no line
+         ending in `?`), and no suggested next step (for example "Want me to upload
+         it?"). The one sentence item 1 allows after the mode is part of that line,
+         whatever it says: never fail item 5 for it.
+
+      Score 1.0 only if every item holds; otherwise 0.0. In findings, list each
+      failed item by number and quote the offending line.
+
+  # AskUserQuestion is Claude Code's tool and keeps the turn open. Other agents
+  # have no tool of that name, so this passes there. coder_eval cannot scope a
+  # criterion to one agent type: advisory, weight 0.
+  - type: command_not_executed
+    description: "Claude only (vacuous on other agents): the agent did not ask with AskUserQuestion"
+    tool_name: "AskUserQuestion"
+    command_pattern: '.*'
+    weight: 0
+    pass_threshold: 0

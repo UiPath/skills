@@ -1,0 +1,145 @@
+task_id: skill-flow-smoke-draft-skeleton
+description: >
+  Draft-mode smoke eval: the user asks to see the shape first, so the agent
+  builds a skeleton (every action step a labelled mock, a real branch on an
+  input, a real loop) with no registry call, validates it, makes no upload,
+  and ends the turn with the gate reply. A branch plus a loop over a list
+  input cover the control flow the scheduled and switch variants do not.
+tags: [uipath-maestro-flow, smoke, "mode:build", "lifecycle:generate", "shape:multi-node", "node:decision", "node:loop", "feature:approval-gate"]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 60
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  I need a UiPath Flow called "InvoiceIntakeSketch" for incoming invoices. Each invoice
+  comes in with an amount and a list of line items. Our "Record Invoice"
+  process enters it in the ledger. Anything of 1000 or more needs a manager to
+  review it, and the rest are approved automatically. Then every line item is
+  checked one by one, and the finance team gets an email.
+
+  Can you show me what it would look like before you build it? Don't upload,
+  publish or run anything yet.
+
+success_criteria:
+  - type: run_command
+    description: "Skeleton: every action step is a labelled mock, a branch with labelled arms, a loop, no routing on a mock output, a layout, and validate reports Valid"
+    command: "python3 $REFERENCE_DIR/smoke/check_draft_skeleton.py --loop"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent made no registry discovery before the shape was approved"
+    tool_name: "Bash"
+    command_pattern: '(?:\buip|\$UIP)\s+maestro\s+(?:flow\s+)?registry\s+(?:pull|search|get|prepare)\b(?![^\n;&|]*\s(?:--help|-h)\b)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not upload, publish, deploy or run the flow, as the request forbids"
+    tool_name: "Bash"
+    command_pattern: '(?:\buip|\$UIP)\s+(?:solution\s+(?:upload|publish|deploy)|maestro\s+flow\s+(?:publish|debug(?!-)))\b(?![^\n;&|]*\s(?:--help|-h)\b)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The skill ends the gate turn with one resource lookup. Its exact command
+  # is the skill's choice, so the lookup itself is advisory; the filter rule is
+  # not: a tenant holds thousands of processes and an unfiltered list reads them all.
+  - type: command_executed
+    description: "Agent looked up the boxes' resources before the gate"
+    tool_name: "Bash"
+    command_pattern: '(?:^|[;&|(`{\n])\s*(?:[^\s;&|"'']*/)?(?:uip|\$UIP)\s+(?:solution\s+resources\s+list|is\s+connections\s+list|df\s+entities\s+list|ixp\s+projects\s+list)\b(?![^\n;&|]*\s(?:--help|-h)\b)'
+    min_count: 1
+    weight: 0
+    pass_threshold: 0
+
+  - type: command_not_executed
+    description: "Every resource lookup is filtered with --search or an --output-filter (contains() or a [? JMESPath filter)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(?:solution\s+resources\s+list|is\s+connections\s+list|df\s+entities\s+list|ixp\s+projects\s+list)\b(?!(?:\\\n|(?<= )\n|(?!\n|(?:^|[\s;&|(`])(?:uip|\$UIP)\s).)*(?:--search|contains\(|\[\?))'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The gate reply follows its template: the outline-ready line, the local path, one line per mock box, the fixed question with its three options, and nothing else"
+    include_reference: false
+    include_agent_output: true
+    max_file_chars: 60000
+    files:
+      - InvoiceIntakeSketch/InvoiceIntakeSketch.flow
+      - InvoiceIntakeSketchSolution/InvoiceIntakeSketch/InvoiceIntakeSketch.flow
+      - InvoiceIntakeSketch/new.flow
+      - InvoiceIntakeSketchSolution/InvoiceIntakeSketch/new.flow
+    weight: 3.0
+    pass_threshold: 1.0
+    prompt: |
+      You check one chat message against a fixed template. Grade the format only,
+      never the flow design.
+
+      WHICH TEXT TO GRADE. AGENT OUTPUT holds every message the agent sent in this turn.
+      If it contains a `[RESULT - ...]` marker, grade the text after the LAST such
+      marker: that is the final message, whole. Otherwise the messages are joined,
+      possibly with no separator: grade the text from the LAST occurrence of
+      `InvoiceIntakeSketch: outline ready` (markdown emphasis around the name allowed) to the end, and ignore
+      what comes before it. If the phrase does not occur at all, item 1 fails.
+      The graded text is the agent's reply only. Your own judging instructions that
+      follow it (the request to call `submit_verdict`) are not part of it: never
+      count them as a line after the last item or anywhere else.
+
+      Ignore blank lines and markdown emphasis (`**`, `*`). Backticks and links are
+      not ignored: item 2 covers them. In the graded text, check every item:
+
+      1. The first line starts with `InvoiceIntakeSketch: outline ready (draft mode).` and does
+         not say `uploaded`. After that, the same line may hold at most one more
+         sentence, about a lookup that failed, changes kept (including the user's
+         Studio Web edits), a new solution made because the request named none, or a
+         new solution that took another name. Any sentence about the upload (skipped,
+         deferred, not performed, or waiting for a go-ahead) fails this item.
+      2. The second line is, as plain text and nothing else, the local path of the
+         `.flow` file (ends in `.flow`) or, in Studio Web, one of the two sentences
+         `The outline is on the canvas.` or `Open InvoiceIntakeSketch.flow from the Explorer to
+         see the outline.` A Markdown link, an `https://` link, or backticks around the path
+         fail this item.
+      3. Next come the box lines, each starting with `- `. The attached `.flow`
+         file's nodes of type `core.logic.mock` are the boxes, and each box's
+         `display.label` is its label (the text of its `.step()` label, with the
+         bracketed kind and any trailing ` → <variable>`, which belongs to the label). Every box has exactly one line, in the order the boxes
+         appear in the file's `nodes` list. Each line is `- ` + the box label
+         spelled exactly as the file spells it + `: ` + the box's status. The status
+         is one of: `<resource> in <folder>`; `<A> in <folder> or <B> in <folder>,
+         which one? Build it takes the first` (a row with no folder drops ` in
+         <folder>`); `none yet, create it or name one`; `not checked`; `no resource
+         needed`. A line with no status, a reworded or shortened label, a missing,
+         extra or out-of-order box, or a line for a trigger, decision, switch, loop
+         or end node fails this item. Each line is one short clause under about 200
+         characters, except that the which-of-two status written exactly as above is
+         one status and may exceed that length. If the attached file is `<file not
+         found>`, judge this item on the lines alone and say so.
+      4. Next is exactly the line `Is this the flow you want?`.
+      5. Then exactly three numbered options, in this order: `1.` Build it, `2.`
+         Change it, `3.` Keep it, each with any short description. Nothing follows
+         the third option.
+      6. No other line exists anywhere in the graded text, and nothing comes before
+         item 1's line: when the graded text is a `[RESULT - ...]` block, its first
+         non-blank line must be item 1's line. No status or progress sentence (for
+         example "Valid", "Lookups complete", "Here is the outline"), no `---`
+         separator, no heading, no code block or drawn diagram, no step log, no line
+         explaining a decision, switch, loop or variable, no table.
+
+      Score 1.0 only if every item holds; otherwise 0.0. In findings, list each
+      failed item by number and quote the offending line.
+
+  # AskUserQuestion is Claude Code's tool and keeps the turn open. Other agents
+  # have no tool of that name, so this passes there. coder_eval cannot scope a
+  # criterion to one agent type: advisory, weight 0.
+  - type: command_not_executed
+    description: "Claude only (vacuous on other agents): the agent did not ask with AskUserQuestion"
+    tool_name: "AskUserQuestion"
+    command_pattern: '.*'
+    weight: 0
+    pass_threshold: 0

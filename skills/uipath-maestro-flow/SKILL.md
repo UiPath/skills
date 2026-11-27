@@ -10,12 +10,14 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 
 UiPath Flow uses `@uipath/maestro-builder-sdk` to build type-safe graphs compiled to executable Flow JSON; existing Flow JSON can be decompiled for editing.
 
+A draft, or the shape before the build, goes to [Draft first](#draft-first).
+
 ## Critical Rules
 
-1. **Before writing or editing any flow source, read [`references/author.md`](references/author.md) in full.** It contains separately numbered critical rules, the scope gate, and the required completion report.
+1. **Before writing or editing any flow source, read [`references/author.md`](references/author.md) in full.** It contains separately numbered critical rules and the scope gate. Builds end with the [final report](references/final-report-template.md).
 2. Before writing a node, read its `Reference` in [Supported node types](#supported-node-types), including signature, example, and hazards.
-3. Choose every node from a registry search, never a brand name.
-4. Ask when the request leaves a finite decision open, including an input value, range, or combination no stated rule covers; never fold it into a stated value. When the request says no one will answer (headless, CI), use the most defensible stated value and list it under Open questions as **[REQUIRED]**.
+3. Choose every node from a registry search, never a brand name. A [draft skeleton](#draft-first) searches nothing.
+4. Ask when the request leaves a finite decision open, including an input value, range, or combination no stated rule covers; never fold it into a stated value. When the request says no one will answer (headless, CI), use the most defensible stated value and list it under Open questions (the report's `Assumed:`) as **[REQUIRED]**. *Build it* after a draft gate asks nothing.
 5. Handle an error only when the request specifies what should happen.
 6. Never re-run `flow debug` to inspect a failed run.
 7. Simulate every side-effecting component before an eval set; never `solution upload` in an eval workflow without asking.
@@ -113,6 +115,16 @@ Only `merge` writes the `.flow`; a refusal writes nothing. Validate as in [Lifec
 **True-brownfield procedure:** **[`references/brownfield.md`](references/brownfield.md)**.
 <!--skill-flavor:sdk-editing:end-->
 
+## Draft first
+
+A request for a draft or the shape first (*outline it*, *sketch it*, *show me the shape*, or host plan mode) gets a `mock()` skeleton and stops at an approval gate: read **[`references/draft-skeleton.md`](references/draft-skeleton.md)**.
+It gates even when the request describes the whole flow. Leaning words (*a rough version*) gate unless the request says to build the whole flow. A step named "draft" is not draft mode. Else build.
+The validated file is the deliverable, never a diagram in chat.
+<!--skill-flavor:draft-upload-summary:start-->
+Unless the request forbids upload, a skeleton in a solution this run created is uploaded to Studio Web, and the gate reply carries its link.
+<!--skill-flavor:draft-upload-summary:end-->
+The turn ends with [`gate-reply-template.md`](references/gate-reply-template.md); *Build it* ends with the final report.
+
 ## Builder frame
 
 Use `flow(id)`, declarations, nodes, `.return(...)`, and `.build()`. The `start` step is the manual trigger's default name and carries the flow's inputs; outputs return to the caller only on success.
@@ -175,6 +187,7 @@ This table is authoritative; read each node's `Reference` before writing it ([Cr
 | Return / End | `core.control.end` | `.return(...)` | [return.md](references/return.md) | `examples/GreenhouseWatering.flow.ts` |
 | Terminate | `core.logic.terminate` | `.terminate(...)` | [terminate.md](references/terminate.md) | `examples/AquariumSafetyStop.flow.ts` |
 | Placeholder | `core.logic.mock` | `mock()` | [placeholder.md](references/placeholder.md) | `examples/FestivalMapScaffold.flow.ts` |
+| Draft skeleton | `core.logic.mock` | `.step(id, mock(), { label })` | [draft-skeleton.md](references/draft-skeleton.md) | — |
 | Unknown node type | registry `nodeType` verbatim (never `uipath.connector.*`) | `rawNode(...)` | [placeholder.md](references/placeholder.md#unknown-node-types) | — |
 | Error handler | `error` handle on action | `.onError(...)` | [error-handling.md](references/error-handling.md) | `examples/ObservatorySeeing.flow.ts` |
 | Delay | `core.logic.delay` | `delay(...)` | [delay.md](references/delay.md) | `examples/LighthouseSignal.flow.ts` |

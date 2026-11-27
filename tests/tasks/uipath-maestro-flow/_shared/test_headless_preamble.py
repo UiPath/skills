@@ -54,6 +54,15 @@ def _tasks():
     return tuple(out)
 
 
+# Draft-mode gate tasks end at an approval question by design, so the
+# "do not ask" paragraph would contradict the behavior they grade.
+GATE_TASKS = frozenset({
+    "smoke/draft_skeleton.yaml",
+    "smoke/draft_request_is_gate.yaml",
+    "smoke/draft_skeleton_scheduled.yaml",
+})
+
+
 def _rel(path: str) -> str:
     return os.path.relpath(path, _SUITE)
 
@@ -64,7 +73,8 @@ def test_every_zero_shot_task_states_the_run_is_headless():
     missing = [
         _rel(p)
         for p, text, sim in _tasks()
-        if not sim and marker not in text and USER_STYLE_CONTEXT not in " ".join(text.split())
+        if not sim and _rel(p) not in GATE_TASKS and marker not in text
+        and USER_STYLE_CONTEXT not in " ".join(text.split())
     ]
     assert not missing, "tasks missing the headless preamble:\n  " + "\n  ".join(missing)
 

@@ -57,7 +57,9 @@ flow takes none. Without it, Studio Web opens its Debug configuration dialog by
 default, and the run waits for the user to click **Save & Debug**.
 
 `flow debug` executes the flow for real: it sends the emails, posts the
-messages, calls the APIs. It is not a validation step — `validate` is. When a
+messages, calls the APIs. It is not a validation step — `validate` is. After *Build it*, never ask about a run: run it only when the request
+asked for one, otherwise the final report's `Unverified:` says the flow did not
+run. When a
 user can answer and did not ask for the run, ask before each run, even when the
 request is for a flow that works. With nobody to ask, run it when the request is
 for a flow that works, unless a connection was guessed ([bindings.md](bindings.md#where-both-values-come-from));

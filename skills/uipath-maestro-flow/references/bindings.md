@@ -105,7 +105,7 @@ refuses with several candidates, ask a user who can answer. Headless, pass
 or when that refuses (no match or several), pass the first candidate line's
 `--connection-id`: that connection is guessed. Do not debug on it, report the
 flow unverified, and list the pick under Open questions as **[REQUIRED]**
-([completion output](author.md#completion-output)).
+([final report](final-report-template.md)).
 
 `Folder` is the folder's own name, not its path. A requested
 `Shared/uipath-maestro-flow` is the row whose `Folder` is `uipath-maestro-flow`,

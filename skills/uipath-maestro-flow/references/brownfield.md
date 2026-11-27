@@ -198,6 +198,8 @@ No other step: do not read solution resource files or compile a scratch copy.
 
 ## Flows with draft nodes: let merge compile
 
+A `mock()` step whose label ends in `[<Kind>]` is a kept [skeleton box](draft-skeleton.md), not a canvas draft node. Leave it unless the request says to build it.
+
 <!--skill-flavor:draft-nodes:start-->
 A canvas flow may contain draft nodes: connector without connection, empty required input, generic operation without object, `waitForEvent` without connection, Transform without collection, or decision without condition. A draft trigger or connector tool still must be finished. Decompile carries each saved definition and marks `{ draft: true }`; compile warns `⚠ [CONNECTOR_INPUT_MISSING] ... Written as a draft`. Leave drafts unless requested. Examples: decision becomes `.branch("decision1", undefined, (t) => ..., (e) => ..., { draft: true })`; Transform becomes `transform({ operations: [] })` with `{ draft: true }`. `waitForEvent`, Transform, and decision drafts require SDK 6.86.5+; older SDKs refuse with `BINDING_MISSING`, `TRANSFORM_COLLECTION_LITERAL`, or `EXPR_SYNTAX`.
 
