@@ -60,7 +60,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, resolve as resolvePath } from "node:path";
 import { pathToFileURL } from "node:url";
-import { genomeFingerprint, sddFingerprint } from "./sdd-fingerprint.mjs";
+import { childSdds, genomeFingerprint, sddFingerprint } from "./sdd-fingerprint.mjs";
 
 export const VALID_SKILLS = new Set([
   "uipath-rpa", "uipath-maestro-flow", "uipath-maestro-bpmn", "uipath-maestro-case",
@@ -479,22 +479,37 @@ function checkDesignedIn(path, text, level, r) {
 function checkBuildAssumptions(path, text, sdd, sddName, r) {
   // a component of a process is covered by the process genome's check, which reads every component beside it
   if (/^>\s*Part of:/m.test(text)) return;
-  let design;
-  try { design = readFileSync(sdd, "utf8"); } catch { return; }
-  const start = design.search(/^#{2,4} Build Assumptions\s*$/m);
-  if (start < 0) return;
-  const rest = design.slice(start).split("\n").slice(1);
-  const end = rest.findIndex((line) => /^#{1,4} /.test(line));
-  const rows = (end < 0 ? rest : rest.slice(0, end)).map((line) => line.match(/^\|\s*(A\d+)\s*\|/)?.[1]).filter(Boolean);
-  if (!rows.length) return;
+  // a solution's rows sit in its child SDDs, each numbered from A1: their trailers name the child as well
+  let children;
+  try { children = childSdds(sdd); } catch { return; }
+  const designs = [sdd, ...children];
   const folder = path.replace(/\.md$/, "");
   let genomes = text;
   if (existsSync(folder) && statSync(folder).isDirectory()) {
     for (const name of readdirSync(folder)) if (name.endsWith(".md")) genomes += readFileSync(resolvePath(folder, name), "utf8");
   }
-  for (const id of rows) {
-    if (!new RegExp(`^\\d+\\. [^\\n]*answered by: [^\\n]*SDD Build Assumption ${id}\\b`, "m").test(genomes)) r.strict(`Build Assumption ${id} of ${sddName} has no Open Decisions entry: write one ending '— SDD Build Assumption ${id}' in the genome of the component whose skill confirms it, and mark the steps that rely on it '*[Inferred: D<n>]*'`);
+  for (const design of designs) {
+    let body;
+    try { body = readFileSync(design, "utf8"); } catch { continue; }
+    const of = design === sdd ? "" : ` of ${baseName(design)}`;
+    const named = design === sdd ? sddName : baseName(design);
+    // an entry keeps its trailer open, decided or withdrawn, so the trailer is the key, never `answered by:`
+    for (const id of buildAssumptionIds(body)) {
+      const trailer = `SDD Build Assumption ${id}${of}`;
+      if (!new RegExp(`^\\d+\\. [^\\n]*${trailer.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\w.-])`, "m").test(genomes)) {
+        r.strict(`Build Assumption ${id} of ${named} has no Open Decisions entry: write one ending '— ${trailer}' in the genome of the component whose skill confirms it, and mark the steps that rely on it '*[Inferred: D<n>]*'`);
+      }
+    }
   }
+}
+
+/** The A<n> row ids of an SDD's Build Assumptions table. */
+function buildAssumptionIds(design) {
+  const start = design.search(/^#{2,4} Build Assumptions\s*$/m);
+  if (start < 0) return [];
+  const rest = design.slice(start).split("\n").slice(1);
+  const end = rest.findIndex((line) => /^#{1,4} /.test(line));
+  return (end < 0 ? rest : rest.slice(0, end)).map((line) => line.match(/^\|\s*(A\d+)\s*\|/)?.[1]).filter(Boolean);
 }
 
 const GENOME_ROW = /^\|\s*\*\*Genome\*\*\s*\|[^\n]*?\bgenome-sha256\s+([0-9a-f]{64})\b/m;

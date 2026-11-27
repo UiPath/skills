@@ -597,7 +597,7 @@ flowchart LR
 
 | Concern | Design decision |
 |---|---|
-| **Idempotency** | <duplicate-write prevention PER TARGET SYSTEM — idempotency key / pre-write existence check / queue unique reference (§12)> |
+| **Re-runs** | <which writes are safe to run twice, per target system, and what keeps a re-run from writing twice — an existence check, a queue unique reference (§12) — as the source states it; unstated → `[SME REVIEW]`, never a guarantee> |
 | **Checkpoint & restart** | <resume point after mid-run failure; reconciliation query that proves no item was lost or double-processed> |
 | **Session recovery** | <what happens when the application or browser stops responding mid-item: restart it and retry the item, or fail the item> |
 | **Correlation & logging** | <correlation ID carried across systems (e.g., queue Reference); structured log fields: <FIELD_LIST>> |

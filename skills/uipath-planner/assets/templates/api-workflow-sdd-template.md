@@ -362,7 +362,7 @@ flowchart LR
 
 | Dimension | Requirement / Design decision |
 |---|---|
-| **Availability / Resilience** | <serverless auto-scale (§8); idempotency so caller retries are safe; what happens on a failed call per §6 Retry Policy> |
+| **Availability / Resilience** | <what a caller sees when a call fails (§6 Retry Policy); whether a caller may send the same call again, as the source states it; scaling per §8> |
 | **Logging & Monitoring** | <request / response logging excluding sensitive fields; alerting on error-rate spikes; Insights / Orchestrator dashboards> |
 | **Compliance** | <REGULATION_OR_—> |
 

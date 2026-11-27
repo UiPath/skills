@@ -35,7 +35,7 @@ The build's own questions are `uipath-genome`'s: the split, the libraries, the t
 
 | Group | One item per |
 |---|---|
-| Business decisions | open Open Decisions entry of the first three tiers, under one heading per tier, then per component (the process genome's own entries under the process's name), in step order |
+| Business decisions | open Open Decisions entry of the first three tiers, except a Build Assumption's (the list below), under one heading per tier, then per component (the process genome's own entries under the process's name), in step order |
 | Material to supply | open entry of the material tier |
 | Configuration values | Configuration Question not withdrawn, copied whole with its number, kind and default: process questions first, then each component's in Components order, never a component's line pointing to a process question. A default the build cannot run with ("not in the export", none) makes it needed. A question with a default per environment lists each environment's; `default` takes each, and an environment whose default is `none` makes it needed |
 | Preferences | the preferences file, only when the genome names none ([genome-format-guide.md § Design Links](genome-format-guide.md)): default none, the building skills' own practice. A "none" the request or the user's reply gave is its answer, written with who gave it |
@@ -44,6 +44,7 @@ Who answers each group's items: Writing Rule 4.
 
 Business decisions close with two lists that ask nothing one item at a time and are not counted as items:
 - **Checked against the application at build:** each reading entry that only the live application shows (a screen label, a window title, a control's position), one line each, with no answer line.
+- **Confirmed by the build:** each open entry carried from an SDD Build Assumption (its `— SDD Build Assumption A<n>` trailer): what the build confirms, the skill that confirms it, and what the build does if it does not hold, one line each, with no answer line. A build skill answers it, never a person, and the build marks it decided.
 - **Defects the rebuild fixes:** each defect that has no entry because its rebuild follows an intent the source states and changes no business outcome ([extracted-genome-guide.md § Source Defects](extracted-genome-guide.md)). One line each, with its component, step and what the rebuild does. The block's one answer line names any the rebuild should keep as the source does. A defect named there takes its ruling and leaves the list; the block has no entry, so it stays, with its answer, while the genome fixes such a defect.
 
 **A process genome's items** sit only in the solution overview's Action Required, under one heading per component, the process genome's own under the process's name. Each keeps its own genome file's id: ids repeat across components and are never renumbered into one series, so an item is named by its component and id (`Portal.Library D1`, `process D1`). A per-project SDD has no Action Required section, and its body's markers name the item with its component.
@@ -112,6 +113,9 @@ How to answer:
 
 Checked against the application at build:
 - <step <N>, <step name>: the reading — a label, a window title, a position>
+
+Confirmed by the build:
+- <A<n>: can <the capability>? — <skill>; if not, <what the build does instead>>
 
 #### Defects the rebuild fixes
 

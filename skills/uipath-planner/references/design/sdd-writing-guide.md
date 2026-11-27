@@ -8,7 +8,7 @@ Phase 3 of `design` writes the full SDD to disk incrementally, resolves the SME 
 |---|---|---|
 | Step 2 | filling the template's Business Rules section (RPA §4, BPMN §3, Case § Business Rules, Flow §9, API workflow §7, Coded app §9, Agent §2), and [business-rules-guide.md](business-rules-guide.md) is not yet open from Phase 2 | [business-rules-guide.md](business-rules-guide.md) |
 | Step 4 item 4 | an `[SME REVIEW]` item remains | [open-questions-guide.md](../shared/open-questions-guide.md) whole |
-| Step 5, next turn | the SDD is `Status: ready` and no build skill handed the design over | [author-guide.md](../author/author-guide.md) whole — the `author` verb; its § Read Plan names the rest |
+| Step 5, next turn | the SDD is `Status: ready`, no build skill handed the design over, and the request or a later message asks for its genome or a build (Step 5 item 3) | [author-guide.md](../author/author-guide.md) whole — the `author` verb; its § Read Plan names the rest |
 <!--skill-flavor:client-word-read-row:start-->
 | § Client Word Document | the user asks for the client-facing Word SDD / ASDD (their official template, a `.docx`) | [asdd-crosswalk-guide.md](asdd-crosswalk-guide.md) whole |
 <!--skill-flavor:client-word-read-row:end-->
@@ -194,7 +194,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
    - a `blocking` item has no default: an `Until answered:` line in its place;
    - each ends on `Answer (by <role>):`.
 
-   Where the SDD's items land in one genome file, the genome keeps each item's id on the entry it carries the item into ([genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) item 5). Once the genome exists, the section is written again from it ([sdd-from-genome-guide.md](../shared/sdd-from-genome-guide.md) item 6).
+   Where the SDD's items land in one genome file, the genome keeps each item's id on the entry it carries the item into ([genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) item 6). Once the genome exists, the section is written again from it ([sdd-from-genome-guide.md](../shared/sdd-from-genome-guide.md) item 6).
 
 5. **Length follows content, never padding.** Every step, rule, exception, application and example the source states is kept — business rules all of them ([business-rules-guide.md](business-rules-guide.md) § 4). What is cut is restatement: a fact lives in one section and others name it; no template instruction, placeholder or empty example row survives; a table row replaces prose that says the same; a section the template makes conditional and whose condition does not hold is omitted.
 6. **Re-run handling** — Step 1 resolved it; never ask again.

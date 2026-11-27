@@ -731,7 +731,7 @@ spelled per case-product-guide.md § External names. -->
 | Security | <least privilege, credential handling, PII/PHI handling> |
 | Performance | <volume, concurrency, polling/webhook choice> |
 | Scalability | <expected concurrent cases, parallelism, peak sizing> |
-| Availability / Resilience | <restart, retry, idempotency> |
+| Availability / Resilience | <what a failed case or task leaves behind and how it is resumed; which tasks are safe to run twice> |
 | Logging & Monitoring | <SLA alerts, Insights, audit events> |
 | Compliance | <regulatory constraints and audit traceability> |
 

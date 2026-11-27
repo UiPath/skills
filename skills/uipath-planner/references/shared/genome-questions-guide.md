@@ -48,7 +48,7 @@ Both modes: when the open values run to dozens (a configuration table or procedu
 
 ## Open Decisions
 
-Every point the genome leaves to a person, one numbered entry each, in the file that owns it: a component's point in its component genome, a point spanning components in the process genome. The interview asks them ([interview-guide.md](../interview/interview-guide.md)), an SDD lists them for the people who answer them when there is one ([sdd-from-genome-guide.md](sdd-from-genome-guide.md)), and the build reads the same list. Format: `N. {The decision as a question}? ({tier}; answered by: {role}; {Builds now | Recommended | Reading | Until answered}: {…}; instead: {an option}) — {step <N>, <step name>, or the section}`, one `instead:` per other option, and `Builds now:` after `Recommended:` when the genome builds something other than the recommendation.
+Every point the genome leaves to a person, one numbered entry each — and every SDD Build Assumption, which a build skill answers ([genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) item 7; [open-questions-guide.md](open-questions-guide.md) lists it apart from the people's items) — in the file that owns it: a component's point in its component genome, a point spanning components in the process genome. The interview asks them ([interview-guide.md](../interview/interview-guide.md)), an SDD lists them for the people who answer them when there is one ([sdd-from-genome-guide.md](sdd-from-genome-guide.md)), and the build reads the same list. Format: `N. {The decision as a question}? ({tier}; answered by: {role}; {Builds now | Recommended | Reading | Until answered}: {…}; instead: {an option}) — {step <N>, <step name>, or the section}`, one `instead:` per other option, and `Builds now:` after `Recommended:` when the genome builds something other than the recommendation.
 
 Tiers, in the order the owner reads them, by what a wrong default costs:
 1. **business outcome** — what is written to a system of record, what the business is sent and who receives it, which item is worked, skipped, charged or paid, an amount. No option is recommended: the owner rules, and `Builds now:` stands until then. An inferred point that decides an outcome is this tier too, with `Reading:` beside its options.
@@ -86,6 +86,8 @@ Every open entry is named where the genome states its point: a marked line (`*[I
 An entry is never removed, so its number stays the one every SDD and answer cites (`D3`), and a new entry goes at the end:
 - **decided**, once the genome states the answer: `N. {Question}? (decided {YYYY-MM-DD}: {the answer})`;
 - **withdrawn**, once the genome no longer raises it: `N. {Question}? (withdrawn: {why})`.
+
+A trailer after the parenthesis, such as `— SDD Build Assumption A2`, stays in both forms.
 
 ## Ambiguity Marker
 

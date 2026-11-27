@@ -62,7 +62,7 @@ Combine `Title` and `Authors` filters with `||` when the org uses both conventio
 ## Procedure
 
 1. **Auth preflight (never blocks SDD output).** Run a benign call once: `uip or libraries list --limit 1 --output json`. If it errors or returns `Result == "Failure"` with an auth-related message: do NOT retry, and do NOT troubleshoot auth mid-generation. Then branch by mode:
-   - **Autonomous mode** — skip tenant library discovery entirely: proceed with public NuGet only and record the reuse mandate as a forward note in §16 (equivalent to fallback option 1). Do not pause.
+   - **Autonomous mode** — skip tenant library discovery entirely: proceed with public NuGet only and record the reuse mandate as a forward note in §11 Reusable Components (equivalent to fallback option 1). Do not pause.
    - **Interactive mode** — surface the failure and switch to the manual fallback (below).
    - **`unknown command` / `unknown option`** — CLI version drift, not an auth failure. Discover the installed surface with `uip or --help`. If no library verb exists, fall back in order — never invent a verb, never extract a token for a direct call:
      1. `uip or packages list` against the libraries feed (`--feed-id`);
@@ -89,7 +89,7 @@ Combine `Title` and `Authors` filters with `||` when the org uses both conventio
 
    > No org-published libraries matched the search. How would you like to proceed?
    >
-   > 1. **Proceed without shared libraries** *(recommended)* — §14 will list only public NuGet dependencies; the reuse mandate becomes a forward note in §16
+   > 1. **Proceed without shared libraries** *(recommended)* — §14 will list only public NuGet dependencies; the reuse mandate becomes a forward note in §11 Reusable Components
    > 2. **Search a specific name or prefix** — re-run with the team's actual library naming convention
    > 3. **Provide names manually** — name libraries to include even if not yet deployed; each gets an `[SME REVIEW]` item to verify the deployment
    > 4. **Pause and re-authenticate to a different tenant** — if libraries live elsewhere

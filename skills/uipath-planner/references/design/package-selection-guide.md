@@ -157,9 +157,9 @@ SDD templates use different dependency mechanisms per product. List dependencies
 |---|---|---|---|
 | RPA (Process, Library, Test Automation) | NuGet | §14 Packages table | Covered by this guide. |
 | Case Management | Downstream Case project dependencies | Not declared as a planner-only Packages subsection; resource/package resolution belongs to `uipath-maestro-case` from the Case Blueprint | Record a package hint in §4 Integrations only when the SDD's Section 2/4 resource choices require it. |
-| Maestro Flow / Maestro BPMN | Connector references + RPA step packages | Integrated Components section | The flow or BPMN process itself has no packages. Each RPA step it calls uses the RPA template's §14. |
-| Agents | C# tool packages (subset of NuGet) | Tool Packages table in the Agent template | Declare only packages whose activities are wrapped as Agent tools. |
-| Coded Apps | **npm** (not NuGet) | Dependencies subsection in the Coded App template | Use `package.json` semantics. Do not list NuGet packages. |
+| Maestro Flow / Maestro BPMN | Connector references + RPA step packages | Flow §7 Integrated Components; BPMN §6 Systems and Integrations | The flow or BPMN process itself has no packages. Each RPA step it calls uses the RPA template's §14. |
+| Agents | C# tool packages (subset of NuGet) | None: §3 Tools names each tool; its packages are `uipath-agents`' at build | Declare no package in the SDD. |
+| Coded Apps | **npm** (not NuGet) | None: §2 Tech Stack names the framework only; the npm packages are `uipath-coded-apps`' at build | Declare no package in the SDD, and never a NuGet one. |
 | API Workflows | Integration Service connector references | Connectors section in the API Workflow template | API Workflows are hosted in Orchestrator — no package file. |
 
 **An application with no row here** (a message bus, a niche system): name the integration, never a guessed package — `<package resolved at build>` with an `[SME REVIEW]` item; the owning build skill's discovery finds it.

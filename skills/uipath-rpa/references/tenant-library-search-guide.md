@@ -89,7 +89,7 @@ Combine `Title` and `Authors` filters with `||` when the org uses both conventio
 
 ## Skip when
 
-- An SDD already records "Shared libraries referenced" in §16 — those have been confirmed and the package list flows from the SDD. Do not re-prompt.
+- An SDD already records the libraries in §11 Reusable Components (its `reused` rows; an older SDD, §16 "Shared libraries referenced") — those have been confirmed and the package list flows from the SDD. Do not re-prompt.
 - The user has explicitly said "no shared libraries" earlier in the session.
 - The task is pure UI capture / authoring with no new dependencies.
 

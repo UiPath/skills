@@ -99,7 +99,7 @@ stages.forEach((s, i) => {
     for (const m of TASK_MARKERS) if (!tb.includes(m)) fails.push(`task '${tn}': missing ${m}`);
     const ty = tb.match(/^\*\*Type:\*\*\s*`?([a-z-]+)/m)?.[1];
     const detail = ty && DETAIL[ty];
-    if (detail && !detail.some((m) => tb.includes(m))) fails.push(`task '${tn}': a ${ty} task needs its type detail block — '#### ${detail[0]}' (case-sdd-template.md)`);
+    if (detail && !detail.some((m) => tb.includes(m))) fails.push(`task '${tn}': a ${ty} task needs its type detail block — '###### ${detail[0]}' (case-sdd-template.md), six hashes: a shorter heading splits the task block`);
   });
 });
 

@@ -107,7 +107,7 @@ Then add these capabilities even when the user did not name them:
 
 **Offer the interview first** ([interview-guide.md](../interview/interview-guide.md) § The Offer), on the P0 entries of its § Coverage, unless its Verb Rule 1 rules the offer out. Accepted, the interview replaces the rounds below and its answers are the facts Step 9 writes; one that changes a product signal reruns Step 7. Declined or not offered, the rounds below run; an unattended run asks none.
 
-Group every gap into one message per round. State what you already know so the user does not repeat it. Rounds by complexity: simple 0-1, medium 1-2, complex 2-3. A scenario picked from proposals (Step 2) gets none: its values left open are Configuration Questions. An SDD's rounds: [genome-from-sdd-guide.md](genome-from-sdd-guide.md) items 2 and 5. After the last round, generate with defaults and stubs; never loop.
+Group every gap into one message per round. State what you already know so the user does not repeat it. Rounds by complexity: simple 0-1, medium 1-2, complex 2-3. A scenario picked from proposals (Step 2) gets none: its values left open are Configuration Questions. An SDD's rounds: [genome-from-sdd-guide.md](genome-from-sdd-guide.md) items 2 and 6. After the last round, generate with defaults and stubs; never loop.
 
 The first round, or the interview's first batch, also asks the preferences question ([genome-questions-guide.md § Preferences Question](../shared/genome-questions-guide.md)). With no round and no interview, the Step 10 message asks it, unless an agreed SDD's Preferences item does. A file named answers the follow-ups it covers and is applied as [genome-format-guide.md § Design Links](../shared/genome-format-guide.md) states.
 

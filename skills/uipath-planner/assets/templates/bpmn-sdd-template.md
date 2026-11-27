@@ -63,7 +63,6 @@
 | **Department / Function** | <DEPARTMENT> — <FUNCTION> |
 | **Solution** | <ONE_SENTENCE: the product that carries the process and why — §10> |
 | **Source PDD** | <PATH_OR_LINK_TO_PDD> |
-| **Open questions** | <COUNT — listed in Action Required at the end of this document \| none> |
 
 ### In Scope
 
@@ -114,7 +113,7 @@ flowchart LR
 
 | # | Node Key | Step Kind | Description | Inputs | Outputs | Integrated Component | Notes |
 |---|---|---|---|---|---|---|---|
-| 1 | `start` | Start | <DESCRIPTION> | — | — | — | Starts on: <MANUAL/SCHEDULED/MESSAGE> |
+| 1 | `start` | Start | <DESCRIPTION> | — | — | — | Starts on: <the §8 Triggers row> |
 | 2 | `<NODE_KEY>` | <STEP_KIND> | <DESCRIPTION> | <INPUTS> | <OUTPUTS> | <§6_COMPONENT_NAME or —> | <NOTES> |
 
 ---
@@ -245,12 +244,12 @@ flowchart LR
 ## 7. Exceptions and Error Handling
 
 <!-- Failure wording: sdd-writing-guide.md § Writing Rules.
-     One row per failure the design answers; each row names one §2 step. Attempts belong to that step: the process as a whole is never retried. A failure the run carries on from is caught by a §11 boundary error event on that step, or on the subprocess that holds it, and Then names the step that event leads to (the alert, the record written, the end event reached). That event is interrupting. A failure of one item inside a per-item loop that the other items carry on from is caught inside the loop: the event sits on the failing step, and Then is a step inside the same loop. `—` in Caught By means nothing catches it: the run ends as failed, and Then says exactly `run ends as failed`. A failure of the step named in Then is a row of its own. -->
+     One row per failure the design answers; each row names one §2 step. Attempts belong to that step: the process as a whole is never retried. Attempts is a number and the wait between them, or `—` for none (writing rule 7). A failure the run carries on from is caught by a §11 boundary error event on that step, or on the subprocess that holds it, and Then names the step that event leads to (the alert, the record written, the end event reached). That event is interrupting. A failure of one item inside a per-item loop that the other items carry on from is caught inside the loop: the event sits on the failing step, and Then is a step inside the same loop. `—` in Caught By means nothing catches it: the run ends as failed, and Then says exactly `run ends as failed`. A failure of the step named in Then is a row of its own. -->
 
 | Failing Node | Trigger | Attempts | Caught By | Then |
 |---|---|---|---|---|
-| `<NODE_KEY>` | <CONDITION> | <NUMBER_OR_—> | `<BOUNDARY_EVENT_KEY>` | `<NEXT_NODE_KEY>` |
-| `<NODE_KEY>` | <CONDITION> | <NUMBER_OR_—> | — | run ends as failed |
+| `<NODE_KEY>` | <CONDITION> | <NUMBER_AND_WAIT — "3, a minute apart" — or —> | `<BOUNDARY_EVENT_KEY>` | `<NEXT_NODE_KEY>` |
+| `<NODE_KEY>` | <CONDITION> | <NUMBER_AND_WAIT — "3, a minute apart" — or —> | — | run ends as failed |
 
 ---
 
@@ -280,7 +279,7 @@ flowchart LR
 | **Security** | <personal data: the fields that hold it, by name, and where each may be shown or stored. That run history and logs leave it out is a Build Assumptions row, never a promise. Credentials in Orchestrator credential / secret assets. Least-privilege Integration Service connection scope. Do not expose entity / API calls in the network trace> |
 | **Performance** | <database vs file storage; webhooks vs polling; avoid license-consuming Windows processes where a headless / cross-platform path exists> |
 | **Scalability** | <expected concurrent process instances; multi-instance subprocess fan-out; peak-window sizing> |
-| **Availability / Resilience** | <boundary-timeout / retry behavior; idempotency of invoked components; graceful degradation> |
+| **Availability / Resilience** | <what a failed instance leaves behind and how it is run again (§7); which steps are safe to run twice; graceful degradation> |
 | **Logging & Monitoring** | <log level and sinks; alerting on instance failure; Maestro / Insights dashboards> |
 | **Compliance** | <REGULATION_OR_—> |
 
@@ -339,7 +338,7 @@ flowchart LR
 | 1 | **Platform constraints** (Constraint Gate) | <DELIVERY_MODEL; BLOCKED_PRODUCTS_OR_NONE> | <REASON> |
 | 2 | **Scope** (Level 1) | <SINGLE_PRODUCT_OR_SOLUTION_COMPOSITION> | <REASON> |
 | 3 | **Maestro engine** (Flow vs BPMN) | <BPMN \| Flow> — structures: <EACH_ROW_5_STRUCTURE_THE_PROCESS_NEEDS \| none> | <two or more → BPMN; none → Flow; exactly one → Flow, BPMN offered (product-selection-guide.md § Maestro disambiguation)> |
-| 4 | **Process trigger (start event)** | <MANUAL_START \| TIMER_START \| MESSAGE_START> | <REASON_FROM_PDD> |
+| 4 | **Process trigger** | <the §8 Triggers row it picks, by its When> | <REASON_FROM_PDD> |
 
 ### Recommended Scope
 
@@ -396,7 +395,7 @@ flowchart LR
 
 | Event Key | Event Kind | Definition | Attached To (boundary) | Interrupting? | Timer / Message / Error detail |
 |---|---|---|---|---|---|
-| `<EVENT_KEY>` | <start / intermediate-catch / intermediate-throw / boundary / end> | <none / message / timer / error / terminate> | `<ACTIVITY_KEY_OR_—>` | <yes / no / —> | <DETAIL> |
+| `<EVENT_KEY>` | <start (one per §8 Triggers row) / intermediate-catch / intermediate-throw / boundary / end> | <none / message / timer / error / terminate> | `<ACTIVITY_KEY_OR_—>` | <yes / no / —> | <DETAIL> |
 
 ### Subprocesses
 
@@ -477,8 +476,9 @@ Implementation steps **do not live in this SDD** — the genome carries them.
 
 <!--
 EMIT THIS BLOCK ONLY when at least one [SME REVIEW] item remains after Step 3 resolution.
-Skip entirely when no review items are open; §1's Open questions row then reads `none`. Once the genome is written,
-uipath-planner writes this section again from it, with every open question. See open-questions-guide.md for the item form.
+Skip entirely when no review items are open. Once the genome is written, uipath-planner writes this section again
+from it, with every open question and its count: no other section counts them, since the SDD's fingerprint covers
+every section but this one. See open-questions-guide.md for the item form.
 Build prerequisites: sdd-writing-guide.md § Writing Rules.
 -->
 ## Action Required — SME Review Items
