@@ -211,10 +211,21 @@ class TestProject:
             f'surface="{rc.TABLE_SURFACE}"', f'surface="{rc.GRAPH_SURFACE}"')
         path.write_text(text, encoding="utf-8")
         rc.load_rule(project)
-    def test_rejects_a_knowledge_source(self, project):
+
+    def test_accepts_a_knowledge_source(self, project):
+        # Supported since the profile widened; a citation is graded by its own task. Only the
+        # canvas draws a source, so the rule moves to the graph surface with it.
+        path = dmn_of(project)
+        text = path.read_text(encoding="utf-8").replace(
+            "</definitions>", '<knowledgeSource id="k" name="k"/></definitions>').replace(
+            f'surface="{rc.TABLE_SURFACE}"', f'surface="{rc.GRAPH_SURFACE}"')
+        path.write_text(text, encoding="utf-8")
+        rc.load_rule(project)
+
+    def test_rejects_a_decision_service(self, project):
         path = dmn_of(project)
         text = path.read_text(encoding="utf-8")
-        path.write_text(text.replace("</definitions>", '<knowledgeSource id="k" name="k"/></definitions>'), encoding="utf-8")
+        path.write_text(text.replace("</definitions>", '<decisionService id="s" name="s"/></definitions>'), encoding="utf-8")
         with pytest.raises(SystemExit):
             rc.load_rule(project)
 

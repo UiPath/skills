@@ -115,7 +115,7 @@ uip is connectors publish --wait        # blocks until SUCCESS; live in Studio W
 Publishing a NEW connector needs no `--version` (init seeded `1.0.0`). **Re-publishing** an existing connector requires a HIGHER version — bump `element-metadata.json:latestVersion` (or pass `--version 1.0.1`); the server rejects an equal version.
 
 ### Share with the community catalog
-Only after the connector is published and tested in a tenant, and only when the user asks. Follow [references/community-submit-guide.md](references/community-submit-guide.md): `uip extension init` → `validate` → `submit --dry-run` → `submit`. The folder keeps its `design-{org}-{name}` key; `submit` sets the catalog key in the copy it sends. This is not the community route above: a legacy and a `--v4` connector are submitted the same way.
+Only after the connector is published and tested in a tenant, and only when the user asks. Follow [references/community-submit-guide.md](references/community-submit-guide.md): `uip extension init` → `validate` → `submit --dry-run` → `submit`. The folder keeps its `design-{org}-{name}` key; `submit` sets the catalog key in the copy it sends. This is not the community route above: a legacy and a `--v4` connector are submitted the same way. `uip extension` runs only in a terminal with the `gh` CLI, not in Studio Web: there, tell the user to run these steps from a terminal.
 
 ### Add an activity to an existing connector
 ```bash

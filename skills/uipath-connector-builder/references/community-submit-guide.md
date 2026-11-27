@@ -3,6 +3,8 @@
 A connector in the community catalog is one any tenant can install from the Flow canvas.
 You submit the same folder you built and published privately. It works for a legacy and a community-route (`--v4`) connector alike.
 
+These steps run only in a terminal: `uip extension` needs the desktop CLI and `submit` needs the `gh` CLI. In Studio Web, stop and tell the user to run them from a terminal.
+
 The "community route" (`--v4`) and the "community catalog" are two things. The route decides how activities run. The catalog is where a finished connector is shared.
 
 ## Before you start
