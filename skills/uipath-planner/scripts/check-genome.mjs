@@ -31,7 +31,8 @@
 //           every `*[Inferred]*` mark naming an open entry or a Configuration Question that exists (`*[Inferred: D3]*`,
 //           `process D3`, `CQ2`), a withdrawn configuration question kept in place, an entry withdrawn as Configuration Question <n> with a line marked
 //           `*[Inferred: CQ<n>]*`; Platform Dependencies' tables
-//           in the kinds' order, and a process genome's Deployment with its four bullets; a process genome beside
+//           in the kinds' order, the Data Fabric entities table with its columns, a source of record per row and no
+//           writer on a federated row, and a process genome's Deployment with its four bullets; a process genome beside
 //           its `<slug>-genome/` component folder, never inside it; no process genome of a dispatcher and a performer alone; a case component (Build With `uipath-maestro-case`) beside a Case
 //           Management SDD naming that SDD in its Interface or its `Designed in:` line; no H2 heading twice; no
 //           component genome linked twice; no cross-part reference left unfilled (`{{ref:…}}`); the `Source framework`
@@ -95,6 +96,7 @@ export const PROCESS_SECTIONS = [
 ];
 // Platform Dependencies: one `###` table per kind, in this order, then any other service's
 export const DEPENDENCY_KINDS = ["Queues", "Assets", "Credentials", "Storage buckets", "Connections", "Data Fabric entities", "Triggers"];
+export const DF_ENTITY_COLUMNS = ["entity", "source of record", "fields", "links", "written by", "read by"];
 const NO_DEPENDENCIES = "No Orchestrator or Integration Service resources required";
 // a process genome's Deployment: what holds wherever it is deployed; the environments themselves are not the genome's
 export const DEPLOYMENT_LABELS = ["Packaging and route", "Entry points", "Runtime", "Kept out of the logs"];
@@ -542,9 +544,30 @@ function checkPlatformDependencies(text, level, r) {
     else if (kind < last) r.strict(`Platform Dependencies: '### ${h}' out of the kinds' order ${repr(DEPENDENCY_KINDS)}`);
     last = Math.max(last, kind);
   }
+  checkDataFabricEntities(body, r);
   if (level !== "process") return;
   const missing = DEPLOYMENT_LABELS.filter((l) => !new RegExp(`^- \\*\\*${esc(l)}:\\*\\*`, "m").test(sectionBody(text, "Deployment")));
   if (missing.length) r.strict(`Deployment: no bullet for ${repr(missing)}`);
+}
+
+/** strict: the Data Fabric entities table has the format's columns, every row a source of record, and a federated
+ * row (any source of record but UiPath) no Written by: a federated entity is read-only. */
+function checkDataFabricEntities(dependencies, r) {
+  const m = dependencies.match(/^### Data Fabric entities\s*$([\s\S]*?)(?=^#{2,3} |(?![\s\S]))/m);
+  if (!m) return;
+  const header = lines(m[1]).find((l) => l.trim().startsWith("|"));
+  if (!header) return;
+  const got = cells(header).map((c) => c.toLowerCase());
+  if (got.join("|") !== DF_ENTITY_COLUMNS.join("|")) {
+    r.strict(`Data Fabric entities: columns ${repr(cells(header))}, expected ${repr(DF_ENTITY_COLUMNS)}`);
+    return;
+  }
+  const unset = (c) => !c || /^[-—–]$/.test(c);
+  for (const row of tableRows(m[1], header.trim())) {
+    const [entity, source, , , writtenBy] = row;
+    if (unset(source)) r.strict(`Data Fabric entities: '${entity}' names no source of record (UiPath, or the system that holds its records)`);
+    else if (!/^uipath\b/i.test(source) && !unset(writtenBy)) r.strict(`Data Fabric entities: '${entity}' is federated (source of record '${source}') and read-only, yet '${writtenBy}' writes it`);
+  }
 }
 
 /** [flows, headed]: the '### Flow N' blocks, or — when there is no such heading but the section names a

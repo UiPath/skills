@@ -69,11 +69,19 @@ Every Orchestrator, Integration Service and other UiPath service resource the au
 | Credentials | Asset · Account or persona · Signs in to · Used by |
 | Storage buckets | Bucket · Holds · Written by · Read by |
 | Connections | Connection · Connector · Signs in as · Used by |
-| Data Fabric entities | Entity · Fields (name: type) · Written by · Read by |
+| Data Fabric entities | Entity · Source of record · Fields (name: type) · Links (field → entity, to-one or to-many) · Written by · Read by |
 | Triggers | Trigger · Starts · Kind (time, queue, event, API) · When (schedule and time zone, the queue, the event, or the API endpoint) · Runners |
 | each other service (Action Center, Document Understanding, Test Manager, Context Grounding) | Resource · Used by · Purpose |
 
 A transactional flow's queues and triggers are its As-is: the split answers can change them ([transactional-shape-guide.md](transactional-shape-guide.md)).
+
+**Data Fabric entities: the source of record decides how the entity is built.**
+
+1. **`UiPath`** means Data Fabric holds the records: a native entity, built with the row's name, fields and links.
+2. **Any other value names the system that holds the records**, as the data model names it (`Salesforce`, `SAP S/4HANA`), never a connection, an object or a field of that system: a federated entity, read-only, over that system's connection. The row names a business object, not an entity definition. The system's objects, keys and field bindings, the joins, how many entities the objects become and their names are found at build from the connection, never written here.
+3. **A row whose source of record the sources do not give is an Open Decision**, never `UiPath` by default. A federated row's Written by is empty; a component that writes its records is an Open Decision.
+4. **Fields and links are the data model's.** Fields carry the data model's names and types; a link is to-one when the data model bounds it to one record, to-many otherwise. A data model with an ontology (`schema.ofn` with `constraints-shapes.ttl`) gives the types as `sh:datatype` and the bound as `sh:maxCount 1`.
+5. **Extracted genomes** take the source of record from the deployed entity: `UiPath` for a native entity, the system behind its connection for a federated one.
 
 **Credentials: one credential asset per login account**, named after the account or persona, with its environment or tenant. Scenarios often sign in as several accounts with different roles on different tenants; never collapse them onto one login. The asset holds the secret; the genome and the data rows name the asset — a password, token or secret value never appears in a genome, a data file or a report, and dropping the account identity along with the secret loses which role each scenario ran as. A secret crosses no component boundary: an Interface argument, a Handoffs row and a start argument carry the asset's name, and the component that uses the secret reads it in the scope that uses it, unless a connection holds the secret (an Integration Service connection). A secret with no account behind it (an API key, a token) is a Secret asset.
 

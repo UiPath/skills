@@ -58,6 +58,7 @@ Fill in all sections of the chosen template not covered in Phase 1 or Phase 2. S
 - Deployment Environment (RPA — robot type, Studio/Robot versions, VM hosts, screen resolution, scalability). Fill the Orchestrator row from the Step 0 delivery model (Cloud / Automation Suite + version / standalone); fill `[SME REVIEW]` for the rest when the PDD does not specify — these fields typically come from the deployment team, not the PDD. Never invent VM names, version pins, or robot types.
 - Triggers (Flow)
 - Evaluation Criteria (Agents)
+- **Data model — every template:** [§ Data model](#data-model)
 - **Non-Functional Requirements — always (best practice).** Security (credentials in Orchestrator / secret assets, least-privilege IS connection scope, don't expose entity calls in the network trace), performance (DB vs file, webhooks vs polling, avoid license-consuming Windows processes), scalability, availability, and logging / monitoring. Applies to every product; the API Workflow template already carries §Performance & Scaling + §Security & Authentication — other templates capture the equivalent under a Non-Functional Requirements subsection.
 - **Reusable Components / Libraries — always (best practice).** List reused existing shared assets (tenant Libraries discovered in Phase 1 Step 2.5, Marketplace / org components, existing connectors) AND new reusable assets to build (shared workflows → an RPA **Library** routed to `uipath-rpa`; a missing integration → a **custom connector** routed to `uipath-connector-builder`), each built before its consumers. Assets used by 2+ projects live at the parent-folder / solution level. See [Component Placement Guide → Reusability & shared assets](../shared/component-placement-guide.md#reusability--shared-assets).
 - **Testing Strategy — always thorough.** Cover happy path, edge cases, error scenarios, and (for Master Projects) end-to-end pipeline tests. Do NOT ask the user about test depth — depth is non-negotiable here. Implementation specialists may scope tests down at execution time if the user wants a quick MVP.
@@ -220,6 +221,17 @@ Then continue:
 ## Keeping the Genome Current
 
 An SDD change — a `design` revise (a `revise:` caller request, a design change routed from a designed genome, an SDD change asked for after the genome is written) or a user's edit to the SDD the planner is told about — on an SDD whose `Genome` handoff row (the root's, for a solution) names a genome on disk ends the same run with `edit` "The SDD was revised: update the genome" ([edit-guide.md](../edit/edit-guide.md)) and its strict check ([SKILL.md](../../SKILL.md) § Check). A caller's request with `stop-after: sdd` ends at its result instead. An SDD whose `Genome` row is missing, or names no file on disk, gets its genome through Step 3.
+
+## Data model
+
+The business records the process reads or writes: the `### Data model` section of every template. The genome's Data Fabric entities table takes its rows as they are ([genome-format-guide.md § Platform Dependencies](../shared/genome-format-guide.md)).
+
+1. **Reproduce, never re-infer.** Sources, highest first: the signed-off wiki `to-be/data-model.md` when the hand-off carries it; the ontology files when they ship (`schema.ofn` with `constraints-shapes.ttl`); the PDD's data model section ([pdd-analysis-guide.md § Data Model](../shared/pdd-analysis-guide.md#data-model)). A name, type, bound or source of record a source gives is copied; one no source gives is `[SME REVIEW]` or `[DEFAULT]`, never guessed.
+2. **One row per business object**, named as the model names it. Fields: the object's fields with the model's types (an ontology's `sh:datatype`). Links: each link to another object, to-one when the model bounds it to one record (an ontology's `sh:maxCount 1`), to-many otherwise.
+3. **Source of record:** `UiPath` when Data Fabric holds the records; otherwise the system as the model names it (`Salesforce`, `SAP S/4HANA`), never a connection, an object or a field of that system. A source of record no source gives is a blocking `[SME REVIEW]` item, never `UiPath` by default.
+4. **A federated row stops at the business object.** The system's objects, keys and field bindings, the joins, and how many entities the objects become are found at build from the connection ([design-guide.md](design-guide.md) rule 7): none of them is written here. Written by stays empty: a federated entity is read-only, so a project that writes the records is a blocking `[SME REVIEW]` item naming the conflict.
+5. **The `Ontology:` line** names the model's `schema.ofn` and its namespace as the model declares it (`https://<customer-domain>/ontology/<process-slug>#`), never rewritten; `none` when no ontology ships.
+6. **An entity already on the tenant** (the Level 0 estate sweep) is adopted by name, its row marked `reuse`.
 
 ## Gap Markers
 
