@@ -6,7 +6,7 @@ Content rules for a genome's Configuration Questions and Open Decisions sections
 
 Format: `N. {Question}? ({setting | constant}; default: {value})` — every question names its kind (below) before its default. A question keeps its number, since business rules, the SDD and answers cite it (`CQ3`): a new question goes at the end, and one the genome no longer needs stays as `N. Withdrawn: {why}.`
 
-**Authored genomes** ask every value the description gives or leaves open: paths, URLs, addresses, server names, credential and queue names, thresholds, column names, and the application choice itself ("Which email provider? (constant; default: Outlook)"). A business value the description does not give (a limit, an amount) reads `default: none`, and its question is needed: no value is invented for it.
+**Authored genomes** ask every value the description gives or leaves open: paths, URLs, addresses, server names, credential and queue names, thresholds, column names, and the application choice itself ("Which email provider? (constant; default: Outlook)"). A business value the description does not give (a limit, an amount) reads `default: none`, and its question is needed: no value is invented for it, also when the request asks for defaults.
 
 **Extracted genomes ask only what the source leaves open.** The source is the ground truth and a migration keeps its rules, so a value the source fixes has one right answer; asked, it can only be answered with its default. A value is open when it is:
 
