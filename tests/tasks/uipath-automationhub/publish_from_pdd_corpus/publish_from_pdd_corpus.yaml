@@ -41,6 +41,11 @@ reference:
   directory: ..
 
 pre_run:
+  # Pin DefaultTenant: the shared CI login's default tenant is not guaranteed
+  # (a runner left on coderevalsAH, which has no new_applications, failed every
+  # row in preflight on 2026-11-23/24). use_tenant.py never touches that login.
+  - command: "python3 _setup/use_tenant.py DefaultTenant 69d43765-6ede-4575-88b7-9db601a2c056"
+    timeout: 120
   - command: "python3 _setup/preflight_ah.py --require-new-applications"
     timeout: 300
   - command: "python3 _setup/seed_publish.py"
