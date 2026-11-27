@@ -10,7 +10,9 @@
 // holds **Type:**, **Activation Mode:**, **Design Rationale:**, **Entry Condition:** and **Task envelope**; every
 // **Type:** is `Stage` or one of the 17 task types, written bare; **Stage Kind:** is primary or secondary; no stage,
 // task or SLA title holds a ':'; every § SLA Response Map row follows the template's cell rules and closes both ways
-// with the SDD's `sla-status-change(...)` rows. Exit 1 with one FAIL line per defect.
+// with the SDD's `sla-status-change(...)` rows; § Personas has the template's six cells, Scope Case or Stages and only the
+// template's permission keys; an action task's **HITL Implementation:** is `Action App: <title>`, never another task's;
+// a task's Activation Mode is the same in its Tasks table row and its block. Exit 1 with one FAIL line per defect.
 import { existsSync, readFileSync } from "node:fs";
 
 const TASK_TYPES = new Set([
@@ -118,6 +120,71 @@ for (const b of text.split(/^(?=#{3,5} )/m)) {
   const p = personaOf.get(strip(t[1]));
   const rc = b.match(/^\*\*Recipient:\*\*\s*(.*?)\s*$/m);
   if (p && personas.has(p) && rc && dash(rc[1])) fails.push(`task '${strip(t[1])}': Persona ${p}, Recipient — (write **Recipient:** Role:${p})`);
+}
+
+// § Personas: the template's six columns, Scope Case or Stages, Permissions from the template's key set
+{
+  const KEYS = new Set(["View", "Create", "Edit", "Close", "Reopen", "Assign", "ManageSLA", "RunAdhocTasks", "SelectStage",
+    "ViewSummary", "LogsView", "TasksView", "TasksCreate", "TasksEdit", "TasksDelete", "TaskAssignmentView",
+    "TaskAssignmentCreate", "TaskAssignmentEdit", "TaskAssignmentDelete", "TaskSelfAssignmentCreate",
+    "TaskSelfAssignmentEdit", "TaskSelfAssignmentDelete"]);
+  const STAGE_KEYS = new Set(["View", "Assign", "ManageSLA", "RunAdhocTasks"]);
+  const block = text.match(/^### Personas\s*\n([\s\S]*?)(?=^#{2,3} |(?![\s\S]))/m)?.[1] ?? "";
+  const lines = block.split("\n").map((l) => l.trim()).filter((l) => l.startsWith("|") && !/^\|[\s|:-]+\|$/.test(l));
+  const want = "| Persona | Scope | Stages | Permissions | Description | Notes |";
+  if (lines.length && lines[0].replace(/\s+/g, " ") !== want) {
+    fails.push(`Personas header is '${lines[0]}' — write the template's '${want}' and re-render every row into its six cells`);
+  } else {
+    for (const l of lines.slice(1)) {
+      const c = l.replace(/^\||\|$/g, "").split("|").map((x) => x.trim());
+      const who = c[0]?.replace(/`/g, "") || "?";
+      if (c.length !== 6) { fails.push(`persona '${who}': ${c.length} cells, the header 6`); continue; }
+      if (c[0].startsWith("<")) continue; // the template's own placeholder row
+      if (c[1] !== "Case" && c[1] !== "Stages") fails.push(`persona '${who}': Scope '${c[1]}' — write Case (every stage, Stages —) or Stages`);
+      const bad = c[3].split(",").map((k) => k.trim()).filter((k) => k && !dash(k) && !KEYS.has(k));
+      if (bad.length) fails.push(`persona '${who}': Permissions ${bad.join(", ")} not a template permission key — task work comes from each task's Recipient, so drop it (Reassign → Assign) and keep the prose in Notes`);
+      const wide = c[1] === "Stages" ? c[3].split(",").map((k) => k.trim()).filter((k) => KEYS.has(k) && !STAGE_KEYS.has(k)) : [];
+      if (wide.length) fails.push(`persona '${who}': a Stages persona holds only View, Assign, ManageSLA, RunAdhocTasks — not ${wide.join(", ")}`);
+    }
+  }
+}
+
+// action tasks: the HITL cell is `Action App: <title>` and the title is never another task's
+{
+  const blocks = text.split(/^(?=#{3,5} )/m)
+    .map((b) => ({ b, h: b.split("\n")[0].match(/^#####\s+Task\s+S?\d+\.\d+:\s*(.+?)\s*$/) }))
+    .filter((x) => x.h)
+    .map(({ b, h }) => ({ b, name: strip(h[1]), id: h[1].match(/\(`?(t\d+)`?\)/)?.[1] }));
+  const names = new Set(blocks.map((x) => x.name));
+  for (const { b, name, id } of blocks) {
+    const cell = b.match(/^\*\*HITL Implementation:\*\*\s*(.*?)\s*$/m)?.[1];
+    if (cell == null) continue;
+    if (!/^Action App:/.test(cell)) { fails.push(`task '${name}': **HITL Implementation:** ${cell} — the only form is 'Action App: <title>', the title from this task's own name`); continue; }
+    const title = cell.replace(/^Action App:\s*/, "");
+    const ids = [...title.matchAll(/\(`?(t\d+)`?\)/g)].map((m) => m[1]).filter((x) => x !== id);
+    const other = strip(title.replace(/\s+Action App\s*$/i, "").replace(/\s*\(`?t\d+`?\)/g, ""));
+    if (ids.length || (other !== name && names.has(other))) {
+      fails.push(`task '${name}': **HITL Implementation:** names another task's Action App (${title}) — write 'Action App: ${name}'`);
+    }
+  }
+}
+
+// Activation Mode: a Tasks table cell and its task block's **Activation Mode:** line say the same literal
+{
+  const modeOf = new Map();
+  for (const table of text.match(/^\|[^\n]*\bTask Name\b[^\n]*\bActivation Mode\b[^\n]*\|\n(?:\|[^\n]*\|\n?)+/gm) ?? []) {
+    const rows = table.trim().split("\n").map((r) => r.split("|").slice(1, -1).map((c) => c.trim().replace(/`/g, "")));
+    const ni = rows[0].indexOf("Task Name"), ai = rows[0].indexOf("Activation Mode");
+    for (const r of rows.slice(2)) if (r[ni] && r[ai]) modeOf.set(strip(r[ni]), r[ai]);
+  }
+  for (const b of text.split(/^(?=#{3,5} )/m)) {
+    const t = b.split("\n")[0].match(/^#####\s+Task\s+S?\d+\.\d+:\s*(.+?)\s*$/);
+    const m = t && b.match(/^\*\*Activation Mode:\*\*\s*`?([^`\s]+)/m);
+    if (!m) continue;
+    const row = modeOf.get(strip(t[1]));
+    const lit = (s) => s.toLowerCase().match(/[a-z-]+/)?.[0] ?? "";
+    if (row && lit(row) !== lit(m[1])) fails.push(`task '${strip(t[1])}': Tasks table Activation Mode '${row}', task block '${m[1]}' — one literal in both (a task that starts after another is never parallel)`);
+  }
 }
 
 // **Type:** values: written bare, no backticks or prose — the build reads the token as written

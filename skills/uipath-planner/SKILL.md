@@ -1,6 +1,6 @@
 ---
 name: uipath-planner
-description: "UiPath planner and genome writer: always invoke to extract, author, document, create, update, edit, check or validate an automation genome or blueprint (`*-genome.md`) and for PDD / SDD files (`pdd.md`, `*-sdd.md`). design: PDD or process source (SOP, transcript, .bpmn as design input)→SDD; its genome on request. decompose: multi-project request→plan. author / extract / edit: genome from an idea or SDD, from a UiPath project or solution (.xaml/.cs, .flow, .bpmn, agent.json, caseplan, Workflow.json, uipath.json, .uipx) to document, refactor or migrate, or from another framework's export. Sole case-SDD author. Build from a genome→uipath-genome. `.uipx` lifecycle→uipath-solution. Orchestrator/IS/auth→uipath-platform. Building .xaml/.cs→uipath-rpa; .flow→uipath-maestro-flow; .bpmn→uipath-maestro-bpmn; agent.json/.py→uipath-agents; caseplan.json→uipath-maestro-case; an ontology, even from a PDD/SDD→uipath-ontology. In-place Legacy activity upgrade→uipath-activity-migrator. Quality review→uipath-review."
+description: "UiPath planner and genome writer: always invoke to extract, author, document, create, update, edit, check, validate or interview on an automation genome or blueprint (`*-genome.md`) and for PDD / SDD files (`pdd.md`, `*-sdd.md`). design: PDD or process source (SOP, transcript, .bpmn as design input)→SDD; its genome on request. decompose: multi-project request→plan. author / extract / edit: genome from an idea or SDD, from a UiPath project or solution (.xaml/.cs, .flow, .bpmn, agent.json, caseplan, Workflow.json, uipath.json, .uipx) to document, refactor or migrate, or from another framework's export. Sole case-SDD author. Build from a genome→uipath-genome. `.uipx` lifecycle→uipath-solution. Orchestrator/IS/auth→uipath-platform. Building .xaml/.cs→uipath-rpa; .flow→uipath-maestro-flow; .bpmn→uipath-maestro-bpmn; agent.json/.py→uipath-agents; caseplan.json→uipath-maestro-case; an ontology, even from a PDD/SDD→uipath-ontology. In-place Legacy activity upgrade→uipath-activity-migrator. Quality review→uipath-review."
 when_to_use: "'generate an SDD', 'design/architect a UiPath solution'; 'propose a demo scenario'; document a project; 'refactor this process', 'rebuild it on Maestro or Portable' (extract first); a request spanning separate buildable projects; ambiguous 'what should I build'. A PDD always routes here, even for one RPA process, but not an ontology. Skip only with no PDD, SDD, genome or existing automation to document, and one project (inline nodes count as one). Flow calling only deployed processes→uipath-maestro-flow."
 argument-hint: "[design | decompose | author | extract | edit | interview | check] [target]"
 user-invocable: true
@@ -46,7 +46,7 @@ the **task-list tool** creates, updates and lists tasks with blocked-by links �
 | `author` | An idea, description, SOP, transcript, PDD, TO-BE or agreed SDD, when a genome or blueprint is asked for. An SDD to build that has no genome yet. An agreed SDD `design` just wrote, when the genome or a build is asked for. A workshop or demo goal that needs a scenario | `*-genome.md`, its open questions in its Open Decisions. From an agreed SDD, that SDD's Action Required written again | [author-guide.md](references/author/author-guide.md) |
 | `extract` | A UiPath project or solution with its deployed state, or another automation or test framework's export | `*-genome.md` with its Source Map; for a documentation request, or on request, the SDD written from it (`*-sdd.md`) beside it, every open question first | [extract-guide.md](references/extract/extract-guide.md) |
 | `edit` | A `*-genome.md` and a change: add, split, remove, re-extract what changed, apply the answers | The same genome, edited in place; its SDD, when it has one, written again | [edit-guide.md](references/edit/edit-guide.md) |
-| `interview` | An SDD or a `*-genome.md` with open questions, and a request to be asked them ("interview me", "walk me through the open questions"), optionally for one role | Each answer applied as `edit` applies answers, its entry decided. An SDD beside the genome written again | [interview-guide.md](references/interview/interview-guide.md) |
+| `interview` | An SDD or a `*-genome.md` with open questions, and a request to be asked them ("interview me", "walk me through the open questions"), optionally for one role | The genome edited: each answer applied as `edit` applies answers, its entry decided. An SDD beside the genome written again | [interview-guide.md](references/interview/interview-guide.md) |
 | `check` | A `*-genome.md` to check or validate | One `FAIL:` line per finding, reported; the genome unchanged | § Check |
 | *build* | A `*-genome.md` | Not this skill: hand the genome path to `uipath-genome` | — |
 
@@ -102,7 +102,8 @@ they NEVER write automation code (XAML, C#, Python) or project or scaffold files
 6. **Fill gaps with markers — never silently invent business rules.** SDDs and plans use `[DEFAULT]` for industry-standard patterns (retry counts, timeouts) and `[SME REVIEW]` for business-knowledge gaps; resolve a `design` SDD's `[SME REVIEW]` items with the user before finalizing — they gate its `Status: ready` flip, not the skeleton write. Genomes use the best interpretation plus `*[Inferred]*` ([genome-questions-guide.md § Ambiguity Marker](references/shared/genome-questions-guide.md)). For an Agent or Coded App gap, ask with a structured question (proceed with gap filling, or a different product) — never fall back on your own. Exact tokens, nothing inside the brackets, byte-for-byte carry-over: [sdd-writing-guide.md § Gap Markers](references/design/sdd-writing-guide.md#gap-markers).
 7. **Never invent selectors or UI targets.** Selectors need the application inspected at development time; an SDD, a plan and an authored genome leave them to the specialist. A target carried over from the source is not invented: `extract` records where the source's targets live (objects, ids, counts) in the Source Map, and `uipath-genome` migrates them at build.
 8. **Gate every product by the platform.** The delivery model (Automation Cloud, Automation Suite, standalone Orchestrator) blocks unavailable products through [platform-availability-guide.md](references/shared/platform-availability-guide.md), in every verb that chooses a product (`design`, `decompose`, `author` without an SDD, `extract` for its targets); a product the user excluded is never offered again in the session.
-9. **Ask within the budget.** Every cap — questions per prompt, options per question, rounds, revisions, the `decompose` total, the one Execution autonomy question — is in § Prompt Budget. `design` writes Execution autonomy into the handoff header; `author` on an SDD reads it there. Scope and UI answers resolved in `design` flow forward through the SDD.
+9. **Ask within the budget.** Every cap — questions per prompt, options per question, rounds, revisions, the `decompose` total, the one Execution autonomy question — is in § Prompt Budget. In an attended run the interview is part of the task the user asked for, not an addition to it: its points are choices only the user can make, and they change the result. `design`, `author` and `extract` offer it where [interview-guide.md](references/interview/interview-guide.md) Verb Rule 1 places it, and go no further until it is answered. `design` writes Execution autonomy into the handoff header; `author` on an SDD reads it there. Scope and UI answers resolved in `design` flow forward through the SDD.
+10. **No turn ends on an SDD whose checks have not printed `OK`.** Every SDD file `design` writes or changes, a `*.draft.md` included, runs its § Check scripts before the turn ends — also when the request says not to validate or polish it: those words set how much detail the blocks carry, never whether the template's mechanical rules hold.
 
 ## Prompt Budget
 
@@ -118,11 +119,22 @@ Every verb asks within these caps; a guide that names a cap links here.
 | `design` Phase 3 Step 3 SME items | At most 2 rounds; autonomous: one prompt, only the items with no defensible default |
 | Tenant library selection | The top 4 candidates in one multi-select question; no selection skips |
 | `decompose` | At most 3 structured prompts: the Step 3 batch, the Step 4 UI batch, a resume |
-| Interview ([interview-guide.md](references/interview/interview-guide.md)) | Offered once per `design`, `author` or `extract` run; accepted, its rounds have no cap |
+| Interview ([interview-guide.md](references/interview/interview-guide.md)) | Offered once per `design`, `author` or `extract` run, in a message of its own; the verb waits for the answer. Accepted, its rounds have no cap |
 | Execution autonomy | Asked once, at `design` Step 1 or `decompose` Question 2; never when a caller's request carries `execution` |
 | Strict genome check (§ Check) | At most 3 fix rounds |
 
 ## Check
+
+SDD — run each that applies on every SDD file written or changed, repair each `FAIL:` line in the file, and run it again until it prints `OK`:
+
+```bash
+node "<SKILL_DIR>/scripts/scope-check.mjs" "<SDD_PATH>"              # every SDD
+node "<SKILL_DIR>/scripts/br-coverage.mjs" --source "<PDD_PATH>" "<SDD_PATH>"   # every SDD designed from a source
+node "<SKILL_DIR>/scripts/case-sdd-check.mjs" "<NAME>.md"            # Case Management SDD
+node "<SKILL_DIR>/scripts/case-sdd-check.mjs" --draft "<NAME>.draft.md"   # Case Management draft
+```
+
+Genome:
 
 ```bash
 node "<SKILL_DIR>/scripts/check-genome.mjs" <component|process> "<GENOME_MD>" --profile strict

@@ -106,7 +106,7 @@ Emit this block as the Phase 1 summary content:
 
 **`Blocked by platform:` names every gated product the source signals**, by its matrix name — not only the one the design would have picked. A PDD with a dashboard, an approval orchestration, and an AS 2024.10 constraint lists Coded Apps AND Maestro (Flow / BPMN), each with its alternative. Dropping a blocked product from this line hides the gate outcome; `none` only when no signaled product is blocked. `node "<SKILL_DIR>/scripts/scope-check.mjs" "<SDD_PATH>"` fails an SDD on Automation Suite older than 2.2510.2 whose line does not name Maestro.
 
-**Durable home.** This block is conversation output at the Phase 1 checkpoint, but the `## Recommended Scope` lines (`Recommendation:`, `Delivery model:`, `Blocked by platform:`) must also survive into the SDD, in BOTH execution modes, where the template places the Recommended Scope block ([sdd-writing-guide.md](sdd-writing-guide.md) Step 4 item 3). Autonomous mode skips the checkpoint presentation, so the SDD copy is the only durable record of the Constraint Gate outcome.
+**Durable home.** This block is conversation output at the Phase 1 checkpoint, but the `## Recommended Scope` lines (`Recommendation:`, `Delivery model:`, `Blocked by platform:`, `Need profile:`) must also survive into the SDD, in BOTH execution modes, where the template places the Recommended Scope block ([sdd-writing-guide.md](sdd-writing-guide.md) Step 4 item 3). Autonomous mode skips the checkpoint presentation, so the SDD copy is the only durable record of the Constraint Gate outcome.
 
 ### Confirmation question
 

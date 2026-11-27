@@ -43,7 +43,7 @@ Never put Task 1 / Task N templates or *implementation* tasks created with the t
 | Phase 1 Steps 8–10 | Level 1 = Solution, or the user picks "Solution (customize)" | solution-composition-guide.md § Level 1.75 — Solution Composition |
 | Phase 1 Step 9 | the primary is Agents or Coded Apps and product-specific information is missing | [scope-recommendation-guide.md](scope-recommendation-guide.md) § Gap Handling for Agent / Coded App |
 | Phase 1 Step 10 | — | scope-recommendation-guide.md § Presenting the Recommendation (its Summary block holds the Recommended Scope, Project List and Queue Architecture formats) |
-| Phase 1 Step 10 | `Execution autonomy` is `interactive` and the request carries no `planner-design-request: v1` block | [interview-guide.md](../interview/interview-guide.md) whole |
+| Phase 1 Step 1 | `Execution autonomy` is `interactive` and the request carries no `planner-design-request: v1` block | [interview-guide.md](../interview/interview-guide.md) whole, for Step 10's offer |
 | Phase 2 Step 1 | — | scope-recommendation-guide.md § Template Mapping; then the SDD template(s) it names, in `../assets/templates/` |
 | Phase 2 Step 2 | filling §14 Packages or its equivalent | [package-selection-guide.md](package-selection-guide.md) |
 | Phase 2 Step 2 or Phase 3 | filling the template's Business Rules section (every template has one) | [business-rules-guide.md](business-rules-guide.md) |
@@ -223,7 +223,7 @@ Recommended Scope + Project List + Queue Architecture>
 
 **The confirmation.** Ask the guide's structured confirmation question: recommendation option 1, single-product alternatives, then "Solution (customize)". **If the user picks "Solution (customize)":** re-run Level 1.75's customize branch, re-emit the summary with the customized project list, and re-ask, within the revision cap of [SKILL.md § Prompt Budget](../../SKILL.md#prompt-budget); then proceed with the latest composition. **If the user picks a single-product alternative:** re-run Step 8 with that forced primary, including Level 1.5 for RPA.
 
-**Without the interview**, ask the clarifying questions in one round — at most 5, at most 4 per structured question ([SKILL.md § Prompt Budget](../../SKILL.md#prompt-budget)); if the user cannot answer some, tag those items as `[SME REVIEW]` and proceed. With it, every point left open keeps its `[SME REVIEW]` marker, and Phase 3 Step 3 asks the items the interview did not ([sdd-writing-guide.md](sdd-writing-guide.md)).
+**Without the interview**, ask the clarifying questions in one round — at most 5, at most 4 per structured question ([SKILL.md § Prompt Budget](../../SKILL.md#prompt-budget)); if the user cannot answer some, tag those items as `[SME REVIEW]` and proceed. With it, every point left open keeps its `[SME REVIEW]` marker, and Phase 3 Step 3 states which items it still asks ([sdd-writing-guide.md](sdd-writing-guide.md)).
 
 ## Phase 2 — Architecture Review
 

@@ -17,6 +17,7 @@ The writing rules of [genome-format-guide.md § Writing Rules](../shared/genome-
 |---|---|---|
 | start | — | this guide; [genome-format-guide.md](../shared/genome-format-guide.md) every section before § Design Links; [genome-questions-guide.md](../shared/genome-questions-guide.md) whole |
 | start | the input is not an agreed SDD | [skill-mapping-guide.md](../shared/skill-mapping-guide.md) whole |
+| start | the run is attended and the input is not an agreed SDD | [interview-guide.md](../interview/interview-guide.md) whole, for Step 8's offer |
 | the input is received | the input is an agreed SDD (Step 3) | [genome-from-sdd-guide.md](genome-from-sdd-guide.md) whole; its § Read Plan names the rest of this path's reads |
 | the input is received | the input is a goal, not a process (Step 2) | [scenario-proposal-guide.md](scenario-proposal-guide.md) whole; its § Read Plan names the rest of this path's reads |
 | the input is received | the input is a PDD (not an agreed SDD — inside `design` the input is the SDD) | [pdd-analysis-guide.md](../shared/pdd-analysis-guide.md) by section — every section except § Accepted process-knowledge sources and § Gap Detection Checklist; the genome's gaps follow genome-format-guide.md |
@@ -26,8 +27,6 @@ The writing rules of [genome-format-guide.md § Writing Rules](../shared/genome-
 | products are selected (Step 7) | no SDD, a step repeats behaviour a deployed library may already hold, and the tenant is reachable | [tenant-library-search-guide.md](../shared/tenant-library-search-guide.md) |
 | the unit of work is assessed | no SDD, and the description iterates over items | [transactional-shape-guide.md](../shared/transactional-shape-guide.md) |
 | the user names a preferences file (Step 8) | — | [genome-format-guide.md](../shared/genome-format-guide.md) § Design Links; the file itself, whole |
-| gaps are listed (Step 8) | — | [interview-guide.md](../interview/interview-guide.md) Verb Rule 1; the guide whole when that rule offers the interview |
-| the genome is written (Step 10) | the input is an agreed SDD | [sdd-from-genome-guide.md](../shared/sdd-from-genome-guide.md) item 6; [open-questions-guide.md](../shared/open-questions-guide.md) whole |
 
 Each phase's reads go out as [SKILL.md § Setup](../../SKILL.md#setup) item 2 states.
 

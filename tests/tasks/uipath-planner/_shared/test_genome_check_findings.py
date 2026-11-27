@@ -184,6 +184,70 @@ def test_sdd_items_carried_as_entries_have_no_carry_finding(check, tmp_path):
     assert NOT_CARRIED not in check(asked(tmp_path, COMPONENT), profile="strict")[1]
 
 
+MISPLACED = "Action Required asks"
+ENTRY_QUESTION = re.compile(r"(?m)^(\d+)\. (.*?) \((business outcome|run behaviour|reading|material); answered by: ")
+CQ_QUESTION = re.compile(r"(?m)^(\d+)\. (.*?) \((setting|constant); default: (.*)$")
+BUSINESS_ENTRY = "1. Is a requisition over its budget sent for approval? (business outcome; answered by: the process owner; builds now: no)\n"
+
+
+def genome_items(text):
+    """The (id, heading) pairs of an Action Required written from the genome: its open entries but readings, then
+    its Configuration Questions whole."""
+    entries = [(f"D{n}", q) for n, q, tier in ENTRY_QUESTION.findall(text) if tier != "reading"]
+    return entries + [(f"CQ{n}", f"{q} ({kind}; default: {default}") for n, q, kind, default in CQ_QUESTION.findall(text)]
+
+
+def action_required(items):
+    return ("# SDD\n\n## Action Required — SME Review Items\n\n"
+            + "".join(f"**{i}. {h}**\n- **Answer (by the process owner):**\n\n" for i, h in items) + "## 1. Overview\n")
+
+
+def designed_with(tmp_path, text, items):
+    """text with a Designed in: line linking an SDD whose Action Required holds items."""
+    sdd = tmp_path / "x-sdd.md"
+    sdd.write_text(action_required(items), encoding="utf-8")
+    return designed_in(text, f"> Designed in: [Design](x-sdd.md) · sdd-sha256 {sdd_fingerprint(sdd)}")
+
+
+def test_action_required_under_the_genomes_ids_has_no_misplaced_finding(check, tmp_path):
+    text = with_decisions(COMPONENT, BUSINESS_ENTRY)
+    items = genome_items(text)
+    assert [i for i, _ in items] == ["D1"] + [f"CQ{n}" for n in range(1, 12)]
+    items[0] = ("D1", "Is an over-budget requisition sent for approval?")
+    items.append(("D1", "What is today's handling time per requisition?"))
+    assert MISPLACED not in check(designed_with(tmp_path, text, items), profile="strict")[1]
+
+
+def test_action_required_under_other_ids_fails_strict_only(check, tmp_path):
+    text = with_decisions(COMPONENT, BUSINESS_ENTRY)
+    items = genome_items(text)
+    shifted = [("D1", "What is today's handling time per requisition?")] + [
+        (f"CQ{n}", h) for n, (_, h) in enumerate(items[2:], start=1)]
+    designed = designed_with(tmp_path, text, shifted)
+    assert MISPLACED not in check(designed)[1]
+    rc, out = check(designed, profile="strict")
+    assert rc == 1
+    assert ('x-sdd.md: Action Required asks 12 of the genome\'s open entries and Configuration Questions under another id '
+            'or not at all; write it again from the genome, each under the genome\'s id: D1 "Is a requisition over its '
+            'budget sent for approval?" is asked as "What is today\'s handling time per requisition?"') in out
+    assert 'CQ11 "Is a delivery date equal to the run date accepted?" has no item' in out
+
+
+def test_action_required_of_an_sdd_written_from_the_genome_is_checked_too(check, tmp_path):
+    (tmp_path / "sample-sdd.md").write_text(action_required(genome_items(COMPONENT)[1:]), encoding="utf-8")
+    rc, out = check(COMPONENT, profile="strict")
+    assert rc == 1
+    assert 'sample-sdd.md: Action Required asks 1 of' in out and 'CQ1 "Which workbook holds the requisitions' in out
+
+
+def test_action_required_with_no_item_ids_is_not_checked(check, tmp_path):
+    sdd = tmp_path / "x-sdd.md"
+    sdd.write_text("# SDD\n\n## Action Required\n\n| # | Item | Answer |\n|---|---|---|\n| 1 | Which CRM address? | |\n\n## 1. Overview\n",
+                   encoding="utf-8")
+    text = designed_in(COMPONENT, f"> Designed in: [Design](x-sdd.md) · sdd-sha256 {sdd_fingerprint(sdd)}")
+    assert MISPLACED not in check(text, profile="strict")[1]
+
+
 def test_entry_withdrawn_as_a_question_without_its_cq_mark_fails_strict(check):
     text = with_decisions(COMPONENT, "1. Which portal address? (withdrawn: asked as Configuration Question 4) — SDD item 1\n")
     finding = "Open Decisions entry 1 is withdrawn as Configuration Question 4, and no line carries *[Inferred: CQ4]*"
@@ -255,7 +319,7 @@ def test_designed_in_sdd_that_cannot_be_read_fails_strict_only(check, tmp_path):
 
 
 def test_designed_in_fingerprint_taken_over_the_whole_sdd_still_matches(check, tmp_path):
-    body = "# SDD\n\n## Action Required — SME Review Items\n\n**D1. Which folder?**\n\n## 1. Overview\n\nBody.\n"
+    body = action_required(genome_items(COMPONENT)) + "\nBody.\n"
     (tmp_path / "x-sdd.md").write_text(body, encoding="utf-8")
     whole = hashlib.sha256(body.encode("utf-8")).hexdigest()
     assert whole != sdd_fingerprint(tmp_path / "x-sdd.md")

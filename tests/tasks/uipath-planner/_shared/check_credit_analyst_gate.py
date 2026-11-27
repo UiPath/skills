@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 
-THRESHOLD = r"(?:\$?\s*5\s*(?:m(?:illion)?|million)\b|5,?000,?000\b)"
+THRESHOLD = r"(?:\$?\s*5\s*(?:m(?:illion)?|million)\b|5,?000,?000(?:\.0+)?\b|5_000_000\b|5e6\b)"
 HIGH_SIDE = rf"(?:>(?!=)\s*{THRESHOLD}|(?:over|above|greater\s+than|more\s+than|in\s+excess\s+of)\s*{THRESHOLD})"
 LOW_SIDE = re.compile(
     rf"(?:<=|<)\s*{THRESHOLD}|\b(?:at\s+or\s+below|below|under|up\s+to|no\s+more\s+than|not\s+more\s+than)\b",
@@ -35,8 +35,20 @@ EXECUTION_SIGNAL = re.compile(
 )
 
 
+# the same rule written from the low side: "<= $5M -> Underwriter, else Credit Analyst"
+LOW_THEN_ELSE = re.compile(
+    rf"(?:<=\s*|\b(?:at\s+or\s+below|not\s+more\s+than|no\s+more\s+than|up\s+to)\s+){THRESHOLD}"
+    rf".{{0,120}}?underwriter.{{0,40}}?(?::|\belse\b|\botherwise\b).{{0,40}}?credit\s*analyst",
+    re.IGNORECASE,
+)
+
+
 def has_credit_analyst_gate(text: str) -> bool:
-    """Accept either phrase order while requiring a high-side comparator."""
+    """Accept a high-side comparator in either phrase order, or a low-side one whose else-branch is the Credit Analyst."""
+    for line in text.splitlines():
+        for clause in re.split(r";|(?<=[.!])\s+", line):
+            if LOW_THEN_ELSE.search(clause) and EXECUTION_SIGNAL.search(clause) and not NEGATION.search(clause):
+                return True
     patterns = (
         (
             re.compile(

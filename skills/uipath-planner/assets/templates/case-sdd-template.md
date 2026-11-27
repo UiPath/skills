@@ -794,7 +794,9 @@ Each `FAIL:` line is a defect your edits introduced: repair it in place from the
 prints `OK`.
 Then run `node "<SKILL_DIR>/scripts/case-sdd-check.mjs" "<NAME>.md"` the same way: it finds the template markers a
 stage or task block lost (`**Design Rationale:**`, `**Activation Mode:**`, `**Entry Condition:**`, `**Task envelope**`),
-a `**Type:**` outside the task types, and an SLA Response Map row that breaks the template's cell rules.
+a `**Type:**` outside the task types, an SLA Response Map row that breaks the template's cell rules, a Personas row
+off the template's six cells or permission keys, an action task's `**HITL Implementation:**` that is not
+`Action App: <title>` or names another task, and a Tasks-table Activation Mode that differs from its task block's.
 
 Draft repairs — the only changes beside the rules above:
 1. `user-selected-stage` repair per case-product-guide.md § Repairing a `user-selected-stage` lane; wording such as
@@ -819,6 +821,19 @@ Draft repairs — the only changes beside the rules above:
 5. A draft's per-stage SLA table may carry `At-Risk Action` / `Breach Action` columns; the final SDD does not.
    Move each response into the § SLA Response Map row for that `(scope, SLA, status)` — never drop it, never keep
    the column.
+6. A draft's `**HITL Implementation:**` cell (`JSON Schema`, a form, a schema) becomes
+   `Action App: <this task's own name>` — the name in the `##### Task` heading of the block the cell sits in, never
+   the stage's first task or the previous block's. A script that rewrites these cells reads the heading of each
+   block, not the last one it matched.
+7. A draft's Personas table (`| Persona | Stage Scope | Permissions | Description |` or any other shape) is
+   re-rendered row by row into the template's `| Persona | Scope | Stages | Permissions | Description | Notes |`:
+   stage scope `All` → Scope `Case`, Stages `—`; named stages → Scope `Stages`, those exact stage names; Permissions
+   keep only the template's keys (`Act` is dropped — task work comes from each task's Recipient; `Reassign` →
+   `Assign`), a `Stages` row only View, Assign, ManageSLA, RunAdhocTasks; the dropped prose goes to Notes. The
+   persona names stay verbatim.
+8. A task's Activation Mode is one literal, written the same in its stage's Tasks table and in its block's
+   `**Activation Mode:**` line; where they differ, the block's Entry Condition decides (a task that starts after
+   another is never `parallel`).
 
 Gate: the CONFORMANCE CHECKLIST below, walked against the on-disk file BEFORE the Status: ready flip, in every
 mode, by the procedure of sdd-writing-guide.md Step 4 item 8 — which also checks every heading above is present.

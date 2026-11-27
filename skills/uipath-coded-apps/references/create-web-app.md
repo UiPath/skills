@@ -54,7 +54,7 @@ If the user typed their org name, use it. If they said "find from browser", navi
 
 ## Step 3 — Scaffold the Project
 
-Once you have the answers (app name, environment, org, tenant, styling), execute the steps below in order. All steps after Step 3.2 run from inside the new project directory.
+Once you have the answers (app name, environment, org, tenant, styling), execute the steps below in order. All steps after Step 3.2 run from inside the new project directory (the project's `source/` folder in a solution).
 
 > **Set `timeout: 300000`** (5 minutes) on every Bash call that runs `npm install`, `create-vite`, or `npm run build` — these can take several minutes and the default 2-minute timeout is not enough.
 
@@ -65,6 +65,10 @@ Map the `<environment>` answer from Step 1 to a base URL using the table in [SKI
 <!--skill-flavor:scaffold-commands:start-->
 ### 3.2 — Create the Vite project
 
+The app is part of a solution when the working folder, or a folder above it, holds a `.uipx` file. Follow the matching block, never both.
+
+**Standalone** (no `.uipx`):
+
 ```bash
 npx --yes create-vite@latest <app-name> --no-interactive --template react-ts && node -e "require('fs').existsSync('<app-name>/src/main.tsx')||(console.error('SCAFFOLD_NOT_REACT'),process.exit(1))" && echo SCAFFOLD_OK
 ```
@@ -72,6 +76,34 @@ npx --yes create-vite@latest <app-name> --no-interactive --template react-ts && 
 Run that as **one** command — `SCAFFOLD_OK` is the only signal that the scaffold is really React (Critical Rule 20). On `SCAFFOLD_NOT_REACT`, or any non-zero exit, re-run the same line with `--overwrite` added immediately after `--no-interactive`; a bare re-run exits `0` and changes nothing. Stop after two failed attempts and report the output to the user rather than continuing past this step.
 
 Then `cd` into `<app-name>`. Every subsequent step runs from this directory.
+
+**In a solution** (a `.uipx` in the working folder or above): the app is a solution project, and its React sources live in the project's `source/` folder. From the solution folder, register the project first:
+
+```bash
+uip codedapp init ./<app-name> --output json
+```
+
+Init writes the project files (`project.uiproj`, `webAppManifest.json` with `bundlePath: "source/dist"`, `.env.example`, the `.uipx` entry and the app's solution resource) and a placeholder `source/`: a static `dist/index.html`, a `uipath.json` with blank values and a `package.json` with no scripts.
+
+Check the result before going on: `Data.SolutionRegistration.Status` must be `Registered`, and `Data.Files` must list the placeholder as `source/dist/index.html`, `source/uipath.json` and `source/package.json`. Anything else means the project is not cleanly registered: stop and report it to the user rather than scaffolding. `Skipped` (for example, when the folder holds two `.uipx` files) also means init wrote the standalone layout, which the solution would pack as the placeholder.
+
+The placeholder is not the app, so never edit it into one. Replace it with the React scaffold:
+
+```bash
+npx --yes create-vite@latest <app-name>/source --no-interactive --overwrite --template react-ts && node -e "require('fs').existsSync('<app-name>/source/src/main.tsx')||(console.error('SCAFFOLD_NOT_REACT'),process.exit(1))" && echo SCAFFOLD_OK
+```
+
+- Run it as **one** command, as above. On `SCAFFOLD_NOT_REACT` or a non-zero exit, re-run it once; stop after two failed attempts and report the output.
+- `--overwrite` is required: without it, `create-vite` finds the placeholder, prints `Operation cancelled`, exits `0` and changes nothing. With it, `create-vite` empties its target first, so the target is always `<app-name>/source`, never `<app-name>`, which holds the project files init just wrote.
+- Init comes first: it refuses a folder that is not empty, so it cannot run after the scaffold. Never rerun it with the `--force` its error suggests, which overwrites the scaffold's `package.json` and `uipath.json`. If `<app-name>` already exists, ask the user for another name.
+
+Then `cd` into `<app-name>/source` and name the package after the app (`create-vite` names it after its folder, `source`):
+
+```bash
+npm pkg set name=<app-name>
+```
+
+Every subsequent step runs from `<app-name>/source/`: Step 5.1 writes `uipath.json` and the sources there, and the Step 5.3 build lands in `source/dist`, where `bundlePath` points. Deploy the app with the solution (`uip solution pack`, then `publish` and `deploy`, per [/uipath:uipath-solution](/uipath:uipath-solution)), not with § Deploy below.
 
 ### 3.3 — Install dependencies
 

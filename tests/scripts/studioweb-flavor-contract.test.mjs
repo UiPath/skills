@@ -249,7 +249,7 @@ const CODED_APP_CREATION_DENIAL =
   /cannot create an AppV2 project|cannot create function or coded-app projects|coded-app projects cannot be created/;
 const CREATE_VITE_COMMAND = "npx --yes create-vite";
 const SCAFFOLD_REFERENCES = ["create-web-app.md", "create-action-app.md"];
-const SOLUTION_CODEDAPP_INIT_RULE = "`uip codedapp init` is the solution-side scaffolding entry point";
+const SOLUTION_CODEDAPP_INIT_RULE = "`uip codedapp init` is the solution-side registration entry point";
 // One line from each canonical passage that runs the CLI host's scaffold, install or build;
 // the studioweb flavor replaces each passage through its own named block.
 const CLI_HOST_PASSAGES = [

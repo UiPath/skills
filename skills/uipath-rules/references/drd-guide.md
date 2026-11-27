@@ -2,7 +2,7 @@
 
 A rule holds one `.dmn`, and that file may hold more than one decision. Decisions linked by `informationRequirement` form a decision graph: the engine evaluates what a decision needs before the decision itself, and returns every decision's outputs in one run.
 
-Read this when a request needs more than one answer, or when one answer feeds another. One answer still needs the right shape: a set of cases is a decision table and needs nothing here, one formula is a [literal expression](#literal-expressions), a calculation run over different arguments in more than one place is a [knowledge model](#knowledge-models), and a note for a reader is a [text annotation](#text-annotations).
+Read this when a request needs more than one answer, or when one answer feeds another. One answer still needs the right shape: a set of cases is a decision table and needs nothing here, one formula is a [literal expression](#literal-expressions), a calculation run over different arguments in more than one place is a [knowledge model](#knowledge-models), the policy or regulation a rule follows is a [knowledge source](#knowledge-sources), and a note for a reader is a [text annotation](#text-annotations).
 
 ## When to split
 
@@ -20,7 +20,7 @@ Do not split a single answer across tables to make each table smaller. Each deci
 
 ## Skeleton
 
-A two-decision graph. `rate` reads the band `risk` decides.
+A two-decision graph. `rate` reads the band `risk` decides. It carries `surface="decision-graph"` **because it holds two decisions** — a rule with one table does not, and copying this skeleton into one is the most common way that attribute goes wrong.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8" ?>
@@ -145,7 +145,22 @@ Give `name` a plain identifier — no spaces, no leading digit. Put the readable
 
 `<uipath:authoring surface="decision-graph" />` in the `definitions` `extensionElements` says the file is a graph. Declare `xmlns:uipath="http://uipath.com/schema/1.0/dmn/authoring"` on `definitions` — a prefix bound anywhere else is not read.
 
-It matters because a graph that holds one decision is byte-identical to a plain decision table; without the marker that file opens as a bare table. Write it on any file authored as a graph, whatever its decision count.
+The other value is `decision-table`, and it is the one `uip rules init` scaffolds. Which to write:
+
+| The file holds | `surface` |
+|---|---|
+| One decision whose logic is a decision table, and nothing else | `decision-table` — what `init` already wrote, so change nothing |
+| Two or more decisions | `decision-graph` |
+| A business knowledge model, a knowledge source, or a text annotation, at any decision count | `decision-graph` — only the canvas draws them |
+
+It matters in both directions. A graph that holds one decision is byte-identical to a plain
+decision table, so without the marker that file opens as a bare table and the requirement edges
+are invisible. And `decision-graph` on a rule that is one decision table opens it on the canvas
+instead of the table editor — a worse editor for the thing the user asked for. `validate` reports
+neither, so nothing tells you.
+
+**Do not copy the skeleton above into a single-decision rule.** It is a two-decision graph, so it
+carries `decision-graph`; a rule with one table keeps the surface `init` gave it.
 
 Each decision carries `<uipath:authoring editor="…" />` naming the editor its logic opens in: `decision-table` or `literal-expression`. Attributes only — the marshaller drops the text body of an extension element it does not model.
 
@@ -222,6 +237,31 @@ And the decision that calls it:
 - The body is `encapsulatedLogic` holding one `literalExpression` or one `decisionTable`. `kind="FEEL"` — Java and PMML are not supported.
 - A model may call another model, with its own `knowledgeRequirement`. The calls must not form a cycle.
 
+## Knowledge sources
+
+The authority a decision follows — a policy, a regulation, a person who signs off. It holds no logic and gets no entry point. Write one when the request says where the rules come from and wants that on the diagram.
+
+```xml
+<knowledgeSource id="knowledgeSource_procurementPolicy" name="procurementPolicy2026" label="Procurement Policy 2026">
+  <description>Sets the supplier spend limit.</description>
+  <type>Policy Document</type>
+</knowledgeSource>
+```
+
+The decision it governs cites it. Write the citation after the decision's `informationRequirement` and `knowledgeRequirement` elements and before its logic:
+
+```xml
+<authorityRequirement id="authorityRequirement_approval_policy">
+  <requiredAuthority href="#knowledgeSource_procurementPolicy" />
+</authorityRequirement>
+```
+
+- A decision or a knowledge model cites a source with `authorityRequirement` holding `requiredAuthority`. A source may cite another source the same way. Nothing else connects to a source: never an `informationRequirement` or a `knowledgeRequirement`, and a source never cites a decision or an input.
+- `requiredAuthority` is a child element carrying the id on its `href`, like every other requirement.
+- `<type>` says what kind of authority it is. `<description>` says what it governs.
+- `uip rules format` places it; never write its coordinates.
+- A note about one element is a [text annotation](#text-annotations), not a source. A source is for the authority itself, which several decisions may cite.
+
 ## Text annotations
 
 A note on the diagram, tied to the element it is about. It holds no logic, gets no entry point, and changes nothing the engine evaluates.
@@ -250,7 +290,7 @@ uip rules refresh <PROJECT_DIR> --output json
 uip rules validate <PROJECT_DIR> --output json
 ```
 
-`refresh` publishes one entry point per decision, `/<file>.dmn#<decisionId>`, named by the decision's `label`, plus one for the whole file carrying every input and every decision's outputs.
+`refresh` publishes one entry point per decision, `/<file>.dmn#<decisionId>`, named by the decision's `label`, plus one for the whole file carrying every input and every decision's outputs. A knowledge source gets none.
 
 `validate` names the decision in each diagnostic, but it checks **less of a graph than of a single decision**. Across a graph it checks every decision's name, that each decision carries logic at all, the input-data names, and the item definitions. Beyond that:
 
@@ -274,9 +314,8 @@ uip rules debug <PROJECT_DIR> --inputs '<INPUTS_JSON>' --output json
 
 ## Outside the profile
 
-A graph holds decisions, input data, knowledge models and text annotations. Say authoring is not supported yet, then offer to express the logic as decision tables:
+A graph holds decisions, input data, knowledge models, knowledge sources and text annotations. Say authoring is not supported yet, then offer to express the logic as decision tables:
 
-- `knowledgeSource`, and the `authorityRequirement` that cites one
 - `decisionService` and `group`
 - `import` — one `.dmn` per project, never a reference to another file
 - Every expression kind other than a decision table and a literal expression: context, invocation, relation, list, conditional
@@ -294,4 +333,5 @@ Never write the unsupported element.
 - Reading only the last decision in the `debug` result
 <!--skill-flavor:graph-anti-debug:end-->
 - A knowledge model with no `<variable>`: `validate` passes and the engine rejects it at run time
+- A knowledge source wired with `informationRequirement` instead of `authorityRequirement`
 - A nested `if` in a literal expression where the logic is a set of cases a decision table would show

@@ -127,7 +127,7 @@ Fill in all sections of the chosen template not covered in Phase 1 or Phase 2. S
 
 ### Step 3: Resolve SME Review Items
 
-Before finalizing the SDD (the skeleton is already on disk from Step 1), collect all `[SME REVIEW]` items. One item is one decision: the same gap marked in several sections is asked once. When the Phase 1 Step 10 interview ran, a point it put to the user is not asked again: left open, it keeps its default, or is `blocking` when it has none (rule 5). Every other item is asked. In autonomous mode, ask only the items with no defensible default (the candidates for `blocking`, rule 5), in one structured question; every other item stays in the Action Required table with its default applied. If there are any to ask:
+Before finalizing the SDD (the skeleton is already on disk from Step 1), collect all `[SME REVIEW]` items. One item is one decision: the same gap marked in several sections is asked once. When the Phase 1 Step 10 interview ran, ask only the items whose answerer is one of the user's roles ([interview-guide.md](../interview/interview-guide.md) § Asking rule 1), and none the interview put to the user: an item not asked keeps its default, or is `blocking` when it has none (rule 5). Otherwise every item is asked. In autonomous mode, ask only the items with no defensible default (the candidates for `blocking`, rule 5), in one structured question; every other item stays in the Action Required table with its default applied. If there are any to ask:
 
 > **Batching rule.** One item per question, with the item's own options (the default applied first) or its default named, within the caps of [SKILL.md § Prompt Budget](../../SKILL.md#prompt-budget). Items beyond one structured question take further ones, grouped by SDD section, waiting for answers between them. Never drop an item to fit a prompt.
 
@@ -185,7 +185,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
    - For non-RPA scopes (e.g., Single-product Agent), rows 3-5 are replaced by the template's own product row (framework choice, app type, trigger) — never `N/A` rows. A Flow or BPMN SDD also carries the **Maestro engine** row: the row-5 structures the process needs, counted ([product-selection-guide.md § Maestro disambiguation](../shared/product-selection-guide.md#maestro-disambiguation--bpmn-vs-flow-vs-case)); two or more on a Flow template means the wrong template — rewrite it on the BPMN template.
    - The block does NOT replace the per-section detail later in the SDD — the product body still carries the full justification in its architecture, stage/task, framework, or project-structure sections. The block is the **scannable index** of those decisions.
 
-   In both modes, also write the Recommended Scope block where the template places it: copy the Phase 1 summary's `Recommendation:`, `Delivery model:`, and `Blocked by platform:` lines (see [scope-recommendation-guide.md → Summary block](scope-recommendation-guide.md#summary-block)). Autonomous mode skips the Phase 1 presentation, so this copy is the only durable record of the Constraint Gate outcome. Then run `node "<SKILL_DIR>/scripts/scope-check.mjs" "<SDD_PATH>"` on every SDD file written; a `FAIL:` line is a defect — fix the `Blocked by platform:` line and rerun until it prints `OK`.
+   In both modes, also write the Recommended Scope block where the template places it: copy the Phase 1 summary's `Recommendation:`, `Delivery model:`, `Blocked by platform:`, and `Need profile:` lines (see [scope-recommendation-guide.md → Summary block](scope-recommendation-guide.md#summary-block)). Autonomous mode skips the Phase 1 presentation, so this copy is the only durable record of the Constraint Gate outcome. Then run `node "<SKILL_DIR>/scripts/scope-check.mjs" "<SDD_PATH>"` on every SDD file written; a `FAIL:` line is a defect — fix the line or table it names (`Blocked by platform:`, `Need profile:`, an RPA SDD's §11 `### Project Mode Decision`) and rerun until it prints `OK`.
 
 4. If any `[SME REVIEW]` items remain, add the `## Action Required — SME Review Items` section where the template places it. It is written in the item form of [open-questions-guide.md](../shared/open-questions-guide.md), one item per decision, as the template's block shows:
    - each item is numbered `D1`, `D2`, … in the order of the sections it concerns;
@@ -208,7 +208,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
    - an alternative the design did not pick ("Generate EITHER Option A OR Option B — delete the other");
    - a subsection whose own note sets a condition that does not hold ("Include only when…", "omit when…", "Master Project only").
 
-   A subsection the template repeats per sub-project ("repeat this section per sub-project") may sit one heading level deeper. Every other template H2 and H3 is required.
+   A subsection the template repeats per sub-project ("repeat this section per sub-project") may sit one heading level deeper. Every other template H2 and H3 is required. An RPA SDD's §11 Project Structure always carries `### Project Type`, `### Project Mode Decision` (its ten-column table, one row per project) and `### Recommended Structure`, for a Single Project too; `scope-check.mjs` fails one whose Project Mode Decision is missing or compressed.
 
    **A Case Management SDD** is first run through `node "<SKILL_DIR>/scripts/case-sdd-check.mjs" "<NAME>.md"` (a `*.draft.md` takes `--draft`); each `FAIL:` line is a defect in the file: repair it in place and run it again until it prints `OK`.
 
@@ -237,7 +237,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
 9. **Ready flip — the final write of `design`.** When every required heading is present, `br-coverage.mjs` prints `OK`, and every remaining `[SME REVIEW]` item is classified `default-carried` (Step 3 rule 5), update the handoff: `Status: ready` (`Template validation: passed` is already set — item 2). Open default-carried items do NOT block ready — they gate production sign-off, not the genome or the build. Any `blocking` item keeps `Status: draft` with `Template validation: passed`; the item 10 summary names it and asks. Skipping the flip leaves the file at `draft` and `author` will refuse to write its genome.
 
-10. Output a summary in the conversation. A caller's design request replaces it with the `planner-design-result` block, its prose in the request's `audience` ([caller-request-guide.md](caller-request-guide.md) § The Result):
+10. Output a summary in the conversation. When items are open, it counts them by the role that answers them and names `interview <SDD_PATH>` as the way to have them asked. A caller's design request replaces it with the `planner-design-result` block, its prose in the request's `audience` ([caller-request-guide.md](caller-request-guide.md) § The Result):
 
 ```markdown
 ## SDD Generated
@@ -247,8 +247,6 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 ...
 
 <SME_REVIEW_COUNT> open SME review items (if any — list each with its class and default).
-<AUTONOMOUS ONLY, when items are open: "`interview <SDD_PATH>` asks them, by who answers them.">
-<INTERVIEW RAN, when items are open: the open items counted by role, and `interview <SDD_PATH>` to ask them ([interview-guide.md](../interview/interview-guide.md) § Asking rule 7).>
 
 **Next — branch on the handoff `Status`:**
 - `ready` — `design` is complete and the SDD is on disk. Open default-carried SME items gate production sign-off — confirm them before production. <REQUEST ASKED FOR A GENOME OR A BUILD: "The genome, the step-by-step build specification a coding agent follows, is written from it on the next turn, then <the build, which asks only the setup questions this SDD does not already answer, first offering to take the defaults it carries | nothing more>."> <OTHERWISE: one line offering the genome and the build: "Ask for its genome to get the build blueprint, or to build it."> A design a build skill handed over gets no genome.
