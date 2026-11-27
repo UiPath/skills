@@ -299,7 +299,38 @@
     }
   },
   "uipath-connector-builder": {
-    "allow": [],
+    "allow": [
+      {
+        "file": "SKILL.md",
+        "command": "extension",
+        "reason": "`uip extension` submits a connector to the community catalog through the desktop CLI and `gh`; the guide says to run it from a terminal, not in Studio Web."
+      },
+      {
+        "file": "SKILL.md",
+        "command": "extension init",
+        "reason": "`uip extension` submits a connector to the community catalog through the desktop CLI and `gh`; the guide says to run it from a terminal, not in Studio Web."
+      },
+      {
+        "file": "references/community-submit-guide.md",
+        "command": "extension",
+        "reason": "`uip extension` submits a connector to the community catalog through the desktop CLI and `gh`; the guide says to run it from a terminal, not in Studio Web."
+      },
+      {
+        "file": "references/community-submit-guide.md",
+        "command": "extension init",
+        "reason": "`uip extension` submits a connector to the community catalog through the desktop CLI and `gh`; the guide says to run it from a terminal, not in Studio Web."
+      },
+      {
+        "file": "references/community-submit-guide.md",
+        "command": "extension submit",
+        "reason": "`uip extension` submits a connector to the community catalog through the desktop CLI and `gh`; the guide says to run it from a terminal, not in Studio Web."
+      },
+      {
+        "file": "references/community-submit-guide.md",
+        "command": "extension validate",
+        "reason": "`uip extension` submits a connector to the community catalog through the desktop CLI and `gh`; the guide says to run it from a terminal, not in Studio Web."
+      }
+    ],
     "ceiling": {
       "is connectors": 1,
       "is resources run": 1,

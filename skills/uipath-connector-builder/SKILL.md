@@ -17,6 +17,7 @@ Author UiPath Integration Service connectors on disk with `uip is connectors bui
 - Wiring a polling or webhook trigger on an existing activity.
 - Debugging a connector, activity, hook, or trigger problem in `element.json` / a standard-resource file.
 - Validating before release, or pulling/pushing a design connector to a tenant.
+- Submitting a published community-route connector to the community catalog with `uip extension` (init → validate → submit).
 
 ## Critical Rules
 
@@ -114,6 +115,15 @@ uip is connectors publish --wait        # blocks until SUCCESS; live in Studio W
 ```
 Publishing a NEW connector needs no `--version` (init seeded `1.0.0`). **Re-publishing** an existing connector requires a HIGHER version — bump `element-metadata.json:latestVersion` (or pass `--version 1.0.1`); the server rejects an equal version.
 
+### Share with the community catalog
+Community-route connectors only (`flags.v4Compatible: true`). A legacy connector is not submitted: stop and say so.
+
+After `publish --wait` succeeds on a community-route connector, ask the user once (`AskUserQuestion`): **Submit to the community catalog** or **Keep it private**. Never submit without a yes.
+- Submit → follow [references/community-submit-guide.md](references/community-submit-guide.md): `uip extension init` → `validate` → `submit --dry-run` → `submit`.
+- Keep it private → done. Do not ask again unless the user brings it up.
+
+In Studio Web, do not ask: tell the user these steps run from a terminal.
+
 ### Add an activity to an existing connector
 ```bash
 uip is connectors builder inspect --output json     # map what exists first
@@ -201,6 +211,7 @@ Depth lives in `references/` — each self-contained. SKILL.md owns the workflow
 | Auth-system resources: auth-validation, onProvision/onDelete, OAuth token overrides | [references/system-resources.md](references/system-resources.md) |
 | When to write a hook vs use a built-in (decision table + good/avoidable patterns), execution order, context vars, done(), naming | [references/hooks.md](references/hooks.md) |
 | Community route (Flow only): workflow, rules, what differs from legacy | [references/v4-flow.md](references/v4-flow.md) |
+| Submitting a published community-route connector to the community catalog: node id, `uip extension` commands, versions, fixing a failed pull request | [references/community-submit-guide.md](references/community-submit-guide.md) |
 | Writing a script: what is in scope (`context`, `intsvc`), patterns, limits | [references/scripts.md](references/scripts.md) |
 | Polling and webhook triggers: config keys, event.poller.configuration schema | [references/events.md](references/events.md) |
 | Debugging auth / activity / hook / trigger / pagination issues (workflow + checklists) | [references/debugging.md](references/debugging.md) |
@@ -221,3 +232,5 @@ Depth lives in `references/` — each self-contained. SKILL.md owns the workflow
 12. Reporting a connector "done" with fieldless activities (Rule 12) — `activity create` writes endpoints/methods/auth but NOT the field schema; an activity with no `field create` / `--fields-file` shows only a raw JSON body in Studio and trips a `validate` WARNING. Author fields before finishing, and never treat a 0-error/has-warnings validate as a pass.
 13. Shipping a black or unfilled icon (Rule 13) — it passes `validate` and then disappears on Studio Web's dark surface, and the periodic build fails it. Add a `prefers-color-scheme: dark` rule or use `currentColor`.
 14. Starting the community route without asking, or on a CLI with no prerelease tag (Rule 14) — `init --v4` and `--method-script-ref` do not exist there.
+15. Writing a `custom-community-` or `design-community-` key into the connector — see Rule 2 in [references/community-submit-guide.md](references/community-submit-guide.md).
+16. Submitting a legacy connector to the community catalog, or submitting without asking the user after publish.

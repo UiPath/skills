@@ -20,8 +20,8 @@ All paths are under `app/element/`.
 Scripts first, then link. `activity create` fails if a method has no script or the file is missing.
 
 ```bash
-# 1. Scaffold. --v4 marks the connector (flags.v4Compatible) and keys it
-#    custom-community-{name} (legacy: design-{org}-{name}).
+# 1. Scaffold. --v4 marks the connector (flags.v4Compatible). The key is
+#    design-{org}-{slug}, the same as on the legacy route.
 uip is connectors builder init --name '<CONNECTOR_NAME>' --v4 \
   --base-url <BASE_URL> --auth <AUTH_TYPE>
 
@@ -43,7 +43,8 @@ uip is connectors builder inspect --output json
 uip is connectors builder validate
 ```
 
-Then import and publish as in SKILL.md.
+Then import and publish as in SKILL.md. The connector publishes to your tenant as `custom-{org}-{slug}`.
+After `publish --wait` succeeds, ask the user whether to submit it to the community catalog (SKILL.md, "Share with the community catalog"). On a yes, follow [community-submit-guide.md](community-submit-guide.md).
 
 ## Rules
 
