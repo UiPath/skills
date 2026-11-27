@@ -1,0 +1,25 @@
+{"id": "uipath-idp-001", "prompt": "Digitize this invoice PDF with UiPath and give me its markdown", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-002", "prompt": "Upload scan.png to my Finance folder and OCR it with uip documents", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-003", "prompt": "Use UiPath IDP to turn contract.pdf into markdown", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-004", "prompt": "Which document capabilities does my UiPath tenant have?", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-005", "prompt": "List the UiPath digitization engines I can use for OCR", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-006", "prompt": "I need to digitize a Japanese PDF with UiPath — which OCR engine should I pass?", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-007", "prompt": "Get page 3 of my UiPath digitization run 48b40c24 as plain text", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-008", "prompt": "Check on my UiPath digitization run 48b40c24 in the Finance folder", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-009", "prompt": "My uip documents digitize call timed out — how do I get the result?", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-010", "prompt": "Digitize only pages 2 to 4 of report.pdf with UiPath IDP", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-011", "prompt": "The text layer of this PDF is garbled — have UiPath OCR every page instead", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-012", "prompt": "Digitize this PDF with the UiPath layout engine so the tables come out as HTML", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-013", "prompt": "Where on page 1 is the word Total? I need its box from the UiPath digitized document DOM", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-014", "prompt": "Upload a TIFF with uip documents and digitize it", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-015", "prompt": "Convert this scanned image to markdown using UiPath document digitization", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-016", "prompt": "uip documents uploads create fails with unsupported-media-type — what do I do?", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-017", "prompt": "Is digitize available in my UiPath folder? Check the document capabilities", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-018", "prompt": "I have a DocumentId from uip documents uploads create — digitize it and wait for the result", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-019", "prompt": "Read my UiPath digitization run one page at a time with uip documents pages get", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-020", "prompt": "Save page 2 of my UiPath digitization run to a markdown file", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-021", "prompt": "Use uip documents to get the text of statement.pdf in the Shared folder", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-022", "prompt": "Which UiPath OCR engine reads Arabic documents? Then digitize this one with it", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-023", "prompt": "My UiPath digitization run failed with settings-invalid — fix it", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-024", "prompt": "Digitize this bank statement with UiPath and keep the table structure", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-025", "prompt": "Get the markdown of every page of invoice.pdf through the UiPath Documents CLI", "expected_skill": "uipath-idp"}

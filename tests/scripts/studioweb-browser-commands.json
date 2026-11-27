@@ -460,6 +460,13 @@
       "update": 1
     }
   },
+  "uipath-idp": {
+    "allow": [],
+    "ceiling": {
+      "documents": 21,
+      "login": 2
+    }
+  },
   "uipath-insights": {
     "allow": [],
     "ceiling": {

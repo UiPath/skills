@@ -1,0 +1,109 @@
+task_id: skill-idp-digitize-document-smoke
+description: >
+  Smoke: a local PDF and an Orchestrator folder. The agent must upload the
+  file, digitize the returned DocumentId once, in the same folder, with
+  --wait, and save the markdown the run returned. Offline: `uip` is a
+  record_cli mock that answers the upload and the digitization, so the
+  document id on the digitize call and the page marker in the saved file are
+  values the agent can only have carried from those answers.
+tags: [uipath-idp, smoke, mode:operate, lifecycle:setup]
+
+run_limits:
+  expected_turns: 8
+  max_turns: 25
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_setup/fixtures
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): offline smoke sandbox; only the `uip documents` calls this task needs are answered.\n"
+      responses:
+        - when:
+            verb: "login status"
+          stdout: >-
+            {"Result":"Success","Code":"LoginStatus","Data":{"Status":"Logged in",
+            "Organization":"example-org","Tenant":"DefaultTenant"}}
+
+        - when:
+            verb: "documents uploads create"
+          stdout: >-
+            {"Result":"Success","Code":"DocumentsUploadsCreate","Data":{
+            "DocumentId":"0b6f2d7e-5a1c-4c3e-9f0a-2d8e4b7c1a90","Size":672,
+            "CreatedAt":"2026-01-15T09:30:00Z","ExpiresAt":"2026-01-22T09:30:00Z"}}
+
+        - when:
+            verb: "documents digitize"
+          stdout: >-
+            {"Result":"Success","Code":"DocumentsDigitize","Data":{
+            "RunId":"48b40c24-6af2-416e-a371-91ee9f1cd2d5","Capability":"Digitize","Status":"Succeeded",
+            "Engine":{"Ocr":{"Engine":"auto","ApplyOnPdf":"Auto"},"Layout":{"Engine":null}},
+            "Result":{"PageCount":1,
+            "Markdown":"<!-- page: 1 -->\n\n# Invoice INV-2041\n\nBill to: Northwind Traders\n\nTotal due: 1,250.00 EUR",
+            "Pages":[{"Number":1,"Width":1700,"Height":2200}]},
+            "Digitization":{"RunId":"48b40c24-6af2-416e-a371-91ee9f1cd2d5"},
+            "Error":null,
+            "CreatedAt":"2026-01-15T09:30:05Z","CompletedAt":"2026-01-15T09:30:09Z"}}
+
+        - when:
+            verb: "documents pages get"
+          stdout: >-
+            {"Result":"Success","Code":"DocumentsPagesGet","Data":{
+            "RunId":"48b40c24-6af2-416e-a371-91ee9f1cd2d5","Page":1,"Format":"markdown",
+            "Content":"<!-- page: 1 -->\n\n# Invoice INV-2041\n\nBill to: Northwind Traders\n\nTotal due: 1,250.00 EUR"}}
+
+initial_prompt: |
+  Digitize ./invoice.pdf with UiPath in the Orchestrator folder "Finance" and
+  save the markdown it returns, unchanged, to invoice.md.
+
+  Important:
+  - The `uip` CLI here is an offline stand-in that answers the document
+    commands with canned output. Run each command once; do NOT retry and do
+    NOT attempt to log in.
+  - Do NOT ask for confirmation — this is an automated test.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-idp skill"
+    skill_name: "uipath-idp"
+    expected_skill: "uipath-idp"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Uploaded the file to the folder the user named"
+    tool: uip
+    verb: "documents uploads create"
+    flags:
+      folder-path: "Finance"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Digitized the DocumentId the upload returned, in the same folder, waiting for the result"
+    tool: uip
+    verb: "documents digitize"
+    flags:
+      document-id: "0b6f2d7e-5a1c-4c3e-9f0a-2d8e4b7c1a90"
+      folder-path: "Finance"
+      wait: {present: true}
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Started exactly one digitization (Critical Rule 5)"
+    tool: uip
+    verb: "documents digitize"
+    max_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "invoice.md holds the markdown the run returned"
+    path: "invoice.md"
+    includes:
+      - "<!-- page: 1 -->"
+      - "INV-2041"
+    weight: 2.0
+    pass_threshold: 1.0

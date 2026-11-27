@@ -1,0 +1,118 @@
+task_id: skill-idp-pick-ocr-engine-smoke
+description: >
+  Smoke: the default OCR misread a Japanese document and the user wants the
+  engine meant for that script. The skill names no engine, so the agent must
+  read the catalog with `discovery digitization-engines get` and pass the
+  engine it lists for Japanese. Offline: `uip` is a record_cli mock; only a
+  digitization with that engine returns the readable markdown.
+tags: [uipath-idp, smoke, mode:operate, lifecycle:setup]
+
+run_limits:
+  expected_turns: 8
+  max_turns: 25
+
+sandbox:
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): offline smoke sandbox; only the `uip documents` calls this task needs are answered.\n"
+      responses:
+        - when:
+            verb: "login status"
+          stdout: >-
+            {"Result":"Success","Code":"LoginStatus","Data":{"Status":"Logged in",
+            "Organization":"example-org","Tenant":"DefaultTenant"}}
+
+        - when:
+            verb: "documents discovery digitization-engines get"
+            flags:
+              kind: "ocr"
+          stdout: >-
+            {"Result":"Success","Code":"DocumentsDiscoveryDigitizationEnginesGet","Data":[
+            {"Engine":"uipath","Description":"Latin, Cyrillic and Greek scripts"},
+            {"Engine":"uipath_extended","Description":"Adds Chinese, Japanese, Korean and Arabic scripts"},
+            {"Engine":"auto","Description":"Picks an engine for each page by the page's alphabet"}]}
+
+        - when:
+            verb: "documents discovery digitization-engines get"
+          stdout: >-
+            {"Result":"Success","Code":"DocumentsDiscoveryDigitizationEnginesGet","Data":{"Ocr":[
+            {"Engine":"uipath","Description":"Latin, Cyrillic and Greek scripts"},
+            {"Engine":"uipath_extended","Description":"Adds Chinese, Japanese, Korean and Arabic scripts"},
+            {"Engine":"auto","Description":"Picks an engine for each page by the page's alphabet"}],
+            "Layout":[{"Engine":"uipath","Description":"UiPath layout model: tables, forms, figures and reading order"}]}}
+
+        - when:
+            verb: "documents digitize"
+            flags:
+              ocr-engine: "uipath_extended"
+          stdout: >-
+            {"Result":"Success","Code":"DocumentsDigitize","Data":{
+            "RunId":"5e8b1d07-4c26-4f9a-9d3e-7a1c0b6f2e84","Capability":"Digitize","Status":"Succeeded",
+            "Engine":{"Ocr":{"Engine":"uipath_extended","ApplyOnPdf":"Auto"},"Layout":{"Engine":null}},
+            "Result":{"PageCount":1,
+            "Markdown":"<!-- page: 1 -->\n\n# Service Agreement SA-7731\n\nBetween Northwind Traders and Contoso Ltd.",
+            "Pages":[{"Number":1,"Width":1700,"Height":2200}]},
+            "Digitization":{"RunId":"5e8b1d07-4c26-4f9a-9d3e-7a1c0b6f2e84"},
+            "Error":null,
+            "CreatedAt":"2026-01-15T09:30:05Z","CompletedAt":"2026-01-15T09:30:11Z"}}
+
+        # Any other engine reads the page as the default did.
+        - when:
+            verb: "documents digitize"
+          stdout: >-
+            {"Result":"Success","Code":"DocumentsDigitize","Data":{
+            "RunId":"2f4a9c61-7d38-4e05-b1a2-8c6e3d0f5b97","Capability":"Digitize","Status":"Succeeded",
+            "Engine":{"Ocr":{"Engine":"auto","ApplyOnPdf":"Auto"},"Layout":{"Engine":null}},
+            "Result":{"PageCount":1,
+            "Markdown":"<!-- page: 1 -->\n\n# 5ervice Agr33ment 5A-77E1\n\nB3tw33n N0rthw1nd Trad3rs",
+            "Pages":[{"Number":1,"Width":1700,"Height":2200}]},
+            "Digitization":{"RunId":"2f4a9c61-7d38-4e05-b1a2-8c6e3d0f5b97"},
+            "Error":null,
+            "CreatedAt":"2026-01-15T09:30:05Z","CompletedAt":"2026-01-15T09:30:11Z"}}
+
+initial_prompt: |
+  Document 7c1d9e42-3b5a-4f68-8a0e-5d2c6b1f9a37 is already uploaded in the
+  Orchestrator folder "Finance". It is a Japanese contract and the default
+  OCR misread it. Digitize it again with the UiPath OCR engine meant for
+  Japanese, and save the markdown it returns, unchanged, to contract.md.
+
+  Important:
+  - The `uip` CLI here is an offline stand-in that answers the document
+    commands with canned output. Run each command once; do NOT retry and do
+    NOT attempt to log in.
+  - Do NOT ask for confirmation — this is an automated test.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-idp skill"
+    skill_name: "uipath-idp"
+    expected_skill: "uipath-idp"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Read the engine catalog instead of guessing an engine name (Critical Rule 7)"
+    tool: uip
+    verb: "documents discovery digitization-engines get"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Digitized the document with the engine the catalog lists for Japanese"
+    tool: uip
+    verb: "documents digitize"
+    flags:
+      document-id: "7c1d9e42-3b5a-4f68-8a0e-5d2c6b1f9a37"
+      folder-path: "Finance"
+      ocr-engine: "uipath_extended"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "contract.md holds the markdown of the run that used that engine"
+    path: "contract.md"
+    includes:
+      - "<!-- page: 1 -->"
+      - "SA-7731"
+    weight: 2.0
+    pass_threshold: 1.0
