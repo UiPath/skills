@@ -117,7 +117,7 @@ For each REFINE field with `Recall < 0.5`, inspect existing sample images and de
 Rewrite each REFINE field: **PRECISION** specifies WHAT; **RECALL** specifies WHERE; **BOTH** rewrites what and where. Instructions must:
 
 - focus on what/where, not format (entity_def already handles format);
-- be 120–4096 characters at field, group, and project levels (trim before submission; longer values are rejected and nothing saves);
+- be at least 120 characters (field instructions) and at most 4096 at every level — field, group, project (trim before submission; longer values are rejected and nothing saves);
 - give a location (section, header, table, near a label; e.g. keywords "section", "header", "table", "top of", "labeled", "near");
 - include an actual document value when visible (for example, `Example: '2106732'` or `Example: 'SINV0077023'`); for fields not visible, use a generic instruction with no example: "Extract [what] from this document, as it appears on the page.";
 - identify the target by label, role, and location; do not name an incorrect candidate or write "Do NOT return [value]";
