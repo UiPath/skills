@@ -26,6 +26,10 @@
   Needs `@uipath/maestro-builder-sdk` 6.88.1 or later. Studio Web ships its own SDK: when `decompile` refuses one of these elements with "has no builder equivalent", tell the user that this Studio Web build cannot edit that element yet.
 <!--skill-flavor:sdk-palette-elements:end-->
 
+<!--skill-flavor:sdk-variable-updates:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.122.9 or later. Studio Web ships its own SDK, and an older one writes no `updateRows`: merge the edit (`bpmn.brownfield.merge`), which keeps the original's mapping on every node you did not edit, and do not compile the source bare.
+<!--skill-flavor:sdk-variable-updates:end-->
+
 <!--skill-flavor:sdk-script-result:start-->
   Needs `@uipath/maestro-builder-sdk` 6.93.7 or later. Studio Web ships its own SDK, and an older `check` does not report it: read `=result.response` yourself.
 <!--skill-flavor:sdk-script-result:end-->

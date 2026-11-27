@@ -647,6 +647,21 @@ binding half, which is the same for every connector-backed node.
   `CALL_ACTIVITY_NO_PAYLOAD`; to make it call a process, give it an
   `Orchestrator.Start*Process` type with a process binding.
 
+<!-- RULE:bpmn.brownfield.variable-updates -->
+- A node whose canvas "update variables" rows assign variables after it runs (a second
+  `uipath:mapping` after its payload) decompiles with `updateRows`, e.g.
+  `.scriptTask('sum', { script, updateRows: [{ name: 'total', type: 'number', var: 'total', source: '=js:vars.sum.output.total', custom: true }] })`.
+  Keep the rows when you edit the node; change a row only when the user asked to change that
+  assignment. A header comment that starts `// VARIABLE UPDATES LEFT TO THE ORIGINAL` names
+  a node whose extra mapping the source cannot state; keep it, and merge the edit
+  (`bpmn.brownfield.merge`), which keeps that mapping from the original.
+
+<!--skill-flavor:sdk-variable-updates:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.122.9 or later; an older `decompile` writes no
+  `updateRows` and no header note, so upgrade with
+  `npm install -g @uipath/maestro-builder-sdk@latest` and decompile again.
+<!--skill-flavor:sdk-variable-updates:end-->
+
 <!-- RULE:bpmn.brownfield.format -->
 - Do not lay out a merged process again. `merge` keeps every shape and edge of the
   original where the user put it (it grows a lane, pool or expanded sub-process that has
