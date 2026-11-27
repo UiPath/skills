@@ -137,7 +137,7 @@ After writing the updated `bindings.json`:
 - **No folder_path** — Some calls omit `folder_path`. In that case, use an empty string `""` for `folderPath.defaultValue` and construct the key as just `<name>` (no trailing dot).
 - **LangGraph ContextGroundingVectorStore** — `ContextGroundingVectorStore(index_name="...", folder_path="...")` creates an `index` binding with the same structure as `context_grounding.retrieve_async`.
 - **Sync vs async** — Both `retrieve()` and `retrieve_async()` produce the same binding. Always use the `_async` method name in `ActivityName`.
-- **Jobs resume** — `sdk.jobs.resume(process_name="...")` creates a `process` binding (identifier param is `process_name`, not `name`).
+- **Jobs retrieve** — `sdk.jobs.retrieve(job_key, process_name="...")` creates a `process` binding (identifier param is `process_name`, not `name`). `sdk.jobs.resume` takes no process name and creates no binding.
 - **Broad override coverage** — For `bucket` and `index`, ALL SDK methods (upload, download, search, add_to_index, etc.) participate in overrides, not just `retrieve`. One binding entry per unique resource suffices.
 - **Queue name extraction** — Queue names are nested inside the `item` dict (`"Name"` key) or `QueueItem`/`TransactionItem` model (`name=` field), not as a top-level keyword argument. For `create_items`, the queue name is the direct `queue_name` parameter. Scan for all three patterns.
 
@@ -812,7 +812,7 @@ When multiple candidates remain, prompt with a **numbered list** of candidates f
   5. skip
   ```
 
-- **Process (`sdk.processes.invoke` / `sdk.jobs.resume`)**:
+- **Process (`sdk.processes.invoke` / `sdk.jobs.retrieve`)**:
 
   ```
   Select the target process sub-type for `InvoiceProcessor` in folder `Finance/Invoices`:
@@ -963,7 +963,7 @@ The `SubType (default)` column below is a quick-reference for the most common ca
 | `sdk.assets` | `retrieve_credential`, `retrieve_credential_async` | `asset` | `name` (1st positional) | `retrieve_async` | `credentialAsset` |
 | `sdk.queues` | `create_item`, `create_item_async`, `create_items`, `create_items_async`, `create_transaction_item`, `create_transaction_item_async` | `queue` | `item["Name"]` or `queue_name` | `create_item_async` | *(omit — kind has no sub-type)* |
 | `sdk.processes` | `invoke`, `invoke_async` | `process` | `name` | `invoke_async` | *(omit — target process type not known here)* |
-| `sdk.jobs` | `resume`, `resume_async` | `process` | `process_name` | `invoke_async` | *(omit — target process type not known here)* |
+| `sdk.jobs` | `retrieve`, `retrieve_async` | `process` | `process_name` | `retrieve_async` | *(omit — target process type not known here)* |
 | `sdk.buckets` | ALL methods (`retrieve`, `upload`, `download`, `delete`, `list_files`, etc.) | `bucket` | `name` | `retrieve_async` | *(omit — ask user for `orchestratorBucket` / `amazonBucket` / `azureBucket`)* |
 | `sdk.tasks` | `create`, `create_async`, `retrieve`, `retrieve_async` | `app` | `app_name` | `create_async` | *(omit — user chooses `Coded` / `CodedAction` / default)* |
 | `sdk.context_grounding` | ALL methods (`retrieve`, `search`, `add_to_index`, `create_index`, `delete`, `ingest_data`, etc.) | `index` | `name` or `index_name` | `retrieve_async` | *(omit — must exist in Orchestrator; no virtual fallback)* |
