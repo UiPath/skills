@@ -1,0 +1,140 @@
+task_id: skill-planner-interview-genome-with-sdd
+description: >
+  Integration: `interview` on an extracted genome whose SDD was written from it, by a user who says
+  they are the process owner. The SDD's Action Required holds the open items: D1–D4, D7, CQ10 and the
+  defects the rebuild fixes for the process owner; D5, D6, D8, the other Configuration Questions and
+  the preferences file for other roles. Only the process owner's items are asked, by the SDD's ids, a
+  Configuration Question only as one of those items. Each answer is written after its item's `Answer`
+  in the SDD, then applied to the genome, whose entry reads decided (D2, the intake log's columns, may
+  read withdrawn, since CQ10's default keeps no log); the SDD is written again, and the
+  genome passes the strict check with the SDD's `Genome` row current. The other roles' items stay
+  blank. A simulated process owner answers. It gates on the answers in the genome and the SDD, the
+  other roles' items left open and the strict check; how the questions are asked is advisory.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+    - type: template_dir
+      path: ../../extract_component/fixtures
+
+agent:
+  # The simulated user answers between turns; a harness whose prompt is built for unattended runs
+  # otherwise skips the questions the skill asks.
+  system_prompt_file: ../_shared/attended-session.md
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  Interview me on the open questions in the genome in this folder. I'm the process owner.
+
+  Do not build anything in this run.
+
+simulation:
+  enabled: true
+  persona: |
+    You are the process owner of the invoice intake this project automates. You decide business outcomes
+    and rules. You do not know the systems' hosts, accounts or mailboxes, nor how the run is started.
+  goal: |
+    Answer the open questions that are yours, so the genome and its SDD record them, then stop.
+  constraints:
+    - "When asked how you want to answer, choose to go through every item, a batch at a time."
+    - "When a question lists options, pick the one marked Recommended; when none is, pick the first. Answer every question of a batch."
+    - "When a question asks for something you do not know (the ERP posting process, how the run is started, a system, the source's files), say it is for its owner."
+    - "If asked which roles you answer for, answer: only the process owner."
+    - "Never answer a question you were not asked, and ask the agent for nothing else."
+    - "Once the agent says the answers are applied and lists what is still open, end the conversation."
+  max_turns: 10
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The process owner's entries D1, D3 and D4 read decided in the genome, and D2 decided or withdrawn"
+    command: >-
+      node $REFERENCE_DIR/_shared/check_interview.mjs entries invoice-intake-genome.md decided 1 3 4 &&
+      node $REFERENCE_DIR/_shared/check_interview.mjs entries invoice-intake-genome.md settled 2
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Advisory: D7 reads decided too (it stays open when the user takes the defaults for the rest)"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs entries invoice-intake-genome.md decided 7"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 0.5
+    pass_threshold: 0
+
+  - type: run_command
+    description: "The other roles' entries D5, D6 and D8 stay open in the genome"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs entries invoice-intake-genome.md open 5 6 8"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Advisory: the process owner's Configuration Question CQ10 carries its answer in the SDD"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs items invoice-intake-sdd.md answered CQ10"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "The other roles' SDD items stay blank"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs items invoice-intake-sdd.md blank D5 D6 D8 CQ1-9 CQ11"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The genome passes the strict check, the SDD written again with its Genome row current"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs strict"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No second SDD was written"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs absent '^(?!(.*/)?invoice-intake-sdd\\.md$).*sdd(\\.draft)?\\.md$'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: the process owner's items only, by the SDD's ids, with no roles question"
+    include_dialog: true
+    include_tool_calls: true
+    include_reference: false
+    prompt: |
+      The user, who said they are the process owner, asked to be interviewed on the open questions of a
+      genome (an automation blueprint) whose SDD (solution design document) was written from it. The
+      SDD's open items for the process owner: D1–D4, D7, CQ10 and a list of defects the rebuild fixes;
+      for other roles: D5, D6, D8, CQ1–CQ9, CQ11 and the preferences file. Read the dialog and the agent's
+      questions, whether asked in chat or as structured questions.
+
+      Check three things:
+      1. The agent never asks which roles the user answers for.
+      2. The questions asked are the process owner's items only (D1, D2, D3, D4, D7, CQ10, the defects
+         list), each named by its SDD id; the defects list may be asked as one question, and a new entry
+         that one of the user's answers opens may be asked too. Offering to also ask another role's item
+         the user may know is allowed, as long as it is asked only once the user agrees; an offer is not
+         a roles question.
+      3. No configuration value other than CQ10 is asked.
+
+      Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
+    weight: 2.5
+    pass_threshold: 0

@@ -1,0 +1,127 @@
+task_id: skill-planner-interview-extract-refactor
+description: >
+  Integration: a refactor of a three-workflow XAML project, by a user who says they are the process
+  owner. `extract` writes the genome with no SDD, offers the interview once, after the strict check
+  and before the hand-over, and applies its answers; then it hands the genome to `uipath-genome` with
+  the request quoted. The build does not ask again what the interview decided; a build question whose
+  answer would change a decided entry may say so and offer the genome edit. The request stops the run
+  before any project is created, so it ends in the build's question phase. A simulated process owner
+  answers. It gates on the files, the strict check, the hand-over and no decided entry asked again;
+  the interview offer is advisory.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
+
+run_limits:
+  turn_timeout: 1800
+  task_timeout: 3600
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../extract_component/fixtures
+    # Backstop for the request's stop: .claude/settings.json denies writing a project or workflow
+    # (Claude Code reads it; other harnesses do not).
+    - type: template_dir
+      path: ../_setup/build_stop
+
+agent:
+  # The simulated user answers between turns; a harness whose prompt is built for unattended runs
+  # otherwise skips the questions the skill asks.
+  system_prompt_file: ../_shared/attended-session.md
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  `InvoiceIntake/` is a UiPath project. Refactor it: rebuild it in this folder as a clean project that does the same. It does not run in Orchestrator, and there are no other resources for it.
+
+  I'm the process owner. Use Sonnet subagents for reading. In this run, go as far as the build's questions: ask them, then stop before creating any project.
+
+simulation:
+  enabled: true
+  persona: |
+    You are the process owner of the invoice intake this project automates. You decide business outcomes
+    and rules. You do not know the systems' hosts, accounts or mailboxes.
+  goal: |
+    Get the project refactored, answering the questions that are yours.
+  constraints:
+    - "When a question lists options, pick the one marked Recommended; when none is, pick the first. Answer every question of a batch."
+    - "When asked for a preferences file, answer that you have none."
+    - "When a question asks for something you do not know (a host, an account, a mailbox), say it is for the environment's owners."
+    - "Do not ask for the interview yourself; answer it when the agent offers it."
+    - "You answer only as the process owner: if offered other roles' questions, decline them."
+    - "When asked whether you want to adjust anything, say no. When the same message also offers the interview, accept the interview."
+    - "Once the build has asked its questions and stops before creating a project, or reports that it cannot create one, end the conversation."
+  max_turns: 24
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: skill_triggered
+    description: "The genome was handed to uipath-genome"
+    skill_name: "uipath-genome"
+    expected_skill: "uipath-genome"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No SDD was written"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs absent 'sdd(\\.draft)?\\.md$'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The genome passes the strict check"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs strict"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: one interview offer, after the genome is written and before the hand-over"
+    include_dialog: true
+    include_tool_calls: true
+    include_reference: false
+    prompt: |
+      The user, the process owner, asked to refactor a small UiPath project. The planner extracts a genome
+      (an automation blueprint) from it, then a build skill builds from the genome in the same session.
+      Read the dialog and the agent's questions, whether asked in chat or as structured questions.
+
+      Score 1.0 when the interview on the genome's open entries is offered exactly once, after the genome
+      is written and checked and before the build starts asking its own questions. Score 0.0 when it is
+      offered more than once, before the genome is written, or not at all.
+    weight: 2.0
+    pass_threshold: 0
+
+  - type: llm_judge
+    description: "The build does not ask again what the interview decided"
+    include_dialog: true
+    include_reference: false
+    prompt: |
+      The user, the process owner, asked to refactor a small UiPath project. The planner may interview
+      the user on the genome's open entries (ids D1, D2 …); then the build asks its own questions (how the
+      work is split, the technology, the setup). Read the dialog.
+
+      Score 1.0 when the build never puts to the user again, as if it were still open, a question the
+      interview already got an answer to; 0.0 when it does. These are not asking it again: a build
+      question of its own (the technology, how the work is split, the unit of work) whose answer would
+      change a decided entry, with or without saying so; an offer to edit the genome; a configuration
+      value (a server, a folder, an address, a credential), even when an entry's wording mentions it.
+      When no interview ran, it decided nothing, and every question the build asks is allowed.
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: the hand-over to uipath-genome quotes the user's request (read from Claude Code's Skill call; other harnesses have none)"
+    tool_name: "Skill"
+    command_pattern: '(?=[\s\S]*uipath-genome)(?=[\s\S]*Refactor it: rebuild it in this folder)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0

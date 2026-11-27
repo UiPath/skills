@@ -65,7 +65,7 @@ A question keeps its number for as long as the genome lives: one the genome no l
 ## Open Decisions
 
 Every point the genome leaves to a person, one numbered entry each: a component's points in its genome, those spanning components in the process genome. An entry is open — `({tier}; answered by: {role}; …)` — or settled — `(decided {date}: {answer})`, `(withdrawn: {why})` — and keeps its number either way. The tiers:
-- **business outcome:** what is written to a system of record, sent and to whom, which item is worked, skipped, charged or paid, an amount;
+- **business outcome:** what is written to a system of record, sent and to whom, which item is worked, skipped, charged or paid, the amount an outcome rests on;
 - **run behaviour:** how a run counts, retries, recovers, stops, logs or reports;
 - **reading:** an inferred point with no outcome of its own;
 - **material:** an object or file the build needs that nobody has supplied, the expected results of logic over the tables the source ships included.

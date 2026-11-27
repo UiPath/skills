@@ -1,0 +1,159 @@
+task_id: skill-planner-interview-author-complete-idea
+description: >
+  Integration: `author` on an idea that states its trigger, source, scope, recipient and retry rule (a
+  weekday download of the euro reference rates, mailed to finance). The interview is offered only when
+  a point that changes the design is open, so there is no offer, or one that counts such points only;
+  at most one round of questions comes before writing, and it asks for the preferences file. A genome
+  only, passing the strict check. The closing counts the open entries by role, names `interview
+  <genome>` and offers to write the SDD for answerers outside the session. What the offer counts, the
+  preferences question and the closing's count by role, interview and SDD offer are advisory. A
+  simulated requester answers.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
+
+run_limits:
+  turn_timeout: 1500
+  task_timeout: 2400
+
+agent:
+  # The simulated user answers between turns; a harness whose prompt is built for unattended runs
+  # otherwise skips the questions the skill asks.
+  system_prompt_file: ../_shared/attended-session.md
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  Write a genome for this automation, in this folder:
+
+  Every weekday at 07:00, download the euro foreign exchange reference rates the European Central Bank publishes, keep the rates for USD, GBP, CHF and RON, and e-mail them as a table to finance@contoso.com. If today's rates are not published yet, try again every 30 minutes until 10:00, then e-mail finance that they are missing.
+
+  Do not build anything in this run.
+
+simulation:
+  enabled: true
+  persona: |
+    You work in finance and asked for this automation. You know what finance needs from the rates mail.
+  goal: |
+    Get the genome written, then stop.
+  constraints:
+    - "When a question lists options, pick the one marked Recommended; when none is, pick the first. Answer every question of a batch."
+    - "When asked for a preferences file, answer that you have none."
+    - "If the agent offers edits, an interview, the SDD or a build after writing the genome, decline."
+    - "Once the agent reports the genome written, end the conversation."
+  max_turns: 8
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "A genome was written"
+    path: "*-genome.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No SDD was written"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs absent 'sdd(\\.draft)?\\.md$'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The genome passes the strict check"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs strict"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "One round at most before writing"
+    include_dialog: true
+    include_tool_calls: true
+    include_reference: false
+    prompt: |
+      The user asked for a genome (an automation blueprint) of an idea that states its schedule (weekday
+      07:00), source (the European Central Bank's euro reference rates), scope (USD, GBP, CHF, RON),
+      recipient and retry rule. Read the dialog and the agent's questions, whether asked in chat or as
+      structured questions.
+
+      Score 1.0 when at most one round of questions comes before writing; 0.0 otherwise. An interview
+      offer is not a round, even when it names the points it would ask with their options; the accepted
+      interview's first batch, or the questions asked instead of an interview, is the round.
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: the preferences file is asked, in the round when there is one"
+    include_dialog: true
+    include_reference: false
+    prompt: |
+      The user asked for a genome (an automation blueprint) of an idea. Read the dialog.
+
+      Score 1.0 when the agent asks whether the user has a preferences file (team standing answers and
+      development standards): in its round of questions before writing when it asked one, otherwise in
+      the closing message that reports the genome written; 0.0 otherwise.
+    weight: 0.5
+    pass_threshold: 0
+
+  - type: llm_judge
+    description: "Advisory: no offer, or one counting design-changing points only"
+    include_dialog: true
+    include_tool_calls: true
+    include_reference: false
+    prompt: |
+      The user asked for a genome (an automation blueprint) of an idea that states its schedule (weekday
+      07:00), source (the European Central Bank's euro reference rates), scope (USD, GBP, CHF, RON),
+      recipient and retry rule. Read the dialog up to the point the genome is written; a summary written
+      after it, listing its open questions or offering to interview the user on them, is not graded here.
+
+      Score 1.0 when either no interview is offered, or the offer counts only points that change the
+      design (the product, the scope or the architecture), each named, none of them a value the idea
+      already gives; 0.0 otherwise. The offer may also name the points it leaves for after writing;
+      naming them is not counting them. A point showing that a value the idea gives cannot hold as stated
+      (the rates are published later in the day than the run reads them) changes the design, and counts
+      as one.
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: llm_judge
+    description: "Advisory: the closing counts open entries by role"
+    include_agent_output: true
+    include_dialog: true
+    include_reference: false
+    prompt: |
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      Read the agent's closing message after it wrote the genome (an automation blueprint). Score 1.0 when
+      it counts the genome's open decisions by the role that answers them (whoever knows the process and
+      whoever holds the source are roles too), or says that none is open;
+      0.0 otherwise. Configuration values need no role, and those listed beside the decisions are not
+      part of their count, and the count need not include the build's own questions (how the
+      work is split or queued, libraries, technology, setup), nor is it wrong for listing one of them
+      among the decisions; when every decision belongs to one role, saying so is the count.
+    weight: 2.0
+    pass_threshold: 0
+
+  - type: llm_judge
+    description: "Advisory: the closing names the interview and the SDD offer"
+    include_agent_output: true
+    include_dialog: true
+    include_reference: false
+    prompt: |
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      Read the agent's closing message after it wrote the genome (an automation blueprint). Check two things:
+      1. It names the interview command for the genome, `interview <genome file name>`.
+      2. It offers to write an SDD (solution design document) for answerers who are not in the session.
+
+      Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
+    weight: 1.0
+    pass_threshold: 0
