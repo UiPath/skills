@@ -22,13 +22,17 @@ SPLIT_DECISION = """  <decision id="decision_oversized" name="oversized" label="
   <inputData id="inputData_weightKg\""""
 
 
-def run(tmp_path: Path, mode: str, old: str = "", new: str = "") -> subprocess.CompletedProcess[str]:
+def run(tmp_path: Path, mode: str, old: str = "", new: str = "", graph: bool = False) -> subprocess.CompletedProcess[str]:
     project = MODES[mode]
     shutil.copytree(TESTDATA / project, tmp_path / project)
     dmn = tmp_path / project / "Business rule.dmn"
     text = dmn.read_text(encoding="utf-8")
     assert old in text
-    dmn.write_text(text.replace(old, new), encoding="utf-8")
+    text = text.replace(old, new)
+    if graph:
+        # A rule of several decisions declares the canvas surface; without it the surface check fails first.
+        text = text.replace('surface="decision-table"', 'surface="decision-graph"', 1)
+    dmn.write_text(text, encoding="utf-8")
     return subprocess.run([sys.executable, str(CHECKER), mode], cwd=tmp_path, capture_output=True, text=True, check=False)
 
 
@@ -52,5 +56,5 @@ def test_reference_rule_passes(tmp_path: Path, mode: str) -> None:
     ("single", "<text>&quot;Courier&quot;</text>", "<text>&quot;Post&quot;</text>", "expected 'Courier'"),
 ])
 def test_trap_fails(tmp_path: Path, mode: str, old: str, new: str, message: str) -> None:
-    result = run(tmp_path, mode, old, new)
+    result = run(tmp_path, mode, old, new, graph=new is SPLIT_DECISION)
     assert result.returncode != 0 and message in result.stdout, result.stdout

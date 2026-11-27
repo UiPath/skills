@@ -26,7 +26,11 @@ def run(tmp_path: Path, insert: str = "") -> subprocess.CompletedProcess[str]:
     dmn = tmp_path / "SupplierRules" / "Business rule.dmn"
     text = dmn.read_text(encoding="utf-8")
     assert ANCHOR in text
-    dmn.write_text(text.replace(ANCHOR, insert + ANCHOR), encoding="utf-8")
+    text = text.replace(ANCHOR, insert + ANCHOR)
+    if "<businessKnowledgeModel" in insert:
+        # A knowledge model is drawn only on the canvas; without that surface the surface check fails first.
+        text = text.replace('surface="decision-table"', 'surface="decision-graph"', 1)
+    dmn.write_text(text, encoding="utf-8")
     return subprocess.run([sys.executable, str(CHECKER)], cwd=tmp_path, capture_output=True, text=True, check=False)
 
 
