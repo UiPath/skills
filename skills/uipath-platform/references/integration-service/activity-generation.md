@@ -150,8 +150,9 @@ and routing all work.
 ### 4. Write the main script, then test it
 
 Save it as `$WORK/<scriptRef>.js`: the file's base name **is** the `scriptRef`
-the min.json declares in step 5, and `flow node add --scripts $WORK` finds each
-script by that name alone. A lookup script from step 3 follows the same rule.
+the min.json declares in step 5, and a flow step reads each script by that name
+alone ([Putting it in a flow](#putting-it-in-a-flow)). A lookup script from step 3
+follows the same rule.
 
 **Decide first whether the operation has side effects.** Reads may be run
 immediately; writes may not be run at all until the user chooses to. Do not
@@ -302,8 +303,119 @@ $WORK/<Name>.json           the compiled activity metadata
 ## Putting it in a flow
 
 <!--skill-flavor:flow-sdk-generated-activity:start-->
-The builder-SDK Flow skill (`uipath-maestro-flow`) has no node for a generated activity: `rawNode` refuses every `uipath.connector.*` type, and `connector()` only takes catalog operations. Report that gap to the user rather than hand-editing the compiled `.flow`, and offer managed HTTP in connector mode (the `uipath-maestro-flow` skill covers it) as the fallback.
+A builder-SDK flow (the `uipath-maestro-flow` skill) runs a generated activity
+with `inlineActivity()`. It needs `@uipath/maestro-builder-sdk`
+6.126.0 or later. The node embeds the whole activity: compile builds the node's
+definition from `<Name>.json` and carries every script in the node.
+
+1. Copy `$WORK/<Name>.json` and every `$WORK/<scriptRef>.js` into the flow's
+   work directory, for instance `.flow-sdk/activity/`, beside `<Name>.flow.ts`.
 <!--skill-flavor:flow-sdk-generated-activity:end-->
+<!--skill-flavor:flow-sdk-generated-activity-source:start-->
+2. Add the step. `inputs` take the metadata's own parameter and field names;
+   compile puts each one in the query, path or body slot the metadata names.
+   A name the metadata declares in two slots is two inputs keyed
+   `<slot>:<name>`: a PATCH with path parameter `id` and request field `id`
+   takes `{ 'path:id': …, 'body:id': … }`, and a bare `id` is refused.
+
+   ```ts
+   import { readFileSync } from 'node:fs';
+   import { inlineActivity, input } from '@uipath/maestro-builder-sdk';
+   import metadata from './activity/ListUsergroupUsers.json' with { type: 'json' };
+
+   const readScript = (ref: string) => readFileSync(new URL(`./activity/${ref}.js`, import.meta.url), 'utf8');
+
+   // inside the flow chain:
+   .step('listMembers', inlineActivity(
+     { metadata, scripts: readScript },
+     { usergroup: input('group') },
+     { connection: 'slack', folder: 'shared' },
+   ))
+   ```
+
+   A List activity's output is the bare array of records: read `out('listMembers')`.
+<!--skill-flavor:flow-sdk-generated-activity-source:end-->
+3. Bind `connection` and `folder` in `.flow-sdk/bindings.json` to the Enabled
+   connection you ran the scripts with in
+   [step 4](#4-write-the-main-script-then-test-it): its `Id` and `FolderKey` from
+   `uip is connections list <connector-key> --all-folders`. The
+   `uipath-maestro-flow` skill covers the binding entry shape. `registry prepare` does not help here: it resolves catalog operations, not a generated one.
+4. `uip maestro flow check .flow-sdk/<Name>.flow.ts --source`, then `compile`,
+   as for any step. `check` reports
+   `INLINE_ACTIVITY_INVALID` for a missing script or metadata that is not a
+   generated activity, and `CONNECTOR_INPUT` for an undeclared input or a
+   required one left out. Fix the files, never the compiled `.flow`.
+
+<!--skill-flavor:flow-sdk-generated-activity-host-sdk:start-->
+<!--skill-flavor:flow-sdk-generated-activity-host-sdk:end-->
+
+On an older SDK there is no SDK node for a generated activity: `rawNode`
+refuses every `uipath.connector.*` type, and `connector()` only takes catalog
+operations. `uip` still places it with its graph commands until they are
+removed, which happens only after the SDK release above. Those commands edit
+the compiled `.flow`, so every other edit must be in that `.flow` first. A
+compile that rejects the `inlineActivity` import writes nothing, so the `.flow`
+still holds the previous graph, without the rest of your source edits:
+
+1. Remove the unsupported step from `<Name>.flow.ts`: the
+   `.step('listMembers', inlineActivity(...))` call, the `inlineActivity`
+   import, and the metadata and scripts that only it used (imports or
+   literals). Keep every other edit, including the steps before and after the
+   activity. For example, if the source adds a `getGroup` step and then
+   `listMembers` after it, keep `getGroup`: the chain now runs from `getGroup`
+   straight to the step after `listMembers`, or ends at `getGroup`.
+2. Check and compile that source (an edit merges, as for any step), and
+   confirm it succeeds. The `.flow` now holds every other edit, and the
+   activity's predecessor is a node in it.
+
+   A kept step or `.return` that reads the activity, such as
+   `out('listMembers')`, still names the removed step. Leave the read as
+   written; step 3 gives the node the same id:
+   - **A new flow compiles.** `check` reports the read as an undeclared
+     reference (`UNKNOWN_REF` or `EXPR_UNDECLARED_REF`, naming
+     `listMembers`). Expect that finding and only that one; fix any other.
+     Then run `compile`, not `build`: compile does not run `check`, so it
+     writes the read as authored. Once step 3 creates the node with
+     `--id listMembers`, the read resolves, and `validate` confirms it.
+   - **An edit merges, and merge runs `check`:** it refuses that same finding
+     on a step the edit added or changed. A later merge cannot add the step
+     either, because the node the CLI places is not in the source. So when an
+     edit has a step that reads the activity, this fallback cannot carry it.
+     Use managed HTTP in connector mode for the activity instead (the
+     `uipath-maestro-flow` skill covers it), or tell the user that the edit
+     needs SDK 6.126.0 or later.
+3. Place the activity on that `.flow` with the commands below, after the last
+   compile: a later compile rewrites the `.flow` and drops the node. Create the
+   node with its id, bind the connection and pass every required input in its
+   slot, wire it between its neighbours, then validate. Let `edges list`
+   decide the wiring. When the predecessor has an outgoing edge on the
+   activity's path, replace it as below; by default compile ends a path with
+   an End node, so a step that was last still has an edge into that End. When
+   it has none (a path left open, as `.openTails()` writes), skip the delete
+   and the second create, and create only the edge from the predecessor,
+   naming the arm with `--source-port` when the predecessor is a decision,
+   loop or other node with several output ports.
+
+```bash
+uip maestro flow nodes create <Name>.flow uipath.connector.custom.<connector-key>.<slug> \
+  --id listMembers --metadata $WORK/<Name>.json --scripts $WORK --output json
+uip maestro flow nodes configure <Name>.flow listMembers --output json \
+  --detail '{"connectionId":"<Id>","folderKey":"<FolderKey>","queryParameters":{"usergroup":"<value or =expression>"}}'
+uip maestro flow edges list <Name>.flow --output json          # the edge the node goes into: note its sourcePort and targetPort
+uip maestro flow edges delete <Name>.flow <edge-id> --output json
+uip maestro flow edges create <Name>.flow <previous-node-id> listMembers --source-port <its sourcePort> --output json
+uip maestro flow edges create <Name>.flow listMembers <next-node-id> --target-port <its targetPort> --output json
+uip maestro flow validate <Name>.flow --output json
+```
+
+The `<slug>` is the metadata's `name` in kebab case (`list-usergroup-users`);
+`--scripts` is the directory that holds every `<scriptRef>.js`. The two new
+edges keep the replaced edge's ports: a decision's `true` arm or a loop's body
+has no default port, so leaving them out fails or rewires the wrong arm. Each required
+input goes in the slot the metadata names: `queryParameters`, `pathParameters`
+or `bodyParameters`. Never hand-edit the compiled `.flow`. When `uip` has no
+`nodes create`, report the gap to the user and offer managed HTTP in connector
+mode (the `uipath-maestro-flow` skill covers it).
 
 ## Keep the scripts readable
 
