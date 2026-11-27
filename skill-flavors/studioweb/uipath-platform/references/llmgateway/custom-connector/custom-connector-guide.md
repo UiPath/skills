@@ -3,7 +3,7 @@
 <!--skill-flavor:host-availability-extra:end-->
 
 <!--skill-flavor:draft-intro:start-->
-The unpublished draft is tested with `uip` too: the user adds its test connection in the Connector Builder, and `uip is resources run create` calls the connector through it at the path the gateway calls. The draft stays unpublished until those calls pass; the product's probes run once, on the published connector's runtime connection, when the configuration is saved.
+The unpublished draft is tested with `uip` too: `uip is connectors test-connection create` makes its test connection, as the Connector Builder's Add connection does, and `uip is resources run create` calls the connector through it at the path the gateway calls. The draft stays unpublished until those calls pass; the product's probes run once, on the published connector's runtime connection, when the configuration is saved.
 <!--skill-flavor:draft-intro:end-->
 
 <!--skill-flavor:probe-list:start-->
@@ -11,9 +11,24 @@ List what will run by the rules in [probes-guide.md](probes-guide.md) §"Which f
 <!--skill-flavor:probe-list:end-->
 
 <!--skill-flavor:draft-test-connection:start-->
-This host cannot open the Connector Builder's test connection itself, so ask the user to add it, saying it is the test connection for the draft and not the one the product will run on: in Integration Service, open the draft connector (`<CONNECTOR_NAME>`) in the Connector Builder, choose **Add connection**, enter the vendor credentials (a sandbox key is fine), connect, and give you the connection's id. Never ask for the credentials themselves. That connection belongs to the draft and runs whatever was last imported — a fix is one `import` away — and `uip is connections list` does not show it, so its id comes from the user.
+This is the Connector Builder's **Add connection**, as one `uip` command: it opens the builder's session on the draft in the user's Personal workspace, with a connection id of its own:
 
-If the user cannot find the id, test on the published connector instead: publish (step 8), have them create the runtime connection (step 9), take its `Id` from `uip is connections list <PUBLISHED_KEY> --all-folders --refresh --output json`, and run step 7 on it with `<PUBLISHED_KEY>` in place of the draft's key. Each fix then needs a higher `latestVersion`, `import` and `publish --wait` before that connection runs it (Rule 9).
+```bash
+uip is connectors test-connection create --connector-dir <CONNECTOR_DIR> --name '<CONNECTOR_NAME> test' --no-wait --output json
+```
+
+- `Code: "TestConnectionCreated"` — the connector has no authentication and no connection field, so the command connected it at once.
+- `Code: "TestConnectionAuthorizationPending"` — this host cannot open a browser, so give the user `Data.AuthUrl` as a link: say it is the test connection for the draft and not the one the product will run on, that it expires at `Data.ExpiresAt` (about 12 minutes), and ask them to enter the vendor credentials (a sandbox key is fine) and say when it is done. Never ask for the credentials themselves. The page names this connection, so `--name` is not applied; `Data.Warnings` says so.
+
+Either way `Data.ConnectionId` is the test connection (the connection step 7 calls). Confirm it exists once the user is done; an empty `Data` means the page has not been finished:
+
+```bash
+uip is connectors test-connection list --connector-dir <CONNECTOR_DIR> --output json
+```
+
+That connection belongs to the draft and runs whatever was last imported — a fix is one `import` away — and `uip is connections list` does not show it. Errors, delete and credential changes: [connections-guide.md](connections-guide.md).
+
+If `uip is connectors test-connection --help` fails, the host's CLI predates the command: ask the user to add the connection instead, in Integration Service: open the draft connector (`<CONNECTOR_NAME>`) in the Connector Builder, choose **Add connection**, enter the vendor credentials (a sandbox key is fine), connect, and give you the connection's id. If the user cannot find the id, test on the published connector instead: publish (step 8), have them create the runtime connection (step 9), take its `Id` from `uip is connections list <PUBLISHED_KEY> --all-folders --refresh --output json`, and run step 7 on it with `<PUBLISHED_KEY>` in place of the draft's key. Each fix then needs a higher `latestVersion`, `import` and `publish --wait` before that connection runs it (Rule 9).
 <!--skill-flavor:draft-test-connection:end-->
 
 <!--skill-flavor:draft-calls:start-->
