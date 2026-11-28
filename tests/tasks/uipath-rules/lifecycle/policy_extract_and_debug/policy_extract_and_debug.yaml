@@ -84,11 +84,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The rules engine returns the policy's outcome on every scenario; every tests.json case ran and passes"
+    description: "The rules engine returns the policy's outcome on every scenario; every tests.json case ran and passes, and a re-run sample matches its recorded result"
     command: "python3 $REFERENCE_DIR/_shared/extract_check.py engine"
     timeout: 2400
     expected_exit_code: 0
     weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "tests.json follows the guide's format, covers every outcome and has a missing-input case"
+    command: "python3 $REFERENCE_DIR/_shared/extract_check.py tests"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command

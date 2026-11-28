@@ -73,6 +73,7 @@ const inputNames = Object.keys(inputTypes)
 const outcomeValues = new Set()
 for (const m of dmn.matchAll(/<(?:\w+:)?outputEntry\b[^>]*>\s*<(?:\w+:)?text>([\s\S]*?)<\/(?:\w+:)?text>/g)) {
   // Every string literal an output entry can return: a plain "value", or the branches of an if/then/else expression.
+  // Outcomes are string values in the tables the Extraction Guide builds; a numeric or boolean output is not collected.
   for (const s of unesc(m[1]).trim().matchAll(/(?:^|\bthen\b|\belse\b)\s*"((?:[^"\\]|\\.)*)"/g)) outcomeValues.add(s[1])
 }
 const pagesWithText = new Set(pages.filter(p => p.words.length).map(p => p.page))

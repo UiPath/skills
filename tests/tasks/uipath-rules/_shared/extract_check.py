@@ -12,10 +12,12 @@ digitizer ran) into a BusinessRules project named ReimbursementRules. Modes:
   tests     tests.json follows the guide's format, covers every outcome, names rows the table has, and has a
             missing-input case.
   norefs    no uipdm:sourceRefs (no digitizer output was supplied, so the rule carries no citations).
-  refs      cites.json passes cite.mjs, and the .dmn's uipdm elements are exactly what cite.mjs writes from it:
-            no box written or edited by hand. check-uipdm.mjs passes and no qualityWarning has a conditionId.
-  engine    `uip rules debug` returns the expected outcome on every SCENARIO with both numbers stated, and
-            test-results.json records a run of every tests.json case, all passing.
+  refs      cites.json passes cite.mjs, and the .dmn's uipdm sourceRefs, inputVariable and qualityWarning elements are
+            exactly what cite.mjs writes from it: nothing written or edited by hand. check-uipdm.mjs passes and no
+            qualityWarning has a conditionId.
+  engine    `uip rules debug` returns the expected outcome on every SCENARIO with both numbers stated;
+            test-results.json records a run of every tests.json case, all passing; and re-running a sample of those
+            cases on the engine gives the `actual` the agent recorded.
 
 The DMN is authored by the agent under test and parsed with stdlib ElementTree.
 """
@@ -42,6 +44,7 @@ OUTPUT = "outcome"
 OUTCOMES = ("Approve", "Deny", "Refer")
 UIPDM = "http://uipath.com/schema/1.0/dmn-ext/decision-model"
 DOM = HERE.parent / "_setup" / "policy_digitized" / "dom.json"
+RECHECK = 5  # tests.json cases the engine mode re-runs to check the agent's recorded results
 
 # (serviceDays, requestAmount, hasDirectorPreApproval, hasMedicalAccommodation) -> outcome
 SCENARIOS = [
@@ -242,6 +245,16 @@ def sourcerefs(root: ET.Element) -> dict[str, list[tuple[str, str]]]:
     return out
 
 
+def uipdm_written(root: ET.Element) -> dict:
+    """Every uipdm element cite.mjs writes, keyed by where it sits: row boxes, each input's inputVariable, the warnings."""
+    inputs = {}
+    for data in root.findall("dmn:inputData", rc.NS):
+        variables = list(data.iter(f"{{{UIPDM}}}inputVariable"))
+        inputs[data.get("name")] = sorted((tuple(sorted(v.attrib.items())), tuple(c.text or "" for c in v)) for v in variables)
+    warnings = sorted((tuple(sorted(w.attrib.items())), (w.text or "").strip()) for w in uipdm(root, "qualityWarning"))
+    return {"sourceRefs": sourcerefs(root), "inputVariable": inputs, "qualityWarning": warnings}
+
+
 def grade_refs() -> None:
     _, dmn_file, root = load()
     cites = find_one("cites.json")
@@ -253,9 +266,11 @@ def grade_refs() -> None:
         if done.returncode != 0:
             fail(f"cite.mjs on the agent's cites.json exits {done.returncode}: {done.stdout[-1500:]}")
         rewritten = ET.parse(copy).getroot()
-    if sourcerefs(rewritten) != sourcerefs(root):
-        fail("the .dmn's sourceRefs differ from what cite.mjs writes from cites.json (boxes edited or written by hand, "
-             "or cite.mjs not re-run after the last edit)")
+    mine, theirs = uipdm_written(rewritten), uipdm_written(root)
+    differ = [kind for kind in mine if mine[kind] != theirs[kind]]
+    if differ:
+        fail(f"the .dmn's uipdm {', '.join(differ)} differ from what cite.mjs writes from cites.json (edited or written by "
+             "hand, or cite.mjs not re-run after the last edit)")
     rows = sourcerefs(root)
     if sum(1 for refs in rows.values() if refs) < 4:
         fail(f"only {sum(1 for refs in rows.values() if refs)} rows carry sourceRefs; the policy states at least 6 rules")
@@ -308,7 +323,15 @@ def grade_engine() -> None:
     failing = [n for n, r in by_name.items() if r.get("pass") is not True or r.get("actual") != r.get("expected")]
     if failing:
         fail(f"test-results.json still has failing cases: {failing[:6]}")
-    print(f"OK: the engine returns the policy's outcome, and all {len(cases)} tests.json cases ran and pass")
+    # The results file is the agent's own record: re-run a spread of its cases and compare.
+    base, _ = load_tests()
+    sample = cases[:: max(1, len(cases) // RECHECK)][:RECHECK]
+    for case in sample:
+        actual = engine_outcome(project, case_inputs(base, case))
+        if actual != by_name[case["name"]].get("actual"):
+            fail(f"case {case['name']}: the engine returns {actual!r}, test-results.json records {by_name[case['name']].get('actual')!r}")
+    print(f"OK: the engine returns the policy's outcome; all {len(cases)} tests.json cases ran and pass, "
+          f"and {len(sample)} re-run on the engine match their recorded results")
 
 
 if __name__ == "__main__":

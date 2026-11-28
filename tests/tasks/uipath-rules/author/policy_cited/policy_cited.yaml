@@ -4,9 +4,10 @@ description: >
   digitizer's output (`document.md` plus `dom.json`) and cites it with the
   skill's cite.mjs. Grades that cite.mjs ran, that the agent's cites.json
   passes cite.mjs and the .dmn's sourceRefs are exactly what cite.mjs writes
-  from it (no box written or edited by hand), that check-uipdm.mjs passes, that
-  no qualityWarning carries conditionId, and the table's outcome on the hidden
-  scenarios.
+  from it (nothing written or edited by hand), that check-uipdm.mjs passes, that
+  no qualityWarning carries conditionId, the table's outcome on the hidden
+  scenarios, the input descriptions and tests.json. The tenant-free
+  counterpart of the e2e task's citation checks.
 tags: [uipath-rules, integration, "mode:build", "lifecycle:generate"]
 
 sandbox:
@@ -78,6 +79,22 @@ success_criteria:
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Inputs, output and contract as named; every input has a description; no receipts input"
+    command: "python3 $REFERENCE_DIR/_shared/extract_check.py profile"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "tests.json follows the guide's format, covers every outcome and has a missing-input case"
+    command: "python3 $REFERENCE_DIR/_shared/extract_check.py tests"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_not_executed

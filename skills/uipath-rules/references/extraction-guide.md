@@ -50,9 +50,9 @@ both ways: a criterion no row names is missing, a row that names none is invente
   boolean per named item, plus an explicit `Other` for the rest. Never close it to the values you know, and never fold
   the named items into one "any listed item" input.
 - **Values the document defines** (an average, a sum, a count over a period, a date boundary): compute them from raw
-  inputs in an upstream decision (see the Decision Graphs Guide). Only when the raw data cannot be an input, take the
-  value as an input and say in its description exactly how the caller computes it. Effective dates in the document
-  ("for services on or after …") are conditions: test the date of service.
+  inputs in an upstream decision (see the [Decision Graphs Guide](drd-guide.md)). Only when the raw data cannot be an
+  input, take the value as an input and say in its description exactly how the caller computes it. Effective dates in
+  the document ("for services on or after …") are conditions: test the date of service.
 - **Same condition, different outcome by stage or role** (first review vs second review): add the stage input; do not
   pick one outcome.
 - **Units and periods are part of the input.** Put the unit in the name or the description (`dose_mg`,
@@ -140,6 +140,7 @@ Write cases in this order, and do not stop before the first four are complete:
 with your reading, re-read the document, follow the case, and record the change. Fix the rule the case exposes; never
 special-case a case's inputs.
 
+<!--skill-flavor:extraction-run-cases:start-->
 Run every case, one call each, with the case's input object (`base` with its `inputs` laid over it and its `omit`
 names removed) in a file:
 
@@ -151,6 +152,7 @@ uip rules debug <PROJECT_DIR> --inputs @<CASE_FILE> --output json
 to `tests.json`: a JSON list with one object per case, each with `name`, `expected`, `actual` and `pass`. A case that
 was not run is not a pass. Fix the table and run all cases again; after 3 rounds with failures left, stop and list the
 failing cases (SKILL.md rule 7).
+<!--skill-flavor:extraction-run-cases:end-->
 
 Report how many cases ran, how many failed at first, how many still fail, and which of the six kinds you did not write.
 
@@ -195,12 +197,13 @@ against them. With one criterion per row (above), a row's citation is that crite
    carries no citations. The script finds each quote on its page; it never takes coordinates from you. (`cite.mjs` is a
    stop-gap until the attribution CLI resolves citations.) `--write` puts the uipdm elements in the `.dmn` (`sourceRefs`
    with page boxes on rows, `inputVariable` on inputs, `qualityWarning` on the definitions), replacing the ones a
-   previous run wrote, and checks them against `uipdm.xsd`. Input and outcome quotes are checked but carry no box in the
-   `.dmn`.
+   previous run wrote, and checks them against [`uipdm.xsd`](../scripts/uipdm.xsd). Input and outcome quotes are checked
+   but carry no box in the `.dmn`.
 3. Fix every problem it reports and run it again until it exits 0: `not found` (reworded, or the wrong page:
    `foundOnPage` tells you where it is), `matches N places` (quote more words), `not cited` (an element with no
-   citation), `no id` / `share this id` (give every rule row a unique id), `check-uipdm.mjs failed` (an element the
-   schema rejects). Then `refresh` and `validate` again.
+   citation), `no id` / `share this id` (give every rule row a unique id),
+   [`check-uipdm.mjs`](../scripts/check-uipdm.mjs) failed (an element the schema rejects). Then `refresh` and `validate`
+   again.
 4. After any later edit to the table, run step 2 again: rows added or renamed need their citations, and rows removed
    take theirs with them. Never hand-write or delete `uipdm:` elements.
 
