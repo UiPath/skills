@@ -148,55 +148,53 @@ Legend: ⏰ time trigger · 🔔 queue trigger · ⚡ event or API trigger · �
 
 ## Transactional Shape
 
-{Does the process iterate over units of work — items that succeed, fail, are retried and are tracked independently? Describe how the process handles them as it is and which splits are possible; decide nothing — the Components table's Type cell reads `RPA process`, and the split, the store and the template are chosen at build. A process can hold several flows — one kind of item handed from its producer to its consumer (components 1 → 2, 2 → 3, an independent 5 → 6): one `### Flow N` block each, even when there is one. A flow whose items a coordinator takes, one instance per item, has no RPA consumer and is no flow: the stub (transactional shape guide rule 1). Component genomes carry their own role per flow.}
+{Describe, never decide: layout and rules per the transactional shape guide (§ Layout, § Rules). One `### Flow N` block per flow, even when there is one; component genomes carry their own role per flow.}
 
 **Flows:** Flow 1 — {unit}: component {p} → component {c} (Handoffs row {n}); Flow 2 — {unit}: component {c} → component {d} (Handoffs row {m}); chains: component {c} consumes Flow 1 and produces Flow 2; independent: {Flow k}.
 
 ### Flow 1 — {unit of work}: component {p} → component {c}
 
-**Unit of work:** one {item}; reference {identifying field(s)}; fields as in Handoffs row {N}; {volume and cadence}; chosen because {items fail, retry and are reported independently at this level; the reference exists; the retry cost is acceptable}.
-**Alternative units of work:** one {other item} — fits when {condition}. *(every viable granularity, or "none")*
+**Unit of work:** one {item}; reference {identifying field(s)}; {volume and cadence}; chosen because {reason}.
+**Alternative units of work:** one {other item} — fits when {condition}.
 
-**As-is** — how the process handles the units today:
+**As-is:**
 
 | Aspect | As-is |
 |---|---|
-| Produced by | {component # and steps that create items; how often; one source or several; guarded by a lock or ledger?} |
-| Consumed by | {component # and steps that take items; one robot or several; how items are picked; order} |
-| Item store | {queue / table / in-memory list / folder}; per-item state as {status, tags, fields, output} |
-| Coordination | {parent items, ledgers, locks, tag joins — what each is for; "none"} |
-| Item kinds | {one kind, or several routed inside the consumer — what differs} |
+| Produced by | {component and steps that read the source and create the items; how often; one source or several; how a second population is prevented — lock, ledger, "once per date" — or not} |
+| Consumed by | {component and steps that work the items; one robot or several; how a robot picks its items — any, by parent, by kind — and in which order} |
+| Item store | {where items live today: framework work queue, Orchestrator queue, database table, in-memory list, folder}; per-item state kept as {which of: status text, tags, data fields, output} |
+| Coordination | {what keeps runs and item levels from colliding — parent items, ledgers, locks, tag joins — and what each is for; "none" when absent} |
+| Item kinds | {one kind, or the kinds the consumer routes between and what differs per kind: payload, work, outcomes} |
 | Step groups | consumer once per run: {steps}; per item: {steps}; at the end: {steps} |
-
-Outcomes — these rows, whatever the source calls its per-item results (approved, rejected, skipped are Success or a Business exception; transactional shape guide rule 4):
 
 | Outcome | When | Effect |
 |---|---|---|
 | Success | every per-item step completed | item recorded as done with {result} |
-| Business exception | {component #} Step {N} rules: {names} | no retry; item recorded with the reason; run continues |
-| System exception | every other failure — {component #} Step {N} handlers: {names} | applications reopened, item retried {n}×, then recorded as failed with the reason; run stops after {m} consecutive |
+| Business exception | {component #} Step {N} rules: {names} | {business effect} |
+| System exception | {component #} Step {N} handlers: {names} | retried {n}×; the run stops after {m} consecutive |
 
-**Split options** — rows A, B and C for the unit of work and for each unit the Alternative units line lists, each option by its letter (transactional shape guide rule 3 defines them) with only what this flow requires and changes; runner counts are deployment settings, never options; none asserted beyond the `Decided:` line. A flow with one side outside the genome replaces the table with `Split options: none — the consumer is outside this genome: {what takes the items}.` (rule 9):
+**Split options:**
 
 | Unit of work | Option | Requires | Changes against as-is |
 |---|---|---|---|
-| {unit} | A | {what this flow needs for one job to hold both roles — or "excluded: {the fact that rules it out}"} | {projects and schedules, where per-item state is visible, retry granularity, end-of-parent work} |
-| {unit} | B | {…} | {…} |
-| {unit} | C | {…; the once-guard for this flow's population} | {…} |
-| {alternative unit} | A | … | {…} |
-| {alternative unit} | B | … | {…} |
-| {alternative unit} | C | … | {…} |
+| {unit} | A | {what this flow needs to produce and work its items in one job — or "excluded: <the fact that rules it out>"} | {what changes against as-is: projects and schedules, retry granularity, where per-item state is visible} |
+| {unit} | B | {what this flow needs for a producer process and a consumer process with one queue between them — or "excluded: <fact>"} | {what changes against as-is: projects and schedules, retry granularity, where per-item state is visible} |
+| {unit} | C | {what this flow needs for one process that fills and works its own queue, and the once-guard its population uses — or "excluded: <fact>"} | {what changes against as-is: projects and schedules, retry granularity, where per-item state is visible} |
+| {alternative unit} | A | {what this flow needs to produce and work its items in one job — or "excluded: <the fact that rules it out>"} | {what changes against as-is: projects and schedules, retry granularity, where per-item state is visible} |
+| {alternative unit} | B | {what this flow needs for a producer process and a consumer process with one queue between them — or "excluded: <fact>"} | {what changes against as-is: projects and schedules, retry granularity, where per-item state is visible} |
+| {alternative unit} | C | {what this flow needs for one process that fills and works its own queue, and the once-guard its population uses — or "excluded: <fact>"} | {what changes against as-is: projects and schedules, retry granularity, where per-item state is visible} |
 
-**Evidence:** {facts only — robots, schedules, sources, applications per item kind, whether items survive a run today}.
-**Decided:** {only when the SDD, the request or the refactor answers already chose the split: option and unit — source; for B, `: <Project> → <Project>[ → …]` when the source names the projects (transactional shape guide rule 8)}
+**Evidence:** {facts that bear on the split, never a verdict: robot count, schedules, sources, applications per item kind, whether items survive a run today}
+**Decided:** {option, unit — source} *(only when already decided)*
 **Configuration:** settings — questions {a, b}; constants — questions {c, d}; assets — every asset row of Platform Dependencies.
-**Traceability:** {per-item record and where it lands; the upstream reference a chained item carries; screenshot on system exception; run summary; which component reports on them}.
+**Traceability:** {what is recorded per item today and where — reference, outcome and reason; screenshot on system exception; run summary}
 
 ### Flow 2 — {…}
 
 {same block}
 
-*Stub when none: "Not transactional: {reason — the run is one unit of work; one item's work started per item by {caller}; a library; a test-case group; a coordinator whose per-item lifecycle is the orchestration's; a {Flow, API workflow, agent} that works its items itself}."*
+*Stub when none: "Not transactional: {reason}."*
 
 ## Acceptance Criteria
 
@@ -232,7 +230,7 @@ UI targets: {the environment whose screens the targets describe}
 | Source export | {root path as read at extraction} | {identity: database or tenant, export date, process count — what recognises a moved copy} |
 | Requested change | {for a refactor or migration request: the user's words; otherwise —} | {each refactor-question decision — `Target: <component> → <product>`, `Retire: <entry point>`, `Fold: <reader> into <writer>`; a split decision is that flow's `Decided:` line alone} |
 | {Component} | {Source framework}: {project / solution / object} — `{Name}` ({id}) per object where names repeat | {the source units whose actions became its steps' activities; ambiguity or unresolved reference} |
-| Not covered | {live entry points, public workflows or test cases of the extracted projects that no step is built from — `{Name}` ({id})} | {what each does; left out because it is a public workflow nothing reaches and the Unused parts answer kept to what runs, or it only works a technology UiPath's activities cover, or the request named others} |
+| Not covered | {live entry points, public workflows or test cases of the extracted projects that no step is built from — `{Name}` ({id})} | {what each does, and why it is left out. It is a public workflow nothing reaches, and the Unused parts answer kept to what runs. Or it only works a technology UiPath's activities cover. Or the request named others} |
 | Unused | {workflows, pages and helpers no caller invokes that extraction left out — `{Name}` ({id})} | {what each does} |
 | Excluded / unreachable | {objects the source guide excludes; dead code, superseded copies, objects reached only through disabled calls — by name} | {why} |
 | Inventory | {processes, windows, controls (n without a locator), recordsets, rows, credential accounts} | {counts the inventory script reported; execution re-derives the catalogs from the export} |
@@ -258,4 +256,4 @@ flowchart TB
   S2 -.->|"{file or mail passed}"| S4
 ```
 
-Legend: ⏰ time trigger · 🔔 queue trigger · ⚡ event or API trigger · 👤 started by a person · no mark: invoked by another unit. → [n]: becomes component n · part of [n]: folded into component n's steps · not rebuilt: the Source Map row that says why. Solid arrow: adds to or takes from a queue, or calls a unit; dotted arrow: a handoff through a file, a mail or a shared store.
+Legend: ⏰ time trigger · 🔔 queue trigger · ⚡ event or API trigger · 👤 started by a person · no mark: invoked by another unit. → [n]: becomes component n. Part of [n]: folded into component n's steps. Not rebuilt: the Source Map row that says why. Solid arrow: adds to or takes from a queue, or calls a unit. Dotted arrow: a handoff through a file, a mail or a shared store.

@@ -1,7 +1,7 @@
 # Solution Design Document — <API_WORKFLOW_NAME>
 
-> **Template:** UiPath API Workflows — serverless, bot-less, synchronous request-response integrations.
-> **Phase 2 sections:** §2, §3, §4, §5, §10. **Phase 3 sections:** all others.
+<!-- Template: UiPath API Workflows — serverless, bot-less, synchronous request-response integrations.
+     Phase 2 sections: §2, §3, §4, §5, §11. Phase 3 sections: all others. -->
 
 ---
 
@@ -23,7 +23,7 @@
 | **Execution autonomy** | <autonomous \| interactive> |
 | **Delivery model** | <cloud \| automation-suite <VERSION_IF_KNOWN> \| standalone \| unspecified> |
 | **SDD scope** | <single-product \| solution> |
-| **Project list section** | §10 Project Structure + §5 Connectors |
+| **Project list section** | §11 Project Structure + §5 Connectors |
 | **Solution root SDD** | <PATH_TO_SOLUTION_ROOT_SDD — solution scope only; for single-product omit this row and the three below it (Solution ID, Project SDD role, Independently executable) — every other row stays> |
 | **Solution ID** | <SOLUTION_NAME_KEBAB> |
 | **Project SDD role** | child |
@@ -36,14 +36,12 @@
 ---
 
 <!--
-EMIT THIS BLOCK ONLY when Execution autonomy: autonomous.
-Skip entirely in interactive mode (decisions were checkpoint-reviewed).
-See sdd-writing-guide.md Step 2 item 3 for the format spec.
+EMIT THIS BLOCK ONLY in an autonomous run or a caller's design request (sdd-writing-guide.md Step 4 item 3).
 Non-RPA scope: Platform constraints, Scope and the product row.
 -->
 ## Decisions Made
 
-> Autonomous mode picked the architectural decisions below without a user checkpoint. Override by rerunning in Interactive mode or by editing the relevant SDD section.
+> The architectural decisions below were picked without a user checkpoint. Override by editing the relevant SDD section, or rerun in Interactive mode.
 
 | # | Decision | Picked | One-sentence reason |
 |---|---|---|---|
@@ -68,9 +66,10 @@ Constraint Gate outcome. See scope-recommendation-guide.md → Summary block for
 ---
 
 <!--
-EMIT THIS BLOCK ONLY when at least one [SME REVIEW] item remains after Step 1.5 resolution.
+EMIT THIS BLOCK ONLY when at least one [SME REVIEW] item remains after Step 3 resolution.
 Skip entirely when no review items are open. Once the genome is written, uipath-planner writes this
 section again from it, with every open question. See open-questions-guide.md for the item form.
+Build prerequisites: sdd-writing-guide.md § Writing Rules.
 -->
 ## Action Required — SME Review Items
 
@@ -106,12 +105,13 @@ How to answer:
 4. Execution Flow
 5. Connectors & External Calls
 6. Error Handling
-7. Performance & Scaling
-8. Security & Authentication
-9. Consumers
-10. Project Structure
-11. Testing Strategy
-12. Next Steps
+7. Business Rules
+8. Performance & Scaling
+9. Security & Authentication
+10. Consumers
+11. Project Structure
+12. Testing Strategy
+13. Next Steps
 
 ---
 
@@ -148,8 +148,7 @@ How to answer:
 
 ## 2. Input Schema
 
-<!-- JSON schema for the parameters the caller provides.
-     Use a table for clarity; the implementation skill will generate the actual JSON schema. -->
+<!-- The parameters the caller provides. A table only: the JSON schema is uipath-api-workflow's. -->
 
 | Field | Type | Required | Description | Example |
 |---|---|---|---|---|
@@ -185,8 +184,7 @@ How to answer:
 
 ## 4. Execution Flow
 
-<!-- High-level steps the API workflow performs. DO NOT include JavaScript — the implementation skill
-     handles that. Describe logical steps and data flow. -->
+<!-- The logical steps and data flow, never code: the scripts are uipath-api-workflow's. -->
 
 ```mermaid
 flowchart LR
@@ -200,9 +198,16 @@ flowchart LR
 
 ### Step Details
 
-| # | Step | Activity Type | Input | Output | Notes |
+<!-- One row per step, one kind of work per row. Step Kind says what the step does; the activity that performs it is uipath-api-workflow's choice, never named here.
+     - Decide (routes on a condition and produces nothing: a value a later step needs is produced by a Compute row before it)
+     - Repeat (works a list item by item; Notes names the steps it repeats)
+     - Compute (derives, converts, ranks or assembles values the workflow already holds)
+     - Call (invokes one connector operation, HTTP endpoint or component of §5, and names it)
+     - End (returns the output of §3 or an error of §6, and nothing else) -->
+
+| # | Step | Step Kind | Input | Output | Notes |
 |---|---|---|---|---|---|
-| 1 | <STEP_NAME> | <CONNECTOR / HTTP / SCRIPT / IF / FOR_EACH / TRY_CATCH> | <INPUT_FIELDS> | <OUTPUT_FIELDS> | <NOTES> |
+| 1 | <STEP_NAME> | <STEP_KIND> | <INPUT_FIELDS> | <OUTPUT_FIELDS> | <NOTES> |
 
 ---
 
@@ -224,11 +229,19 @@ flowchart LR
 
 ### Integration Service Connections
 
-<!-- Consolidated view of every Integration Service connection and how it is provisioned: reuse an existing IS connector, custom-build a connector, or call the system over direct HTTP. Access Method values: `Integration Service — <CONNECTOR_SLUG>`, `Custom connector — <CONNECTOR_SLUG>`, or `Direct HTTP`. Ties the Integration Service Connectors and Direct HTTP Calls tables above to an explicit access method. -->
+<!-- Consolidated view of every Integration Service connection and how it is provisioned: reuse an existing Integration Service connector, custom-build a connector, or call the system over direct HTTP. Access Method values: `Integration Service — <CONNECTOR_SLUG>`, `Custom connector — <CONNECTOR_SLUG>`, or `Direct HTTP`. Ties the Integration Service Connectors and Direct HTTP Calls tables above to an explicit access method. Build prerequisites: sdd-writing-guide.md § Writing Rules. -->
 
 | Connector | System | Access Method | Used By |
 |---|---|---|---|
 | <CONNECTOR_NAME> | <SYSTEM> | <ACCESS_METHOD> | <STEPS> |
+
+### Build Assumptions
+
+<!-- What this design needs a product to be able to do, beyond what this template states (sdd-writing-guide.md § Writing Rules). One row per capability; its owning skill confirms it at build, before the steps that rely on it are built. `None.` when the design relies on nothing unconfirmed. -->
+
+| # | The Design Relies On | Relied On By | Confirmed By | If It Does Not Hold |
+|---|---|---|---|---|
+| A1 | <CAPABILITY_IN_PLAIN_WORDS> | <STEPS_OR_COMPONENTS> | `<OWNING_SKILL>` | <FALLBACK_STEP_OR_COMPONENT> |
 
 ---
 
@@ -244,13 +257,71 @@ flowchart LR
 
 ### Retry Policy
 
-| Operation | Retry Count | Backoff | Timeout |
-|---|---|---|---|
-| <OPERATION> | <NUMBER> | <STRATEGY> | <SECONDS> |
+<!-- Failure wording: sdd-writing-guide.md § Writing Rules. Every row names one §4 step. -->
+
+| Operation | What Must Happen |
+|---|---|
+| <OPERATION> | <ATTEMPTS_AND_WAIT_THEN_OUTCOME> |
 
 ---
 
-## 7. Performance & Scaling
+## 7. Business Rules
+
+<!-- Every rule the source states has one home here: [Business Rules Guide](../../references/design/business-rules-guide.md) § Homes per template.
+     - Keep the source's rule IDs verbatim (`BR-001`, `BR-F01`); only a source that numbers none gets `BR-01`, `BR-02`, …. A rule the design adds takes the next free ID and its `[DEFAULT]` or `[SME REVIEW]` marker.
+     - Each row carries the rule in the source's words, never the ID alone. The element that applies a rule (§4 step) names its ID there; this row stays its one definition.
+     - Every subsection but Rules Not Carried stays: an empty one holds its `None.` line.
+     - Before the ready flip, `br-coverage.mjs` prints `OK` against the source (business-rules-guide.md § 4). -->
+
+### Validation Rules
+
+<!-- A rule that checks a value's form. Empty: `None. No rule checks a value's form.` -->
+
+| ID | Rule | Field | Check (regex / range / type / allowed values) | Checked at |
+|---|---|---|---|---|
+| <BR_ID> | <RULE> | <FIELD> | <CHECK> | <STEP> |
+
+### Decision Tables
+
+<!-- business-rules-guide.md → Decision tables. Runs in: the §4 step that evaluates it. Empty: `None. No rule decides an outcome.` -->
+
+#### DT1 — <DECISION_NAME>
+**Hit policy:** <UNIQUE / FIRST / COLLECT>
+**Inputs:** `<INPUT_NAME>` (<string / number / boolean / date>), …
+**Output:** `<OUTPUT_NAME>` (<TYPE_AND_ALLOWED_VALUES>)
+**Runs in:** <RUNS_IN>
+
+| # | <INPUT_NAME> | <INPUT_NAME> | → <OUTPUT_NAME> | Rule |
+|---|---|---|---|---|
+| 1 | <ENTRY> | <ENTRY> | <OUTPUT> | <BR_ID>: <RULE> |
+
+### Rules Applied in the Workflow
+
+<!-- A rule that sets what the workflow does when a condition holds: a fallback when a system is down or a check cannot run, a deadline or reminder, a route, what is shown, sent or kept. Applied by: the §4 step — a step or a §6 error row — that applies it. Empty: `None. Every rule is a validation, a decision or a reasoning rule.` -->
+
+| ID | Rule | When | What happens | Applied by |
+|---|---|---|---|---|
+| <BR_ID> | <RULE> | <CONDITION> | <OUTCOME> | <APPLIED_BY> |
+
+### Rules That Need Reasoning
+
+<!-- business-rules-guide.md → Rules that need reasoning. Agent: a step calling the agent. Person: none — an API workflow waits on no person; such a rule belongs to its caller, a Rules Not Carried row naming it. Empty: `None. Every rule is deterministic.` -->
+
+| ID | Rule | Applied by | Inputs → Output | Where it runs |
+|---|---|---|---|---|
+| <BR_ID> | <RULE> | <Agent / Person> | <INPUTS> → <OUTPUT> | <WHERE_IT_RUNS> |
+
+### Rules Not Carried
+
+<!-- OPTIONAL subsection — omit entirely when the design applies every rule the source states (exempt from the template-superset check). A source rule this design does not apply: another SDD of the solution applies it (name it), or the source's future state retires it. Any other reason is an [SME REVIEW] item. -->
+
+| ID | Rule | Why not here |
+|---|---|---|
+| <BR_ID> | <RULE> | <REASON> |
+
+---
+
+## 8. Performance & Scaling
 
 | Metric | Target |
 |---|---|
@@ -264,22 +335,23 @@ flowchart LR
 
 ---
 
-## 8. Security & Authentication
+## 9. Security & Authentication
 
 ### Authentication to the API Workflow
 
-<!-- How callers authenticate when invoking this workflow. -->
+<!-- Who may call this workflow, with what identity, and what they may do. How callers authenticate is uipath-api-workflow's. -->
 
-- [ ] UiPath Orchestrator token (default)
-- [ ] Agent tool invocation (within agent context)
-- [ ] Flow node invocation (within flow context)
-- [ ] External HTTP (via Orchestrator-exposed endpoint)
+| Caller (§10) | Calls As | Allowed To |
+|---|---|---|
+| <CALLER> | <USER_OR_SERVICE_IDENTITY> | <WHAT_THEY_MAY_DO> |
 
 ### Authentication to External Systems
 
-| External System | Auth Type | Credential Source |
+<!-- The identity each external call is made with and the credential it uses (a §5 connection or an asset). How it authenticates is the owning skill's. -->
+
+| External System | Calls As | Credential |
 |---|---|---|
-| <SYSTEM_NAME> | <OAUTH / API_KEY / BASIC> | <UIPATH_ASSET / CONNECTOR_CONFIG> |
+| <SYSTEM_NAME> | <IDENTITY> | <CONNECTION_OR_ASSET_NAME> |
 
 ### Rate Limits
 
@@ -290,17 +362,17 @@ flowchart LR
 
 ### Non-Functional Requirements (supplement)
 
-<!-- Performance / scaling → §7; security / auth → §8 above. These are the remaining cross-cutting NFRs. Fill each row; use [SME REVIEW] where unconfirmed. -->
+<!-- Performance / scaling → §8; security / auth → §9 above. These are the remaining cross-cutting NFRs. Fill each row; use [SME REVIEW] where unconfirmed. -->
 
 | Dimension | Requirement / Design decision |
 |---|---|
-| **Availability / Resilience** | <serverless auto-scale (§7); idempotency so caller retries are safe; retry / timeout per §6 Retry Policy> |
+| **Availability / Resilience** | <what a caller sees when a call fails (§6 Retry Policy); whether a caller may send the same call again, as the source states it; scaling per §8> |
 | **Logging & Monitoring** | <request / response logging excluding sensitive fields; alerting on error-rate spikes; Insights / Orchestrator dashboards> |
 | **Compliance** | <REGULATION_OR_—> |
 
 ---
 
-## 9. Consumers
+## 10. Consumers
 
 <!-- Who calls this API workflow? -->
 
@@ -310,24 +382,15 @@ flowchart LR
 
 ---
 
-## 10. Project Structure
+## 11. Project Structure
 
-<!-- Layout per the owning skill's scaffold (`uip api-workflow` inside a solution):
-     Workflow.json carries the document.dsl definition; entry-points.json and bindings_v2.json
-     are generated/CLI-managed. Never invent project.json / api-workflow.json / data-manager.json. -->
+<!-- The API workflow project is scaffolded by uipath-api-workflow, which owns its files and folders: never draw a file tree here. -->
 
-```text
-<SOLUTION_NAME>/                     (API Workflow projects live inside a solution)
-└── <API_WORKFLOW_PROJECT_NAME>/
-    ├── project.uiproj
-    ├── Workflow.json                (workflow definition — document.dsl)
-    ├── entry-points.json
-    └── bindings_v2.json
-```
+**API workflow project:** `<API_WORKFLOW_PROJECT_NAME>` — built by `uipath-api-workflow`.
 
 ### Deployment Target
 
-- Published to **Orchestrator** for consumption by agents, flows, or external callers
+- Runs in **Orchestrator**, called by agents, flows or external callers
 
 ### Solution / Project Breakdown
 
@@ -357,7 +420,7 @@ flowchart LR
 
 ---
 
-## 11. Testing Strategy
+## 12. Testing Strategy
 
 ### Canonical Test Cases
 
@@ -381,13 +444,13 @@ flowchart LR
 
 ---
 
-## 12. Next Steps
+## 13. Next Steps
 
 This SDD captures architecture and decisions. To build it, load `uipath-planner` with this SDD path:
 
 > Load `uipath-planner`. SDD path: `<this-file>`.
 
-**Build from the genome.** On the turn after this SDD is `Status: ready`, `uipath-planner` writes its genome beside it (`author`) and records the path in the `Genome` row of the Planner Handoff. `uipath-genome` builds every component from that genome through each component's owning skill. Without `uipath-genome` installed, the genome stays on disk for a later build.
+**Build from the genome.** Once this SDD is approved, ask `uipath-planner` for its genome or for the build: it writes the genome beside this SDD (`author`), and `uipath-genome` builds every component from that genome through each component's owning skill. Without `uipath-genome` installed, the genome stays on disk for a later build.
 
 Implementation steps **do not live in this SDD** — the genome carries them.
 

@@ -147,7 +147,7 @@ def test_a_draft_off_the_template_fails_draft_mode(tmp_path):
 def test_a_task_without_its_type_detail_block_fails(check, sound):
     rc, out = check(sound.replace("**Type:** api-workflow", "**Type:** http-request", 1))
     assert rc == 1
-    assert "a http-request task needs its type detail block" in out
+    assert "a http-request task needs its type detail block — '###### HTTP Request Task Detail'" in out
 
 
 def test_an_undeclared_variable_fails(check, sound):

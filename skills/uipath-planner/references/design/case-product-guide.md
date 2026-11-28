@@ -1,8 +1,8 @@
 # Case Management Product Guide
 
-What a Case Management design must respect. `design` reads it when Level 1 picks Case Management or a Solution includes a case ([design-guide.md](design-guide.md) § Read Plan); the design process — phases, review, write, genome — is the same as for every product. It holds Layers 1–2; Layers 3–4, § Layer closure, § Files and Attachments, § Resources and Identities and § Review Items continue in [case-data-and-time-guide.md](case-data-and-time-guide.md) — read both whole. [case-review-and-conformance-guide.md](case-review-and-conformance-guide.md) holds § Presenting the Case Design (Phase 2 Step 5), § Finalizing a Case Draft and § SDD Conformance Checklist, which is read at the template-superset check ([sdd-writing-guide.md](sdd-writing-guide.md) Step 2 item 8).
+What a Case Management design must respect about the platform, ordered the way a design is made. Layers 3 and 4 and the Layer closure checklist are in [case-data-and-time-guide.md](case-data-and-time-guide.md). `design` reads both whole when Level 1 picks Case Management or a Solution includes a case ([design-guide.md](design-guide.md) § Read Plan); the design process — phases, review, write, genome — is the same as for every product. § Design Review is the shape of the Phase 2 Step 5 review. The SDD's shape checks are [case-sdd-conformance-guide.md](case-sdd-conformance-guide.md), which the template's Validation footer names, walked at the template-superset check ([sdd-writing-guide.md](sdd-writing-guide.md) Step 4 item 8).
 
-Everything a case design must respect about the Case Management platform, ordered the way a design is actually made. A case is a versioned JSON document of **stages**, **tasks**, and **conditions** that compiles into a deterministic rule plan evaluated on every case event. Identity is by **display name** at runtime — names are load-bearing, not labels ([case-data-and-time-guide.md](case-data-and-time-guide.md) § Naming rules). This skill designs the document (`sdd.md`); the build skill (`uipath-maestro-case`) emits and validates `caseplan.json` from it.
+A case is a versioned JSON document of **stages**, **tasks**, and **conditions** that compiles into a deterministic rule plan evaluated on every case event. Identity is by **display name** at runtime — names are load-bearing, not labels ([case-data-and-time-guide.md](case-data-and-time-guide.md) § Naming rules). This skill designs the document (`sdd.md`); the build skill (`uipath-maestro-case`) emits and validates `caseplan.json` from it.
 
 Design in four layers, each settled before the next refines it:
 
@@ -11,9 +11,9 @@ Design in four layers, each settled before the next refines it:
 3. **Data** — variables, outputs, expressions. *What each piece reads and writes.*
 4. **Time** — SLAs and escalations. *What happens when work runs late.*
 
-Close with [§ Layer closure](case-data-and-time-guide.md#layer-closure--the-design-checklist) — the single cross-layer checklist, walked before the Phase 2 Step 5 review and again before the write.
+Close with [case-data-and-time-guide.md § Layer closure](case-data-and-time-guide.md#layer-closure--the-design-checklist) — the single cross-layer checklist, walked before the Phase 2 Step 5 review and again before the write.
 
-**Best assumption is the design mode.** Every open field takes the **Default** stated in its layer — decided and disclosed, never asked. An optional field the source never touches renders `—`. Every non-verbatim value carries a Design Rationale plus a line in the review's **Decisions I Made** ([case-review-and-conformance-guide.md](case-review-and-conformance-guide.md) § Presenting the Case Design).
+**Best assumption is the design mode.** Every open field takes the **Default** stated in its layer — decided and disclosed, never asked. An optional field the source never touches renders `—`. Every non-verbatim value carries a Design Rationale plus a line in the review's **Decisions I Made** ([§ Design Review](#design-review)).
 
 ---
 
@@ -37,13 +37,13 @@ Reason the shape from the process — never reach for the template first. Build 
 
 | Source says | Author token |
 |---|---|
-| External system, portal, form, inbound event, or record-created start | `Intsvc.EventTrigger` — a tenant object start stays an event trigger even when provisioning is missing (unresolved detail becomes a placeholder later; never downgrade to Manual) |
+| External system, portal, form, inbound event, or record-created start | `Intsvc.EventTrigger`. A start on a tenant case-entity / data-object record stays an event trigger with that object name as Source, even when the object is not provisioned — never downgrade it to `Manual`; an unresolved `connectionId` / `activityTypeId` stays a placeholder with a high review item |
 | Schedule / recurring | `Intsvc.TimerTrigger` |
 | Otherwise (user or API call) | `Manual` |
 
 ### Task types
 
-<!-- named by case-review-and-conformance-guide.md § SDD Conformance Checklist — do not rename this heading or reshape this table/fence; the checklist sends authors here by heading name -->
+<!-- named by the case template's conformance checklist — do not rename this heading or reshape this table/fence; the checklist sends authors here by heading name -->
 
 The enum is closed — exactly these seventeen literals, used verbatim as the SDD `Type:` value. The `type` says **how the work gets done**, not what it is about — read the verb + the actor:
 
@@ -90,7 +90,7 @@ Apply in order:
 3. **Tenant evidence** — the registry cache resolves a deployed Action App / process / agent / api-workflow / function / RPA that fits → use that resource's type and surface the match.
 4. **Connector availability** — an Integration Service connector matches → `execute-connector-activity` over `api-workflow`.
 5. **Verb signal** — fall through to the § Task types tie-breakers.
-6. **Fallback** — keep the user's stated value if any; otherwise a placeholder plus a `high` review item ([case-data-and-time-guide.md](case-data-and-time-guide.md) § Review Items).
+6. **Fallback** — keep the user's stated value if any; otherwise a placeholder plus a `high` review item ([§ Review Items](#review-items)).
 
 **Compliance-trigger scan.** Scan the whole conversation for tier-2 phrases BEFORE recording any non-`action` type. A phrase surfacing after a non-`action` type was provisionally recorded → re-ask before continuing. No tier-2 phrase in the transcript (e.g. jurisdiction-dependent underwriting) → keep the stated type, disclose the compliance caveat as a decision line.
 
@@ -120,7 +120,7 @@ Look beyond the primary flow. Check the source for each scenario; pick the small
 | Manual override / worker-launched side work | `adhoc` task (`Required: No`) or `user-selected-stage` lane |
 | Terminal outcomes different from success | Non-completing case-exit rows; XOR terminals ([Layer 2](#xor-terminal-stages)) |
 
-Clear source signal → model it by best assumption and disclose in **Other Paths Considered**. No signal at all → ask it among the Phase 1 Step 6 clarifying questions; "primary flow only" is then a recorded decision, never an omission.
+Clear source signal → model it by best assumption and disclose in **Other Paths Considered**. No signal at all → ask it among the Phase 1 Step 10 clarifying questions; "primary flow only" is then a recorded decision, never an omission.
 
 ---
 
@@ -130,7 +130,7 @@ The case, each stage, and each task move through gates driven by **rules** in di
 
 ### Lifecycle gates
 
-<!-- named by case-review-and-conformance-guide.md § SDD Conformance Checklist — do not rename this heading or reshape this table/fence; the checklist sends authors here by heading name -->
+<!-- named by the case template's conformance checklist — do not rename this heading or reshape this table/fence; the checklist sends authors here by heading name -->
 
 | Gate | Marks complete | Legal WHEN rules |
 |---|---|---|
@@ -142,11 +142,15 @@ The case, each stage, and each task move through gates driven by **rules** in di
 | Case exit | No | `selected-stage-completed`, `selected-stage-exited`, `wait-for-connector` |
 
 1. Tasks have NO exit or completion conditions — a task completes when its own work finishes; downstream gates key off `required-tasks-completed` / `selected-tasks-completed`.
-2. `Marks Complete: Yes` pairs only with `required-*` rules (or `wait-for-connector`), and `Marks Complete: No` pairs only with `selected-*` rules (or `wait-for-connector`). This is planner policy, not a platform rejection: the schema, `validate` and the Case Designer all accept the crossed pairs, so nothing downstream catches them. Never author either. Completion must track the stage's required set; a `selected-tasks-completed` completion row completes the stage as soon as its named tasks finish, including a task on a guarded branch.
+2. `Marks Complete: Yes` pairs only with `required-*` rules (or `wait-for-connector`), and `Marks Complete: No` pairs only with `selected-*` rules (or `wait-for-connector`). Never author a crossed pair: the schema, `validate` and the Case Designer all accept one, so nothing downstream catches it. Completion must track the stage's required set; a `selected-tasks-completed` completion row completes the stage as soon as its named tasks finish, including a task on a guarded branch.
 3. `required-*` rules are vacuous without an explicit `isRequired: true` member. Required status is explicit end-to-end — the SDD declares it per stage and task, and emission writes it verbatim. An absent flag equals `false` at the validator: `Case rule '<name>' has no required stage(s) selected` / `Stage exit rule '<name>' has no task(s) marked as required`.
 4. **Case completion is a root rule.** At least one case-exit row carries `Marks Case Complete: Yes` (normally `required-stages-completed`). A stage completing never closes the case by itself; alternate outcomes (Rejected, Withdrawn, Cancelled) are case-exit rows with `Marks Case Complete: No`. **Default:** the last primary stage completing closes the case unless the source describes another close-out.
 5. **A gate sees case state as of its own event.** The extract of the task that fired the gate has not run yet, so an `IF` that reads a case variable that task writes is stale — read the producing output instead ([Layer 3 § Gate on the producer](case-data-and-time-guide.md#gate-on-the-producer-never-on-the-variable-it-writes)).
-6. **Evaluation precedence: case exit/completion → stage exit → stage completion → stage entry.** Two consequences: a stage entry identical to a case-exit row (same rule, selector, IF) leaves the stage permanently unreachable — differentiate the guards; an unguarded stage exit (`No`, empty IF) sharing its WHEN with a guarded completion (`Yes` + IF) always fires first and the stage never completes — the exit carries the completion's inverse IF. Both validator-enforced.
+6. **Evaluation precedence: case exit/completion → stage exit → stage completion → stage entry.** Two consequences:
+   - a stage entry identical to a case-exit row (same rule, selector, IF) leaves the stage permanently unreachable — differentiate the guards;
+   - an unguarded stage exit (`No`, empty IF) sharing its WHEN with a guarded completion (`Yes` + IF) always fires first and the stage never completes — the exit carries the completion's inverse IF.
+
+   Both validator-enforced.
 
 ### Exit types
 
@@ -224,6 +228,8 @@ Task-entry mode is exclusive — one mode, one rule, never combined:
 | Fan-in, convergence, conditional gate | `fan-in` / `conditional-gate` | `selected-tasks-completed("<tasks>")` |
 
 - Structure mirrors the mode in the stage's task sets: a strict chain is consecutive single-task sets; parallel-after-predecessor siblings share one set. Never duplicate `selected-tasks-completed("<previous>")` to express simple order.
+- **The first task of an ordered run is in the run.** "A, then B, then C": A, B and C are each `sequential` with `runs-sequentially`. Wrong: A on `current-stage-entered` because it starts first.
+- **Siblings after one predecessor stay siblings whatever they do.** "After A, B listens for a confirmation event while C tracks its deadline": A is one set; B and C share the next set, each `parallel-after-predecessor` with `runs-sequentially` — the race below, armed once A completes. Wrong: B and C each gated on `selected-tasks-completed("A")`.
 - `selected-tasks-completed` selects only non-`adhoc` tasks in the SAME stage.
 - A task with no entry condition never starts — validate accepts the omission silently.
 - Race (confirmation vs timeout/cancel/withdrawal) → listener + clock armed while the obligation is pending; downstream work gated on the winning fact.
@@ -252,3 +258,68 @@ Mutually-exclusive happy-path terminals ("Funding on approve, Adverse Action Not
 5. Case exit: ONE row, `required-stages-completed`, `Marks Case Complete: Yes`, `IF: —`.
 
 **Connector-event close** (only when both terminals genuinely emit a shared case-done event): terminals `Required: No`; entries as above; each terminal's last task emits the shared event; the case exit is ONE `wait-for-connector` row keyed on it.
+
+---
+
+## Files and Attachments
+
+When the source mentions `file`, `attachment`, `PDF`, `upload`, `evidence` or `receipt` as an artifact (not a domain noun), pick the matching pattern and record the decision — ask only when the source's own words point at two patterns at once:
+
+| Pattern | Indicator phrases | SDD shape |
+|---|---|---|
+| Caller pre-uploads at case start | "caller submits a PDF", "uploaded with the request" | `Category: In`, `Type: file`; caller obligation surfaces in the confirmation. |
+| Connector downloads mid-case | "fetch the attachment from email", "pull from Drive / S3" | `Category: Variable`, `Type: file` from a task Outputs `->` row. |
+| Stores URL/metadata, not bytes | "we just store the link", "we keep the document ID" | `Type: string` (URL) or `Type: jsonSchema` (metadata). NOT `file`. |
+
+## Resources and Identities
+
+Design resolves identities only: a resource the design names is looked up in the Level 0 estate sweep ([product-selection-guide.md](../shared/product-selection-guide.md) § Estate sweep); one confident match is adopted with its exact folder, anything ambiguous or missing renders `<UNRESOLVED>` with a paired review item, and the build resolves it. Schema discovery (`tasks describe`, `case spec`), project scaffolding and create-on-missing are build work — a needed field name nothing supplied is `<UNRESOLVED>`, never a spec call and never a key read off a `--output json` envelope (those are PascalCased: [case-data-and-time-guide.md](case-data-and-time-guide.md) § External names). Registry data is evidence, not requirements: never add or rename business work to match tenant inventory. Deep runtime metadata (agent prompts, package versions, endpoints) stays out of the SDD — name, folder, identity and sub-type only.
+
+**`<UNRESOLVED>` scope.** `<UNRESOLVED>` — a cell value the build resolves, not a gap marker ([gap-markers-guide.md](../shared/gap-markers-guide.md)) — stands only:
+
+- in a registry-identity cell (a resource id with its version, connection id, activity type id, action app id, child-case entity key, deployment or folder key, folder path);
+- in place of a schema field name whose exact spelling nothing in the conversation supplied ([case-data-and-time-guide.md](case-data-and-time-guide.md) § External names).
+
+It is always paired with a review item (high for an identity) and written as plain text. Never in an intended-name cell (`Resolved Resource`, Action App title, `Child Case`, IXP Deployment) or a timer `Value`.
+
+## Review Items
+
+A field the design cannot fully resolve but the build needs is a **review item**: an `[SME REVIEW]` item in the SDD's `Action Required — SME Review Items`, in the item form every SDD uses ([sdd-writing-guide.md](sdd-writing-guide.md) Step 4 item 4). Its severity decides how it is written and whether the review flags it:
+
+| Severity | Meaning | Written as | Examples |
+|---|---|---|---|
+| **high** | The build cannot complete until resolved | A default-carried item whose `Default:` is `resolve at build`, naming the missing piece as a prerequisite of the build ([sdd-writing-guide.md § Writing Rules](sdd-writing-guide.md#writing-rules)). The review lists it under Review Flags. A handed-over design counts it in its first build option: `Build despite N flagged items` | Missing `connectionId` / `actionAppId` / deployed runnable; unbound required input; phantom extract field; open variable lineage; missing trigger config; unreconciled compliance override |
+| **medium** | The build defaults it | A default-carried item with the default applied | Missing escalation recipient (default the owner group); missing variable default; ambiguous recipient |
+| **low** | Cosmetic | A default-carried item with the default applied | Missing case or secondary-stage description |
+
+An item is `blocking` — an `Until answered:` line, the SDD stays `draft` — only in the blocking class of [sdd-writing-guide.md](sdd-writing-guide.md) Step 3 rule 5: a design-level unknown with no defensible default that changes the architecture. Never downgrade a severity to pass a gate — it moves only when the issue resolves.
+
+## Design Review
+
+The Phase 2 Step 5 architecture review of a case ([design-guide.md](design-guide.md)) is the **Case Review**: a decision-first business approval surface, complete enough to approve the case behaviour without opening the SDD — never a build plan and never a compressed SDD copy. Coverage: SDD Section 1 → review sections 1/4/5; Section 2 → 2/3/4/5; Section 3 → 1/6; Section 4 → 6. Each business decision appears ONCE. The review omits the data contract, variables, task inputs and outputs, a second stages list and per-stage detail cards — that detail stays in the SDD. Anything carrying a high review item also appears in Review Flags. An autonomous run writes no review; its decisions go to the SDD's Decisions Made and Design Rationale cells.
+
+Start with `## Case Review: <Case name>`, then exactly this order:
+
+1. **Case Snapshot** — `Item | Proposed design`. Rows: `Objective`, `Starts when`, `Primary personas`, `Successful completion`, `Other terminal outcomes`, `SLA coverage`. Assumed values marked `(assumed)`. No case ID prefix unless it affects a decision.
+2. **Primary Journey** — `# | Stage | Purpose | Tasks | Starts when | Completes or exits when | Required? | SLA`. Every primary stage once, flow order. `Tasks` cell: every task in execution order with type, required/optional, activation/grouping — e.g. `Sequential: Capture request (Human action, required) → Validate request (RPA workflow, required)`; `After both: Make decision (Human action, required)`. Event-triggered and manually triggered shown explicitly.
+3. **Other Paths Considered** — `Scenario | Trigger or condition | Modeled as | Tasks | Interrupts active work? | Return or case outcome | Rationale`. Every modeled exception, secondary stage, optional path, alternate terminal — AND standard paths intentionally unmodeled when that omission is a decision. Path tasks carry type/required/activation.
+4. **SLA and Escalations** — `Scope | SLA | Time target or condition | Status or threshold | Response | Response target | Interrupts active work? | Rationale`. One row per meaningful `(scope, SLA, status)`; separate at-risk and breached rows when both exist; responses from the closed set ([case-data-and-time-guide.md § Choosing the response](case-data-and-time-guide.md#choosing-the-response)). Interrupting cell: per the Response column's row in [case-data-and-time-guide.md § Choosing the response](case-data-and-time-guide.md#choosing-the-response) — that table is the only home for which values are legal. `None` when no SLA. Never assume every breach creates an escalation stage.
+5. **Rules and Outcomes** — `Scope | Element | Rule | When | If | Then`. Business-significant routing/completion/terminal rules only; omit generated sequencing visible in `Tasks`; no SLA repeats unless needed for routing; business conditions in `If`, no data column.
+6. **Resources and Integrations** — `Task | Intended resource or system | Resolution`. Action apps, agents, RPA/processes, API workflows, business rules, child cases, connectors, named external systems. `Resolution` = design-time outcome: `resolved (<folder>)`, `create during build`, `resolve at build`, or a candidate pick. A missing row is not acceptable.
+7. **Decisions I Made** — `Decision | Why | Provenance`. Every assumption, override, resource/task-type/activation decision, and intentionally omitted path, plain language (`you said "then"`, `compliance wording`, `no SLA mentioned`). Group only decisions sharing rationale AND provenance. Flagged items carry ⚠.
+8. **Review Flags** — `Item to review | Why it matters | Default if accepted`. `None` when empty. Unfixable findings, missing connections, unresolved high-impact choices.
+
+After Review Flags, when any §1.5 row is `Category: In` + `Type: file`, show this fixed block (omit otherwise — a conditional build obligation, not a ninth section):
+
+```
+Caller obligation (file In-arg detected):
+  File In-args:  <comma-separated names>
+  Programmatic callers must pre-create each JobAttachment via POST /odata/Attachments,
+  PUT bytes to the returned blob URI, then pass {ID,FullName,MimeType,Metadata} as the
+  In-arg value AND include the attachment ID in StartProcessDto.Attachments[].
+  Maestro Studio Web's "Start case" dialog does this automatically.
+```
+
+**Product vocabulary.** User-visible activation labels: `Sequential`, `Parallel`, `Parallel after predecessor`, `Event-triggered`, `Manually triggered`, `Fan-in`, `Conditional gate` (`adhoc` → `Manually triggered`). Use product task labels — `Human action`, `Agent`, `RPA workflow`, `API workflow`, `Child case` — over schema enum names.
+
+**Completeness gate.** Incomplete unless: all eight sections shown, every stage and task named, every modeled and intentionally omitted path covered, every meaningful SLA response/status row present, Caller obligation when relevant. No approval question before every section has been shown — even sections reading `None`. Never substitute a list of build steps, artifacts, folders, or validation commands, or a summary that points at the SDD for a missing business decision.

@@ -63,7 +63,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, resolve as resolvePath } from "node:path";
 import { pathToFileURL } from "node:url";
-import { genomeFingerprint, sddFingerprint } from "./sdd-fingerprint.mjs";
+import { childSdds, genomeFingerprint, sddFingerprint } from "./sdd-fingerprint.mjs";
 
 export const VALID_SKILLS = new Set([
   "uipath-rpa", "uipath-maestro-flow", "uipath-maestro-bpmn", "uipath-maestro-case",
@@ -78,6 +78,11 @@ export const OPERATE_SKILLS = new Set([ // allowed in Platform Dependencies / De
   "uipath-automationhub", "uipath-feedback",
   "uipath-activity-migrator", "uipath-bundles", "uipath-vertical-solutions",
 ]);
+// build skills that never own a Build With or Components row (skill-mapping-guide.md § Build Skills)
+const NOT_A_ROW_SKILL = {
+  "uipath-human-in-the-loop": "the containing component's skill owns the checkpoint; name it in the Rationale column",
+  "uipath-solution": "solution packaging is recorded under Deployment",
+};
 const RETIRED_SKILLS = ["uipath-rpa-workflows", "uipath-coded-workflows", "uipath-coded-agents"];
 // the skill a genome's preamble routes its build to
 export const BUILDER = "uipath-genome";
@@ -147,46 +152,47 @@ export const TEMPLATE_PLACEHOLDERS = [
   "one {item}",
   "{identifying field(s)}",
   "{volume and cadence}",
-  "{items fail, retry and are reported independently at this level; the reference exists; the retry cost is acceptable}",
+  "because {reason}",
   "{other item}",
   "when {condition}",
-  "{steps that create items; how often; one source or several; guarded by a lock or ledger?}",
-  "{steps that take items; one robot or several; how items are picked; order}",
-  "{queue / table / in-memory list / folder}",
-  "{status, tags, fields, output}",
-  "{parent items, ledgers, locks, tag joins — what each is for; \"none\"}",
-  "{one kind, or several routed inside the consumer — what differs}",
+  "{steps that read the source and create the items; how often; one source or several; how a second population is prevented — lock, ledger, \"once per date\" — or not}",
+  "{steps that work the items; one robot or several; how a robot picks its items — any, by parent, by kind — and in which order}",
+  "{where items live today: framework work queue, Orchestrator queue, database table, in-memory list, folder}",
+  "{which of: status text, tags, data fields, output}",
+  "{what keeps runs and item levels from colliding — parent items, ledgers, locks, tag joins — and what each is for; \"none\" when absent}",
+  "{one kind, or the kinds the consumer routes between and what differs per kind: payload, work, outcomes}",
   "steps {n}",
   "{p–q}",
   "steps {r}",
   "with {result}",
   "rules: {names}",
+  "{business effect}",
   "handlers: {names}",
   "retried {n}",
   "after {m}",
-  "{what takes the items}",
   "| {unit}",
-  "{what this flow needs for one job to hold both roles — or \"excluded: {the fact that rules it out}",
-  "{projects and schedules, where per-item state is visible, retry granularity, end-of-parent work}",
+  "{what this flow needs to produce and work its items in one job — or \"excluded: <the fact that rules it out>\"}",
+  "{what changes against as-is: projects and schedules, retry granularity, where per-item state is visible}",
+  "{what this flow needs for a producer process and a consumer process with one queue between them — or \"excluded: <fact>\"}",
+  "{what this flow needs for one process that fills and works its own queue, and the once-guard its population uses — or \"excluded: <fact>\"}",
   "{alternative unit}",
-  "{facts only — robots, schedules, sources, applications per item kind, whether items survive a run today}",
-  "{only when the SDD, the request or the refactor answers already chose the split: option and unit — source; for B, `: <Project> → <Project>[ → …]` when the source names the projects (transactional shape guide rule 8)}",
+  "{facts that bear on the split, never a verdict: robot count, schedules, sources, applications per item kind, whether items survive a run today}",
+  "{option, unit — source}",
   "{a, b}",
   "{c, d}",
-  "{per-item record and where it lands; screenshot on system exception; run summary}",
-  "{reason — the run is one unit of work; one item's work started per item by {caller}",
+  "{what is recorded per item today and where — reference, outcome and reason; screenshot on system exception; run summary}",
+  "transactional: {reason}",
   "component {p}",
   "component {c}",
   "row {n}",
   "component {d}",
   "row {m}",
-  "{component # and steps that create items; how often; one source or several; guarded by a lock or ledger?}",
-  "{component # and steps that take items; one robot or several; how items are picked; order}",
+  "{component and steps that read the source and create the items; how often; one source or several; how a second population is prevented — lock, ledger, \"once per date\" — or not}",
+  "{component and steps that work the items; one robot or several; how a robot picks its items — any, by parent, by kind — and in which order}",
   "run: {steps}",
   "item: {steps}",
   "end: {steps}",
   "{component #}",
-  "{per-item record and where it lands; the upstream reference a chained item carries; screenshot on system exception; run summary; which component reports on them}",
   "{same block}",
 ];
 
@@ -356,6 +362,15 @@ function checkCommon(path, text, level, sections, r, minCriteria) {
       // resources still reach the target through the solution and the open-items files
       if (OPERATE_SKILLS.has(name)) r.strict(`operate-only skill '${name}' in ${heading}; it belongs under Platform Dependencies`);
     }
+    const body = sectionBody(text, heading);
+    const header = lines(body).find((l) => l.trim().startsWith("|"));
+    const col = header ? cells(header).findIndex((c) => c.toLowerCase() === "skill") : -1;
+    if (col < 0) continue;
+    for (const row of tableRows(body, header.trim())) {
+      for (const name of skillNames(row[col] ?? "")) {
+        if (NOT_A_ROW_SKILL[name]) r.strict(`'${name}' in the Skill column of ${heading}; ${NOT_A_ROW_SKILL[name]}`);
+      }
+    }
   }
   // a criterion is a list item in any form: '- ', '- [ ] ', '* ' or '1. '; the genome format numbers them
   const criteria = lines(sectionBody(text, "Acceptance Criteria")).filter((l) => /^(?:[-*]|\d+\.) \S/.test(l));
@@ -458,6 +473,7 @@ function checkDesignedIn(path, text, level, r) {
   // a line taken over the whole SDD, its Action Required section included, still matches an SDD that has not changed
   try { matches = sddFingerprint(sdd) === m[2] || sddFingerprint(sdd, { keepOpenQuestions: true }) === m[2]; } catch { r.strict(`Designed in: ${m[1]} or a child SDD it lists cannot be read`); return; }
   if (!matches) r.strict(`Designed in: sdd-sha256 does not match ${m[1]}; the SDD changed since the genome was written — write the value \`node sdd-fingerprint.mjs <SDD>\` prints (not sha256sum: the fingerprint leaves out the Genome row)`);
+  checkBuildAssumptions(path, text, sdd, m[1], r);
   // a component genome holds every gap of its SDD: an SDD with Action Required items, a genome with none of them
   if (level !== "component") return;
   const asked = sectionBody(read(sdd), "Action Required");
@@ -515,6 +531,43 @@ function checkActionRequiredIds(sdd, text, r) {
   if (!misplaced.length) return;
   const each = misplaced.map(({ id, question, asked }) => `${id} "${question}" ${asked.length ? `is asked as "${asked.join('" / "')}"` : "has no item"}`);
   r.strict(`${baseName(sdd)}: Action Required asks ${misplaced.length} of the genome's open entries and Configuration Questions under another id or not at all; write it again from the genome, each under the genome's id: ${each.join("; ")}`);
+}
+
+/** strict: every Build Assumptions row of the linked SDD is an open Open Decisions entry of this genome or one of its component genomes. */
+function checkBuildAssumptions(path, text, sdd, sddName, r) {
+  // a component of a process is covered by the process genome's check, which reads every component beside it
+  if (/^>\s*Part of:/m.test(text)) return;
+  // a solution's rows sit in its child SDDs, each numbered from A1: their trailers name the child as well
+  let children;
+  try { children = childSdds(sdd); } catch { return; }
+  const designs = [sdd, ...children];
+  const folder = path.replace(/\.md$/, "");
+  let genomes = text;
+  if (existsSync(folder) && statSync(folder).isDirectory()) {
+    for (const name of readdirSync(folder)) if (name.endsWith(".md")) genomes += readFileSync(resolvePath(folder, name), "utf8");
+  }
+  for (const design of designs) {
+    let body;
+    try { body = readFileSync(design, "utf8"); } catch { continue; }
+    const of = design === sdd ? "" : ` of ${baseName(design)}`;
+    const named = design === sdd ? sddName : baseName(design);
+    // an entry keeps its trailer open, decided or withdrawn, so the trailer is the key, never `answered by:`
+    for (const id of buildAssumptionIds(body)) {
+      const trailer = `SDD Build Assumption ${id}${of}`;
+      if (!new RegExp(`^\\d+\\. [^\\n]*${trailer.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\w.-])`, "m").test(genomes)) {
+        r.strict(`Build Assumption ${id} of ${named} has no Open Decisions entry: write one ending '— ${trailer}' in the genome of the component whose skill confirms it, and mark the steps that rely on it '*[Inferred: D<n>]*'`);
+      }
+    }
+  }
+}
+
+/** The A<n> row ids of an SDD's Build Assumptions table. */
+function buildAssumptionIds(design) {
+  const start = design.search(/^#{2,4} Build Assumptions\s*$/m);
+  if (start < 0) return [];
+  const rest = design.slice(start).split("\n").slice(1);
+  const end = rest.findIndex((line) => /^#{1,4} /.test(line));
+  return (end < 0 ? rest : rest.slice(0, end)).map((line) => line.match(/^\|\s*(A\d+)\s*\|/)?.[1]).filter(Boolean);
 }
 
 const GENOME_ROW = /^\|\s*\*\*Genome\*\*\s*\|[^\n]*?\bgenome-sha256\s+([0-9a-f]{64})\b/m;

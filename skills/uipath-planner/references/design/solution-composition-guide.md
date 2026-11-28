@@ -4,7 +4,7 @@ Levels 1.75 and 2.5 Part B of product selection — read by `design` when Level 
 
 ## Level 1.75 — Solution Composition
 
-Applies only when Level 1 = Solution OR when the user picks "Solution (customize)" from the recommendation screen at Phase 1 Step 6. Skip otherwise.
+Applies only when Level 1 = Solution OR when the user picks "Solution (customize)" from the recommendation screen at Phase 1 Step 10. Skip otherwise.
 
 The goal of Level 1.75 is to produce a concrete list of projects the SDD will cover. Composition runs in three passes.
 
@@ -12,7 +12,7 @@ The goal of Level 1.75 is to produce a concrete list of projects the SDD will co
 
 **Gate the option list first.** Before composing the questions, drop every product the [Constraint Gate](../shared/product-selection-guide.md#constraint-gate) blocks for this delivery model (matrix block or user exclusion) — do not show a blocked product as a selectable option. When a dropped product had matching Level 1 signals, say so in the question preamble with the alternative from the availability matrix. When the matrix lists no alternative (e.g., Coded Apps on Automation Suite — no on-prem equivalent), state that and mark the touchpoint `[SME REVIEW]`; do not substitute a product the planner cannot build.
 
-Keep each structured question to at most 4 options and each prompt to at most four questions — some hosts reject more. Pass A deliberately uses **two questions (8 option slots)** so the full product palette fits one screen, covering **9 candidate products across those 8 slots**: Maestro Flow and Maestro BPMN share one **"Maestro orchestration"** option and are disambiguated by a short follow-up (Pass A.5) only when that option is selected. Pass A therefore stays a single structured prompt containing two questions, each multi-select with ≤4 options. The user answers both questions on one screen; both sets of selections return together.
+Caps per prompt and per question: [SKILL.md § Prompt Budget](../../SKILL.md#prompt-budget). Pass A is one prompt with **two multi-select questions (8 option slots)** covering **9 candidate products**: Maestro Flow and Maestro BPMN share one **"Maestro orchestration"** option, disambiguated by a follow-up (Pass A.5) only when that option is selected. Both sets of selections return together.
 
 Ask exactly this prompt (shown as JSON; map it onto your host's question tool):
 
@@ -62,8 +62,9 @@ Assume the question tool has no pre-selection field (options carry only label / 
 
 "Maestro orchestration" resolves to **Maestro Flow** or **Maestro BPMN**. Resolve without a prompt when possible:
 
-- Exactly one of Flow / BPMN Level 1 signals matched and the user did not override → record that engine; **skip the follow-up**. With no BPMN structural signals, default to **Flow**.
-- Neither matched, or both matched → ask one follow-up, appending "(Recommended)" to the engine label whose signals matched (no pre-selection field exists):
+- Exactly one of Flow / BPMN Level 1 signals matched and the user did not override → record that engine; **skip the follow-up**.
+- Neither matched → **Flow**, no prompt.
+- Both matched → ask one follow-up, appending "(Recommended)" to the engine label the stronger signals favour (no pre-selection field exists):
 
 ```json
 {
@@ -84,7 +85,7 @@ Selecting both is legal (rare) — one Flow project plus one BPMN project. Feed 
 
 ### Pass B — Resolve quantities per product
 
-For products that naturally appear more than once in a Solution (RPA projects most commonly), ask for the count. Ask a numbered-choice structured question with defaults derived from the signals:
+For products that naturally appear more than once in a Solution (RPA projects most commonly), ask for the count. Ask a structured question with defaults derived from the signals:
 
 > How many RPA projects does the Solution need?
 >
@@ -92,7 +93,7 @@ For products that naturally appear more than once in a Solution (RPA projects mo
 > 2. **2**
 > 3. **3 or more** — you will specify the list in the next step
 
-If the user picks "3 or more", follow up with a free-text-style question (a structured question with numbered options covering the most likely counts, plus "Other" for custom).
+If the user picks "3 or more", follow up with a structured question whose options cover the most likely counts, plus "Other" for custom.
 
 Flow, Case Management, Agents, Coded Apps, and API Workflows default to **1** each unless the PDD explicitly describes multiple instances.
 
@@ -106,14 +107,14 @@ Produce a **project list** that feeds Level 2 and Level 2.5:
 
 | # | Project Name (proposed) | Product | RPA Sub-type | Source Signal |
 |---|---|---|---|---|
-| 1 | `<NAME>_Flow` | Maestro Flow | — | "orchestrates extraction + reporting" |
+| 1 | `<NAME>_Flow` | Maestro Flow | — | "orchestrates extraction + processing" |
 | 2 | `<NAME>_Extractor` | RPA | Process | "email ingestion + DU extraction" |
 | 3 | `<NAME>_SharedUtils` | RPA | Library | "reusable helpers across projects" |
 | 4 | `<NAME>_Regression` | RPA | Test Automation | "weekly regression pack" |
 | 5 | `<NAME>_LookupApi` | API Workflows | — | "called as a tool from the Flow" |
 | 6 | `<NAME>_ScoreFunction` | Function | — | "deterministic scoring called by the Flow" |
 
-**Derived component projects — never Pass A options.** Coded Functions, IXP models, and custom connectors enter the project list from the step→executor map and Level 3 flags — one row per component, ordered before its consumers. Do not offer them in Pass A; confirm them in the recommendation summary instead. They get build tasks but no per-project SDD file (see [Template Mapping](scope-recommendation-guide.md#template-mapping)).
+**Derived component projects — never Pass A options.** Coded Functions, IXP models, and custom connectors enter the project list from the step→executor map and Level 3 flags — one row per component, ordered before its consumers. Do not offer them in Pass A; confirm them in the recommendation summary instead. Each becomes a genome component built by its owning skill, with no per-project SDD file (see [Template Mapping](scope-recommendation-guide.md#template-mapping)).
 
 Present this project list in the Phase 1 summary ([scope-recommendation-guide.md](scope-recommendation-guide.md) § Presenting the Recommendation).
 
@@ -136,7 +137,7 @@ Produce:
 1. **Pattern** per project group: Single Project, Master Project (queue-connected), or N/A (non-RPA).
 2. **Unified project list** — one row per concrete project the SDD will describe, covering all products in the scope.
 3. **Queue schema** for any Master Projects. The canonical shape is **§12 of the RPA template** — two tables per Master Project group:
-   - `Queue Definitions` with columns `Queue Name | Producer Project | Consumer Project | Trigger Type | Max Retries`
+   - `Queue Definitions` with columns `Queue Name | Producer Project | Consumer Project | Attempts per item`
    - `Queue Item Schema` (one sub-section per queue) with columns `Field Name | Type | Source | Description`
    Do not invent a different shape here. At Part B, list only the queue names + producer/consumer mapping as a preview; the full schema is filled in Phase 2 against the template.
 4. **Cross-product integration notes** — which Flow nodes call which RPA project, which Agent tools call which API Workflow, etc.
@@ -145,9 +146,9 @@ Example unified project list for a Solution (Flow + RPA Library×2 + RPA Test Au
 
 | # | Project Name | Product | Sub-type | Role | Framework | Input Queue | Output Queue |
 |---|---|---|---|---|---|---|---|
-| 1 | `<NAME>_Flow` | Maestro Flow | — | Orchestrates extraction and reporting | — | — | — |
+| 1 | `<NAME>_Flow` | Maestro Flow | — | Orchestrates extraction and processing | — | — | — |
 | 2 | `<NAME>_Dispatcher` | RPA | Process | Collects emails, dispatches to processing queue | Sequence | — | `<QUEUE_1>` |
-| 3 | `<NAME>_Performer` | RPA | Process | Processes each transaction item | REFramework | `<QUEUE_1>` | `<REPORTING_QUEUE>` |
+| 3 | `<NAME>_Performer` | RPA | Process | Processes each transaction item | REFramework | `<QUEUE_1>` | — |
 | 4 | `<NAME>_SharedUtils` | RPA | Library | Reusable date/string/mapping helpers used by Performer | — | — | — |
 | 5 | `<NAME>_IntegrationLib` | RPA | Library | Salesforce + ServiceNow wrappers used by Performer | — | — | — |
 | 6 | `<NAME>_Regression` | RPA | Test Automation | Regression pack validating Performer behavior | — | — | — |

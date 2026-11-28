@@ -1,8 +1,8 @@
 # Solution Design Document — <PROCESS_NAME>
 
-> **Template:** RPA Process / Library / Test Automation.
-> **Phase 2 sections:** §5, §9, §10, §11, §12, §13, §14. **Phase 3 sections:** all others.
-> **Before filling §10-§11:** Run Level 2.5 Part A (RPA Decomposition Signals) from rpa-product-guide.md. The decomposition decision determines whether §10-§11 describe one project or a Master Project with multiple sub-projects.
+<!-- Template: RPA Process / Library / Test Automation.
+     Phase 2 sections: §5, §9, §10, §11, §12, §13, §14. Phase 3 sections: all others.
+     Before filling §10-§11: run Level 2.5 Part A (RPA Decomposition Signals) from rpa-product-guide.md. Its decision sets whether §10-§11 describe one project or a Master Project with sub-projects. -->
 
 ---
 
@@ -24,7 +24,7 @@
 | **Execution autonomy** | <autonomous \| interactive> |
 | **Delivery model** | <cloud \| automation-suite <VERSION_IF_KNOWN> \| standalone \| unspecified> |
 | **SDD scope** | <single-product \| solution> |
-| **Project list section** | <§11 \| §10 + §11 \| Project Inventory> |
+| **Project list section** | <§11 \| §10 + §11 \| Project Inventory (Project Inventory = solution overview only)> |
 | **Solution root SDD** | <PATH_TO_SOLUTION_ROOT_SDD — solution scope only; for single-product omit this row and the three below it (Solution ID, Project SDD role, Independently executable) — every other row stays> |
 | **Solution ID** | <SOLUTION_NAME_KEBAB> |
 | **Project SDD role** | child |
@@ -36,14 +36,10 @@
 
 ---
 
-<!--
-EMIT THIS BLOCK ONLY when Execution autonomy: autonomous.
-Skip entirely in interactive mode (decisions were checkpoint-reviewed).
-See sdd-writing-guide.md Step 2 item 3 for the format spec.
--->
+<!-- EMIT THIS BLOCK ONLY in an autonomous run or a caller's design request (sdd-writing-guide.md Step 4 item 3). -->
 ## Decisions Made
 
-> Autonomous mode picked the five architectural decisions below without a user checkpoint. Override by rerunning in Interactive mode or by editing the relevant SDD section.
+> The architectural decisions below were picked without a user checkpoint. Override by editing the relevant SDD section, or rerun in Interactive mode.
 
 | # | Decision | Picked | One-sentence reason |
 |---|---|---|---|
@@ -60,6 +56,8 @@ See sdd-writing-guide.md Step 2 item 3 for the format spec.
 EMIT THIS BLOCK ALWAYS (both execution modes).
 Durable copy of the Phase 1 Recommended Scope summary — the SDD record of the
 Constraint Gate outcome. See scope-recommendation-guide.md → Summary block for the full format.
+Blocked by platform: when platform-availability-guide.md blocks Solutions for this Delivery model
+(standalone, Automation Suite older than 2.2510, or a user exclusion), list `Solutions → standalone packages`.
 -->
 ## Recommended Scope
 
@@ -71,9 +69,10 @@ Constraint Gate outcome. See scope-recommendation-guide.md → Summary block for
 ---
 
 <!--
-EMIT THIS BLOCK ONLY when at least one [SME REVIEW] item remains after Step 1.5 resolution.
+EMIT THIS BLOCK ONLY when at least one [SME REVIEW] item remains after Step 3 resolution.
 Skip entirely when no review items are open. Once the genome is written, uipath-planner writes this
 section again from it, with every open question. See open-questions-guide.md for the item form.
+Build prerequisites: sdd-writing-guide.md § Writing Rules.
 -->
 ## Action Required — SME Review Items
 
@@ -141,7 +140,7 @@ How to answer:
 
 ### Delivery Team
 
-> Populate from the PDD's Key Contacts section. Include only roles the PDD lists — do not invent names. Omit any row where the PDD is silent. Operational runtime details (robot type, UiPath version, hosts, scalability) live in §16 Deployment Environment.
+<!-- From the PDD's Key Contacts. Only roles the PDD names — never invent names; omit a row the PDD is silent on. Run mode: §11 Project Mode Decision; runtime: §16. -->
 
 | Role | Name | Contact |
 |---|---|---|
@@ -173,7 +172,7 @@ How to answer:
 
 ## 2. Process Map
 
-> **Build the process map STRICTLY from the steps extracted in Phase 1.** Do not invent steps. Use mermaid flowchart syntax. One node per extracted step.
+<!-- Build strictly from the steps extracted in Phase 1: one node per step, no invented steps. Mermaid flowchart syntax. -->
 
 ```mermaid
 flowchart TD
@@ -190,7 +189,7 @@ flowchart TD
 
 ## 3. Detailed Process Steps
 
-> **Single summary table for ALL steps.** Add Step Details subsections ONLY for complex steps.
+<!-- One summary table for all steps. Step Details subsections only for complex steps. -->
 
 ### Step Summary
 
@@ -208,21 +207,14 @@ flowchart TD
 
 ## 4. Business Rules
 
-> **Authoring rules — read before filling the table:**
-> 1. **Extract rules from the PDD** — embedded in step descriptions, Remarks columns, exception conditions, validation prose, screenshots of expected output. Number them BR-01, BR-02, ... in extraction order. Zero rules is almost never correct — re-scan if the table ends empty.
-> 2. **For every output field in §5 Data Definitions, write at least one BR row capturing its validation rule.** Validation = the rule a coding agent or test author can encode in a regex / length check / type assertion / allowed-values check. Take it from the PDD when it states one; otherwise write the format the field's own example values imply, marked `[DEFAULT]` — never an unmarked pattern the source does not support.
-> 3. **Validation-rule shapes** — pick the tightest one the PDD supports:
->    - **Regex** for format-shaped strings (e.g., SHA1: `^[0-9a-f]{40}$`, ISO date: `^\d{4}-\d{2}-\d{2}$`, email, phone, hex, base64)
->    - **Length range** for free text where the PDD specifies bounds (e.g., 1–50 chars)
->    - **Type** for numeric / boolean / date values (e.g., `decimal >= 0`, `boolean`, `DateTime in UTC`)
->    - **Allowed values** (enum-shaped) when the PDD lists a closed set (e.g., `{ "Approved", "Rejected", "Pending" }`)
-> 4. **Tie BR rows to test oracles.** Every validation BR with a concrete example in §17 Canonical Test Case becomes a test assertion. Use the canonical input/output values from Phase 1 extraction — do NOT invent.
-> 5. **Embedded rules count.** A PDD that says "the hash must be 40 lowercase hex chars" is a BR even though the PDD has no dedicated Business Rules section.
-> 6. **Classify every rule before tabling it.** This table holds validation rules only; decision rules and reasoning rules fill the two subsections below. Classification, homes and the coverage check: [Business Rules Guide](../../references/design/business-rules-guide.md).
+<!-- Extraction, classification, homes and the coverage check: [Business Rules Guide](../../references/design/business-rules-guide.md). This table holds validation rules only; decision and reasoning rules fill the two subsections below.
+     - Every §5 output field has at least one validation row: the PDD's rule, or the format its example values imply marked `[DEFAULT]` — never an unmarked pattern the source does not support.
+     - Validation is the tightest shape the PDD supports: regex, length range, type, or allowed values.
+     - Every validation rule with a value in §17 Canonical Test Case becomes a test assertion, with the extracted values, never invented ones. -->
 
 | ID | Rule Name | Description | Trigger Condition | Validation (regex / range / type / allowed values) | Affected Steps |
 |---|---|---|---|---|---|
-| BR-01 | <RULE_NAME> | <DESCRIPTION> | <WHEN_DOES_IT_APPLY> | <REGEX_OR_RANGE_OR_TYPE_OR_ENUM> | <STEP_NUMBERS> |
+| <BR_ID> | <RULE_NAME> | <DESCRIPTION> | <WHEN_DOES_IT_APPLY> | <REGEX_OR_RANGE_OR_TYPE_OR_ENUM> | <STEP_NUMBERS> |
 
 ### Decision Tables
 
@@ -250,68 +242,28 @@ flowchart TD
 
 ## 5. Data Definitions
 
-> **Universal constraints — apply to both Option A and Option B:**
-> 1. Keep types flat — no inheritance, no nesting more than one level deep.
-> 2. Use small entities — ~15 properties (Option A) or keys/columns (Option B) as a working guideline, not a hard cap. Split along a domain boundary when an entity accumulates unrelated concerns; keep a cohesive entity whole even past the guideline (e.g., a 20-column source record mapping 1:1 to one system) `[DEFAULT]`.
-> 3. Default every property / key to `string` unless the PDD specifies a numeric, date, or boolean operation on it. Converting later is cheaper than guessing wrong.
-> 4. Name properties / keys in the PDD's vocabulary (e.g., `InvoiceNumber`, not `doc_id`).
->
-> **Which option to fill in:** Generate ONLY Option A or Option B based on §13 Implementation Mode. Delete the other entirely.
-> - If §13 selects Coded C# or Hybrid → use **Option A**
-> - If §13 selects XAML → use **Option B**
+<!-- The same tables whatever the §13 Implementation Mode: how each record is declared in code or XAML is uipath-rpa's.
+     - Business Type: text, number, yes/no, date, list of <what>, record of <what>. Text unless the PDD does arithmetic, date or yes/no work on the value.
+     - Keep records flat (one level of nesting at most) and small (~15 fields as a guideline): split along a domain boundary, keep a cohesive record whole `[DEFAULT]`.
+     - Name fields in the PDD's vocabulary (`InvoiceNumber`, not `doc_id`). -->
 
-### Option A — Coded C# / Hybrid Mode
+### Transaction Data
 
-> **Option A-specific rule:** use `record` for immutable transaction/output data, `class` for mutable working state. Use `record` unless mutation is required mid-workflow.
-
-
-#### Transaction Data
-
-```csharp
-public record <TransactionDataType>
-{
-    public <TYPE> <FIELD_NAME> { get; init; }
-}
-```
-
-#### Output Data
-
-```csharp
-public record <OutputDataType>
-{
-    public <TYPE> <FIELD_NAME> { get; init; }
-}
-```
-
-#### Enums
-
-```csharp
-public enum <EnumName>
-{
-    <VALUE_1>,
-    <VALUE_2>,
-}
-```
-
-### Option B — XAML Mode
-
-#### Transaction Data (Dictionary)
-
-| Key | Type | Source | Description |
+| Field | Business Type | Source | Description |
 |---|---|---|---|
-| <KEY_NAME> | <TYPE> | <SOURCE_APP_AND_FIELD> | <DESCRIPTION> |
+| <FIELD_NAME> | <BUSINESS_TYPE> | <SOURCE_APP_AND_FIELD> | <DESCRIPTION> |
 
-#### Output Data (Dictionary)
+### Output Data
 
-| Key | Type | Description |
-|---|---|---|
-| <KEY_NAME> | <TYPE> | <DESCRIPTION> |
+| Field | Business Type | Source | Description |
+|---|---|---|---|
+| <FIELD_NAME> | <BUSINESS_TYPE> | <STEP_THAT_SETS_IT> | <DESCRIPTION> |
 
-#### Status/Category Values
+### Status / Category Values
 
-| Variable | Allowed Values |
+| Field | Allowed Values |
 |---|---|
-| <VARIABLE_NAME> | <COMMA_SEPARATED_VALUES> |
+| <FIELD_NAME> | <COMMA_SEPARATED_VALUES> |
 
 ---
 
@@ -337,9 +289,11 @@ public enum <EnumName>
 
 ## 8. Error Handling
 
-| ID | Error Name | Trigger Step | Trigger Condition | Retry Policy | Action |
-|---|---|---|---|---|---|
-| E1 | <ERROR_NAME> | <STEP_NUMBER> | <HOW_TO_DETECT> | <RETRY_COUNT_AND_BACKOFF> | <WHAT_TO_DO> |
+<!-- Failure wording: sdd-writing-guide.md § Writing Rules. Every row names one §3 step. -->
+
+| ID | Error Name | Trigger Step | Trigger Condition | What Must Happen |
+|---|---|---|---|---|
+| E1 | <ERROR_NAME> | <STEP_NUMBER> | <HOW_TO_DETECT> | <ATTEMPTS_AND_WAIT_THEN_OUTCOME> |
 
 **Default handler:** For any unanticipated system error, <DEFAULT_ACTION>.
 
@@ -347,7 +301,10 @@ public enum <EnumName>
 
 ## 9. Application Inventory
 
-> **List all applications.** For SaaS integrations (Salesforce, Jira, etc.), flag `Integration Service — <CONNECTOR_SLUG>` in the Access Method column (e.g., `Integration Service — salesforce`) — the implementation plan will create a task to configure the connector, and §14 only needs `UiPath.IntegrationService.Activities` for all connectors combined. For email, specify the protocol (IMAP, O365 Graph API, Exchange/EWS, POP3) — do not default to O365. See the [Package Selection Guide](../../references/design/package-selection-guide.md) for the full Access Method → Package mapping.
+<!-- List all applications.
+     - SaaS integrations (Salesforce, Jira, …): Access Method `Integration Service — <CONNECTOR_SLUG>`. Each flagged item becomes a genome component built by its owning skill; §14 needs only `UiPath.IntegrationService.Activities` for all connectors combined.
+     - Email: name the protocol (IMAP, O365 Graph API, Exchange/EWS, POP3) — never default to O365.
+     - Access Method → package mapping: [Package Selection Guide](../../references/design/package-selection-guide.md). -->
 
 | # | Application | Interface | Access Method | Role | Interaction Pattern | Session Management |
 |---|---|---|---|---|---|---|
@@ -369,7 +326,7 @@ public enum <EnumName>
 
 ### Integration Service Connections
 
-<!-- List every Integration Service connection and how it is provisioned: reuse an existing IS connector, custom-build a connector, or call the system over direct HTTP. Access Method values: `Integration Service — <CONNECTOR_SLUG>`, `Custom connector — <CONNECTOR_SLUG>`, or `Direct HTTP`. This complements the Access Method column of the Application Inventory table above. -->
+<!-- Every Integration Service connection and how it is provisioned: reuse an existing Integration Service connector, custom-build a connector, or call the system over direct HTTP. Access Method values: `Integration Service — <CONNECTOR_SLUG>`, `Custom connector — <CONNECTOR_SLUG>`, or `Direct HTTP`. Complements the Access Method column of the Application Inventory table above. Build prerequisites: sdd-writing-guide.md § Writing Rules. -->
 
 | Connector | System | Access Method | Used By |
 |---|---|---|---|
@@ -377,19 +334,27 @@ public enum <EnumName>
 
 ### IXP / Document Understanding Models
 
-<!-- Extraction from semi-structured documents (invoices, forms) consumed by this project. Implementation routes to uipath-ixp; the model is built and published BEFORE its consumers. OPTIONAL subsection — omit entirely when no document extraction is in scope (exempt from the template-superset check). -->
+<!-- Extraction from semi-structured documents (invoices, forms) consumed by this project, built by uipath-ixp before its consumers. IXP model rows: sdd-writing-guide.md § Writing Rules. OPTIONAL subsection — omit entirely when no document extraction is in scope (exempt from the template-superset check). -->
 
 | Model / Project | Called From Workflow / Step | Document Types | Purpose |
 |---|---|---|---|
 | `<IXP_PROJECT_NAME>` | `<WORKFLOW_OR_STEP>` | <DOCUMENT_TYPES> | <PURPOSE> |
 
+### Build Assumptions
+
+<!-- What this design needs a product to be able to do, beyond what this template states (sdd-writing-guide.md § Writing Rules). One row per capability; its owning skill confirms it at build, before the steps that rely on it are built. A workflow that waits for a person or an outside event is a row here. `None.` when the design relies on nothing unconfirmed. -->
+
+| # | The Design Relies On | Relied On By | Confirmed By | If It Does Not Hold |
+|---|---|---|---|---|
+| A1 | <CAPABILITY_IN_PLAIN_WORDS> | <STEPS_OR_COMPONENTS> | `<OWNING_SKILL>` | <FALLBACK_STEP_OR_COMPONENT> |
+
 ---
 
 ## 10. Master Project Architecture
 
-> **This section is produced by Level 2.5 Part A (RPA Decomposition Signals) from rpa-product-guide.md.**
-> Generate EITHER Option A (Master Project) OR Option B (Single Project). **Delete the other entirely.**
-> Decision rule: Option A only when Part A names, for every split, the boundary that requires it (scaling, failure isolation, a long wait, ownership or cadence). Otherwise → Option B.
+<!-- Produced by Level 2.5 Part A (RPA Decomposition Signals) from rpa-product-guide.md.
+     Generate EITHER Option A (Master Project) OR Option B (Single Project); delete the other entirely.
+     Option A only when Part A names, for every split, the boundary that requires it (scaling, failure isolation, a long wait, ownership or cadence). Otherwise → Option B. -->
 
 ### Option A — Master Project (multiple queue-connected sub-projects)
 
@@ -400,7 +365,7 @@ public enum <EnumName>
 
 #### Sub-projects overview
 
-> **Sub-type column:** one of Process / Library / Test Automation. Libraries and Test Automation projects do not use Orchestrator queues — put `—` in Input Queue / Output Queue for those rows.
+<!-- Sub-type: Process / Library / Test Automation. Libraries and Test Automation projects use no Orchestrator queue: `—` in Input Queue / Output Queue. -->
 
 | # | Project Name | Sub-type | Role | Framework | Input Queue | Output Queue | PDD Steps |
 |---|---|---|---|---|---|---|---|
@@ -416,199 +381,112 @@ flowchart LR
     D["<NAME>_Dispatcher"] -->|"<QUEUE_1>"| P["<NAME>_Performer"]
 ```
 
-> Each sub-project has its own §11 Project Structure, §13 Implementation Mode, and §14 Packages subsection below.
+<!-- Each sub-project has its own §11 Project Structure, §13 Implementation Mode and §14 Packages subsection. -->
 
 ### Option B — Single Project
 
 **Boundaries named:** none — one project
 
-> Skip this section. §11 describes a single project. §12 applies only when the project defines or consumes a queue — see §12's include rule.
+<!-- Keep §10 with this one line; §11 describes the single project. §12 applies only when the project defines or consumes a queue — see §12's include rule. -->
 
 ---
 
 ## 11. Project Structure
 
+<!-- §11 Project Mode Decision is the one home of each project's sub-type, attendance, start, framework and persistence; other sections name it. -->
+
 ### Solution / Project Breakdown
 
-<!-- Every buildable project in the solution: its product, source repo, Orchestrator folder, and run mode. Solution-wide — fill once. One row per project (single row for a single-project solution). -->
+<!-- Every buildable project in the solution: its product, source repo and Orchestrator folder; RPA run mode: Project Mode Decision below. Solution-wide — fill once. One row per project (single row for a single-project solution). -->
 
-| Project | Product (RPA / API / Agent / …) | GitHub Repository | Folder | Attended / Unattended |
-|---|---|---|---|---|
-| <PROJECT_NAME> | <PRODUCT> | <GIT_URL_OR_REPO> | <FOLDER_PATH> | <ATTENDED / UNATTENDED / N-A> |
+| Project | Product (RPA / API / Agent / …) | GitHub Repository | Folder |
+|---|---|---|---|
+| <PROJECT_NAME> | <PRODUCT> | <GIT_URL_OR_REPO> | <FOLDER_PATH> |
 
 ### Reusable Components
 
-<!-- Components reused from an existing library vs. new reusable components this build will publish. Solution-wide — fill once. -->
+<!-- Components reused from an existing library (the tenant libraries Step 5 selected included) vs. new reusable components this build will publish. Solution-wide — fill once. -->
 
 | Type (reused / new-reusable) | Name | Details |
 |---|---|---|
 | reused | <COMPONENT_NAME> | <SOURCE_LIBRARY_AND_VERSION> |
 | new-reusable | <COMPONENT_NAME> | <WHAT_IT_ENCAPSULATES_AND_CONSUMERS> |
 
-> **For Master Project (Option A in §10):** repeat this entire section per sub-project, with a heading like "### 11.1 ProjectName_Dispatcher", "### 11.2 ProjectName_Performer", etc.
-> **For Single Project (Option B in §10):** use this section once.
->
-> Framework AND authoring mode (§13) together determine folder layout:
-> - REFramework + XAML → REFramework structure below
-> - Sequence + XAML → Sequence structure below
-> - Coded C# → Coded structure below — for atomic / non-transactional scope. A transactional (REFramework-semantics) project needing coded logic defaults to **Hybrid** — keep the XAML REFramework shell, put the bounded logic in coded workflows; never hand-roll a coded transaction framework
-> - Hybrid → XAML structure (REFramework or Sequence shell) + a `Workflows/` coded subset (see Coded layout note)
-> - Persistence = YES (§11 Project Mode Decision) → add persistence activities to the chosen layout; mark suspend/resume points in the Workflow Inventory
-
-### Project Type
-
-Select the sub-type **per project** (sourced from Level 1.5 / Level 1.75 Pass C). A Master Project may mix sub-types — for example, a Performer (Process) alongside a shared Library and a Test Automation project validating the Performer.
-
-| # | Project Name | Sub-type |
-|---|---|---|
-| 1 | `<PROJECT_NAME_1>` | Process |
-| 2 | `<PROJECT_NAME_2>` | Library |
-| 3 | `<PROJECT_NAME_3>` | Test Automation |
-
-Sub-type reference:
-
-- **Process** — standard end-to-end automation (default)
-- **Library** — reusable component consumed by other automations (no queue I/O; published as NuGet)
-- **Test Automation** — test cases validating application behavior (Test Manager integration; no Master Project queue I/O)
-
 ### Project Mode Decision
 
-<!-- Write this table with its ten columns as they stand, one row per project — never a
-     Decision / Selected mode / Reason table, which drops Attendance and Initiation.
-     INDEPENDENT dimensions per project — never let one choice silently decide another.
-     Sources: Type ← Level 1.5 · Compatibility ← PDD/§16 (Cross-platform when no desktop-UI or Windows-only
-     dependency exists — headless/web/API work; Windows otherwise; legacy only when unavoidable) ·
-     Authoring ← §13 / Level 2 · Attendance + Initiation ← §16 Robot & Runtime (keep §16 Trigger row aligned) ·
-     Framework ← rpa-product-guide R-04 · Persistence ← in-flight human approval / async wait
-     (rpa-product-guide → Long-running workflows; a modifier on the framework, not a framework) ·
-     Packaging ← §18 (solution for multi-project / cross-product / team standardization; standalone nupkg publish is the single-project default).
-     "Unattended + queue-triggered" is Attendance=Unattended, Initiation=Queue trigger — two columns, one truth each. -->
+<!-- Write this table with its columns as they stand, one row per project — never a Decision / Selected mode /
+     Reason table, which drops Attendance and Initiation. The columns are independent — one choice never silently decides another.
+     - Type ← Level 1.5 / Level 1.75 Pass C. A Master Project may mix types (a Process Performer, a shared Library, a Test Automation project validating it).
+     - Compatibility ← the PDD: Cross-platform when no desktop-UI or Windows-only dependency exists (headless, web, API work); Windows otherwise; legacy only when unavoidable.
+     - Authoring ← §13 / Level 2. Framework ← rpa-product-guide R-04.
+     - Attendance, Initiation ← the PDD. "Unattended + queue-triggered" is Attendance=Unattended, Initiation=Queue trigger.
+     - Persistence ← an in-flight human approval or async wait (rpa-product-guide → Long-running workflows): YES makes each wait a Build Assumptions row (§9); the framework stays as picked. -->
 
-| # | Project | Type | Compatibility | Authoring | Attendance | Initiation | Framework | Persistence (long-running) | Packaging |
-|---|---|---|---|---|---|---|---|---|---|
-| 1 | `<PROJECT_NAME>` | <Process / Library / Test Automation> | <Windows / Cross-platform> | <XAML / Coded C# / Hybrid> | <Attended / Unattended / Attended-start + unattended-resume> | <Manual / Scheduled / Queue trigger / Event / API> | <Sequence / REFramework> | <YES — suspend/resume points in Workflow Inventory / NO> | <Standalone package / Solution (.uipx)> |
+| # | Project | Type | Compatibility | Authoring | Attendance | Initiation | Framework | Persistence (long-running) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | `<PROJECT_NAME>` | <Process / Library / Test Automation> | <Windows / Cross-platform> | <XAML / Coded C# / Hybrid> | <Attended / Unattended / Attended-start + unattended-resume> | <Manual / Scheduled / Queue trigger / Event / API> | <Sequence / REFramework> | <YES — Build Assumptions row per wait / NO> |
 
-> **For Master Project (Option A in §10):** repeat the Recommended Structure, Workflow Inventory, and Workflow Dependencies subsections below **per sub-project**, honoring the sub-type selected in the table above.
-> **Libraries and Test Automation projects inside a Master Project do not consume or produce Orchestrator queues** — their rows in §10 and §12 use `—` for Input Queue / Output Queue.
+<!-- Master Project (Option A in §10): repeat this section per sub-project — Recommended Structure, Workflow Inventory, Screens Visited and Workflow Dependencies — honoring its Type above.
+     Libraries and Test Automation projects inside a Master Project consume and produce no Orchestrator queue: `—` for Input Queue / Output Queue in §10 and §12. -->
 
 ### Recommended Structure
 
-> **Choose the layout matching the project's framework.** REFramework projects use the REF folder structure. Sequence projects use a simple flat structure.
-
-#### REFramework layout (for Performer projects)
+<!-- The scaffold is uipath-rpa's: the framework's own files, the configuration file, the folders and how the entry point reaches the business workflows come from the Framework column of §11 Project Mode Decision. Never draw them. List only the files this design adds. -->
 
 ```text
 <PROJECT_NAME>/
-├── project.json
-├── Main.xaml
-├── Framework/
-│   ├── InitAllSettings.xaml
-│   ├── InitAllApplications.xaml
-│   ├── GetTransactionData.xaml
-│   ├── Process.xaml
-│   ├── SetTransactionStatus.xaml
-│   ├── CloseAllApplications.xaml
-│   └── KillAllProcesses.xaml
-├── Process/
-│   ├── <WORKFLOW_FILE>
-│   └── ...
-├── Data/
-│   ├── Config.xlsx
-│   └── ...
-└── Tests/
-    └── ...
+├── <WORKFLOW_FILE>        (one line per §Workflow Inventory row)
+└── ...
 ```
-
-#### Sequence layout (for a Dispatcher or a simple project)
-
-```text
-<PROJECT_NAME>/
-├── project.json
-├── Main.xaml
-├── Process/
-│   ├── <WORKFLOW_FILE>
-│   └── ...
-├── Data/
-│   ├── Config.xlsx
-│   └── ...
-└── Tests/
-    └── ...
-```
-
-#### Coded layout (for Coded C# projects — §13)
-
-<!-- The uipath-rpa skill owns the scaffold — this layout sets the SDD's structural expectation only. -->
-
-```text
-<PROJECT_NAME>/
-├── project.json          (coded entry points registered here)
-├── Main.cs               (entry-point coded workflow)
-├── Workflows/
-│   ├── <WorkflowName>.cs
-│   └── ...
-├── Objects/              (typed DTOs / records / enums)
-├── Data/
-│   └── Config.xlsx
-└── Tests/
-    └── <CodedTestCase>.cs
-```
-
-> **Hybrid:** use the XAML layout (REFramework or Sequence) plus a `Workflows/` folder of coded `.cs` workflows invoked via Invoke Workflow File. Do NOT emit an XAML `Main.xaml` tree for a pure Coded C# project.
 
 ### Workflow Inventory
 
-> **For Master Project:** one workflow inventory table per sub-project. **For Single Project:** one workflow inventory table total.
+<!-- One table per project. Runs says when the workflow runs, one of: `once, before the items` (reads or prepares the whole set), `per item` (the work on one transaction item, and nothing that needs the other items), `once, after the items` (grouping, totals, reconciliation, publishing), `own entry point` (started by its own trigger). A workflow that waits for a person or an outside event is a Build Assumptions row: where a wait may sit is uipath-rpa's. -->
 
-| # | Workflow File | Responsibility | PDD Steps | Inputs | Outputs |
-|---|---|---|---|---|---|
-| 1 | `<FILENAME>` | <RESPONSIBILITY> | <STEP_NUMBERS> | <INPUT_ARGS_WITH_TYPES> | <OUTPUT_ARGS_WITH_TYPES> |
+| # | Workflow File | Runs | Responsibility | PDD Steps | Inputs | Outputs |
+|---|---|---|---|---|---|---|
+| 1 | `<FILENAME>` | <once, before the items / per item / once, after the items / own entry point> | <RESPONSIBILITY> | <STEP_NUMBERS> | <INPUT_ARGS_WITH_TYPES> | <OUTPUT_ARGS_WITH_TYPES> |
 
-### UI Element Groups (selector inventory)
+### Screens Visited
 
-> **Include this subsection only when the project does UI automation.** Skip for headless / API-only projects. One row per Object Repository **screen** (or logical UI element group), in the order the workflow reaches them. How the elements are captured is `uipath-rpa`'s.
+<!-- Include only when the project drives an application's UI; omit for headless / API-only projects. One row per screen, in the order the workflow reaches them. Which elements are captured, and how, is uipath-rpa's. -->
 
-| # | Application | Screen | Elements (names) |
-|---|---|---|---|
-| 1 | <APP_FROM_§9> | <SCREEN_NAME> | <COMMA_SEPARATED_ELEMENT_NAMES> |
+| # | Application | Screen (business name) |
+|---|---|---|
+| 1 | <APP_FROM_§9> | <SCREEN_NAME> |
 
 ### Workflow Dependencies
 
-```text
-<MAIN_WORKFLOW>
-├── calls <WORKFLOW_1>
-└── calls <WORKFLOW_2>
-```
+<!-- Which business workflow of the inventory calls which. How the framework's entry point reaches them is uipath-rpa's: no entry-point or framework file appears here. `None.` when no business workflow calls another. -->
+
+| Workflow | Calls |
+|---|---|
+| `<WORKFLOW_FILE>` | `<WORKFLOW_FILE>`, … |
 
 ---
 
 ## 12. Queue Architecture
 
-> **Include this section whenever the design defines or consumes ANY Orchestrator queue** — always for Master Project (Option A in §10), AND for a Single Project that is queue-triggered, consumes an existing queue (owned by another team), or self-dispatches. Delete only when no queue is involved. For an existing external queue, fill the Configuration table with the observed settings and mark rows the owning team controls `[SME REVIEW]`.
+<!-- Include whenever the design defines or consumes any Orchestrator queue: always for a Master Project (Option A in §10), and for a Single Project that is queue-triggered, consumes an existing queue (owned by another team) or self-dispatches. Delete only when no queue is involved. For an existing external queue, fill Queue Configuration with the observed settings and mark rows the owning team controls `[SME REVIEW]`. How the consumer starts: §11 Initiation. -->
 
 ### Queue Definitions
 
-| Queue Name | Producer Project | Consumer Project | Trigger Type | Max Retries |
-|---|---|---|---|---|
-| `<QUEUE_NAME>` | `<PRODUCER_PROJECT>` | `<CONSUMER_PROJECT>` | <QUEUE_TRIGGER / SCHEDULED / MANUAL> | <MAX_RETRIES> |
+| Queue Name | Producer Project | Consumer Project | Attempts per item |
+|---|---|---|---|
+| `<QUEUE_NAME>` | `<PRODUCER_PROJECT>` | `<CONSUMER_PROJECT>` | <ATTEMPTS_BEFORE_THE_ITEM_FAILS> |
 
 ### Queue Configuration
 
-<!-- Orchestrator-level design decisions per queue — not implementation detail. One table per queue.
-     Fill each row; [SME REVIEW] where the ops team must confirm. -->
+<!-- Design decisions per queue, one table per queue. Fill each row; [SME REVIEW] where the ops team must confirm. Encryption and retention: §16 Security & Data Handling. -->
 
 #### `<QUEUE_NAME>` — configuration
 
 | Setting | Decision |
 |---|---|
 | **Unique reference** | <YES / NO> — duplicate policy: <REJECT_DUPLICATES_VIA_REFERENCE_FORMAT / ALLOW> ; reference format: `<e.g., <InvoiceNo>-<VendorId>>` |
-| **Retry ownership** | <Orchestrator auto-retry ×N / REFramework retry ×N — pick ONE owner; both active = double retries> |
 | **Priority / Deadline / Postpone** | <DEFAULT_PRIORITY; deadline rule; postpone rule OR —> |
 | **Queue SLA / risk SLA** | <SLA_TARGET; RISK_SLA_ALERT_THRESHOLD OR —> |
-| **Encryption** | <YES for PII-bearing SpecificContent / NO> |
-| **Analytics fields** | <FIELDS_PROMOTED_TO_ANALYTICS_OR_—> (affects Insights) |
-| **Retention / archival** | <RETENTION_DAYS; archive target storage bucket OR [SME REVIEW]> |
-| **Poison items** | <handling after final retry: alert + reconciliation procedure> |
-| **Trigger threshold** | <e.g., 1 job per N new items, max M concurrent jobs — align with §16 sizing> |
+| **Poison items** | <handling after the last attempt: alert + reconciliation procedure> |
 
 ### Queue Item Schema
 
@@ -616,7 +494,7 @@ Sub-type reference:
 
 | Field Name | Type | Source | Description |
 |---|---|---|---|
-| `<FIELD_NAME>` | <STRING/INT/BOOL> | <SOURCE_STEP_OR_VARIABLE> | <DESCRIPTION> |
+| `<FIELD_NAME>` | <BUSINESS_TYPE> | <SOURCE_STEP_OR_VARIABLE> | <DESCRIPTION> |
 
 #### `<QUEUE_NAME>` — Output / Analytics fields
 
@@ -624,42 +502,40 @@ Sub-type reference:
 
 | Field Name | Kind (Output / Analytics) | Type | Description |
 |---|---|---|---|
-| `<FIELD_NAME>` | <OUTPUT / ANALYTICS> | <STRING/INT/BOOL> | <DESCRIPTION> |
+| `<FIELD_NAME>` | <OUTPUT / ANALYTICS> | <BUSINESS_TYPE> | <DESCRIPTION> |
 
-> **Repeat the Queue Configuration and Queue Item Schema subsections for each queue.**
+<!-- Repeat Queue Configuration and Queue Item Schema for each queue. -->
 
 ### Queue Processing Rules
 
-- Each Performer project processes one queue item at a time via REFramework's `GetTransactionData`.
-- On business exception: set queue item status to **Failed** (do not retry), with the exception reason in the item's output.
-- On system error: set queue item status to **Failed** (retry per the queue's **Retry ownership** decision above), with the error recorded on the item when retries are exhausted.
+- Each Performer project works one queue item at a time.
+- On business exception: the queue item is **Failed** and not retried, with the exception reason in the item's output.
+- On system error: the queue item is retried up to its queue's **Attempts per item**, then **Failed** with the error recorded on the item.
 - Dispatcher must populate ALL SpecificContent fields listed above — missing fields cause Performer failures.
-- When Queue Configuration sets **Unique reference = YES**: Dispatcher sets the Reference; duplicates are rejected by Orchestrator, never deduplicated in Performer code. When **NO**: name the duplicate/idempotency owner in §16 Operational Support.
+- When Queue Configuration sets **Unique reference = YES**: Dispatcher sets the Reference and a duplicate item is never added. When **NO**: name the duplicate/idempotency owner in §16 Operational Support.
 
 ---
 
 ## 13. Implementation Mode
 
-> **For Master Project:** specify the mode per sub-project if they differ. A Dispatcher may be XAML while a Performer with heavy data logic is Hybrid.
->
-> **Before recommending Coded C#:** verify at least two checklist items from the [RPA Product Guide § Selection checklist before recommending Coded C#](../../references/design/rpa-product-guide.md#selection-checklist-before-recommending-coded-c) are true. "Cleaner control flow over a UI loop" is **not** a sufficient justification — XAML already has Try/Catch + Retry Scope + For Each over UIA activities. If the process body is >70% UI automation with minimal data shaping, recommend **XAML** or **Hybrid**.
+<!-- Master Project: the mode per sub-project when they differ (an XAML Dispatcher beside a Hybrid Performer with heavy data logic).
+     - Coded C# needs at least two Coded C# rows of the Level 2 table to hold ([RPA Product Guide § Selection checklist before recommending Coded C#](../../references/design/rpa-product-guide.md#selection-checklist-before-recommending-coded-c)).
+     - A transactional project that needs coded logic is Hybrid — never hand-roll a coded transaction framework.
+     - Justification cites at least one §3 characteristic ("§3 shows 9 of 11 steps drive a browser; only step 7 shapes data" → XAML; "§3 step 5 deserializes JSON and aggregates 200 records, the other 8 steps are UI" → Hybrid). -->
 
 **Recommendation:** <XAML / Coded C# / Hybrid>
 
-**Justification (2-3 sentences):** Cite at least one concrete process characteristic from §3 Detailed Process Steps that drives the choice (e.g., "§3 shows 9 of 11 steps are UI driving against a browser; only step 7 involves data shaping" → XAML; or "§3 step 5 needs JSON deserialization + LINQ aggregation across 200 records, the other 8 steps are UI" → Hybrid).
+**Justification:** <2_TO_3_SENTENCES_CITING_§3>
 
-**If Coded C# selected:** list the satisfied checklist items inline (e.g., "Coded C# selected: significant data shaping (regex+hash pipeline) AND custom DTOs for `TransactionData`/`OutputData`").
-
+**Coded C# checklist items met:** <ITEMS — Coded C# only; omit this line otherwise>
 
 ---
 
 ## 14. Packages
 
-> **List required NuGet packages only.** For Master Project: one table per sub-project. Infer packages from §9 Application Inventory and the process steps using the [Package Selection Guide](../../references/design/package-selection-guide.md) — it contains the full Application-Type → Package matrix, Integration Service vs NuGet decision rules, and a selection checklist.
->
-> **Do NOT list Integration Service connectors in this table.** Integration Service connections are declared in §9 Application Inventory (Access Method = `Integration Service — <CONNECTOR_SLUG>`) and run on `UiPath.IntegrationService.Activities` — that package is the only §14 entry needed for them. See the Package Selection Guide's "Integration Service Connectors vs NuGet Packages" section for side-by-side examples.
-
-> **Versions:** `Latest`, unless the PDD, AS-IS or TO-BE names a version — then that exact version ([Package Selection Guide](../../references/design/package-selection-guide.md) Pitfall 1).
+<!-- Required NuGet packages only; Master Project: one table per sub-project. Infer them from §9 and the process steps with the [Package Selection Guide](../../references/design/package-selection-guide.md).
+     - Integration Service connectors are never rows: they are declared in §9 and run on `UiPath.IntegrationService.Activities`, the only §14 entry they need.
+     - Version: `Latest`, unless the PDD, AS-IS or TO-BE names one — then that exact version (Package Selection Guide Pitfall 1). -->
 
 | Package | Version | Purpose |
 |---|---|---|
@@ -678,22 +554,17 @@ Sub-type reference:
 
 ## 16. Deployment Environment
 
-> **Operational / infrastructure details.** These fields typically come from the deployment team, not the PDD — never invent values. A subsection whose facts the source does not give holds one line instead of a table of gaps: `[SME REVIEW] D<n>: pending deployment-team input`, one Action Required item per subsection whose Question names what to confirm (robot type, VM size, Studio and Robot versions…). This section drives robot provisioning, pre-production checks, and version compatibility.
+<!-- These facts come from the deployment team, not the PDD — never invent values. A subsection whose facts the source does not give holds one line instead of a table of gaps: `[SME REVIEW] D<n>: pending deployment-team input`, one Action Required item per subsection whose Question names what to confirm. Run mode, start and compatibility: §11 Project Mode Decision. -->
 
 ### Robot & Runtime
 
 | Field | Value |
 |---|---|
-| **Robot type** | <ATTENDED / UNATTENDED / BOR (Back-Office) / FOR (Front-Office)> |
-| **Trigger** | <QUEUE_BASED / SCHEDULED / MANUAL / EVENT> |
 | **Orchestrator tenant / folder** | <TENANT_NAME> / <FOLDER_PATH> |
-| **UiPath Studio version** | <e.g., 24.10.5> |
-| **UiPath Robot version** | <e.g., 24.10> |
+| **UiPath Studio version** | <STUDIO_VERSION> |
+| **UiPath Robot version** | <ROBOT_VERSION> |
 | **Orchestrator** | <Cloud / On-prem version> |
-| **Cross-platform / Windows-only** | <Windows Legacy / Windows / Cross-platform> |
-| **Recommended screen resolution** | <e.g., 1920×1080> (UI automation projects only) |
-| **Source repository** | <GIT_URL_OR_SME_REVIEW> |
-| **Shared libraries referenced** | <COMMA_SEPARATED_LIBRARY_NAMES_OR_NONE — from Step 2.5 Tenant Library Discovery> |
+| **Recommended screen resolution** | <RESOLUTION> (UI automation projects only) |
 
 ### Environments (DEV / UAT / PROD)
 
@@ -704,60 +575,37 @@ Sub-type reference:
 | Orchestrator + Tenant/Service | <URL_OR_TENANT> | <URL_OR_TENANT> | <URL_OR_TENANT> | <PROJECTS_OR_ALL> |
 | Folder | <FOLDER_PATH> | <FOLDER_PATH> | <FOLDER_PATH> | <PROJECTS_OR_ALL> |
 
-### Development & Production Hosts
-
-| Environment | Machine Name(s) / VM Pool | Notes |
-|---|---|---|
-| Development | <VM_1>, <VM_2> | <NOTES> |
-| UAT | <VM_1>, <VM_2> | <NOTES> |
-| Production | <VM_1>, <VM_2> | <NOTES> |
-
 ### Runtime Prerequisites
 
-List every prerequisite required on the robot machine before first run:
+<!-- Everything the robot machine needs before the first run: installed applications, browser extensions, network access, certificates, a person at the machine for an interactive login. -->
 
-- <e.g., Microsoft Excel installed (Office 365 or 2019+)>
-- <e.g., Microsoft Outlook installed if using Classic Outlook activities>
-- <e.g., Chrome browser + UiPath Chrome Extension>
-- <e.g., Network access to SharePoint / SAP endpoints>
-- <e.g., Certificate trust for internal CAs>
-- <e.g., Human operator present at the machine for an interactive token login>
+- <PREREQUISITE_1>
+- <PREREQUISITE_2>
 
 ### Scalability & Concurrency
 
-<!-- Size unattended capacity from the numbers, not gut feel. Inputs come from §1 (volume, handling time)
-     and the SLA; [SME REVIEW] for infrastructure values the deployment team owns. -->
+<!-- Size from §1 volume and handling time and the SLA; [SME REVIEW] for what the deployment team owns. -->
 
 | Field | Value |
 |---|---|
-| **Volume** | <ITEMS_PER_DAY — from §1> |
-| **Avg handling time (automated)** | <MINUTES_PER_ITEM — from §1> |
-| **Peak window** | <TIME_WINDOW — e.g., 08:00–12:00> |
-| **Completion SLA** | <e.g., all items done by 17:00 / within 2h of arrival> |
-| **Exception + retry factor** | <e.g., 1.15 = 10% exceptions × avg 1.5 retries> |
-| **Utilization target** | <e.g., 0.8 — leave headroom for other processes on the pool [DEFAULT]> |
-| **Required runtimes** | ceil(volume × avg-minutes × retry-factor ÷ (peak-window-minutes × utilization)) = **<N>** |
-| **Concurrent job limit** | <N> (Orchestrator queue trigger concurrency — align with §12 Trigger threshold) |
-| **Machine template / VM pool** | <MACHINE_TEMPLATE_NAME_OR_SME_REVIEW> |
-| **Robot accounts** | <N accounts; naming; foreground (UI session) / background (headless)> |
-| **Session requirements** | <console / RDP; resolution per §16 Robot & Runtime; sessions available in peak window> |
+| **Peak window** | <TIME_WINDOW> |
+| **Completion SLA** | <SLA> |
+| **Robots needed in the peak window** | <N — from §1 volume × automated handling time, or [SME REVIEW]> |
 | **Calendars / time zone** | <BUSINESS_CALENDAR; TZ; non-working-day policy> |
-| **Overlapping-job policy** | <e.g., Stop-after-N-minutes / skip when previous still running> |
+| **Overlapping runs** | <what happens when a run is still going when the next one is due> |
 | **License assumption** | <UNATTENDED_RUNTIME_COUNT / attended licenses — [SME REVIEW]> |
 
 ### Operational Support
 
-<!-- Production-run design decisions — how the automation behaves when things go wrong and who owns it.
-     Fill each row; [SME REVIEW] where the ops team must confirm. -->
+<!-- How the automation behaves in production when things go wrong, and who owns it. Fill each row; [SME REVIEW] where the ops team must confirm. -->
 
 | Concern | Design decision |
 |---|---|
-| **Idempotency** | <duplicate-write prevention PER TARGET SYSTEM — idempotency key / pre-write existence check / queue unique reference (§12)> |
+| **Re-runs** | <which writes are safe to run twice, per target system, and what keeps a re-run from writing twice — an existence check, a queue unique reference (§12) — as the source states it; unstated → `[SME REVIEW]`, never a guarantee> |
 | **Checkpoint & restart** | <resume point after mid-run failure; reconciliation query that proves no item was lost or double-processed> |
-| **Session recovery** | <app/browser crash recovery: kill + re-login + resume transaction / fail item; KillAllProcesses scope> |
+| **Session recovery** | <what happens when the application or browser stops responding mid-item: restart it and retry the item, or fail the item> |
 | **Correlation & logging** | <correlation ID carried across systems (e.g., queue Reference); structured log fields: <FIELD_LIST>> |
 | **Alerting** | <thresholds: consecutive failures ≥N, queue SLA at risk (§12), zero items processed in window; alert channel> |
-| **Dashboards** | <Orchestrator / Insights views the ops team watches; owner> |
 | **Reprocessing** | <procedure to re-run failed/poison items after a fix — who triggers it, from which queue/status> |
 | **Support ownership** | <L1/L2 owner; runbook location [SME REVIEW]> |
 | **Business continuity** | <manual fallback while automation is down; rollback of partial writes> |
@@ -769,24 +617,17 @@ List every prerequisite required on the robot machine before first run:
 | Concern | Design decision |
 |---|---|
 | **Data classification & PII** | <classification; PII fields from §5; masking rule in logs and queue items> |
-| **Credentials** | <Orchestrator credential / secret assets (§15); rotation owner + cadence; no secrets in Config.xlsx or logs> |
+| **Credentials** | <Orchestrator credential / secret assets (§15); rotation owner + cadence; no secret in configuration files or logs> |
 | **Service accounts & privilege** | <robot account privileges = least required per app; asset/queue folder scope> |
-| **Encryption** | <in transit (TLS to all endpoints); at rest (queue encryption §12, storage buckets)> |
-| **Retention & audit** | <data retention/purge per store; audit events required; log retention> |
+| **Encryption** | <in transit (TLS to all endpoints); at rest (PII-bearing queue items §12, storage buckets)> |
+| **Retention & audit** | <data retention/purge per store, queues included; audit events required; log retention> |
 | **Network** | <allowlists for robot VMs; proxy requirements; internal CA certificates — owner (§16 Runtime Prerequisites)> |
 
 ### Delivery Quality Gates
 
-<!-- Gates between "compiles" and "runs in PROD". Decisions only — procedures live with the build/deploy skills. -->
-
 | Gate | Decision |
 |---|---|
-| **Package versioning** | <pinned dependency versions (§14); project semver scheme; version bump rule> |
-| **Workflow Analyzer** | <ruleset / profile; enforce on publish? [DEFAULT: yes]> |
-| **Source control** | <repo (§11 Solution / Project Breakdown); branch strategy; review requirement> |
-| **CI validation** | <analyze + test on PR / pre-publish; pipeline owner OR — for manual> |
 | **Promotion path** | <DEV → UAT → PROD (§16 Environments); approval gate per hop> |
-| **Rollback** | <previous package version retained; process rollback procedure> |
 | **Production smoke test** | <first-run verification after each PROD deploy — scenario + owner> |
 
 ### Non-Functional Requirements
@@ -834,22 +675,17 @@ List every prerequisite required on the robot machine before first run:
 
 ### Non-Functional Tests
 
-<!-- Prove the §16 design, not just the happy path. `—` a row only with a stated reason. -->
+<!-- Prove the §16 design, not just the happy path. One row each for peak volume within the window, concurrent robots on one queue (no item worked twice), restart after a mid-item failure (no item lost or doubled). One row each also for an expired or rotated credential (clean failure and alert, nothing leaked to logs), the target app's UI still matching the captured elements, and the robot account's least privilege. `—` a row only with a stated reason. -->
 
 | Test | Scenario | Expected |
 |---|---|---|
-| Performance / load | <PEAK_VOLUME_FROM_§16 run within the peak window> | SLA met; runtimes ≤ sized count |
-| Concurrent robots | <N robots on the same queue> | no duplicate processing (unique reference holds); no contention errors |
-| Recovery / restart | <kill job mid-transaction, restart> | checkpoint/reconciliation per §16 Operational Support — no lost or doubled items |
-| Credential expiration | <expired / rotated credential asset> | clean failure + alert, no lockout, no plaintext leak in logs |
-| UI compatibility | <target app/browser versions from §16> | selectors hold; capture fallbacks fire |
-| Security | <robot account with designed least privilege> | process completes; over-privilege not required; PII masked in logs |
+| <TEST> | <SCENARIO> | <EXPECTED> |
 
 ### UAT Acceptance Criteria
 
 <!-- Business sign-off conditions — measurable, agreed before UAT starts. -->
 
-1. <CRITERION — e.g., 50 production-representative items processed with ≥98% straight-through rate>
+1. <CRITERION>
 
 ### Test Data & Cleanup
 
@@ -860,13 +696,13 @@ List every prerequisite required on the robot machine before first run:
 
 ### Production Verification
 
-<!-- Post-go-live checks — pairs with §16 Delivery Quality Gates smoke test. -->
+<!-- Post-go-live checks — pairs with the §16 Delivery Quality Gates smoke test. -->
 
-1. <e.g., first N production items verified item-by-item against the target system before unattended ramp-up>
+1. <CHECK>
 
 ### End-to-End Pipeline Test (Master Project only)
 
-> **Include this subsection only for Master Project (Option A in §10).** Delete for Single Project.
+<!-- Include this subsection only for a Master Project (Option A in §10). Delete for a Single Project. -->
 
 | Test Scenario | Setup | Trigger | Expected Flow | Assertions |
 |---|---|---|---|---|
@@ -882,28 +718,9 @@ This SDD captures architecture and decisions. To build it, load `uipath-planner`
 
 > Load `uipath-planner`. SDD path: `<this-file>`.
 
-**Build from the genome.** On the turn after this SDD is `Status: ready`, `uipath-planner` writes its genome beside it (`author`) and records the path in the `Genome` row of the Planner Handoff. `uipath-genome` builds every component from that genome through each component's owning skill. Without `uipath-genome` installed, the genome stays on disk for a later build.
+**Build from the genome.** Once this SDD is approved, ask `uipath-planner` for its genome or for the build: it writes the genome beside this SDD (`author`), and `uipath-genome` builds every component from that genome through each component's owning skill. Without `uipath-genome` installed, the genome stays on disk for a later build.
 
 Implementation steps **do not live in this SDD** — the genome carries them, with the skill that builds each component and the build order.
-
-### Terminal artefact — packaging per the §11 Project Mode Decision
-
-<!-- CONSTRAINT GATE: if the platform-availability-guide blocks Solutions for this SDD's
-     Delivery model (standalone, AS older than 2.2510, or user exclusion), the Solution path
-     below is unavailable — use the standalone path; the publish routes to uipath-platform
-     instead of uipath-solution. -->
-
-The build is not finished when the project folder compiles — a bare `MyProject/` folder is not the deliverable. The terminal artefact follows the **Packaging** column of §11 Project Mode Decision:
-
-<!--skill-flavor:packaging-solution:start-->
-**Packaging = Solution (`.uipx`)** — required for multi-project (Master Project) builds and cross-product compositions. After the implementation specialist reports its tasks complete, `uipath-solution` packs every project of the unified list into one `.uipx`.
-<!--skill-flavor:packaging-solution:end-->
-
-<!--skill-flavor:packaging-solution-promote:start-->
-Publishing and deploying the `.uipx` is `uipath-solution`'s too.
-<!--skill-flavor:packaging-solution-promote:end-->
-
-**Packaging = Standalone package** — a single independently-published RPA project (`.nupkg` to an Orchestrator feed) is a valid terminal artefact; UiPath supports development with and without Solutions. Package/publish routes to `uipath-rpa` (build) + `uipath-platform` (feed publish, process creation). `[DEFAULT]` for a single-project scope — pick Solution instead only when cross-product composition or team standardization on Solutions applies.
 
 ---
 

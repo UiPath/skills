@@ -21,7 +21,7 @@ The input need not be a formal PDD. **Any artifact that describes a business pro
 | Format | Tool | How to Read | Notes |
 |---|---|---|---|
 | Markdown (`.md`) | file-read tool | Read the file directly. | Easiest — structure already parseable. |
-| Plain text (`.txt`) | file-read tool | Read the file directly (same as Markdown). | No conversion. For a very large file, read it by line range or use the size strategy in [design-guide.md Step 1](../design/design-guide.md#step-1-read-the-pdd). |
+| Plain text (`.txt`) | file-read tool | Read the file directly (same as Markdown). | No conversion. For a very large file, read it by line range or use the size strategy in [design-guide.md Step 3](../design/design-guide.md#step-3-read-the-pdd). |
 | PDF (`.pdf`) | file-read tool | Read it by page range, in chunks of up to 20 pages. | Text is extracted; screenshots and scanned/image-only pages render as images — Read them visually (see "Handling Screenshots"). When pages do not render, or a render is too small to read a value, extract the embedded images and text with any tool the machine has, in a scratch folder — a PDD is unreadable only when nothing can extract it. |
 | Word (`.docx`) | any converter on the machine | The file-read tool cannot open it. Convert it to Markdown with any tool the machine has (pandoc `--extract-media` when present), into a scratch folder, keeping the embedded images as files; then Read the Markdown and the images. No converter on the machine → ask the user to export the Word document as PDF or paste the content. | Complex tables may come out as HTML — parse them. `.emf`/`.wmf` images do not render: ask for a PNG, or mark what depended on them `[SME REVIEW]`. **Legacy `.doc`** (binary) converts with fewer tools (pandoc cannot read it): when none converts it, ask the user to save it as `.docx` or PDF, or paste the content. |
 | Pasted text | (conversation) | Process from the conversation context. | Ask the user to paste section by section if the PDD is large. |
@@ -41,7 +41,7 @@ When you encounter screenshots in the PDD:
 
 ## Extract Canonical Examples
 
-**Mandatory step. Run this on every PDD before falling back to `[SME REVIEW]` for test data.** PDDs almost always carry concrete example values somewhere — most agents miss them because the values live in screenshots, inline strings, or example tables rather than in a dedicated "Test Data" section.
+**Mandatory step. Run this on every PDD before falling back to `[SME REVIEW]` for test data.** Example values usually live in screenshots, inline strings or example tables, not in a dedicated "Test Data" section.
 
 ### Where to look
 
@@ -109,10 +109,10 @@ Watch for:
 
 A PDD (and most process-knowledge sources) carries two views — extract **both**, kept separate:
 
-- **AS-IS** — the current process as performed today (steps, systems, manual handoffs, pain points). Essential for understanding the process holistically; skipping it pushes cost to UAT scope-creep.
+- **AS-IS** — the current process as performed today (steps, systems, manual handoffs, pain points).
 - **TO-BE (high-level)** — the target the author/BA proposed (what changes, what gets automated). A high-level *intent*, not the technical design.
 
-The SDD authors the **detailed TO-BE** — the technical solution design. **Do not copy the as-is verbatim into the to-be:** re-engineer the process for automation against the [need profile](../design/design-guide.md#step-35-synthesize-the-need)'s target KPI (cycle time, manual effort, quality, cost, throughput, compliance). Reconcile with the PDD's high-level to-be; where they differ, or the to-be is absent, flag `[SME REVIEW]` and confirm with the user. When a source carries only one view (a transcript describing today's process = as-is only; a BPMN model of the target = to-be only), capture what's present and elicit the missing side.
+The SDD authors the **detailed TO-BE** — the technical solution design. **Do not copy the as-is verbatim into the to-be:** re-engineer the process for automation against the [need profile](../design/design-guide.md#step-7-synthesize-the-need)'s target KPI (cycle time, manual effort, quality, cost, throughput, compliance). Reconcile with the PDD's high-level to-be; where they differ, or the to-be is absent, flag `[SME REVIEW]` and confirm with the user. When a source carries only one view (a transcript describing today's process = as-is only; a BPMN model of the target = to-be only), capture what's present and elicit the missing side.
 
 ### Detailed Process Map
 
@@ -121,7 +121,15 @@ Extract:
 - **High-level flow** — the sequence of major steps
 - **Loop boundaries** — where the per-item processing starts and ends
 - **Decision points** — any branching logic in the flow
-- **Control-flow structure** — the orchestration shape, for the Maestro Flow / Case / BPMN choice: parallel branches that fork and rejoin, event-based waits (wait for a message, signal, or timer), per-activity timeouts / deadlines, steps that cancel or compensate on error, reusable sub-process groupings, and steps that invoke a separate long-running process. None present → linear/branching pipeline (Flow). Present without case stages/SLA → BPMN structure (see [Product Selection Guide → Maestro disambiguation](product-selection-guide.md#level-1--primary-scope-selection)). Note each concretely; never infer structure the PDD does not describe.
+- **Control-flow structure** — the orchestration shape, for the Maestro Flow / Case / BPMN choice:
+  - parallel branches that fork and rejoin;
+  - event-based waits (wait for a message, signal, or timer);
+  - per-activity timeouts / deadlines;
+  - steps that cancel or compensate on error;
+  - reusable sub-process groupings;
+  - steps that invoke a separate long-running process.
+
+  None present → linear/branching pipeline (Flow). Present without case stages/SLA → BPMN structure (see [Product Selection Guide → Maestro disambiguation](product-selection-guide.md#maestro-disambiguation--bpmn-vs-flow-vs-case)). Note each concretely; never infer structure the PDD does not describe.
 
 Watch for:
 - The process map may be a flowchart image. Read the image to understand the flow, then verify against the detailed process steps section.
@@ -129,7 +137,7 @@ Watch for:
 
 ### Detailed Process Steps
 
-This is the most important section. For each step, extract:
+For each step, extract:
 
 | Field | Description |
 |---|---|
@@ -190,12 +198,14 @@ Extract into a table:
 Watch for:
 - URLs may be environment-specific (localhost for dev, internal DNS for prod). Note both if available.
 - SPA details (hash routing, pushState) affect how the robot navigates. Capture these.
-- **Email protocol** — when email is an application, extract the protocol signal: IMAP, Exchange/EWS, O365 Graph API, POP3, SMTP. Look for keywords like "IMAP", "Exchange", "O365", "Graph API", "dedicated mailbox". If not specified: an unattended run on Microsoft 365 mailboxes defaults to the Outlook 365 connector (Graph) — never the desktop Outlook client, which needs a signed-in profile on every robot — and an unknown mail platform defaults to IMAP/SMTP; either default is `[DEFAULT]` with an `[SME REVIEW]` item to confirm.
+- **Email protocol** — when email is an application, extract the protocol signal: IMAP, Exchange/EWS, O365 Graph API, POP3, SMTP. Look for keywords like "IMAP", "Exchange", "O365", "Graph API", "dedicated mailbox". If not specified, each default below is `[DEFAULT]` with an `[SME REVIEW]` item to confirm:
+  - an unattended run on Microsoft 365 mailboxes → the Outlook 365 connector (Graph), never the desktop Outlook client (it needs a signed-in profile on every robot);
+  - an unknown mail platform → IMAP/SMTP.
 - **FTP/SFTP** — note whether the PDD specifies FTP, SFTP, or cloud storage (S3, Azure Blob). Capture host/path if mentioned.
 
 ### Environment & Constraint Signals
 
-**Mandatory scan on every PDD.** These constraints gate product selection (see [Product Selection Guide → Constraint Gate](product-selection-guide.md#constraint-gate)). Missing them produces architectures the customer cannot run — the most expensive SDD defect.
+**Mandatory scan on every PDD.** These constraints gate product selection (see [Product Selection Guide → Constraint Gate](product-selection-guide.md#constraint-gate)).
 
 | Signal | What to extract | Keyword signals |
 |---|---|---|
@@ -239,12 +249,11 @@ Extract:
 
 Watch for:
 - Reporting requirements are often in a separate section or table near the end of the PDD. They are easy to miss.
-- If the PDD mentions reporting, this is a signal for a dedicated Reporting project in the project decomposition decision (see [RPA Product Guide](../design/rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals) Level 2.5 Part A).
 - If the PDD has no reporting section but mentions logging or monitoring, mark reporting as `[DEFAULT]` — Orchestrator logs only.
 
 ### Project Decomposition Signals
 
-While extracting, record in the internal model every signal of [RPA Product Guide → Level 2.5 Part A](../design/rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals) — stage boundaries, where per-item processing starts and ends, DU with human validation, multiple output channels, reporting — plus any mention of queues, batches or "items to process". Product selection decides from them.
+While extracting, record in the internal model every signal of [RPA Product Guide → Level 2.5 Part A](../design/rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals) — stage boundaries, where per-item processing starts and ends, DU with human validation, multiple output channels — plus any mention of queues, batches or "items to process". Product selection decides from them.
 
 ## Gap Detection Checklist
 
@@ -256,16 +265,15 @@ After extraction, verify these items exist. Flag missing ones:
 | System errors section | `[DEFAULT]` — create placeholder rows for common infrastructure errors (application unresponsive, element not found, timeout, unhandled exception). Mark each as `[DEFAULT]`. |
 | Process schedule/frequency | `[DEFAULT]` — assume on-demand trigger |
 | Volume/throughput | `[SME REVIEW]` — needed for capacity planning |
-| Retry counts on errors | `[DEFAULT]` — 3 retries with exponential backoff |
-| Element/activity timeouts | `[DEFAULT]` — 30s page loads, 10s element waits |
-| Max items per run | `[DEFAULT]` — 50 items safety cap |
+| Retry behaviour on errors | `[DEFAULT]` — retry transient failures, then alert the error recipients |
+| Waits on slow applications | `[DEFAULT]` — wait for each application to respond; an application that stays unresponsive is a system error |
 | Notification recipients for errors | `[SME REVIEW]` — needed for error escalation |
 | Amount/value thresholds | `[SME REVIEW]` — business decision |
 | Data retention requirements | `[SME REVIEW]` — compliance decision |
 | Credential rotation policy | `[DEFAULT]` — assume Orchestrator asset management |
-| Test data / canonical case | Run "Extract Canonical Examples" first. Only mark `[SME REVIEW]` if scanning every screenshot, every inline-quoted string, and every example table genuinely returns zero concrete values. Most PDDs carry at least one example. |
+| Test data / canonical case | Run "Extract Canonical Examples" first. Only mark `[SME REVIEW]` if scanning every screenshot, every inline-quoted string, and every example table returns zero concrete values. |
 | Reporting requirements | `[DEFAULT]` — Orchestrator logs only (no dedicated report) |
 | Email protocol (when email is used) | `[DEFAULT]` per § Application Details (Outlook 365 connector for Microsoft 365 mailboxes, IMAP/SMTP otherwise) + an `[SME REVIEW]` item |
-| Delivery model | Asked at Phase 1 Step 0 when the PDD doesn't state it — never silently default. Gates product availability. |
+| Delivery model | Asked at Phase 1 Step 1 when the PDD doesn't state it — never silently default. Gates product availability. |
 | Document storage location (when the process handles documents) | `[SME REVIEW]` — never default to SharePoint |
 | Signing modality (when signatures are mentioned) | `[SME REVIEW]` — embedded e-signature service vs local token-based signing changes the architecture |

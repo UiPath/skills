@@ -1,10 +1,15 @@
-# UiPath Source Guide — RPA Signals
+# UiPath RPA Signals Guide
 
 Read after [uipath-source-guide.md](uipath-source-guide.md); read the § Signals sections below whose artifact type the inventory holds.
 
 ## Signals — XAML
 
-`project.json` fields first: `name`, `main`, `entryPoints[]` (`filePath`, `input`, `output`), `dependencies` (package IDs), `designOptions.outputType` (`Process` / `Library` / `Tests`), `expressionLanguage` (`VisualBasic` / `CSharp`), `targetFramework` (`Windows` / `Portable` / `Legacy`), every `runtimeOptions` key (`isAttended`, `requiresUserInteraction`, `excludedLoggedData` — the keywords in an activity's name that keep its variable and argument values out of Verbose logs — `isPausable` and the rest), `globalHandler`.
+`project.json` fields first:
+
+- `name`, `main`, `entryPoints[]` (`filePath`, `input`, `output`), `dependencies` (package IDs);
+- `designOptions.outputType` (`Process` / `Library` / `Tests`), `expressionLanguage` (`VisualBasic` / `CSharp`), `targetFramework` (`Windows` / `Portable` / `Legacy`);
+- every `runtimeOptions` key (`isAttended`, `requiresUserInteraction`, `excludedLoggedData` — the keywords in an activity's name that keep its variable and argument values out of Verbose logs — `isPausable` and the rest);
+- `globalHandler`.
 
 | Signal | Where | Tells you | Example |
 |---|---|---|---|
@@ -33,7 +38,7 @@ A project built on the Robotic Enterprise Framework template is recognised by it
 | Source | Feeds | How |
 |---|---|---|
 | The queue and folder *Get Transaction Item* reads in `Framework/GetTransactionData.xaml`, set on the activity or from the configuration's settings | Transactional Shape As-is item store; Platform Dependencies (queue) | A queue name that the item-fetch workflow actually reads → `queue` mode, name kept as the source value. Blank, or the template's sample `ProcessABCQueue` beside a customised item fetch → `direct` mode, data source from that fetch |
-| Settings and Constants rows — `MaxRetryNumber`, `MaxConsecutiveSystemExceptions`, and every custom row (URLs, paths, thresholds) | Sorted per [genome-questions-guide.md § Configuration Questions](../shared/genome-questions-guide.md): an environment row (URL, path, mailbox, folder) is a Configuration Question with the file's value as default; the two counts go in the outcomes table; every other row goes in the step or rule that uses it | `logF_BusinessProcessName`, `TransactionNumber`, `RetryNumberGetTransactionItem`, `RetryNumberSetTransactionStatus` are framework plumbing — no question |
+| Settings and Constants rows — `MaxRetryNumber`, `MaxConsecutiveSystemExceptions`, and every custom row (URLs, paths, thresholds) | Sorted per [genome-questions-guide.md § Configuration Questions](../shared/genome-questions-guide.md). An environment row (URL, path, mailbox, folder) is a Configuration Question with the file's value as default. The two counts go in the outcomes table. Every other row goes in the step or rule that uses it | `logF_BusinessProcessName`, `TransactionNumber`, `RetryNumberGetTransactionItem`, `RetryNumberSetTransactionStatus` are framework plumbing — no question |
 | Assets the configuration lists, and the asset and credential activities | Platform Dependencies | One row per asset name; Credential when the description or the consuming activity says so, otherwise Text |
 | `Framework/InitAllApplications.xaml` (`GetAppCredentials.xaml` in older templates) | Once-per-run steps; credential assets | Open and sign-in per application |
 | `Framework/Process.xaml` (root `Process.xaml` in older templates) and every workflow it invokes | Per-item steps — the Workflow's numbered steps | The call graph starts here, not at `Main.xaml` |
@@ -43,7 +48,7 @@ A project built on the Robotic Enterprise Framework template is recognised by it
 | `Framework/CloseAllApplications.xaml`, `Framework/KillAllProcesses.xaml` | At-the-end steps; Error Handling § Global (forced close between retries) | |
 | `Main.xaml` and its transitions, `InitAllSettings.xaml`, `RetryCurrentTransaction.xaml`, `TakeScreenshot.xaml`, the template's `Tests/`, `Exceptions_Screenshots/`, `Documentation/` | **Not steps.** Source Map row `Framework files` listing them; `Tests/` is test-coverage evidence | The build recreates them from the template when the shape is applied |
 
-A **dispatcher** is recognised the other way round: a plain project (Sequence or Flowchart root) whose loop reads a source and adds one queue item per row with a reference; the queue name — a literal or a configuration value — joins it to the performer that consumes it ([uipath-source-guide.md § Call Graph Rules](uipath-source-guide.md) rule 3). A REFramework project whose initialisation adds the items its own item fetch then takes from the same queue is both at once: its producer steps are the initialisation's reads and adds, its consumer is the rest of the framework, and the As-is is one process holding both roles over a queue — the shape Split option C keeps ([transactional-shape-guide.md](../shared/transactional-shape-guide.md) rule 3). A guard in that initialisation (a unique reference, a check that the day's items already exist) is the Coordination row's once-guard.
+A **dispatcher** is recognised the other way round: a plain project (Sequence or Flowchart root) whose loop reads a source and adds one queue item per row with a reference. The queue name — a literal or a configuration value — joins it to the performer that consumes it ([uipath-source-guide.md § Call Graph Rules](uipath-source-guide.md) rule 3). A REFramework project whose initialisation adds the items its own item fetch then takes from the same queue is both at once. Its producer steps are the initialisation's reads and adds, and its consumer is the rest of the framework. The As-is is one process holding both roles over a queue — the shape Split option C keeps ([transactional-shape-guide.md](../shared/transactional-shape-guide.md) rule 3). A guard in that initialisation (a unique reference, a check that the day's items already exist) is the Coordination row's once-guard.
 
 ## Signals — Coded C#
 
@@ -81,8 +86,8 @@ A **dispatcher** is recognised the other way round: a plain project (Sequence or
 | Signal | Where | Tells you |
 |---|---|---|
 | `designOptions.fileInfoCollection[]` entries with `testCaseType: TestCase` — `fileName`, `testCaseId`, `executionTemplatePath`, `executionTemplateInvokeIsolated`, `dataVariationFilePath` | `project.json` | The test cases a test run starts, one entry point each, identified by `testCaseId` ([uipath-source-guide.md § Provenance](uipath-source-guide.md)); a file carrying `[TestCase]` with no entry is never started — dead code |
-| Execution template: a workflow holding a placeholder activity, named by the entries' `executionTemplatePath` | `.templates/*.xaml` | Steps each case whose entry names it runs around its own — preparation, finalization, a timeout, a skip — written once in the shared component, never per case; an entry naming no template runs its case bare |
-| A skip or filter deciding by the case's name, folder, machine or Orchestrator folder | the template or a helper it calls | Where each case runs: replay the rule over every registered case and state the outcome per group of cases; the folder then carries behaviour, and a rebuild that moves a case changes where it runs |
+| Execution template: a workflow holding a placeholder activity, named by the entries' `executionTemplatePath` | `.templates/*.xaml` | Steps each case whose entry names it runs around its own — preparation, finalization, a timeout, a skip — written once in the shared component, never per case. An entry naming no template runs its case bare |
+| A skip or filter deciding by the case's name, folder, machine or Orchestrator folder | the template or a helper it calls | Where each case runs: replay the rule over every registered case and state the outcome per group of cases. The folder then carries behaviour, and a rebuild that moves a case changes where it runs |
 | Verification activities (Verify Expression, Verify Control Attribute, …), `testing.Verify…` calls, xUnit `Assert` in coded cases, a throw under a condition | case bodies, helpers | Checkpoints: what is asserted, the operator and the expected literal |
-| Attach Document, `testing.AttachDocument`, screenshot activities | case bodies, template | Evidence policy (extraction's Step 3) |
+| Attach Document, `testing.AttachDocument`, screenshot activities | case bodies, template | Evidence policy (extraction's Step 4) |
 | Data variations | `.variations/` | [uipath-source-guide.md § Test Data](uipath-source-guide.md) |

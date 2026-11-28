@@ -34,7 +34,7 @@ if (as && olderThanMaestro(as[1]) && !/maestro/i.test(blocked)) {
 }
 
 if (/^## Recommended Scope\s*$/m.test(text) && !line("Need profile")) {
-  fails.push("'## Recommended Scope' has no '**Need profile:** <core need and target KPI>' line — copy it from the Phase 1 summary (design-guide.md Step 3.5)");
+  fails.push("'## Recommended Scope' has no '**Need profile:** <core need and target KPI>' line — copy it from the Phase 1 summary (design-guide.md Step 7)");
 }
 
 if (/^##\s+.*\b(Master Project Architecture|Implementation Mode)\s*$/m.test(text)) {

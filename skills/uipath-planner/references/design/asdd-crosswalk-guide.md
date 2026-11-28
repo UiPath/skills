@@ -20,7 +20,7 @@ The markdown SDD this skill writes is the **agent-first** artifact: implementati
 
 4. **Compute missing pieces.** For a template section with no direct SDD source, derive it from SDD data when present; when it needs information the SDD does not hold, write the literal marker `[SME REVIEW]` followed by what is needed, and add the item to a list the user must fill. Never fabricate.
 
-   > **Marker discipline (SKILL.md § Critical Rules, gap markers).** `[SME REVIEW]` and `[DEFAULT]` are the only gap markers, written verbatim with nothing else inside the brackets — the note goes after the closing bracket (`[SME REVIEW] repository not recorded in the source SDD`). Do not invent a second vocabulary (`[PLACEHOLDER]`, `[TBD]`, `<fill in>`) and do not decorate the marker (`[SME REVIEW — …]`); both are invisible to the reviewer grepping the client document for open items. **Markers already in the source SDD copy through byte-for-byte** — this crosswalk relocates content, it never re-words a gap the SDD author recorded.
+   > Gap-marker rules, byte-for-byte carry-over of the source SDD's markers included: [gap-markers-guide.md](../shared/gap-markers-guide.md).
 
 5. **Assemble** the matched + computed content into the template's section order, then convert:
 
@@ -38,10 +38,10 @@ RPA / Master-Project oriented. Left column = the template's sections; fill each 
 |---|---|---|
 | Title page — *Project title* | Process / Master Project name (§1, Planner Handoff) | — |
 | **1. PURPOSE** | §1 Process Overview (objective, scope) | Keep the template's standard purpose/focus prose; inject the objective. |
-| **2. AUTOMATED PROCESS DETAILS** — Master Project Name, Robot Type, Orchestrator used?, Scalable, UiPath version | §1 (name) + §16 Deployment Environment (Robot type, Orchestrator, UiPath/Studio version, Scalable) | Direct map. `[SME REVIEW]` carries through where §16 is unfilled. |
+| **2. AUTOMATED PROCESS DETAILS** — Master Project Name, Robot Type, Orchestrator used?, Scalable, UiPath version | §1 (name) + §11 Project Mode Decision (Attendance = robot type) + §16 Deployment Environment (Orchestrator, UiPath/Studio version) + §16 Scalability & Concurrency (Scalable) | Direct map. `[SME REVIEW]` carries through where §16 is unfilled. |
 | **3.1 Architectural structure** (diagram) | §10 Master Project Architecture data-flow diagram; §2 Process Map for a single project | Place the Mermaid diagram (render separately if images are needed). |
-| **3.2 Master Project Runtime Details** | Production environment→§16; Prerequisites to run→§16 Runtime Prerequisites; Input Data→§5 Data Definitions; Expected output→§1/§5; How to start→§16 Trigger; Reporting→§16/§8; How is Orchestrator used→§16; Password/compliance→§15 Credentials & Assets + constraints; Stored credentials→§15; List of queue names→§12 Queue Architecture; Schedule→§16; Resolutions→§16 | Assemble one table from several SDD sections. |
-| **3.3 Project name N** (per project) — dev environment, prerequisites, repository, configuration method, reused components, new reusable components | §10/§11 per sub-project; prerequisites→§16; configuration method→§15/§11; reused + new reusable components→§14 Packages / §11 (libraries) | One block per project in §10/§11. Dev-environment name and repository are usually `[SME REVIEW]` in §16 — carry the marker through verbatim. |
+| **3.2 Master Project Runtime Details** | Production environment→§16; Prerequisites to run→§16 Runtime Prerequisites; Input Data→§5 Data Definitions. Expected output→§1/§5; How to start→§11 Project Mode Decision (Initiation); Reporting→§16/§8. How is Orchestrator used→§16; Password/compliance→§15 Credentials & Assets + constraints; Stored credentials→§15; List of queue names→§12 Queue Architecture; Schedule→§1 (Schedule row); Resolutions→§16 | Assemble one table from several SDD sections. |
+| **3.3 Project name N** (per project) — dev environment, prerequisites, repository, configuration method, reused components, new reusable components | §10/§11 per sub-project; prerequisites→§16; configuration method→§15/§11; reused + new reusable components→§14 Packages / §11 (libraries) | One block per project in §10/§11. Repository→§11 Solution / Project Breakdown (GitHub Repository); dev-environment name→§16, usually `[SME REVIEW]` — carry the marker through verbatim. |
 | **3.4 Project(s) workflows** — Workflow Name, Description (I/O params) | §3 Detailed Process Steps + §11 Project Structure (workflow list) | — |
 | **3.5 Packages** — Package name, Description | §14 Packages | Direct map. |
 | **3.6 Architectural structure** (2nd diagram) | §12 Queue Architecture diagram, or an alternate §10 view | May duplicate 3.1 in the template — emit the queue/running-order view here. |
@@ -56,4 +56,9 @@ RPA / Master-Project oriented. Left column = the template's sections; fill each 
 
 ## Non-RPA SDDs
 
-The standard template is RPA / Master-Project oriented. For a Flow / Case / Agent / Coded App / API Workflow SDD, map that SDD's TOC onto the user's template sections the same way: name and runtime details into 1–2, architecture/diagram into 3.1/3.6, the buildable units into 3.3–3.5, and fold product-specific sections into the nearest runtime or architecture section.
+The standard template is RPA / Master-Project oriented. For a Flow / Case / Agent / Coded App / API Workflow SDD, map that SDD's TOC onto the user's template sections the same way:
+
+- name and runtime details into 1–2;
+- architecture/diagram into 3.1/3.6;
+- the buildable units into 3.3–3.5;
+- fold product-specific sections into the nearest runtime or architecture section.

@@ -72,21 +72,21 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "SDD uses the Maestro BPMN template sections (gateways, events, activities)"
+    description: "SDD uses the Maestro BPMN template sections (steps, gateways, sequence flows, events)"
     path: "vendor-onboarding-orchestration-sdd.md"
     includes:
-      - "Pools & Lanes"
-      - "Activities Inventory"
-      - "Gateways & Sequence Flows"
+      - "Solution Flow"
+      - "Gateways"
+      - "Sequence Flows"
       - "Events"
     weight: 3.0
     pass_threshold: 0.75
 
   - type: file_contains
-    description: "SDD carries the BPMN activities inventory and did NOT fall back to the Flow template (plain pipeline) or the Case template (stage lifecycle)"
+    description: "SDD carries the BPMN build specification and did NOT fall back to the Flow template (plain pipeline) or the Case template (stage lifecycle)"
     path: "vendor-onboarding-orchestration-sdd.md"
     includes:
-      - "Activities Inventory"
+      - "Build Specification"
     excludes:
       - "Nodes Inventory"
       - "Tasks Grid"
@@ -120,7 +120,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Integrated Components reference the two published components from the PDD"
+    description: "Systems and Integrations reference the two published components from the PDD"
     path: "vendor-onboarding-orchestration-sdd.md"
     includes:
       - "SanctionsCheck"

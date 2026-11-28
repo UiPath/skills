@@ -372,6 +372,18 @@ def test_unknown_skill_name_in_build_with_fails_core(check):
     assert "unknown skill name 'uipath-bogus' in Build With" in out
 
 
+@pytest.mark.parametrize("skill, reason", [
+    ("uipath-human-in-the-loop", "the containing component's skill owns the checkpoint; name it in the Rationale column"),
+    ("uipath-solution", "solution packaging is recorded under Deployment"),
+])
+def test_a_skill_that_owns_no_row_in_build_with_fails_strict_only(check, skill, reason):
+    text = COMPONENT.replace("`uipath-rpa`", f"`{skill}`", 1)
+    assert check(text)[0] == 0
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert f"'{skill}' in the Skill column of Build With; {reason}" in out
+
+
 def test_too_few_criteria_for_the_complexity_fails_strict_only(check):
     kept = [l for l in COMPONENT.splitlines() if not re.match(r"(?:[5-9]|1\d)\. Given", l)]
     text = "\n".join(kept) + "\n"
@@ -1173,3 +1185,53 @@ def test_process_genome_of_a_dispatcher_and_performer_alone_fails_strict_only(ch
 
 def test_process_example_has_no_dispatcher_performer_finding(check_process):
     assert SPLIT_ONLY not in check_process(profile="strict")[1]
+
+
+BUILD_ASSUMPTIONS = (
+    "## Build Assumptions\n\n| ID | Capability | Confirmed By | Relied On By | If It Does Not Hold |\n|---|---|---|---|---|\n"
+    "| A1 | The flow reads an XLSX attachment | uipath-maestro-flow | step 2 | a coded function reads it |\n"
+)
+ASSUMED = "1. Can the flow read an XLSX attachment? (run behaviour; answered by: uipath-maestro-flow, at build, before the steps that rely on it; Builds now: as designed; instead: a coded function reads it) — SDD Build Assumption A1{of}\n"
+NOT_ASSUMED = "Build Assumption A1 of"
+
+
+def assuming(tmp_path, text, solution=False):
+    """text with a Designed in: line linking an SDD, or a solution root and its child, whose table holds row A1."""
+    sdd = tmp_path / "x-sdd.md"
+    if solution:
+        sdd = tmp_path / "x-solution-sdd.md"
+        sdd.write_text("# SDD\n\n| **Project SDD role** | root |\n\n| Project | SDD |\n|---|---|\n| Child | child-sdd.md |\n", encoding="utf-8")
+        (tmp_path / "child-sdd.md").write_text("# Child SDD\n\n" + BUILD_ASSUMPTIONS, encoding="utf-8")
+    else:
+        sdd.write_text("# SDD\n\n" + BUILD_ASSUMPTIONS, encoding="utf-8")
+    return designed_in(text, f"> Designed in: [Design]({sdd.name}) · sdd-sha256 {sdd_fingerprint(sdd)}")
+
+
+def test_a_build_assumption_carried_nowhere_fails_strict(check, tmp_path):
+    rc, out = check(assuming(tmp_path, with_decisions(COMPONENT, "No open decisions.\n")), profile="strict")
+    assert rc == 1
+    assert f"{NOT_ASSUMED} x-sdd.md has no Open Decisions entry" in out
+
+
+def test_a_build_assumption_carried_as_an_entry_passes(check, tmp_path):
+    out = check(assuming(tmp_path, with_decisions(COMPONENT, ASSUMED.format(of=""))), profile="strict")[1]
+    assert NOT_ASSUMED not in out
+
+
+def test_a_decided_build_assumption_still_counts_as_carried(check, tmp_path):
+    decided = "1. Can the flow read an XLSX attachment? (decided 2026-11-26: yes, confirmed by uipath-maestro-flow) — SDD Build Assumption A1\n"
+    out = check(assuming(tmp_path, with_decisions(COMPONENT, decided)), profile="strict")[1]
+    assert NOT_ASSUMED not in out
+
+
+def test_a_child_sdds_build_assumption_carried_nowhere_fails_strict(check, tmp_path):
+    rc, out = check(assuming(tmp_path, with_decisions(COMPONENT, "No open decisions.\n"), solution=True), profile="strict")
+    assert rc == 1
+    assert f"{NOT_ASSUMED} child-sdd.md has no Open Decisions entry: write one ending '— SDD Build Assumption A1 of child-sdd.md'" in out
+
+
+def test_a_child_sdds_build_assumption_needs_the_child_in_its_trailer(check, tmp_path):
+    unnamed = check(assuming(tmp_path, with_decisions(COMPONENT, ASSUMED.format(of="")), solution=True), profile="strict")[1]
+    assert f"{NOT_ASSUMED} child-sdd.md" in unnamed
+    named = check(assuming(tmp_path, with_decisions(COMPONENT, ASSUMED.format(of=" of child-sdd.md")), solution=True), profile="strict")[1]
+    assert NOT_ASSUMED not in named

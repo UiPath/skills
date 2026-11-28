@@ -1,9 +1,9 @@
 # Open Questions Guide — the questions an SDD puts to people
 
-Every SDD the planner writes opens with every question still open about what gets built, in `## Action Required — SME Review Items`. Whoever answers reads the questions first and the design below them. The genome holds the same questions for agents: its Configuration Questions and its Open Decisions ([genome-questions-guide.md](genome-questions-guide.md)). This section is their rendering for people.
+Every SDD the planner writes holds every question still open about what gets built, in `## Action Required — SME Review Items`, where the template places it: before the design, so whoever answers reads the questions first, or last, with its count in the overview, so the design reads first. The genome holds the same questions for agents: its Configuration Questions and its Open Decisions ([genome-questions-guide.md](genome-questions-guide.md)). This section is their rendering for people.
 
 Who writes it:
-- `design` writes it from its own gaps, before a genome exists ([sdd-writing-guide.md](../design/sdd-writing-guide.md) Step 1.5).
+- `design` writes it from its own gaps, before a genome exists ([sdd-writing-guide.md](../design/sdd-writing-guide.md) Step 3).
 - Once the genome exists, it is written from the genome: in the agreed SDD, by `author` on the design path; in an SDD written from the genome, when there is one ([sdd-from-genome-guide.md](sdd-from-genome-guide.md)). A genome with no SDD holds its questions in its Open Decisions and Configuration Questions alone.
 
 The build's own questions are `uipath-genome`'s: the split, the libraries, the technology for each capability, scaffolding and the build environment. Its `prepare` writes them into a readiness file beside the genome, with this section's items that are still open.
@@ -27,21 +27,24 @@ The build's own questions are `uipath-genome`'s: the split, the libraries, the t
    - **A choice.** Its options are lettered under `Options:`, one per line, each with what it gives: the one the genome builds until someone answers marked `(built now)`, the one its entry recommends `(recommended)`, both on one option when they are the same. A reading is a choice whose `(built now)` option is the genome's reading, and whose last option is "something else, in your words".
    - **A value.** `Default:` the value the build uses until someone answers.
    - **Needed.** An item with no option or value the build can run with has an `Until answered:` line instead, saying whether the build stops, asks, builds a placeholder, or builds an empty setting the run stops on.
-4. **One answer line names who answers**, `Answer (by <role>):`, the role from the genome entry's `answered by:` (for a Configuration Question, the environment's owners for a setting and the process owner for a constant), so one person's items can be picked out. An answer is an option's letter, a value, `default` for a value item's default, or the person's own words; a blank stays open.
+4. **One answer line names who answers**, `Answer (by <role>):`, the role from the genome entry's `answered by:`, or, for a Configuration Question and the Preferences item, the role [genome-questions-guide.md § Open Decisions](genome-questions-guide.md) gives it, so one person's items can be picked out. An answer is an option's letter, a value, `default` for a value item's default, or the person's own words; a blank stays open.
 5. **Only what the genome states.** An item's context comes from its step, its entry and the sections that use it. A fact the genome lacks is asked as an item, never written as one.
-6. **Marked where the design states it.** The SDD section that holds an item's subject carries `[SME REVIEW]` for an answer only the business can give, or `[DEFAULT]` for a default applied, with the note after the bracket naming the item (`[SME REVIEW] D3: refund approval when the approver is absent`), as [sdd-writing-guide.md](../design/sdd-writing-guide.md) § Gap Markers states. The note is the id and a few words, never the item's options or an answer line: an item is answered in Action Required alone, so its letters mean one thing.
+6. **Marked where the design states it.** The SDD section that holds an item's subject carries `[SME REVIEW]` for an answer only the business can give, or `[DEFAULT]` for a default applied, as [gap-markers-guide.md](gap-markers-guide.md) states. The note after the bracket names the item (`[SME REVIEW] D3: refund approval when the approver is absent`). The note is the id and a few words, never the item's options or an answer line: an item is answered in Action Required alone, so its letters mean one thing.
 
 ## Items
 
-| Group | One item per | Usually answered by |
-|---|---|---|
-| Business decisions | open Open Decisions entry of the first three tiers, under one heading per tier, then per component (the process genome's own entries under the process's name), in step order | the process owner |
-| Material to supply | open entry of the material tier | whoever holds the source and its documents |
-| Configuration values | Configuration Question not withdrawn, copied whole with its number, kind and default: process questions first, then each component's in Components order, never a component's line pointing to a process question. A default the build cannot run with ("not in the export", none) makes it needed. A question with a default per environment lists each environment's; `default` takes each, and an environment whose default is `none` makes it needed | the environment's owners for a setting, the process owner for a constant |
-| Preferences | the preferences file, only when the genome names none ([genome-format-guide.md § Design Links](genome-format-guide.md)): default none, the building skills' own practice. A "none" the request or the user's reply gave is its answer, written with who gave it | the delivery lead or the centre of excellence |
+| Group | One item per |
+|---|---|
+| Business decisions | open Open Decisions entry of the first three tiers, except a Build Assumption's (the list below), under one heading per tier, then per component (the process genome's own entries under the process's name), in step order |
+| Material to supply | open entry of the material tier |
+| Configuration values | Configuration Question not withdrawn, copied whole with its number, kind and default: process questions first, then each component's in Components order, never a component's line pointing to a process question. A default the build cannot run with ("not in the export", none) makes it needed. A question with a default per environment lists each environment's; `default` takes each, and an environment whose default is `none` makes it needed |
+| Preferences | the preferences file, only when the genome names none ([genome-format-guide.md § Design Links](genome-format-guide.md)): default none, the building skills' own practice. A "none" the request or the user's reply gave is its answer, written with who gave it |
+
+Who answers each group's items: Writing Rule 4.
 
 Business decisions close with two lists that ask nothing one item at a time and are not counted as items:
 - **Checked against the application at build:** each reading entry that only the live application shows (a screen label, a window title, a control's position), one line each, with no answer line.
+- **Confirmed by the build:** each open entry carried from an SDD Build Assumption (its `— SDD Build Assumption A<n>` trailer): what the build confirms, the skill that confirms it, and what the build does if it does not hold, one line each, with no answer line. A build skill answers it, never a person, and the build marks it decided.
 - **Defects the rebuild fixes:** each defect that has no entry because its rebuild follows an intent the source states and changes no business outcome ([extracted-genome-guide.md § Source Defects](extracted-genome-guide.md)). One line each, with its component, step and what the rebuild does. The block's one answer line names any the rebuild should keep as the source does. A defect named there takes its ruling and leaves the list; the block has no entry, so it stays, with its answer, while the genome fixes such a defect.
 
 **A process genome's items** sit only in the solution overview's Action Required, under one heading per component, the process genome's own under the process's name. Each keeps its own genome file's id: ids repeat across components and are never renumbered into one series, so an item is named by its component and id (`Portal.Library D1`, `process D1`). A per-project SDD has no Action Required section, and its body's markers name the item with its component.
@@ -110,6 +113,9 @@ How to answer:
 
 Checked against the application at build:
 - <step <N>, <step name>: the reading — a label, a window title, a position>
+
+Confirmed by the build:
+- <A<n>: can <the capability>? — <skill>; if not, <what the build does instead>>
 
 #### Defects the rebuild fixes
 

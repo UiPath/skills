@@ -67,7 +67,7 @@ DECLARATIONS: tuple[Declaration, ...] = (
         tests=(str(CASE_SHARED / "test_task_types.py"),),
         copies=(
             "skills/uipath-planner/references/design/case-product-guide.md (§ Task types table and count)",
-            "skills/uipath-planner/references/design/case-review-and-conformance-guide.md § SDD Conformance Checklist (item 8 count, item 6 detail markers)",
+            "skills/uipath-planner/assets/templates/case-sdd-template.md § Validation footer, conformance checklist (item 4 count, item 3 detail markers)",
             "tests/tasks/uipath-maestro-case/_shared/sdd_check.py (TASK_TYPES, TASK_DETAIL_MARKERS, STUDIO_WEB_ONLY, NOT_TASK_TYPES)",
             "tests/tasks/uipath-planner/_shared/sdd_check.py (TASK_TYPES, TASK_DETAIL_MARKERS, STUDIO_WEB_ONLY, NOT_TASK_TYPES)",
         ),

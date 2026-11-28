@@ -13,7 +13,7 @@ Based on the Level 1 primary, select one template:
 | RPA Process, Library, Test Automation | `../assets/templates/rpa-sdd-template.md` |
 | Maestro Flow | `../assets/templates/flow-sdd-template.md` |
 | Maestro BPMN | `../assets/templates/bpmn-sdd-template.md` |
-| Case Management | `../assets/templates/case-sdd-template.md` (task detail blocks: `../assets/templates/case-sdd-task-details-template.md`) |
+| Case Management | `../assets/templates/case-sdd-template.md`, with `case-sdd-task-details-template.md` beside it for the task detail blocks |
 | Agents | `../assets/templates/agent-sdd-template.md` |
 | Coded Apps | `../assets/templates/coded-app-sdd-template.md` |
 | API Workflows | `../assets/templates/api-workflow-sdd-template.md` |
@@ -29,9 +29,9 @@ A Solution produces **one SDD file per project in the Level 2.5 unified project 
 | `<SOLUTION_NAME_KEBAB>-solution-sdd.md` | Solution overview (see structure below) | Exactly 1 |
 | `<PROJECT_NAME_KEBAB>-sdd.md` | Per-project — pick the template matching that project's product | One per project in the unified list |
 
-For RPA projects in the Solution, use the RPA template once per RPA *group* — if the Level 2.5 Part A decomposition produced a Master Project (e.g., Dispatcher + Performer + Reporting), those sub-projects share one RPA SDD file (§10/§11 cover the sub-projects). If two RPA projects are unrelated (e.g., a Library not called by the Performer), they each get their own RPA SDD file.
+For RPA projects in the Solution, use the RPA template once per RPA *group* — if the Level 2.5 Part A decomposition produced a Master Project (e.g., Dispatcher + Performer), those sub-projects share one RPA SDD file (§10/§11 cover the sub-projects). If two RPA projects are unrelated (e.g., a Library not called by the Performer), they each get their own RPA SDD file.
 
-**Component rows get no SDD file.** Project-list rows whose product is a component (Coded Function, IXP model, custom connector) do NOT get a per-project SDD file — their contract is the host SDD's table (`### Coded Functions`, `### IXP / Document Understanding Models`, connector rows) plus their row in the solution overview's Project Inventory. The genome makes each a component of its own from those rows, built before its consumers.
+**Component rows get no SDD file.** Project-list rows whose product is a component (Coded Function, IXP model, custom connector) do NOT get a per-project SDD file. Their contract is the host SDD's table (`### Coded Functions`, `### IXP / Document Understanding Models`, connector rows) plus their row in the solution overview's Project Inventory. The genome makes each a component of its own from those rows, built before its consumers.
 
 ### Solution overview SDD structure
 
@@ -50,22 +50,22 @@ Put the `<!-- planner-sdd-body:v1 -->` line on its own directly above item 3: it
 
 When the primary product is Agents or Coded Apps and the PDD is missing required information ([product-selection-guide.md](../shared/product-selection-guide.md) § Signals per product):
 
-1. Ask a structured question with the numbered-choice format:
+1. Ask a structured question:
 
 > The PDD describes <PRODUCT>-specific capabilities, but requirements are missing for: <LIST_GAPS>.
 >
 > 1. **Proceed with <PRODUCT>** *(recommended)* — I will ask follow-up questions to fill the gaps
 > 2. **Use a different product** — I will ask which product to use instead
 
-2. If user chooses **option 1** → ask again with a batch of product-specific gap-filling structured questions (numbered, with defaults where possible) — keep a prompt to at most 4 questions, so split into two batched prompts when more than 4 gaps remain
+2. If user chooses **option 1** → ask the product-specific gaps as batched structured questions, with defaults where possible, within the caps of [SKILL.md § Prompt Budget](../../SKILL.md#prompt-budget)
 
-3. If user chooses **option 2** → ask a structured question for the fallback:
+3. If user chooses **option 2** → ask a structured question for the fallback: up to 3 products the Level 1 ranking places next that the Constraint Gate leaves unblocked ([product-selection-guide.md](../shared/product-selection-guide.md#constraint-gate)), then Stop:
 
 > Which product should I use instead?
 >
-> 1. **RPA Process** — standard UI/data automation
-> 2. **Maestro Flow** — orchestrate multiple automations
-> 3. **Case Management** — staged lifecycle with SLA
+> 1. **<NEXT_RANKED_PRODUCT>** — <ONE_LINE_FIT>
+> 2. **<NEXT_RANKED_PRODUCT>** — <ONE_LINE_FIT>
+> 3. **<NEXT_RANKED_PRODUCT>** — <ONE_LINE_FIT>
 > 4. **Stop** — do not generate an SDD
 
 4. Re-run product selection with the fallback as primary
@@ -88,7 +88,7 @@ Emit this block as the Phase 1 summary content:
 **Recommendation:** <SINGLE_PRODUCT | SOLUTION(<PRODUCT_1>, <PRODUCT_2>, ...)>
 **Delivery model:** <cloud | automation-suite <version-if-known> | standalone | unspecified — assumed cloud [SME REVIEW]>
 **Blocked by platform:** <PRODUCT → ALTERNATIVE_APPLIED (matrix | user exclusion), ... — every product the source signals that the gate blocks, the picked design's or not (on Automation Suite older than 2.2510.2 the line always names Maestro — Flow, BPMN and Case — with the alternative the design applies, even when no Maestro project was ever a candidate) | none>
-**Need profile:** <ONE_LINE_CORE_NEED_AND_TARGET_KPI — from design-guide.md Step 3.5>
+**Need profile:** <ONE_LINE_CORE_NEED_AND_TARGET_KPI — from design-guide.md Step 7>
 **Reasoning:**
 - <NEED_FACTOR — determinism / input structure / integration surface / coordination shape / volume / risk / trigger> → <PRODUCT>
 - ...
@@ -106,11 +106,11 @@ Emit this block as the Phase 1 summary content:
 
 **`Blocked by platform:` names every gated product the source signals**, by its matrix name — not only the one the design would have picked. A PDD with a dashboard, an approval orchestration, and an AS 2024.10 constraint lists Coded Apps AND Maestro (Flow / BPMN), each with its alternative. Dropping a blocked product from this line hides the gate outcome; `none` only when no signaled product is blocked. `node "<SKILL_DIR>/scripts/scope-check.mjs" "<SDD_PATH>"` fails an SDD on Automation Suite older than 2.2510.2 whose line does not name Maestro.
 
-**Durable home.** This block is conversation output at the Phase 1 checkpoint, but the `## Recommended Scope` lines (`Recommendation:`, `Delivery model:`, `Blocked by platform:`, `Need profile:`) must also survive into the SDD — every template hosts a `## Recommended Scope` section between `## Decisions Made` and `## Action Required`, emitted in BOTH execution modes ([sdd-writing-guide.md](sdd-writing-guide.md) Step 2 item 3). Autonomous mode skips the checkpoint presentation, so the SDD copy is the only durable record of the Constraint Gate outcome.
+**Durable home.** This block is conversation output at the Phase 1 checkpoint, but the `## Recommended Scope` lines (`Recommendation:`, `Delivery model:`, `Blocked by platform:`, `Need profile:`) must also survive into the SDD, in BOTH execution modes, where the template places the Recommended Scope block ([sdd-writing-guide.md](sdd-writing-guide.md) Step 4 item 3). Autonomous mode skips the checkpoint presentation, so the SDD copy is the only durable record of the Constraint Gate outcome.
 
 ### Confirmation question
 
-Right after emitting the summary, confirm the scope via a structured question with the numbered-choice format. **The recommended option is always item 1.**
+Right after emitting the summary, confirm the scope via a structured question. **The recommended option is always item 1.**
 
 > I recommend the following scope for this SDD. Which should I use?
 >
@@ -129,7 +129,7 @@ If the user picks **Solution (customize)**:
 2. Run Level 1.75 Pass B — resolve quantities per product.
 3. Run Level 1.75 Pass C — sub-type per RPA project.
 4. Run Level 2.5 to produce the unified project list.
-5. Re-emit the summary block with the customized project list, then re-run the confirmation question. The customized composition replaces option 1 (still marked *recommended*) so the user can confirm or customize again (max 3 revisions — after that, proceed with the latest composition and tag disagreements as `[SME REVIEW]`).
+5. Re-emit the summary block with the customized project list, then re-run the confirmation question. The customized composition replaces option 1 (still marked *recommended*) so the user can confirm or customize again, within the revision cap of [SKILL.md § Prompt Budget](../../SKILL.md#prompt-budget) — after that, proceed with the latest composition and tag disagreements as `[SME REVIEW]`.
 
 ### If the user disagrees with a single-product recommendation
 
