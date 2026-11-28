@@ -2,7 +2,7 @@
 
 A rule holds one `.dmn`, and that file may hold more than one decision. Decisions linked by `informationRequirement` form a decision graph: the engine evaluates what a decision needs before the decision itself, and returns every decision's outputs in one run.
 
-Read this when a request needs more than one answer, or when one answer feeds another. One answer still needs the right shape: a set of cases is a decision table and needs nothing here, one formula is a [literal expression](#literal-expressions), a calculation run over different arguments in more than one place is a [knowledge model](#knowledge-models), the policy or regulation a rule follows is a [knowledge source](#knowledge-sources), and a note for a reader is a [text annotation](#text-annotations).
+Read [When to split](#when-to-split) before authoring any rule, since a request rarely names its shape. Read the rest when the rule needs more than one answer, or when one answer feeds another. One answer still needs the right shape: a set of cases is a decision table and needs nothing here, one formula is a [literal expression](#literal-expressions), a calculation run over different arguments in more than one place is a [knowledge model](#knowledge-models), the policy or regulation a rule follows is a [knowledge source](#knowledge-sources), and a note for a reader is a [text annotation](#text-annotations).
 
 ## When to split
 
