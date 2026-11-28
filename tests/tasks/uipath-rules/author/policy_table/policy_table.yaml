@@ -1,0 +1,93 @@
+task_id: skill-rules-integration-policy-table
+description: >
+  Agent builds a Business Rules decision table from a short policy given as
+  page-marked text (no digitizer output), headless, following the Extraction
+  Guide. Grades skill activation, `uip rules validate`, the table's outcome on
+  15 hidden scenarios (inclusive boundaries, an exception that lifts one
+  condition only, missing facts routed to Refer, a permissive "may" sentence
+  and an injected instruction that must not change the rule), a description on
+  every input, tests.json in the guide's format, and no citations without the
+  digitizer's output.
+tags: [uipath-rules, integration, "mode:build", "lifecycle:generate"]
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../_setup/policy
+      mount_point: policy
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Build a UiPath Business Rules project named ReimbursementRules from our
+  equipment reimbursement policy. The policy is `./policy/document.md`, already
+  converted to text with `<!-- page: N -->` markers. The digitizer did not run,
+  so there is no dom.json.
+
+  Use these names so we can wire the rule into a workflow:
+  - Inputs: `serviceDays` (number), `requestAmount` (number),
+    `hasDirectorPreApproval` (boolean), `hasMedicalAccommodation` (boolean).
+  - Output: `outcome` (string), one of "Approve", "Deny", "Refer".
+  Keep each named input as its own column of the table; do not build a column
+  from an expression that combines inputs.
+
+  Nobody is available to answer questions: at every question accept your own
+  proposed answer and write it in notes.md. There is no tenant, so do not run
+  `uip rules debug`; record the test cases as not run.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-rules skill"
+    skill_name: "uipath-rules"
+    expected_skill: "uipath-rules"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rules validate passes on the project"
+    command: "python3 $REFERENCE_DIR/_shared/extract_check.py validate"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Inputs, output and contract as named; every input has a description; no receipts input"
+    command: "python3 $REFERENCE_DIR/_shared/extract_check.py profile"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The table returns the policy's outcome on all 15 hidden scenarios, missing facts included"
+    command: "python3 $REFERENCE_DIR/_shared/extract_check.py outcomes"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "tests.json follows the guide's format, covers every outcome and has a missing-input case"
+    command: "python3 $REFERENCE_DIR/_shared/extract_check.py tests"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No uipdm:sourceRefs without the digitizer's output"
+    command: "python3 $REFERENCE_DIR/_shared/extract_check.py norefs"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run rules debug without a tenant"
+    tool_name: "Bash"
+    command_pattern: '(?m)(?:^|&&|;|\|\|?)\s*uip\s+rules\s+debug'
+    weight: 0.5
+    pass_threshold: 0

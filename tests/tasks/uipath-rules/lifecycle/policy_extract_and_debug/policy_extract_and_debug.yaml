@@ -1,0 +1,118 @@
+task_id: skill-rules-e2e-policy-extract-and-debug
+description: >
+  End to end from a policy document: the agent builds a Business Rules table
+  from the digitized reimbursement policy, cites it with cite.mjs, writes
+  tests.json from the document and runs every case with `uip rules debug`
+  against a tenant with Business Rules enabled. Grades validate, the citations,
+  the rules engine's outcome on the hidden scenarios, and that every tests.json
+  case was run and passes in test-results.json.
+tags: [uipath-rules, e2e, "mode:build", "lifecycle:generate", "outcome-graded"]
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../../_setup/policy_digitized
+      mount_point: policy
+    # The skill's scripts (with uipdm.xsd; no guidance), for the grader's cite.mjs and check-uipdm.mjs runs.
+    - type: template_dir
+      path: ../../../../../skills/uipath-rules/scripts
+      mount_point: _grading/uipath-rules/scripts
+
+run_limits:
+  # The agent runs one `rules debug` per tests.json case (each uploads a solution), and the engine
+  # grade runs one per scenario; leave room for both.
+  task_timeout: 5400
+  turn_timeout: 1800
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Build a UiPath Business Rules project named ReimbursementRules from our
+  equipment reimbursement policy, and verify it against the policy before you
+  finish. The digitizer already ran: `./policy/document.md` is the page-marked
+  text and `./policy/dom.json` is the digitizer's output. Cite where in the
+  policy each row was read.
+
+  Use these names so we can wire the rule into a workflow:
+  - Inputs: `serviceDays` (number), `requestAmount` (number),
+    `hasDirectorPreApproval` (boolean), `hasMedicalAccommodation` (boolean).
+  - Output: `outcome` (string), one of "Approve", "Deny", "Refer".
+  Keep each named input as its own column of the table; do not build a column
+  from an expression that combines inputs.
+
+  Do NOT publish or deploy anything. Do NOT ask for approval, confirmation, or
+  feedback: at every question accept your own proposed answer and write it in
+  notes.md. Before starting, load the uipath-rules skill and follow its workflow.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran its test cases with rules debug"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rules\s+debug'
+    # One command can loop over every case; the engine criterion checks that each case ran.
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent wrote the citations with cite.mjs"
+    tool_name: "Bash"
+    command_pattern: 'node\s+"?[^\s"]*cite\.mjs'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rules validate passes on the project"
+    command: "python3 $REFERENCE_DIR/_shared/extract_check.py validate"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "cites.json passes cite.mjs; the .dmn's sourceRefs are what cite.mjs writes; uipdm elements valid"
+    command: "python3 $REFERENCE_DIR/_shared/extract_check.py refs"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The rules engine returns the policy's outcome on every scenario; every tests.json case ran and passes, and a re-run sample matches its recorded result"
+    command: "python3 $REFERENCE_DIR/_shared/extract_check.py engine"
+    timeout: 2400
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "tests.json follows the guide's format, covers every outcome and has a missing-input case"
+    command: "python3 $REFERENCE_DIR/_shared/extract_check.py tests"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The table returns Refer when facts are missing (graded offline)"
+    command: "python3 $REFERENCE_DIR/_shared/extract_check.py outcomes"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+pre_run:
+  # What is already on disk is not ours to delete; `solution_cleanup.py` says why.
+  - command: 'python3 _setup/solution_cleanup.py record ReimbursementRules'
+    timeout: 60
+
+# `rules debug` uploads a Studio Web solution per run; delete the ones this run created, and only those.
+post_run:
+  - command: 'python3 _setup/solution_cleanup.py delete ReimbursementRules || true'
+    timeout: 300

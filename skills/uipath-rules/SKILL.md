@@ -44,6 +44,8 @@ Run `init` from the solution folder when one exists; outside a solution it creat
 
 ### 2. Design and review
 
+When the rule comes from a document, read the [Extraction Guide](references/extraction-guide.md) first: it sets the inputs, outcomes and table layout, the tests the table must pass, and how to cite the document.
+
 Show the table as Markdown before authoring and after each change — one table per decision when the rule is a graph, upstream first, each naming the decision it belongs to. Ask only what the request leaves open, in one question; ask nothing when told not to pause.
 
 ```markdown
@@ -114,6 +116,7 @@ Binding a rule into a process, workflow, or case belongs to that artifact's skil
 | Reference | When to read |
 |---|---|
 | [Decision Graphs Guide](references/drd-guide.md) | The rule holds, or needs, more than one decision |
+| [Extraction Guide](references/extraction-guide.md) | The rule comes from a policy, guideline or checklist document: before designing the table |
 | [Failure Modes Guide](references/failure-modes-guide.md) | A `uip rules` command reports an error |
 
 ## Anti-patterns
