@@ -49,16 +49,20 @@ GRAPH = Template(
 
 
         async def support_node(state: Input):
-            content = state.question
-            if state.statement is not None:
-                content += render_attachments_block([state.statement.model_dump(mode="json", exclude_none=True)])
-            return [HumanMessage(content=content)]
+        $node
         '''
     )
 )
 EMAIL_AND_PHONE = (
     "[PIIDetectionEntity(PIIDetectionEntityType.EMAIL, 0.5), PIIDetectionEntity(PIIDetectionEntityType.PHONE_NUMBER, 0.5)]"
 )
+NODE = """
+content = state.question
+if state.statement is not None:
+    content += render_attachments_block([state.statement.model_dump(mode="json", exclude_none=True)])
+return [HumanMessage(content=content)]
+"""
+DUMP = 'state.statement.model_dump(mode="json", exclude_none=True)'
 
 
 def graph(
@@ -69,6 +73,7 @@ def graph(
     local: str = "",
     agent: str = "",
     tool: str = "",
+    node: str = NODE,
 ) -> str:
     agent = agent or (
         "UiPathPIIDetectionMiddleware(scopes=[GuardrailScope.AGENT], action=LogAction(), "
@@ -78,7 +83,8 @@ def graph(
         "UiPathPIIDetectionMiddleware(scopes=[GuardrailScope.TOOL], tools=[lookup_account_info], "
         f"action=LogAction(), entities={entities})"
     )
-    return GRAPH.substitute(module=module, params=params, local=local, agent=agent, tool=tool)
+    body = textwrap.indent(textwrap.dedent(node).strip("\n"), "    ")
+    return GRAPH.substitute(module=module, params=params, local=local, agent=agent, tool=tool, node=body)
 
 
 def run_checker(tmp_path: Path, source: str) -> subprocess.CompletedProcess[str]:
@@ -234,6 +240,124 @@ def test_accepts_every_spelling_that_sends_email_and_phone(tmp_path: Path, sourc
 )
 def test_rejects_what_does_not_send_the_requested_guardrail(tmp_path: Path, source: str, message: str) -> None:
     result = run_checker(tmp_path, source)
+
+    assert result.returncode != 0, result.stdout
+    assert message in result.stderr
+
+
+@pytest.mark.parametrize(
+    "node",
+    [
+        pytest.param(
+            """
+            statement = getattr(state, "statement", None)
+            content = state.question
+            if statement is not None:
+                dumped = statement.model_dump(mode="json", exclude_none=True)
+                content = f"{content}\\n{render_attachments_block([dumped])}"
+            return [HumanMessage(content=content)]
+            """,
+            id="getattr-field",
+        ),
+        pytest.param(
+            """
+            doc = getattr(state, "statement", None) or state.get("statement")
+            content = state.question
+            if doc:
+                reference = doc.model_dump(mode="json", exclude_none=True) if isinstance(doc, Attachment) else doc
+                content = f"{content}\\n{render_attachments_block([reference])}"
+            return [HumanMessage(content=content)]
+            """,
+            id="conditional-reference",
+        ),
+        pytest.param(
+            """
+            attachments = []
+            for doc in (getattr(state, "statement", None),):
+                if doc is not None:
+                    attachments.append(doc.model_dump(mode="json", exclude_none=True))
+            content = state.question
+            if attachments:
+                content = f"{content}\\n{render_attachments_block(attachments)}"
+            return [HumanMessage(content=content)]
+            """,
+            id="loop-and-append",
+        ),
+        pytest.param(
+            f"""
+            reference = state.statement and {DUMP}
+            return [HumanMessage(content=state.question + render_attachments_block([reference]))]
+            """,
+            id="guarded-with-and",
+        ),
+        pytest.param(
+            f"""
+            attachments = []
+            references = [{DUMP}]
+            attachments.extend(references)
+            return [HumanMessage(content=state.question + render_attachments_block(attachments))]
+            """,
+            id="extend-with-local-list",
+        ),
+    ],
+)
+def test_render_check_accepts_runtime_equivalent_reads_of_the_attachment(tmp_path: Path, node: str) -> None:
+    result = run_checker(tmp_path, graph(node=node))
+
+    assert result.returncode == 0, result.stderr
+    assert "OK: render_attachments_block(...) puts the file into the user message" in result.stdout
+
+
+@pytest.mark.parametrize(
+    ("node", "message"),
+    [
+        pytest.param(
+            """
+            doc = getattr(state, "question", None)
+            content = f"{state.question}\\n{render_attachments_block([doc.model_dump(mode='json', exclude_none=True)])}"
+            return [HumanMessage(content=content)]
+            """,
+            "render_attachments_block receives no reference built from the input's Attachment field (['statement'])",
+            id="not-the-attachment-field",
+        ),
+        pytest.param(
+            """
+            content = f"{state.question}\\n{render_attachments_block([state.statement])}"
+            return [HumanMessage(content=content)]
+            """,
+            "render_attachments_block receives no reference built from the input's Attachment field",
+            id="attachment-object-not-reference",
+        ),
+        pytest.param(
+            """
+            block = render_attachments_block([state.statement.model_dump(mode="json", exclude_none=True)])
+            return [HumanMessage(content=state.question)]
+            """,
+            "never reaches the user message",
+            id="block-not-in-message",
+        ),
+        pytest.param(
+            f"""
+            reference = {DUMP} and {{}}
+            return [HumanMessage(content=state.question + render_attachments_block([reference]))]
+            """,
+            "render_attachments_block receives no reference built from the input's Attachment field",
+            id="and-discards-the-reference",
+        ),
+        pytest.param(
+            f"""
+            attachments = []
+            block = render_attachments_block(attachments)
+            attachments.append({DUMP})
+            return [HumanMessage(content=state.question + block)]
+            """,
+            "render_attachments_block receives no reference built from the input's Attachment field",
+            id="appended-after-render",
+        ),
+    ],
+)
+def test_render_check_rejects_a_file_the_guardrails_never_see(tmp_path: Path, node: str, message: str) -> None:
+    result = run_checker(tmp_path, graph(node=node))
 
     assert result.returncode != 0, result.stdout
     assert message in result.stderr

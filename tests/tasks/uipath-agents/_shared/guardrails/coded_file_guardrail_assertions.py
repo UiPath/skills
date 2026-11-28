@@ -413,19 +413,66 @@ def _assigned_values(fn: ast.AST, name: str) -> list[ast.expr]:
         elif isinstance(node, (ast.AnnAssign, ast.AugAssign)) and isinstance(node.target, ast.Name):
             if node.target.id == name and node.value is not None:
                 values.append(node.value)
+        elif isinstance(node, (ast.For, ast.AsyncFor)) and isinstance(node.target, ast.Name) and node.target.id == name:
+            values.extend(node.iter.elts if isinstance(node.iter, (ast.Tuple, ast.List)) else [node.iter])
     return values
 
 
+def _appended(fn: ast.AST, name: str, before: ast.AST) -> list[ast.expr]:
+    """The items the code adds to the list ``name`` with ``.append``, ``.insert`` or ``.extend`` before ``before``."""
+    items: list[ast.expr] = []
+    for node in ast.walk(fn):
+        if not (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == name
+            and node.args
+            and (node.lineno, node.col_offset) < (before.lineno, before.col_offset)
+        ):
+            continue
+        if node.func.attr in ("append", "insert"):
+            items.append(node.args[-1])
+        elif node.func.attr == "extend":
+            for added in _resolve(node.args[0], fn):
+                items.extend(added.elts if isinstance(added, (ast.List, ast.Tuple)) else [added])
+    return items
+
+
+def _alternatives(node: ast.expr) -> Iterator[ast.expr]:
+    """``node``, or each value it can take: both branches of ``a if c else b``, each operand of ``a or b``,
+    and the last operand of ``a and b`` (its value when every operand is truthy)."""
+    if isinstance(node, ast.IfExp):
+        yield from _alternatives(node.body)
+        yield from _alternatives(node.orelse)
+    elif isinstance(node, ast.BoolOp):
+        for operand in node.values if isinstance(node.op, ast.Or) else node.values[-1:]:
+            yield from _alternatives(operand)
+    else:
+        yield node
+
+
 def _resolve(expr: ast.expr, fn: ast.AST) -> list[ast.expr]:
-    if isinstance(expr, ast.Name):
-        return _assigned_values(fn, expr.id) or [expr]
-    return [expr]
+    values = _assigned_values(fn, expr.id) if isinstance(expr, ast.Name) else []
+    return [alternative for value in values or [expr] for alternative in _alternatives(value)]
+
+
+def _reads_field_by_name(node: ast.AST, fields: list[str]) -> bool:
+    """``getattr(<obj>, "<field>"[, default])``, the same read as ``<obj>.<field>``."""
+    return (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "getattr"
+        and len(node.args) >= 2
+        and isinstance(node.args[1], ast.Constant)
+        and node.args[1].value in fields
+    )
 
 
 def _names_field(expr: ast.AST, fn: ast.AST, fields: list[str], seen: frozenset[str] = frozenset()) -> bool:
     """True when ``expr`` reads an input Attachment field, directly or through local names."""
     for sub in ast.walk(expr):
-        if isinstance(sub, ast.Attribute) and sub.attr in fields:
+        if (isinstance(sub, ast.Attribute) and sub.attr in fields) or _reads_field_by_name(sub, fields):
             return True
         if isinstance(sub, ast.Name) and sub.id not in seen:
             if any(_names_field(v, fn, fields, seen | {sub.id}) for v in _assigned_values(fn, sub.id)):
@@ -458,6 +505,8 @@ def _valid_render_argument(call: ast.Call, fn: ast.AST, fields: list[str]) -> bo
     arg = call.args[0] if call.args else next((kw.value for kw in call.keywords if kw.arg == "attachments"), None)
     if arg is None:
         return False
+    if isinstance(arg, ast.Name) and any(_valid_reference(item, fn, fields) for item in _appended(fn, arg.id, call)):
+        return True
     for value in _resolve(arg, fn):
         if isinstance(value, ast.List) and value.elts and all(_valid_reference(e, fn, fields) for e in value.elts):
             return True
@@ -534,10 +583,9 @@ def require_rendered_attachments(tree: ast.AST) -> None:
     if not valid:
         got = ", ".join(ast.unparse(call)[:120] for _, call in renders)
         sys.exit(
-            "FAIL: render_attachments_block must receive the input's Attachment as "
-            "<state>.<field>.model_dump(mode=\"json\", exclude_none=True) (or an "
-            "{\"ID\", \"FullName\", \"MimeType\"} dict built from it); any other shape never reaches "
-            f"the guardrails. Got: {got}"
+            f"FAIL: render_attachments_block receives no reference built from the input's Attachment field ({fields}): "
+            "pass <field>.model_dump(mode=\"json\", exclude_none=True), or an {\"ID\", \"FullName\", \"MimeType\"} "
+            f"dict built from it, where <field> is read as <state>.<field> or getattr(<state>, \"<field>\"). Got: {got}"
         )
     render_calls = {id(call) for _, call in valid}
     tainted_funcs: set[str] = set()
