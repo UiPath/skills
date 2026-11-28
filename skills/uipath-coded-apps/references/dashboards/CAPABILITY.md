@@ -6,13 +6,14 @@ Build, edit, or deploy UiPath dashboards powered by Insights RTM and the TypeScr
 
 ## Step 0 — Detect intent BEFORE loading anything
 
-Read the user's message and classify it as one of three intents. **Do not load any files yet.**
+Read the user's message and classify it as one of four intents. **Do not load any files yet.**
 
 | User says | Intent | What to do next |
 |-----------|--------|-----------------|
 | "build me a dashboard", "show me X metrics", "create a dashboard for…" | **BUILD** | Follow the Build path below |
 | "add/remove/change a widget", "update the chart", "make it 7 days" | **EDIT** | Follow the Edit path below |
 | "deploy this", "publish it", "make it live", "ship it to the team", "deploy the dashboard" | **DEPLOY** | Follow the Deploy path below |
+| "preview it", "run the dashboard", "open the dashboard" | **PREVIEW** | Follow the Preview path below |
 
 If the intent is unclear, ask one question — "What do you want to do with the dashboard?" — as a **structured choice** (SKILL.md Critical Rule 18: native question tool with selectable options when the host agent has one, else a numbered list):
 
@@ -21,6 +22,7 @@ If the intent is unclear, ask one question — "What do you want to do with the 
 | **Build a new dashboard** | Describe metrics in plain language, get a live dashboard |
 | **Edit the existing one** | Add/remove/change widgets or time ranges |
 | **Deploy it** | Publish to Automation Cloud |
+| **Preview it** | Open the dashboard you already have |
 
 ---
 
@@ -162,9 +164,15 @@ After user confirms, follow every step in `plugins/deploy/impl.md` exactly as wr
 
 ---
 
+## Path D — PREVIEW (open an existing dashboard)
+
+No plan, so the plan rules here and in the build plugin do not apply. Read `references/dashboards/plugins/build/impl.md` *(from skill root)* and open the dashboard as its Phase 4 says after Step 2. In those steps, `<ROUTING_NAME>` is `.` when `.dashboard/state.json` is in the current folder; otherwise it is the dashboard's folder (ask the user if you do not know it).
+
+---
+
 ## Scope
 
-This skill only handles dashboard building, editing, and deploying. For anything else, respond:
+This skill only handles dashboard building, editing, previewing, and deploying. For anything else, respond:
 
 > "This skill is for UiPath dashboard generation only. For [what they asked], please use the appropriate skill."
 
@@ -176,7 +184,7 @@ This skill only handles dashboard building, editing, and deploying. For anything
 - **Never** echo raw event names (WIDGET_READY, TSC_PASS, BUILD_RESULT, etc.) — translate them to clean progress lines
 - **Never** show intermediate bash command outputs between the user's request and the plan — the plan is the first visible output
 - **Never** call any tool — including the question/option tool — in the same response as the plan. The plan is pure text; the user replies to it; structured setup questions (OAuth, deploy pin) fire only after approval and only for details the user hasn't already given
-- **Never** run ANY CLI command before presenting the plan and getting user confirmation
+- **Never** run ANY CLI command before presenting the plan and getting user confirmation. PREVIEW is the exception: it has no plan
 - **Never** improvise deploy steps — always read `plugins/deploy/impl.md` first
 - **Never** run `uip tools list`, `npm run build`, or any command not in the relevant impl.md
 - **Never** use `"agent-health-dashboard"` (routing slug) as the `-n` flag — always use the human-readable display name from state.json

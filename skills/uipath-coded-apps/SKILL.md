@@ -105,6 +105,7 @@ For the app's **JS/TS function backend** — authoring the `defineFunction` endp
 | **Create a new Coded Web App** | [references/create-web-app.md](references/create-web-app.md) |
 | **Create a new Coded Action App** | [references/create-action-app.md](references/create-action-app.md) |
 | **Create a public (no sign-in) coded app** (preview) | [references/public-coded-app.md](references/public-coded-app.md) |
+| **Preview or run a Coded Web App or dashboard** | [references/create-web-app.md § Run Locally](references/create-web-app.md#run-locally); for a dashboard, the PREVIEW intent in [references/dashboards/CAPABILITY.md](references/dashboards/CAPABILITY.md) |
 | **Debug auth or config issues** | [references/debug.md](references/debug.md) |
 | **Push/pull code to Studio Web** | [references/file-sync.md](references/file-sync.md) |
 | **Package, deploy, and delete** | [references/pack-publish-deploy.md](references/pack-publish-deploy.md) |
@@ -272,13 +273,16 @@ When you finish a task, report only what's applicable to the work actually done:
    - External Application client ID — if one was created this session
 <!--skill-flavor:completion-next-steps:start-->
 4. **Next steps**, depending on where the task stopped. In a solution, run the app from `<app-name>/source`, and pack, publish and deploy it with `uip solution pack` / `publish` / `deploy run`, never `uip codedapp`:
-   - **Scaffolded only:** `cd <app-name> && npm run dev` to run locally
+   - **Scaffolded only:** `cd <app-name> && npm run dev` to run locally. Leave this out for a Coded Web App: item 6 says how to see it.
    - **Built but not packed:** ready to `uip codedapp pack` when the user wants to deploy
    - **Published but not deployed:** run `uip codedapp deploy` to go live
    - **Deployed (Web):** open/share the deployment URL; verify sign-in flow
    - **Deployed (Action):** the app will render in Action Center human tasks triggered by Maestro/Agent workflows matching the routing name
 <!--skill-flavor:completion-next-steps:end-->
 5. **Open issues** — any auth failures, scope mismatches, missing folder key, skipped steps, or errors left unresolved
+<!--skill-flavor:completion-preview:start-->
+6. **Preview** — when the task scaffolded or built a Coded Web App, open its preview as [create-web-app.md § Step 6](references/create-web-app.md#step-6--open-the-preview) says, if you have not already. Then end the report with one line that says where the app is showing: the UiPath Apps preview tab, the dev server's URL if the user asked you to start one, or the two lines that run it.
+<!--skill-flavor:completion-preview:end-->
 
 If a later stage was requested but skipped (e.g., user asked to deploy but only `publish` succeeded), call it out explicitly in the next-steps section.
 

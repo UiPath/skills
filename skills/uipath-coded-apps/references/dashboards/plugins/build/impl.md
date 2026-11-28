@@ -345,7 +345,7 @@ Building **[Dashboard Name]**…
 
 **If a sub-task mechanism is available (preferred):** do NOT write `intent.json` or any `metrics/*.ts` in the main thread — the subagent writes them, so those edits stay hidden. Spawn the build subagent with the prompt below (use your host agent's sub-task mechanism — e.g. the `Task` tool in Claude Code), pasting the APPROVED PLAN (it is the subagent's authoring spec — give it everything needed to write the files).
 
-**If no sub-task mechanism is available (inline fallback):** skip the spawn and do the subagent's job yourself — follow §§ "Build subagent — execution" and "returns" directly in the main thread (author `intent.json` + `metrics/*.ts`, extract the kit, run the build script, handle the retry loop), then continue to Step 3. The file writes and build output will be visible; that is acceptable.
+**If no sub-task mechanism is available (inline fallback):** skip the spawn and do the subagent's job yourself — follow §§ "Build subagent — execution" and "returns" directly in the main thread (author `intent.json` + `metrics/*.ts`, extract the kit, run the build script, handle the retry loop), then continue with the step after Step 2. The file writes and build output will be visible; that is acceptable.
 
 The build subagent prompt:
 
@@ -359,8 +359,11 @@ The build subagent prompt:
 > 4. On `METRICS_RETRY`, fix the named `src/metrics/*.ts` files using the SDK references + the reported errors, then re-run — at most 2 attempts, then drop the metric.
 > 5. Return ONLY the milestone block defined in § "Build subagent — returns".
 
-**Step 2 — Relay the subagent's returned block verbatim.** Add nothing else — no commentary about the subagent, no raw output, no mention of the files it wrote.
+**Step 2 — Relay the subagent's returned block verbatim.** Add nothing else except the lines the steps below call for — no commentary about the subagent, no raw output, no mention of the files it wrote.
 
+<!--skill-flavor:editor-preview:start-->
+**Then, unless the build failed or returned `AUTH_MISSING`, open the preview for `<ROUTING_NAME>` as [create-web-app.md § Run Locally](../../../create-web-app.md#run-locally) says.** On `OPENING` or `SHOWN`, skip Steps 3 and 4. If it falls back and your shell cannot keep a process running, skip them too: give the user Run Locally's two lines, with `npm run dev -- --port 25173`, and the Step 4 URL.
+<!--skill-flavor:editor-preview:end-->
 **Step 3 — Start the dev server as a background job in the MAIN thread** (the build script deliberately does not start it — a server spawned inside the script outlives the session and leaks). Run with the background option on the shell tool call (same mechanism as pre-warm):
 
 ```bash
@@ -392,7 +395,7 @@ If the subagent reports `AUTH_MISSING` or a failure it couldn't recover, surface
 - `WIDGET_READY:{"name":"X",...}` → a `✓ X` line
 - `METRICS_PASS` → silent; build continues (no milestone needed)
 - `TSC_PASS` → `✓ All code validated`
-- `BUILD_RESULT.previewUrl` → the URL for the return block (the script does NOT start the server — the main thread does that after you return)
+- `BUILD_RESULT.previewUrl` → silent (the main thread opens the preview after you return)
 
 **Act on:**
 - `METRICS_RETRY:{"files":[...],"errors":[...]}` → fix the named `src/metrics/<name>.ts` file(s) using the SDK references + reported errors, re-run. Max 2 attempts; if still failing, remove the metric from `intent.json` and its module file, re-run, and note it as dropped.
@@ -412,7 +415,7 @@ On success, return exactly this block (nothing before or after):
   ✓ [Widget 3]
   ✓ All code validated
 
-Your **[Dashboard Name]** is live at http://localhost:25173 🎉
+Your **[Dashboard Name]** is ready 🎉
 
 The dashboard has [N] widgets: [comma-separated names].
 Tell me what to change — I can add widgets, adjust time ranges, swap chart types, or deploy it to your team.
@@ -423,4 +426,4 @@ If some widgets were dropped after retries, add one line before the success line
 
 On unrecoverable failure, return a one-line reason (e.g. `Dependency install failed — run npm ci in [projectDir]`) and nothing else.
 
-The main thread relays this block verbatim, starts the dev server as a background job (Step 4), and opens the URL. Keep it warm — the user just got something real.
+The main thread relays this block verbatim, then opens the dashboard as Phase 4 says after Step 2. Keep it warm — the user just got something real.

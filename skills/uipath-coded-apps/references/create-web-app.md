@@ -232,6 +232,42 @@ If the build fails, parse the error, fix the offending file (most likely the tem
 
 ---
 
+<!--skill-flavor:open-preview-step:start-->
+## Step 6 — Open the Preview
+
+Do this last, once everything the user asked for is in place (the scaffold alone, or the app you built on it), and before your final report. Open the app's preview with the script in **Run Locally**, next, and tell the user what its table says to. Only the editor's preview opens unasked: where the table sends you to the dev server, do not start one the user did not ask for. Give them the two lines that run it instead.
+
+<!--skill-flavor:open-preview-step:end-->
+## Run Locally
+
+<!--skill-flavor:editor-preview:start-->
+Open the app in the editor's preview first, both when the user asks to preview or run it and when you finish building it. A public (no sign-in) app is the exception: run it as [public-coded-app.md § Run locally](public-coded-app.md#run-locally) says, since the preview signs in through an OAuth client. Pass the absolute path of the folder that holds the app's `package.json` (in a solution, the project's `source` folder):
+
+```bash
+node "<skill-dir>/scripts/uipath-apps-preview.mjs" "<absolute app folder>"
+```
+
+It prints one line:
+
+| Output | Do this |
+|---|---|
+| `OPENING` or `SHOWN` | Tell the user the preview is opening in UiPath Apps, in an editor tab named `Preview: <app name>`; that it may ask them to sign in; and that **Point & edit** in its toolbar lets them point at anything in the app and describe a change. Do not run `npm run dev` or open a browser. The editor runs the preview's dev server: never stop or restart it yourself. It reloads as files change, so later edits need no new request. When it must restart (after a `uipath.json` change, say), ask the user to close the preview tab, then run the script again. |
+| `REFUSED not_signed_in` | Ask the user to sign in (to UiPath Apps in VS Code, to Studio in Studio Desktop), then run the script again. |
+| `REFUSED busy` | The editor is busy with another preview or a deploy. Run the script again in a few seconds; if it is still busy, tell the user. |
+| `REFUSED port_in_use` | Something already serves the app's port, usually a dev server started earlier. Stop it if you started it, else ask the user to stop theirs; then run the script again. |
+| `REFUSED no_app`, `NOT_AVAILABLE`, any other output, or an error | Run the dev server below. If your shell cannot keep a process running (it has no background commands, as in UiPath Autopilot), do not run it: give the user two lines to run in their own terminal, `cd "<absolute app folder>"` and then `npm run dev`. |
+
+<!--skill-flavor:editor-preview:end-->
+```bash
+npm run dev
+```
+
+Open `http://localhost:5173`. The app redirects to UiPath login on first load. After login, it returns to the app.
+
+If login fails, see [debug.md](debug.md).
+
+---
+
 ## SDK Setup
 
 To call SDK services from the app, create `src/uipath.ts` to instantiate services. Get the `sdk` instance from the `useAuth` hook rather than creating a new one:
@@ -293,18 +329,6 @@ When implementing specific SDK services, read the corresponding reference:
 ## Router Base Path (optional)
 
 If the app uses a client-side router (React Router, Vue Router), see the **Optional: Router base path** section of [../assets/templates/web-app-template.md](../assets/templates/web-app-template.md) for `getAppBase()` patterns covering React Router v5/v6 and Vue Router.
-
----
-
-## Run Locally
-
-```bash
-npm run dev
-```
-
-Open `http://localhost:5173`. The app redirects to UiPath login on first load. After login, it returns to the app.
-
-If login fails, see [debug.md](debug.md).
 
 ---
 
