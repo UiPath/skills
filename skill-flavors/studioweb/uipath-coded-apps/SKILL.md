@@ -35,6 +35,9 @@ Everything else in this skill applies. Read and edit the app's files directly �
 4. **Next steps** — the app is scaffolded, not built: say that nothing has compiled it yet and that its first build runs from `source/` (§ Studio Web Command Scope), and name every SDK call you could not verify.
 <!--skill-flavor:completion-next-steps:end-->
 
+<!--skill-flavor:completion-preview:start-->
+<!--skill-flavor:completion-preview:end-->
+
 <!--skill-flavor:freeze-stop:start-->
 24. **When the CLI reports a freeze, stop and show the user.** If a `uip` failure's `Message` mentions a freeze, a frozen config or a pin, show the user the `Message` and `Instructions` and stop. The Studio Web host bundles its CLI, so no install, update or config command run here can fix it.
 <!--skill-flavor:freeze-stop:end-->

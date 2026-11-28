@@ -272,14 +272,17 @@ When you finish a task, report only what's applicable to the work actually done:
    - Live deployment URL (`appUrl` from `app.config.json`) — if `deploy` was run
    - External Application client ID — if one was created this session
 <!--skill-flavor:completion-next-steps:start-->
-4. **Next steps**, depending on where the task stopped. In a solution, run the app from `<app-name>/source`, and pack, publish and deploy it with `uip solution pack` / `publish` / `deploy run`, never `uip codedapp`. When the task scaffolded or built a Coded Web App, open its preview, as [create-web-app.md § Run Locally](references/create-web-app.md#run-locally) says, if you have not already. Then, by stage:
-   - **Scaffolded only:** for a Coded Web App, what Run Locally gave (the preview is opening, or the dev server's URL or command); otherwise `cd <app-name> && npm run dev` to run locally.
+4. **Next steps**, depending on where the task stopped. In a solution, run the app from `<app-name>/source`, and pack, publish and deploy it with `uip solution pack` / `publish` / `deploy run`, never `uip codedapp`:
+   - **Scaffolded only:** `cd <app-name> && npm run dev` to run locally. Leave this out for a Coded Web App: item 6 says how to see it.
    - **Built but not packed:** ready to `uip codedapp pack` when the user wants to deploy
    - **Published but not deployed:** run `uip codedapp deploy` to go live
    - **Deployed (Web):** open/share the deployment URL; verify sign-in flow
    - **Deployed (Action):** the app will render in Action Center human tasks triggered by Maestro/Agent workflows matching the routing name
 <!--skill-flavor:completion-next-steps:end-->
 5. **Open issues** — any auth failures, scope mismatches, missing folder key, skipped steps, or errors left unresolved
+<!--skill-flavor:completion-preview:start-->
+6. **Preview** — when the task scaffolded or built a Coded Web App, open its preview as [create-web-app.md § Step 6](references/create-web-app.md#step-6--open-the-preview) says, if you have not already. Then end the report with one line that says where the app is showing: the UiPath Apps preview tab, the dev server's URL if the user asked you to start one, or the two lines that run it.
+<!--skill-flavor:completion-preview:end-->
 
 If a later stage was requested but skipped (e.g., user asked to deploy but only `publish` succeeded), call it out explicitly in the next-steps section.
 

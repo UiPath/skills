@@ -29,5 +29,8 @@ Verify by reading the files, not by running `npm run build`.
 Fix every gap before telling the user the scaffold is ready.
 <!--skill-flavor:scaffold-verify:end-->
 
+<!--skill-flavor:open-preview-step:start-->
+<!--skill-flavor:open-preview-step:end-->
+
 <!--skill-flavor:editor-preview:start-->
 <!--skill-flavor:editor-preview:end-->
