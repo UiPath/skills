@@ -112,7 +112,7 @@ The loop runs for a failure attributed to the migration and, before any failure,
       | Signal | Ground the fix on |
       |---|---|
       | (a) The plan's go named a treatment for the failing activity or one of its ancestors, or, before any run, for a construct of the output (SKILL.md Rule 13) | That treatment, with the name the run supplied when one was needed; source `requested`. The go is its yes, so step 2 is skipped; it is edit 1 and does not count toward step 5 |
-      | (b) The failing activity's selector carries the marker | The post-migration fix guide's procedure, its scan, classification and confirmation included |
+      | (b) The failing activity's selector carries the marker | The post-migration fix guide's procedure, its scan, classification, confirmation and hand-off included |
       | (c) A `[PostMigration Action Required]` annotation on the failing activity or on one of its ancestors names an action, such as moving the child outside the generated card or setting the target's Window selector | That action |
       | (d) Nothing grounded applies | One hypothesis formed from the evidence, which is the exception type and message, the tool's warning on the construct, and the difference between the classic activity in `<PROJECT_DIR>` and its migrated form in `<OUTPUT_DIR>`. A hypothesis is labelled as such in the question and in the report |
 

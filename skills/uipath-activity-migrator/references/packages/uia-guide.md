@@ -79,7 +79,7 @@ Actions, in this order, once the Step 5 build passed:
 
    Nothing else stands in for this listing. Run the listing even when the summarizer and the build warnings already seem to cover the annotations.
 
-2. **Expression-selector defects.** When the output contains `.ToStringWithDelimiter()` markers, run the full procedure in [uia-post-migration-fix-guide.md](../uia-post-migration-fix-guide.md) with `<OUTPUT_DIR>` as its `<MIGRATED_DIR>`: scan, classify each variable's value, present the findings table, confirm once, apply Fix 1 and Fix 2 with targeted edits, validate each edited file, then rebuild. Never rework or "improve" a selector that carries the marker; the defects are structural, and a selector rewrite destroys the variable binding.
+2. **Expression-selector defects.** When the output contains `.ToStringWithDelimiter()` markers, run the full procedure in [uia-post-migration-fix-guide.md](../uia-post-migration-fix-guide.md) with `<OUTPUT_DIR>` as its `<MIGRATED_DIR>`. Never rework or "improve" a selector that carries the marker; the defects are structural, and a selector rewrite destroys the variable binding.
 
 Report inputs:
 

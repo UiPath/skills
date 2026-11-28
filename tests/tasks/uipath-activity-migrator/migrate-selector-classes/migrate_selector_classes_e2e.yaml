@@ -181,9 +181,12 @@ success_criteria:
     weight: 5.0
     pass_threshold: 1.0
 
+  # Bash only: the brief handed to the RPA authoring skill names these commands
+  # to forbid them, and that text is not a run.
   - type: command_not_executed
     description: "Agent did not run or debug the migrated project"
     command_pattern: 'uip\s+rpa\s+(run|debug)\b'
+    tool_name: "Bash"
     weight: 1.0
     pass_threshold: 1.0
 
