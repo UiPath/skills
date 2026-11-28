@@ -15,6 +15,13 @@ sandbox:
     - type: template_dir
       path: ../../_setup/policy_digitized
       mount_point: policy
+    # The skill's scripts and schema (no SKILL.md), for the grader's cite.mjs and check-uipdm.mjs runs.
+    - type: template_dir
+      path: ../../../../../skills/uipath-rules/scripts
+      mount_point: _grading/uipath-rules/scripts
+    - type: template_dir
+      path: ../../../../../skills/uipath-rules/references
+      mount_point: _grading/uipath-rules/references
 
 reference:
   directory: ../..

@@ -137,8 +137,7 @@ def test_a_bare_list_is_not_the_guide_format(sandbox, capsys):
     assert '"base"' in capsys.readouterr().out
 
 
-def test_the_skill_scripts_are_found_from_this_checkout(monkeypatch):
-    monkeypatch.delenv("SKILLS_REPO_PATH", raising=False)
+def test_the_skill_scripts_are_found_from_this_checkout():
     assert ec.skill_script("cite.mjs").is_file() and os.path.basename(ec.skill_script("check-uipdm.mjs")) == "check-uipdm.mjs"
 
 

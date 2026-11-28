@@ -23,7 +23,6 @@ The DMN is authored by the agent under test and parsed with stdlib ElementTree.
 from __future__ import annotations
 
 import json
-import os
 import re
 import shutil
 import subprocess
@@ -86,12 +85,16 @@ def find_one(name: str) -> Path:
     return found[0]
 
 
+# The task stages the skill under test here (sandbox.template_sources); a checkout has it at skills/uipath-rules.
+STAGED_SKILL = Path("_grading") / "uipath-rules"
+
+
 def skill_script(name: str) -> Path:
-    """The skill's own script: the plugin mount in CI, else this checkout."""
-    for base in (os.environ.get("SKILLS_REPO_PATH"), str(HERE.parents[3])):
-        if base and (Path(base) / "skills" / "uipath-rules" / "scripts" / name).is_file():
-            return Path(base) / "skills" / "uipath-rules" / "scripts" / name
-    fail(f"cannot find skills/uipath-rules/scripts/{name}")
+    """The skill's own script: the copy the task staged into the sandbox, else this checkout's."""
+    for skill in (STAGED_SKILL, HERE.parents[3] / "skills" / "uipath-rules"):
+        if (skill / "scripts" / name).is_file():
+            return (skill / "scripts" / name).resolve()
+    fail(f"cannot find uipath-rules/scripts/{name}; stage the skill at {STAGED_SKILL}")
     raise AssertionError
 
 
