@@ -148,6 +148,32 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | Windsurf | `windsurf` |
 | Antigravity CLI | `antigravity` |
 | Devin | `devin` |
+| Cline | `cline` |
+
+`--agent copilot` covers GitHub Copilot in VS Code, the Copilot CLI and Visual Studio, which all read `.github/skills` in a project and `~/.copilot/skills` for the user.
+
+### Agents that read `.agents/skills`
+
+The skills follow the open [Agent Skills](https://agentskills.io) standard. These agents read its standard directories, `.agents/skills` in a project and `~/.agents/skills` for the user, so they all install to the same place:
+
+| Agent | `--agent` |
+|-------|-----------|
+| JetBrains Junie | `junie` |
+| Zed | `zed` |
+| Warp | `warp` |
+| Amp | `amp` |
+| Goose | `goose` |
+| Kilo Code | `kilo` |
+| Qwen Code | `qwen` |
+| Augment | `augment` |
+| Factory Droid | `droid` |
+| Crush | `crush` |
+| Mistral Vibe | `vibe` |
+| Pi | `pi` |
+| OpenHands | `openhands` |
+| Any other agent that reads `.agents/skills`, such as Gemini CLI | `agents` |
+
+Zed, Warp, OpenHands and `agents` are not detected automatically; pass `--agent <name>`. Because these agents share one folder, uninstalling for one of them removes the skills for all of them.
 
 ### Claude Code
 
