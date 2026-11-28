@@ -11,11 +11,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "_setup"))
 from eval_fixtures import PROJECT_NAME, build_eval_set, build_evaluator, eval_set_path, evaluator_path  # noqa: E402
 from seed import ROWS  # noqa: E402
 
-project = Path(PROJECT_NAME)
-checks = {
-    eval_set_path(project): build_eval_set(ROWS),
-    evaluator_path(project): build_evaluator(),
-}
+# Studio Web exports a project re-created in the solution to GradeCheck/GradeCheck/;
+# that copy is graded when present, so it is held to the same rule. Keep this
+# selection in step with the two run_command criteria in loop_until_green.yaml.
+nested = Path(PROJECT_NAME, PROJECT_NAME)
+projects = [Path(PROJECT_NAME)] + ([nested] if (nested / "Workflow.json").is_file() else [])
+checks = {}
+for project in projects:
+    checks[eval_set_path(project)] = build_eval_set(ROWS)
+    checks[evaluator_path(project)] = build_evaluator()
 problems = []
 for path, expected in checks.items():
     if not path.is_file():
@@ -23,7 +27,7 @@ for path, expected in checks.items():
         continue
     if json.loads(path.read_text()) != expected:
         problems.append(f"{path} differs from the seeded file")
-extra = [p for p in project.glob("evals/**/*.json") if p not in checks]
+extra = [p for project in projects for p in project.glob("evals/**/*.json") if p not in checks]
 if extra:
     problems.append(f"unexpected files under evals/: {[str(p) for p in extra]}")
 if problems:

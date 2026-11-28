@@ -47,7 +47,10 @@ success_criteria:
     description: "Behavioral: every row passes when run and scored as the panel scores it (raw output, strict deep-equal) — both bugs fixed"
     # reference.directory points one level up, so this one mount covers both
     # _shared/ and this task's own leaf directory.
-    command: python3 $REFERENCE_DIR/_shared/check_rows_pass.py GradeCheck --min-rows 3
+    # Studio Web exports a project re-created in /solution as GradeCheck/GradeCheck/.
+    # Keep this copy-selection rule in step with the validate criterion below and
+    # check_evals_untouched.py.
+    command: 'python3 $REFERENCE_DIR/_shared/check_rows_pass.py "$(test -f GradeCheck/GradeCheck/Workflow.json && echo GradeCheck/GradeCheck || echo GradeCheck)" --min-rows 3'
     timeout: 300
     expected_exit_code: 0
     weight: 4.0
@@ -63,7 +66,7 @@ success_criteria:
 
   - type: run_command
     description: "The repaired workflow validates"
-    command: 'uip api-workflow validate GradeCheck/Workflow.json --output json | grep -q ''"Status": "Valid"'''
+    command: 'uip api-workflow validate "$(test -f GradeCheck/GradeCheck/Workflow.json && echo GradeCheck/GradeCheck || echo GradeCheck)/Workflow.json" --output json | grep -q ''"Status": "Valid"'''
     timeout: 60
     expected_exit_code: 0
     weight: 1.0
