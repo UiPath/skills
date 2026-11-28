@@ -77,27 +77,36 @@ Run that as **one** command — `SCAFFOLD_OK` is the only signal that the scaffo
 
 Then `cd` into `<app-name>`. Every subsequent step runs from this directory.
 
-**In a solution** (a `.uipx` in the working folder or above): the app is a solution project, and its React sources live in the project's `source/` folder. From the solution folder, register the project first:
+**In a solution** (a `.uipx` in the working folder or above): the app is a solution project, and its React sources live in the project's `source/` folder. From the solution folder, register the project, which also writes the app's starter:
 
 ```bash
 uip codedapp init ./<app-name> --output json
 ```
 
-Init writes the project files (`project.uiproj`, `webAppManifest.json` with `bundlePath: "source/dist"`, `.env.example`, the `.uipx` entry and the app's solution resource) and a placeholder `source/`: a static `dist/index.html`, a `uipath.json` with blank values and a `package.json` with no scripts.
+Init writes the project files (`project.uiproj`, `webAppManifest.json` with `bundlePath: "source/dist"`, `.env.example`, the `.uipx` entry and the app's solution resource) and, under `source/`, a bare React + Vite + TypeScript starter: `index.html`, `vite.config.ts` (`base: './'`, the `@uipath/coded-apps-dev` plugin), the tsconfigs, `src/main.tsx`, `src/App.tsx`, `src/uipath.ts`, a `package.json` with a `build` script and a `uipath.json` with blank values. No `dist/`: the build writes it.
 
-Check the result before going on: `Data.SolutionRegistration.Status` must be `Registered`, and `Data.Files` must list the placeholder as `source/dist/index.html`, `source/uipath.json` and `source/package.json`. Anything else means the project is not cleanly registered: stop and report it to the user rather than scaffolding. `Skipped` (for example, when the folder holds two `.uipx` files) also means init wrote the standalone layout, which the solution would pack as the placeholder.
+Check the result before going on: `Data.SolutionRegistration.Status` must be `Registered`, and `Data.Files` must list `source/package.json` and `source/uipath.json`. Anything else means the project is not cleanly registered: stop and report it to the user rather than scaffolding. `Skipped` (for example, when the folder holds two `.uipx` files) also means init wrote the standalone layout, at the project root instead of `source/`. Ignore `Data.NextSteps`: those commands run the bare starter by hand, and their `npm run dev` starts a server that never exits. The steps below install, write and build the app.
 
-The placeholder is not the app, so never edit it into one. Replace it with the React scaffold:
+Then confirm the scaffold, following the line that matches `Data.Files`:
 
-```bash
-npx --yes create-vite@latest <app-name>/source --no-interactive --overwrite --template react-ts && node -e "require('fs').existsSync('<app-name>/source/src/main.tsx')||(console.error('SCAFFOLD_NOT_REACT'),process.exit(1))" && echo SCAFFOLD_OK
-```
+- **It lists `source/src/main.tsx`**: init's React starter is the scaffold. Run no scaffolder over it. Check it:
 
-- Run it as **one** command, as above. On `SCAFFOLD_NOT_REACT` or a non-zero exit, re-run it once; stop after two failed attempts and report the output.
-- `--overwrite` is required: without it, `create-vite` finds the placeholder, prints `Operation cancelled`, exits `0` and changes nothing. With it, `create-vite` empties its target first, so the target is always `<app-name>/source`, never `<app-name>`, which holds the project files init just wrote.
-- Init comes first: it refuses a folder that is not empty, so it cannot run after the scaffold. Never rerun it with the `--force` its error suggests, which overwrites the scaffold's `package.json` and `uipath.json`. If `<app-name>` already exists, ask the user for another name.
+  ```bash
+  node -e "require('fs').existsSync('<app-name>/source/src/main.tsx')||(console.error('SCAFFOLD_NOT_REACT'),process.exit(1))" && echo SCAFFOLD_OK
+  ```
 
-Then `cd` into `<app-name>/source` and name the package after the app (`create-vite` names it after its folder, `source`):
+- **It lists `source/dist/index.html` instead**: init wrote a static placeholder page (its `package.json` has no scripts), not an app. Never edit it into one. Replace it with the React scaffold:
+
+  ```bash
+  npx --yes create-vite@latest <app-name>/source --no-interactive --overwrite --template react-ts && node -e "require('fs').existsSync('<app-name>/source/src/main.tsx')||(console.error('SCAFFOLD_NOT_REACT'),process.exit(1))" && echo SCAFFOLD_OK
+  ```
+
+  - Run it as **one** command, as above. On `SCAFFOLD_NOT_REACT` or a non-zero exit, re-run it once; stop after two failed attempts and report the output.
+  - `--overwrite` is required: without it, `create-vite` finds the placeholder, prints `Operation cancelled`, exits `0` and changes nothing. With it, `create-vite` empties its target first, so the target is always `<app-name>/source`, never `<app-name>`, which holds the project files init just wrote.
+
+Init comes first, into a folder that does not exist yet: it refuses one that is not empty. If `<app-name>` already exists, ask the user for another name rather than passing `--force` to write into it.
+
+Then `cd` into `<app-name>/source` and name the package after the app (`create-vite` names it after its folder, `source`; init's starter already carries the app's name, so there this changes nothing):
 
 ```bash
 npm pkg set name=<app-name>
@@ -141,19 +150,21 @@ npm install -D tailwindcss@4 @tailwindcss/postcss postcss autoprefixer
 
 ### 3.4 — Remove Vite defaults that will be overwritten
 
-`npx create-vite` ships default versions of files we replace in Step 5. Delete them first so the Write tool can create them fresh — otherwise each Write requires a Read-first round-trip and produces a benign-but-noisy "Error writing file" message.
+The scaffold ships default versions of files we replace in Step 5. Delete them first so the Write tool can create them fresh — otherwise each Write requires a Read-first round-trip and produces a benign-but-noisy "Error writing file" message. `uipath.json` and `src/uipath.ts` exist only in init's starter: Step 5.1 writes `uipath.json`, and the `useAuth` hook owns the app's SDK instance.
 
 - **`default styling = yes`** — also overwrites `src/main.tsx` to wrap `<App>` in the theme provider:
 
   ```bash
-  rm -f vite.config.ts src/App.tsx src/index.css src/main.tsx
+  rm -f vite.config.ts src/App.tsx src/index.css src/main.tsx uipath.json src/uipath.ts
   ```
 
 - **`default styling = no`**:
 
   ```bash
-  rm -f vite.config.ts src/App.tsx src/index.css
+  rm -f vite.config.ts src/App.tsx src/index.css uipath.json src/uipath.ts
   ```
+
+  This path keeps the scaffold's `src/main.tsx`, which must import `./index.css` or Tailwind never loads. When it lacks that import (init's starter), add `import './index.css'` above its `import App` line.
 <!--skill-flavor:scaffold-commands:end-->
 
 ---

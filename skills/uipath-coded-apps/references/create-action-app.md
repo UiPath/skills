@@ -239,19 +239,19 @@ If SDK services are needed:
 npm install @uipath/uipath-typescript --@uipath:registry=https://registry.npmjs.org
 ```
 
-**In a solution** (a `.uipx` in the working folder or above): register the project, then scaffold its React sources into its `source/` folder, in that order and for the reasons in [create-web-app.md](create-web-app.md) Step 3.2, *In a solution*. From the solution folder:
+**In a solution** (a `.uipx` in the working folder or above): register the project, which also writes its React starter into its `source/` folder, for the reasons in [create-web-app.md](create-web-app.md) Step 3.2, *In a solution*. From the solution folder:
 
 ```bash
 uip codedapp init ./<app-name> --type Action --output json
 ```
 
-Check its result as create-web-app.md Step 3.2 describes (`Registered`, placeholder paths under `source/`) before scaffolding:
+Check the result and confirm the scaffold as create-web-app.md Step 3.2 describes: with `source/src/main.tsx` in `Data.Files`, run only its `SCAFFOLD_OK` check; when `Data.Files` lists `source/dist/index.html` instead, replace that static placeholder page with:
 
 ```bash
 npx --yes create-vite@latest <app-name>/source --no-interactive --overwrite --template react-ts && node -e "require('fs').existsSync('<app-name>/source/src/main.tsx')||(console.error('SCAFFOLD_NOT_REACT'),process.exit(1))" && echo SCAFFOLD_OK
 ```
 
-Run the scaffold as one command and do not install anything until it prints `SCAFFOLD_OK`; on failure follow the *In a solution* recovery in [create-web-app.md](create-web-app.md) Step 3.2. Then name the package after the app and install, from `<app-name>/source`; every step after it runs from inside that directory:
+Do not install anything until the check prints `SCAFFOLD_OK`; on failure follow the *In a solution* recovery in [create-web-app.md](create-web-app.md) Step 3.2. Then name the package after the app and install, from `<app-name>/source`; every step after it runs from inside that directory:
 
 ```bash
 cd <app-name>/source && npm pkg set name=<app-name> && npm install @uipath/coded-action-app --@uipath:registry=https://registry.npmjs.org
@@ -259,8 +259,10 @@ cd <app-name>/source && npm pkg set name=<app-name> && npm install @uipath/coded
 
 If SDK services are needed, also run the `@uipath/uipath-typescript` install above.
 
+On init's starter, first remove the starter files § Generated Files replaces, so each is written fresh rather than read first (as create-web-app.md Step 3.4 does): `rm -f vite.config.ts src/main.tsx src/App.tsx src/uipath.ts`, plus `uipath.json` when SDK services are needed.
+
 - **The project root in § Generated Files is `<app-name>/source/`**, for every file except `action-schema.json`.
-- **`action-schema.json` goes in `<app-name>/`, next to `project.uiproj`.** Write the confirmed schema there, over the starter init wrote: `uip solution pack` ships that copy, and the starter is not this app's schema (it also fails the validator). Validate it there. If you will run `uip codedapp push` from `source/`, which reads it from there, also copy it to `<app-name>/source/action-schema.json` and edit both together.
+- **`action-schema.json` goes in `<app-name>/`, next to `project.uiproj`.** Write the confirmed schema there, over init's starter schema: `uip solution pack` ships that copy, and the starter schema is not this app's (it also fails the validator). Validate it there. If you will run `uip codedapp push` from `source/`, which reads it from there, also copy it to `<app-name>/source/action-schema.json` and edit both together.
 - **Deploy with the solution** (`uip solution pack`, then `publish` and `deploy`, per [/uipath:uipath-solution](/uipath:uipath-solution)), not with § Deploy Action App. Init's `--type Action` already makes the project a Coded Action app.
 <!--skill-flavor:scaffold-commands:end-->
 ---

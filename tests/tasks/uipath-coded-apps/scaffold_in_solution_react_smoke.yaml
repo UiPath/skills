@@ -2,12 +2,14 @@ task_id: skill-coded-apps-scaffold-in-solution-react-smoke
 description: >
   Smoke test: the sandbox root is a UiPath solution (it holds a `.uipx`), and the
   agent scaffolds a Coded Web App inside it. `uip codedapp init` registers the
-  project but writes only a placeholder `source/` (a static `dist/index.html`, a
-  `package.json` with no scripts), and an agent that stops there, or edits the
-  placeholder into the app, ships a static page with no React project behind it.
-  Grades what is on disk: the project is registered, and its `source/` holds the
-  `create-vite` React scaffold, not the placeholder. Scaffolding at the project
-  root instead leaves the placeholder as the bundle the solution packs. A root
+  project and writes a React + Vite starter into `source/`. Where it writes a
+  static placeholder page instead (a `dist/index.html`, a `package.json` with no
+  scripts), an agent that stops there, or edits the placeholder into the app,
+  ships a static page with no React project behind it. Grades what is on disk:
+  the project is registered, and its `source/` holds a React scaffold (init's
+  starter, or the `create-vite` scaffold that replaced the placeholder), not the
+  placeholder. Scaffolding at the project
+  root instead leaves `source/` as the bundle the solution packs. A root
   scaffold that `uip codedapp init --force` then adopts (`bundlePath: "dist"`)
   also packs, but the skill keeps the app in `source/`, as Studio Web does, and
   never reruns init with `--force`, so this task grades it as a failure. The
@@ -68,7 +70,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "source/package.json is the React scaffold's: it declares react and a build script (init's placeholder has neither)"
+    description: "source/package.json is the React scaffold's: it declares react and a build script (init's static placeholder has neither)"
     command: "sh -c 'grep -q \"\\\"react\\\":\" intake-report/source/package.json && grep -q \"\\\"build\\\":\" intake-report/source/package.json'"
     timeout: 10
     expected_exit_code: 0
@@ -76,7 +78,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "init's placeholder is gone: create-vite --overwrite replaced source/, it was not edited into the app"
+    description: "source/ is a Vite project with no static placeholder page: init's starter, or create-vite --overwrite over the placeholder, not the placeholder edited into the app"
     command: "sh -c 'test -f intake-report/source/vite.config.ts && ! grep -qs \"<main>\" intake-report/source/dist/index.html'"
     timeout: 10
     expected_exit_code: 0
