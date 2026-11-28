@@ -42,6 +42,12 @@ Every Orchestrator, Integration Service and other UiPath service resource the bu
 
 **Values the source platform keeps per environment are assets** (an environment variable, a global value), of the type their values take — Text, Integer, Bool, Secret, or a credential asset for an account. A component whose type reads no assets keeps such a value in the variable its owning skill provides.
 
+**Data Fabric entities: the source of record decides how the entity is built.**
+
+1. **`UiPath`**: a native entity, built with the row's name, fields and links.
+2. **Any other value names the system that holds the records**: a federated entity, read-only, over that system's connection. The row is a business object, not an entity definition. The system's objects, keys and field bindings, the joins, how many entities the objects become and their names are found at build from the connection; the row's Fields and Links are what the data model declares, reconciled against what the connection holds, never a field list to create.
+3. **A federated row with a Written by** names a component that writes records no federated entity accepts: a deviation in the report, never a native entity built in its place.
+
 ## Interface
 
 Inputs, outputs and side effects: the contract the Handoffs table relies on. Each argument carries its contract name without the source's direction prefix (`in_`, `out_`, `io_`); a contract name that is a Visual Basic or C# reserved word, or a .NET namespace or type name, breaks one expression language's expressions and is renamed as an Interface deviation. A `uipath-maestro-case` component whose case a Case Management SDD designed names that SDD's path, relative to the genome: the build hands that SDD to `uipath-maestro-case` unchanged, and the case is built from it, never redesigned.

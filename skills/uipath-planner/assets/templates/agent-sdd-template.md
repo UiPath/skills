@@ -349,6 +349,18 @@ flowchart LR
 |---|---|---|---|
 | `<FUNCTION_NAME>` | `<TOOL_NAME>` | `<INPUT_MODEL>` → `<OUTPUT_MODEL>` | <PURPOSE_AND_DEPENDENCIES> |
 
+### Data model
+
+<!-- The business records the process reads or writes, from the PDD's data model and its ontology files when they ship. Rules: sdd-writing-guide.md § Data model. None: write "None — the process keeps no business records." and delete the rest. -->
+
+Ontology: `<SCHEMA_OFN_PATH>` · namespace `https://<CUSTOMER_DOMAIN>/ontology/<PROCESS_SLUG>#` — or *none*
+
+| Entity | Source of record | Fields | Links | Written by | Read by |
+|---|---|---|---|---|---|
+| <ENTITY_NAME> | <UiPath / SYSTEM_NAME> | <FIELD>: <TYPE>, … | <FIELD> → <ENTITY_NAME> (<to-one / to-many>) | <PROJECT or —> | <PROJECT> |
+
+Lifecycle: `<ENTITY_NAME>`: <STATE> → <STATE> — or *not modelled*
+
 ---
 
 ## 9. Project Structure

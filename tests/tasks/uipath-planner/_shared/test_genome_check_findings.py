@@ -1120,6 +1120,44 @@ def test_platform_dependencies_with_neither_tables_nor_stub_fails_strict(check):
     assert "Platform Dependencies: neither a table per kind" not in check(stub, profile="strict")[1]
 
 
+DF_HEADER = "| Entity | Source of record | Fields | Links | Written by | Read by |\n|---|---|---|---|---|---|\n"
+
+
+def with_entities(text, rows, header=DF_HEADER):
+    table = "### Data Fabric entities\n\n" + header + "".join(rows) + "\n"
+    return text.replace("### Triggers\n", table + "### Triggers\n", 1)
+
+
+NATIVE = "| Requisition | UiPath | Number: text, Total: number | Requisition.Supplier → Supplier (to-one) | step 3 | step 5 |\n"
+FEDERATED = "| Supplier | SAP S/4HANA | Name: text | — | — | step 3 |\n"
+
+
+def test_a_native_and_a_read_only_federated_entity_pass_strict(check):
+    out = check(with_entities(COMPONENT, [NATIVE, FEDERATED]), profile="strict")[1]
+    assert "Data Fabric entities" not in out
+
+
+def test_entities_in_the_old_columns_fail_strict_only(check):
+    text = with_entities(COMPONENT, ["| Requisition | Number: text | step 3 | step 5 |\n"],
+                         header="| Entity | Fields | Written by | Read by |\n|---|---|---|---|\n")
+    assert check(text)[0] == 0
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert "Data Fabric entities: columns" in out
+
+
+def test_an_entity_with_no_source_of_record_fails_strict(check):
+    rc, out = check(with_entities(COMPONENT, ["| Requisition | — | Number: text | — | step 3 | step 5 |\n"]), profile="strict")
+    assert rc == 1
+    assert "'Requisition' names no source of record" in out
+
+
+def test_a_federated_entity_with_a_writer_fails_strict(check):
+    rc, out = check(with_entities(COMPONENT, ["| Supplier | SAP S/4HANA | Name: text | — | step 4 | step 3 |\n"]), profile="strict")
+    assert rc == 1
+    assert "'Supplier' is federated (source of record 'SAP S/4HANA') and read-only, yet 'step 4' writes it" in out
+
+
 # --- Open Decisions: numbers and the forms that name an entry ------------------------------------
 
 def test_a_repeated_entry_number_fails_strict(check):

@@ -193,6 +193,16 @@ Watch for:
 - **Email protocol** — when email is an application, extract the protocol signal: IMAP, Exchange/EWS, O365 Graph API, POP3, SMTP. Look for keywords like "IMAP", "Exchange", "O365", "Graph API", "dedicated mailbox". If not specified: an unattended run on Microsoft 365 mailboxes defaults to the Outlook 365 connector (Graph) — never the desktop Outlook client, which needs a signed-in profile on every robot — and an unknown mail platform defaults to IMAP/SMTP; either default is `[DEFAULT]` with an `[SME REVIEW]` item to confirm.
 - **FTP/SFTP** — note whether the PDD specifies FTP, SFTP, or cloud storage (S3, Azure Blob). Capture host/path if mentioned.
 
+### Data Model
+
+**Where to look:** the PDD's data model section — a Cartographer PDD's **Section 6 Data Model** (6.1 Entities with system of record, lifecycle states and class diagram; 6.3 Field-Level Data Dictionary; 6.5 Integrations); the signed-off wiki `to-be/data-model.md` when the hand-off carries it, which wins over the PDD text; the ontology files when they ship (`schema.ofn`, `constraints-shapes.ttl`). Other sources name objects and fields in prose: collect them with the data field references above.
+
+**What to extract:** each business object with its source of record and lifecycle states; each field with its type, format and valid values as written; each link between objects with its direction and whether it points at one record or many.
+
+**What not to extract:** the objects, keys and fields of a source-of-record system other than UiPath. The data model names the system only; the build finds the rest from the connection.
+
+**Where it goes:** the SDD's `### Data model` ([sdd-writing-guide.md § Data model](../design/sdd-writing-guide.md#data-model)).
+
 ### Environment & Constraint Signals
 
 **Mandatory scan on every PDD.** These constraints gate product selection (see [Product Selection Guide → Constraint Gate](product-selection-guide.md#constraint-gate)). Missing them produces architectures the customer cannot run — the most expensive SDD defect.

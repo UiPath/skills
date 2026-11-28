@@ -1,0 +1,306 @@
+{
+  "schemaVersion": 1,
+  "source": "fixtures/pdd.md Section 6 (6.1 Entities, relationships, 6.3 Field-Level Data Dictionary)",
+  "sourceOfRecord": {
+    "system": "SQL Server",
+    "mustNotName": [
+      "birdadmin_sqlserver",
+      "bird_student_club_"
+    ]
+  },
+  "objects": [
+    {
+      "name": "Event",
+      "sourceOfRecord": "SQL Server",
+      "fields": [
+        {
+          "name": "event_id",
+          "type": "text"
+        },
+        {
+          "name": "event_name",
+          "type": "text"
+        },
+        {
+          "name": "event_date",
+          "type": "text"
+        },
+        {
+          "name": "type",
+          "type": "text"
+        },
+        {
+          "name": "notes",
+          "type": "text"
+        },
+        {
+          "name": "location",
+          "type": "text"
+        },
+        {
+          "name": "status",
+          "type": "text"
+        }
+      ],
+      "links": []
+    },
+    {
+      "name": "Major",
+      "sourceOfRecord": "SQL Server",
+      "fields": [
+        {
+          "name": "major_id",
+          "type": "text"
+        },
+        {
+          "name": "major_name",
+          "type": "text"
+        },
+        {
+          "name": "department",
+          "type": "text"
+        },
+        {
+          "name": "college",
+          "type": "text"
+        }
+      ],
+      "links": []
+    },
+    {
+      "name": "ZipCode",
+      "sourceOfRecord": "SQL Server",
+      "fields": [
+        {
+          "name": "zip_code",
+          "type": "number"
+        },
+        {
+          "name": "type",
+          "type": "text"
+        },
+        {
+          "name": "city",
+          "type": "text"
+        },
+        {
+          "name": "county",
+          "type": "text"
+        },
+        {
+          "name": "state",
+          "type": "text"
+        },
+        {
+          "name": "short_state",
+          "type": "text"
+        }
+      ],
+      "links": []
+    },
+    {
+      "name": "Attendance",
+      "sourceOfRecord": "SQL Server",
+      "fields": [
+        {
+          "name": "link_to_event",
+          "type": "text"
+        },
+        {
+          "name": "link_to_member",
+          "type": "text"
+        }
+      ],
+      "links": [
+        {
+          "field": "link_to_member",
+          "target": "Member",
+          "bound": "to-one"
+        },
+        {
+          "field": "link_to_event",
+          "target": "Event",
+          "bound": "to-one"
+        }
+      ]
+    },
+    {
+      "name": "Budget",
+      "sourceOfRecord": "SQL Server",
+      "fields": [
+        {
+          "name": "budget_id",
+          "type": "text"
+        },
+        {
+          "name": "category",
+          "type": "text"
+        },
+        {
+          "name": "spent",
+          "type": "number"
+        },
+        {
+          "name": "remaining",
+          "type": "number"
+        },
+        {
+          "name": "amount",
+          "type": "number"
+        },
+        {
+          "name": "event_status",
+          "type": "text"
+        },
+        {
+          "name": "link_to_event",
+          "type": "text"
+        }
+      ],
+      "links": [
+        {
+          "field": "link_to_event",
+          "target": "Event",
+          "bound": "to-one"
+        }
+      ]
+    },
+    {
+      "name": "Expense",
+      "sourceOfRecord": "SQL Server",
+      "fields": [
+        {
+          "name": "expense_id",
+          "type": "text"
+        },
+        {
+          "name": "expense_description",
+          "type": "text"
+        },
+        {
+          "name": "expense_date",
+          "type": "text"
+        },
+        {
+          "name": "cost",
+          "type": "number"
+        },
+        {
+          "name": "approved",
+          "type": "text"
+        },
+        {
+          "name": "link_to_member",
+          "type": "text"
+        },
+        {
+          "name": "link_to_budget",
+          "type": "text"
+        }
+      ],
+      "links": [
+        {
+          "field": "link_to_member",
+          "target": "Member",
+          "bound": "to-one"
+        },
+        {
+          "field": "link_to_budget",
+          "target": "Budget",
+          "bound": "to-one"
+        }
+      ]
+    },
+    {
+      "name": "Income",
+      "sourceOfRecord": "SQL Server",
+      "fields": [
+        {
+          "name": "income_id",
+          "type": "text"
+        },
+        {
+          "name": "date_received",
+          "type": "text"
+        },
+        {
+          "name": "amount",
+          "type": "number"
+        },
+        {
+          "name": "source",
+          "type": "text"
+        },
+        {
+          "name": "notes",
+          "type": "text"
+        },
+        {
+          "name": "link_to_member",
+          "type": "text"
+        }
+      ],
+      "links": [
+        {
+          "field": "link_to_member",
+          "target": "Member",
+          "bound": "to-one"
+        }
+      ]
+    },
+    {
+      "name": "Member",
+      "sourceOfRecord": "SQL Server",
+      "fields": [
+        {
+          "name": "member_id",
+          "type": "text"
+        },
+        {
+          "name": "first_name",
+          "type": "text"
+        },
+        {
+          "name": "last_name",
+          "type": "text"
+        },
+        {
+          "name": "email",
+          "type": "text"
+        },
+        {
+          "name": "position",
+          "type": "text"
+        },
+        {
+          "name": "t_shirt_size",
+          "type": "text"
+        },
+        {
+          "name": "phone",
+          "type": "text"
+        },
+        {
+          "name": "zip",
+          "type": "number"
+        },
+        {
+          "name": "link_to_major",
+          "type": "text"
+        }
+      ],
+      "links": [
+        {
+          "field": "zip",
+          "target": "ZipCode",
+          "bound": "to-one"
+        },
+        {
+          "field": "link_to_major",
+          "target": "Major",
+          "bound": "to-one"
+        }
+      ]
+    }
+  ]
+}

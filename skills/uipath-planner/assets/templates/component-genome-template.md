@@ -65,8 +65,8 @@
 
 ### Data Fabric entities
 
-| Entity | Fields | Written by | Read by |
-|--------|--------|------------|---------|
+| Entity | Source of record | Fields | Links | Written by | Read by |
+|--------|------------------|--------|-------|------------|---------|
 
 ### Triggers
 

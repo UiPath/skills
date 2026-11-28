@@ -1,0 +1,73 @@
+task_id: skill-planner-integration-pdd-to-sdd-data-model
+description: >
+  The SDD's `### Data model` comes from the PDD's data model, copied rather than
+  re-inferred: one row per business object, the source of record as the system
+  only (the PDD names a connection and a table beside it, which the SDD drops),
+  the declared fields, the links with their bound, and no writer on an object
+  whose records live outside Data Fabric. The SDD discovers nothing: the
+  system's objects, keys, field bindings and joins are found at build. Guards
+  references/design/sdd-writing-guide.md § Data model and the Data Model topic
+  of references/shared/pdd-analysis-guide.md.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate]
+
+run_limits:
+  expected_turns: 30
+  task_timeout: 2700
+  turn_timeout: 1800
+
+# Stage the PDD as `pdd.md`: a real PDD file is the strongest planner activation signal.
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: .
+
+initial_prompt: |
+  I've saved the Process Design Document for the student club team as `pdd.md`
+  in the current directory. Read it and produce the complete Solution Design
+  Document, saved as `student-club-insights-sdd.md` in the current directory.
+
+  Work autonomously — don't pause for checkpoints; for any [SME REVIEW] items,
+  keep them as-is and proceed.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "SDD file created"
+    path: "student-club-insights-sdd.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Data model table scored against the PDD's data model (objects, source of record, fields, links, read-only)"
+    command: python3 "$REFERENCE_DIR/check_sdd_data_model.py" --golden "$REFERENCE_DIR/golden.json" --sdd student-club-insights-sdd.md
+    score_from_stdout: true
+    timeout: 60
+    weight: 4.0
+    pass_threshold: 0.8
+
+  - type: command_executed
+    description: "The SDD discovers no source schema: no Integration Service resource listing or description"
+    tool_name: "Bash"
+    command_pattern: 'uip\b[^\n|;&]*?\bis\s+resources\s+(list|describe)'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT create, update or delete entities"
+    tool_name: "Bash"
+    command_pattern: 'uip\b[^\n|;&]*?\bdf\s+entities\s+(create|update|delete)'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
