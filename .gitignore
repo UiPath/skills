@@ -109,3 +109,5 @@ tests/tasks/**/seed.json
 .created-ids.jsonl
 # Ephemeral solution .uipx (post_run globs it) plus debug logs:
 customer-escalation-live/
+# Call log of the stand-in gh. A committed copy would be mounted into the sandbox and satisfy the check:
+tests/tasks/**/_setup/gh-calls.log

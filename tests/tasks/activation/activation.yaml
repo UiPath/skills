@@ -15,6 +15,7 @@ dataset:
     - uipath-agents.jsonl
     - uipath-api-workflow.jsonl
     - uipath-coded-apps.jsonl
+    - uipath-extension.jsonl
     - uipath-functions.jsonl
     - uipath-genome.jsonl
     - uipath-troubleshoot.jsonl
@@ -81,6 +82,13 @@ success_criteria:
   - type: skill_triggered
     description: "uipath-coded-apps activation"
     skill_name: uipath-coded-apps
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
+  - type: skill_triggered
+    description: "uipath-extension activation"
+    skill_name: uipath-extension
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
     stop_early:
