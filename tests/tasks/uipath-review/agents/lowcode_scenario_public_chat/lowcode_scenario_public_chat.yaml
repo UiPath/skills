@@ -1,0 +1,88 @@
+task_id: skill-review-agents-lowcode-scenario-public-chat
+description: >
+  Anonymous website chat agent. Planted: a jailbreak fragment and an "As ChatGPT"
+  instruction in the system prompt, no role opening, no scope boundaries, a
+  prompt_injection guardrail set to log, and no content-safety guardrail for open-ended
+  public output. Decoys: misapplied (prompt_injection is relevant here), few-shot (one
+  field), temperature (0.5 fits).
+tags: [uipath-review, e2e, mode:diagnose, lifecycle:discover, guardrail]
+
+run_limits:
+  turn_timeout: 1800
+  task_timeout: 3000
+  max_turns: 80
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+pre_run:
+  - command: "python3 _setup/inject_public_chat.py"
+    timeout: 30
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  A low-code UiPath agent project exists at `ReviewSol/SampleAgent` inside the
+  solution `ReviewSol`. Review the agent project for issues and save your review
+  report to `./_review_report.md` at the sandbox root.
+
+  Do not manually edit files inside `ReviewSol/`.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside ReviewSol/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*ReviewSol'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside ReviewSol/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*ReviewSol'
+    weight: 3.0
+
+  - type: run_command
+    description: "Report carries the review CLI's deterministic findings (Step 2.5a ran)"
+    command: 'python3 $REFERENCE_DIR/_shared/check_review_cli_provenance.py --project ReviewSol/SampleAgent --verb "agent review"'
+    timeout: 240
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Guardrail catalog reachable, and the report's claim about it is consistent"
+    command: 'python3 $REFERENCE_DIR/_shared/check_guardrail_catalog_evidence.py'
+    timeout: 240
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Scenario: planted rules caught, decoys not fired, grade consistent"
+    command: 'python3 $REFERENCE_DIR/_shared/check_scenario_findings.py --spec $REFERENCE_DIR/agents/lowcode_scenario_public_chat/scenario.json'
+    timeout: 240
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Step 6 recorded the final grade in CLI-owned review-history.json"
+    command: 'python3 $REFERENCE_DIR/_shared/check_review_history.py --project ReviewSol/SampleAgent --report _review_report.md'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
