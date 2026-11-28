@@ -362,19 +362,7 @@ The build subagent prompt:
 **Step 2 — Relay the subagent's returned block verbatim.** Add nothing else except the lines the steps below call for — no commentary about the subagent, no raw output, no mention of the files it wrote.
 
 <!--skill-flavor:editor-preview:start-->
-**Then, unless the build returned `AUTH_MISSING` or a failure (see the end of Step 4), ask the editor for the preview** and act on the output as [create-web-app.md § Run Locally](../../../create-web-app.md#run-locally) says:
-
-```bash
-node "<SKILL_BASE_DIR>/scripts/uipath-apps-preview.mjs" "<ROUTING_NAME>"
-```
-
-On `OPENING` or `SHOWN`, skip Steps 3 and 4. When that section falls back to the dev server, continue with Steps 3 and 4, which run it on the dashboard's port. If your shell cannot keep a process running, skip them too: give the user these two lines to run in their own terminal, and the Step 4 URL.
-
-```bash
-cd "<absolute dashboard folder>"
-npm run dev -- --port 25173
-```
-
+**Then, unless the build failed or returned `AUTH_MISSING`, open the preview for `<ROUTING_NAME>` as [create-web-app.md § Run Locally](../../../create-web-app.md#run-locally) says.** On `OPENING` or `SHOWN`, skip Steps 3 and 4. If it falls back and your shell cannot keep a process running, skip them too: give the user Run Locally's two lines, with `npm run dev -- --port 25173`, and the Step 4 URL.
 <!--skill-flavor:editor-preview:end-->
 **Step 3 — Start the dev server as a background job in the MAIN thread** (the build script deliberately does not start it — a server spawned inside the script outlives the session and leaks). Run with the background option on the shell tool call (same mechanism as pre-warm):
 
@@ -385,7 +373,7 @@ cd "<ROUTING_NAME>" && npm run dev -- --port 25173
 - If a dev-server background job from THIS session is already running for this project (e.g. after an incremental edit): do NOT start another — Vite hot-reloads; just open the URL.
 - If the start fails with a port-in-use error: a stale server from an earlier session is still holding 25173 — tell the user and ask before killing anything (Windows: `netstat -ano | findstr :25173` then `taskkill /PID <pid> /F`; macOS/Linux: `lsof -ti:25173 | xargs kill`).
 
-**Step 4 — Open `http://localhost:25173` in the browser and give the user that URL.**
+**Step 4 — Open `http://localhost:25173` in the browser.**
 
 If the subagent reports `AUTH_MISSING` or a failure it couldn't recover, surface its message and stop (no server start).
 
@@ -407,7 +395,7 @@ If the subagent reports `AUTH_MISSING` or a failure it couldn't recover, surface
 - `WIDGET_READY:{"name":"X",...}` → a `✓ X` line
 - `METRICS_PASS` → silent; build continues (no milestone needed)
 - `TSC_PASS` → `✓ All code validated`
-- `BUILD_RESULT.previewUrl` → silent; it is not in the return block (the script does NOT start the server — the main thread opens the preview or the dev server after you return, and Phase 4 Step 4 gives the URL)
+- `BUILD_RESULT.previewUrl` → silent (the main thread opens the preview after you return)
 
 **Act on:**
 - `METRICS_RETRY:{"files":[...],"errors":[...]}` → fix the named `src/metrics/<name>.ts` file(s) using the SDK references + reported errors, re-run. Max 2 attempts; if still failing, remove the metric from `intent.json` and its module file, re-run, and note it as dropped.
