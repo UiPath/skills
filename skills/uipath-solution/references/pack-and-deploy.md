@@ -211,11 +211,60 @@ Key options:
 | `--parent-folder-key <key>` | Parent folder key (GUID, alternative to `--parent-folder-path`) | -- |
 | `--config-file <path>` | Configuration file from `deploy config get` | -- |
 | `--skip-activate` | Skip the post-deploy activation; leaves the deployment in `Inactive (Ready to activate)` | (off — auto-activate) |
+| `--tags <tags...>` | Deployment tags, space-separated, each `name` or `name=value`. **Replaces** the tags of an existing deployment with this `--name`; a new deployment also inherits the package version's tags. Newer CLI builds — see [Deployment metadata](#deployment-metadata-business-owner-tags-and-business-area) | -- |
+| `--business-area <value>` | Business area the registry groups the deployment under (e.g. `Finance`); sent as a deployment tag beside `--tags`. Newer CLI builds — see [Deployment metadata](#deployment-metadata-business-owner-tags-and-business-area) | -- |
+| `--business-owner-key <id>`, `--business-owner-name <name>` | Business owner shown on the deployment: an organization user's Identity id and display name, both required together (find them with `uip admin users list --search <text>`). Newer CLI builds — see [Deployment metadata](#deployment-metadata-business-owner-tags-and-business-area) | -- |
 | `--acknowledge-permanent-deletion` | Confirm that resources this deploy stops using are deleted with their data: a queue or bucket it unlinks that no other folder uses (older servers: an installed copy a link deletes, `deleteInstalledCopy: true`). Newer CLI builds only. See [When a deploy would permanently delete resources](#when-a-deploy-would-permanently-delete-resources) | (off — the deploy stops and lists them) |
 | `--timeout <seconds>` | Polling timeout, applied per phase (deploy and, when not skipped, activate) | 360 |
 | `--poll-interval <ms>` | Polling interval used during both phases | 5000 |
 | `--login-validity <minutes>` | Minimum minutes left on the access token before the CLI proactively refreshes it before the deploy starts. Useful for long deploys close to token expiry. | 10 |
 | `-t, --tenant <name>` | Tenant override | Current tenant |
+
+### Deployment metadata: business owner, tags and business area
+
+On newer CLI builds, `deploy run` sets the deployment's business owner, tags and
+business area in the same install, and `deploy upgrade` takes `--tags` and
+`--business-area` the same way (see [Upgrade a Deployment In Place](activate-and-manage.md#upgrade-a-deployment-in-place)):
+
+```bash
+uip solution deploy run … \
+  --business-owner-key <OWNER_IDENTITY_ID> --business-owner-name "<OWNER_DISPLAY_NAME>" \
+  --tags critical region=EMEA --business-area Finance --output json
+```
+
+`…` stands for the required `deploy run` flags; the owner's Identity id and
+display name come from `uip admin users list --search <text>`. Whether the
+installed `uip` build has these options, its `--help` says: an older build
+refuses them with `error: unknown option '--tags'`.
+
+Rules that keep this from going wrong:
+
+- **The server must run Automation Solutions 2026.10 or later — the release
+  line right after 25.10 — and older servers fail in two different ways.**
+  Before 25.10.3 the deploy is refused up front (`ErrorCode: not_supported`),
+  naming the options to leave out. 25.10.3 and every later 25.10 patch
+  **accept the deploy and silently drop these fields**: the install lands,
+  nothing is tagged and no owner is set, and no error or warning says so. The
+  CLI cannot read the server's version, so when in doubt treat the write as
+  unverified and check in Orchestrator (next rule).
+- **There is no read-back.** No CLI command shows the owner, the tags or the
+  business area afterwards (`deploy list` and the by-key record carry none of
+  them). Verify in Orchestrator (Solutions, the deployment); `Result: Success`
+  proves the install landed, not that the metadata did.
+- **`--tags` replaces the whole set** on an existing deployment — to add a tag,
+  pass every tag the deployment should keep. The package version's own tags are
+  added back on top: they are inherited on every install and upgrade.
+- **The business area is a tag underneath.** `--business-area Finance` travels
+  as the reserved platform tag `__uipath__solutions_deployment_business_area`
+  with value `Finance` — the name the registry's business-area filter and groups
+  read, so only this exact name counts. The flag takes one area; a deployment
+  that belongs to several takes each as
+  `--tags '__uipath__solutions_deployment_business_area=<area>'`. The tenant
+  provisions default values (Finance, Human Resources, Information Technology,
+  Legal, Sales and Marketing), but any value is accepted.
+- **The owner is stored as given.** The server neither resolves an e-mail nor
+  validates the id, and shows nothing for a key without a name — which is why
+  the CLI requires both halves before sending anything.
 
 ### Open the deployment in Orchestrator
 

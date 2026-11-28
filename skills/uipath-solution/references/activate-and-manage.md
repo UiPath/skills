@@ -135,6 +135,10 @@ uip solution deploy upgrade <DEPLOYMENT_KEY> --version 2.0.0 --discard-draft --o
 # Change only the configuration: same version, edited config file
 uip solution deploy upgrade <DEPLOYMENT_KEY> --version <DEPLOYED_VERSION> --config-file config.json --output json
 
+# Replace the deployment's tags and business area with the upgrade (newer CLI builds)
+uip solution deploy upgrade --name <DEPLOYMENT_NAME> --package-name <PACKAGE_NAME> \
+  --tags critical region=EMEA --business-area Finance --output json
+
 # Confirm the permanent deletion of resources the upgrade stops using (newer CLI builds)
 uip solution deploy upgrade <DEPLOYMENT_KEY> --version 2.0.0 --acknowledge-permanent-deletion --output json
 ```
@@ -142,6 +146,18 @@ uip solution deploy upgrade <DEPLOYMENT_KEY> --version 2.0.0 --acknowledge-perma
 Find the deployment's key, name and package with `uip solution deploy list`. On success the output is `Code: SolutionDeployUpgrade`, `Data: { Status, Operation, DeploymentName, ToVersion, PipelineDeploymentId, DeploymentKey, DeploymentStatus, Actions, ActivationStatus, OrchestratorUrl, FolderUrl }`, plus `PendingResources` (each with its `Reason` and `FolderPaths`) and `NextSteps` when the deployment is not live; the key form adds `FromVersion` (the version left behind) and `InstallDeploymentKey` — the key that stays the same across upgrades, so a pipeline that comes back later should store that one, not `DeploymentKey`, which changes with every upgrade. `Status` is the pipeline run's terminal status — `DeploymentSucceeded` once the upgrade landed, or `Accepted` with `--no-wait` (where `Operation`, `DeploymentKey`, the state fields, and the links are absent, because no run has finished to report them). `DeploymentStatus` and `ActivationStatus` are the second axis: whether the new version **runs** (see below). `PipelineDeploymentId` is what `uip solution deploy status` reads. With `--discard-draft`, `DiscardedDraftKey` names the draft that was deleted first; it is absent when there was none. With `--acknowledge-permanent-deletion`, `PermanentlyDeletedResources` names each resource (`kind 'name'`) that was confirmed and deleted; it is absent otherwise.
 
 Use the returned [deployment links](pack-and-deploy.md#open-the-deployment-in-orchestrator); `FolderUrl` is present only when the installed folder key is known.
+
+`--tags` and `--business-area` **replace** the deployment's tag set (the
+package version's own tags are added back); the server-version traps and the
+lack of a CLI read-back are in
+[Deployment metadata](pack-and-deploy.md#deployment-metadata-business-owner-tags-and-business-area).
+The business owner is set at `deploy run` only. With the key form, give the
+key **before** `--tags`: a variadic option swallows the arguments after it,
+so `--tags a b <DEPLOYMENT_KEY>` reads the key as a third tag and the command
+is refused for naming no deployment. When such an upgrade is refused (a
+pending draft, the permanent-deletion confirmation), the retry command the
+refusal prints carries the same `--tags` / `--business-area`, like
+`--config-file` — run it as printed and the metadata write is kept.
 
 On newer CLI builds a successful upgrade also checks that the deployment's folder can run the unattended jobs of the new version's RPA processes, test cases and MCP servers. It reports any missing runtime in `Data.Warnings` (also logged on stderr unless `--log-level` or `--log-file` says otherwise) and still exits as a success. Assign a machine to the folder instead of upgrading again — see [Folder runtime check](deploy-folder-runtimes.md).
 
@@ -185,7 +201,7 @@ uip solution deploy activate <DEPLOYMENT_NAME> --output json
 2. **Always pin `--version`** to the deployed one, on `config get` and on `upgrade`. Without it, the upgrade moves to the newest published version.
 3. Add the deployment's `--personal-workspace` / `--feed` to `config get` when it is not on the tenant feed.
 4. A link keeps the copy the deployment installed unless it says `deleteInstalledCopy: true` (`config link --delete-installed-copy`); a link without the key is sent as `false`.
-5. A rejected attempt leaves a pending draft. Fix the file, then run the `--discard-draft` command the refusal prints; it carries the same `--config-file`.
+5. A rejected attempt leaves a pending draft. Fix the file, then run the `--discard-draft` command the refusal prints; it carries the same `--config-file` — and the same `--tags` / `--business-area` when they were passed.
 
 ## Step 3: Uninstall a Deployment
 
