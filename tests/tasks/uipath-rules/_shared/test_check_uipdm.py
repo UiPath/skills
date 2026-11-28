@@ -14,7 +14,7 @@ import pytest
 REPO = Path(__file__).resolve().parents[4]
 SKILL = REPO / "skills" / "uipath-rules"
 SCRIPT = SKILL / "scripts" / "check-uipdm.mjs"
-XSD = SKILL / "references" / "uipdm.xsd"
+XSD = SKILL / "scripts" / "uipdm.xsd"
 NS = "http://uipath.com/schema/1.0/dmn-ext/decision-model"
 
 pytestmark = pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")

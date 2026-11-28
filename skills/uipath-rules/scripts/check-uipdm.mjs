@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Checks every uipdm element of a .dmn against uipdm.xsd. `uip rules validate` does not read them.
 // Usage: node check-uipdm.mjs <DMN_FILE> [<XSD_FILE>]
-// Without <XSD_FILE> it reads uipdm.xsd from ../references/ or from the script's own folder.
+// Without <XSD_FILE> it reads uipdm.xsd from the script's own folder (or ../references/).
 // Exit 0: all elements valid (or none present). Exit 1: at least one invalid element.
 // Exit 2: usage error, unreadable file, or a schema construct this checker does not implement.
 // It needs only file access: no xmllint, no Python, no network. It reads the schema at run time, so a
@@ -280,7 +280,7 @@ function main(argv) {
   const dmnText = read(argv[0])
   if (dmnText === undefined) stop(`cannot read ${argv[0]}`)
   const here = String(process.argv[1] || '').replace(/[^/\\]*$/, '')
-  const candidates = argv[1] ? [argv[1]] : [`${here}../references/uipdm.xsd`, `${here}uipdm.xsd`]
+  const candidates = argv[1] ? [argv[1]] : [`${here}uipdm.xsd`, `${here}../references/uipdm.xsd`]
   let xsdText
   for (const candidate of candidates) {
     xsdText = read(candidate)
