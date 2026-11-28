@@ -174,3 +174,16 @@ def test_a_missing_project_fails(project):
 def test_an_unexpected_project_fails(project):
     rpa_project(project.parent, "Reporter")
     assert projects("Sales") == 1
+
+
+def test_a_scratch_project_is_not_the_build(project):
+    rpa_project(project.parent / "scratch", "Probe")
+    assert execute_check.one_project() == project.resolve()
+    assert projects("Sales") == 0
+
+
+def test_only_a_scratch_project_is_no_build(project):
+    (project / "project.json").unlink()
+    rpa_project(project.parent / "scratch", "Probe")
+    with pytest.raises(SystemExit, match="found 0"):
+        execute_check.one_project()
