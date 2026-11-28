@@ -205,6 +205,7 @@
 /tests/scripts/coded-apps-dashboards-lifecycle.test.mjs @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
 /tests/scripts/coded-apps-dashboards-setup-admin-folder.test.mjs @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
 /tests/scripts/coded-apps-validate-action-schema.test.mjs @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
+/tests/scripts/coded-apps-uipath-apps-preview.test.mjs @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
 /tests/scripts/support/coded-apps-dashboards-fake-tools.mjs @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
 
 # Connector Builder skill

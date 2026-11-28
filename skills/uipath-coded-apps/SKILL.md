@@ -105,6 +105,7 @@ For the app's **JS/TS function backend** — authoring the `defineFunction` endp
 | **Create a new Coded Web App** | [references/create-web-app.md](references/create-web-app.md) |
 | **Create a new Coded Action App** | [references/create-action-app.md](references/create-action-app.md) |
 | **Create a public (no sign-in) coded app** (preview) | [references/public-coded-app.md](references/public-coded-app.md) |
+| **Preview or run a Coded Web App or dashboard** | [references/create-web-app.md § Run Locally](references/create-web-app.md#run-locally); for a dashboard, the PREVIEW intent in [references/dashboards/CAPABILITY.md](references/dashboards/CAPABILITY.md) |
 | **Debug auth or config issues** | [references/debug.md](references/debug.md) |
 | **Push/pull code to Studio Web** | [references/file-sync.md](references/file-sync.md) |
 | **Package, deploy, and delete** | [references/pack-publish-deploy.md](references/pack-publish-deploy.md) |
@@ -271,8 +272,8 @@ When you finish a task, report only what's applicable to the work actually done:
    - Live deployment URL (`appUrl` from `app.config.json`) — if `deploy` was run
    - External Application client ID — if one was created this session
 <!--skill-flavor:completion-next-steps:start-->
-4. **Next steps**, depending on where the task stopped. In a solution, run the app from `<app-name>/source`, and pack, publish and deploy it with `uip solution pack` / `publish` / `deploy run`, never `uip codedapp`:
-   - **Scaffolded only:** `cd <app-name> && npm run dev` to run locally
+4. **Next steps**, depending on where the task stopped. In a solution, run the app from `<app-name>/source`, and pack, publish and deploy it with `uip solution pack` / `publish` / `deploy run`, never `uip codedapp`. When the task scaffolded or built a Coded Web App, open its preview, as [create-web-app.md § Run Locally](references/create-web-app.md#run-locally) says, if you have not already. Then, by stage:
+   - **Scaffolded only:** for a Coded Web App, what Run Locally gave (the preview is opening, or the dev server's URL or command); otherwise `cd <app-name> && npm run dev` to run locally.
    - **Built but not packed:** ready to `uip codedapp pack` when the user wants to deploy
    - **Published but not deployed:** run `uip codedapp deploy` to go live
    - **Deployed (Web):** open/share the deployment URL; verify sign-in flow

@@ -298,6 +298,23 @@ If the app uses a client-side router (React Router, Vue Router), see the **Optio
 
 ## Run Locally
 
+<!--skill-flavor:editor-preview:start-->
+Open the app in the editor's preview first, both when the user asks to preview or run it and when you finish building it. A public (no sign-in) app is the exception: run it as [public-coded-app.md § Run locally](public-coded-app.md#run-locally) says, since the preview signs in through an OAuth client. Pass the absolute path of the folder that holds the app's `package.json` (in a solution, the project's `source` folder):
+
+```bash
+node "<skill-dir>/scripts/uipath-apps-preview.mjs" "<absolute app folder>"
+```
+
+It prints one line:
+
+| Output | Do this |
+|---|---|
+| `OPENING` or `SHOWN` | Tell the user the preview is opening in their editor, which may ask them to sign in, or to choose or create an OAuth client. Do not run `npm run dev` or open a browser. The editor runs the preview's dev server: never stop or restart it yourself. It reloads as files change, so later edits need no new request. When it must restart (after a `uipath.json` change, say), ask the user to close the preview tab, then run the script again. |
+| `REFUSED not_signed_in` | Ask the user to sign in (to UiPath Apps in VS Code, to Studio in Studio Desktop), then run the script again. |
+| `REFUSED busy` | The editor is busy with another preview or a deploy. Run the script again in a few seconds; if it is still busy, tell the user. |
+| `REFUSED no_app`, `NOT_AVAILABLE`, any other output, or an error | Run the dev server below. If your shell cannot keep a process running (it has no background commands, as in UiPath Autopilot), do not run it: give the user two lines to run in their own terminal, `cd "<absolute app folder>"` and then `npm run dev`. |
+
+<!--skill-flavor:editor-preview:end-->
 ```bash
 npm run dev
 ```
