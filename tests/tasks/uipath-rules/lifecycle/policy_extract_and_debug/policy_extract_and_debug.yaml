@@ -50,7 +50,8 @@ success_criteria:
     description: "Agent ran its test cases with rules debug"
     tool_name: "Bash"
     command_pattern: 'uip\s+rules\s+debug'
-    min_count: 3
+    # One command can loop over every case; the engine criterion checks that each case ran.
+    min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 

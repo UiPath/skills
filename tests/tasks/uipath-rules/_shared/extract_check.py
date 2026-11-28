@@ -294,8 +294,10 @@ def grade_engine() -> None:
     _, cases = load_tests()
     results_path = find_one("test-results.json")
     results = json.loads(results_path.read_text(encoding="utf-8"))
+    if isinstance(results, dict) and isinstance(results.get("results") or results.get("cases"), list):
+        results = results.get("results") or results.get("cases")  # a summary alongside the list is fine
     if not isinstance(results, list):
-        fail(f"{results_path} is not a list")
+        fail(f"{results_path} holds no list of case results")
     by_name = {r.get("name"): r for r in results if isinstance(r, dict)}
     unrun = [c.get("name") for c in cases if c.get("name") not in by_name or "actual" not in by_name[c.get("name")]]
     if unrun:

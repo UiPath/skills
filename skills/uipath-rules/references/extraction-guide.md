@@ -148,9 +148,9 @@ uip rules debug <PROJECT_DIR> --inputs @<CASE_FILE> --output json
 ```
 
 `actual` is the decision's value in `Data.result.decisions[].outputs` (SKILL.md, Verify). Write `test-results.json` next
-to `tests.json`: one entry per case with `name`, `expected`, `actual` and `pass`. A case that was not run is not a pass.
-Fix the table and run all cases again; after 3 rounds with failures left, stop and list the failing cases (SKILL.md
-rule 7).
+to `tests.json`: a JSON list with one object per case, each with `name`, `expected`, `actual` and `pass`. A case that
+was not run is not a pass. Fix the table and run all cases again; after 3 rounds with failures left, stop and list the
+failing cases (SKILL.md rule 7).
 
 Report how many cases ran, how many failed at first, how many still fail, and which of the six kinds you did not write.
 
